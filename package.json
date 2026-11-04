@@ -1,0 +1,13 @@
+{
+  "name": "beirut-time",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.20.0",
+  "scripts": {
+    "dev": "./infra/foundation/dev.sh",
+    "web": "pnpm --filter beirut-time-web dev",
+    "build": "pnpm --filter beirut-time-web build",
+    "test": "pnpm --filter beirut-time-web test",
+    "typecheck": "pnpm --filter beirut-time-web typecheck"
+  }
+}
