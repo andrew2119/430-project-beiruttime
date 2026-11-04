@@ -1,0 +1,1 @@
+{"version":1,"id":"L02.contacts","dependencies":["fastapi","asyncpg","httpx","PyJWT"],"routes":["routes.py:router","routes.py:internal_router"],"migrations":["migrations/L02_0001_contacts.sql","migrations/L02_0002_contact_modes.sql"]}
