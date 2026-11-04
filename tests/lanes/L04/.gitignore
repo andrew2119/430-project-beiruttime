@@ -1,0 +1,6 @@
+*.pid
+*-openapi.json
+*.png
+*.jpeg
+*.webp
+.provider/

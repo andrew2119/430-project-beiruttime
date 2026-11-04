@@ -45,6 +45,10 @@ The harness serves the actual three domain modules against separate disposable d
 
 Exercise report/claim/decision, private intake/evidence upload/download, revision conflict/refresh and same-page business-switch denial. The ordinary browser matrix can then check signed-in screens with `BT_BROWSER_ROUTES` selecting routes and preserved query strings. Always stop the browser and harness: stopping restores the product registration, removes the temporary product page, closes the proof databases/roles and stops only its own containers. The ownership check refuses a committed fixture overlay. These tests prove domain behavior against contract fixtures, **not** final connected acceptance.
 
+## Real Identity integration proof
+
+After merging the Identity provider, run `BT_L09_TEST_IMAGE=<existing-image> python3 tests/lanes/L09/connected-proof.py start`. This starts the owning Identity and Eligibility runtime factories plus Trust against separate disposable databases, with in-memory ephemeral signing material and no synthetic authority endpoints or role/grant seeds. Open the printed real account route, register only labeled synthetic information through its native form, then check sign-in/out, intended destination, consent reads and ordinary-buyer denial. `python3 tests/lanes/L09/connected-proof.py stop` stops only these proof processes and drops their own temporary databases/roles. Shared provider runtimes are never restarted. This proof does not supply privileged business/operator authority or a custody receipt.
+
 ## Connected acceptance
 
 The owning provider implementations must be connected before calling the full demo accepted:

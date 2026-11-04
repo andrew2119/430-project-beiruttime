@@ -1,0 +1,470 @@
+{
+  "kind": "contract-fixture-not-final-connected-demo",
+  "matrix": [
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Find your next chapter.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 624.375,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Find your next chapter.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 624.375,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "ابحث عن ساعتك القادمة.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 624.375,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "ابحث عن ساعتك القادمة.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 624.375,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Find your next chapter.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 348,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Find your next chapter.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 348,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "ابحث عن ساعتك القادمة.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 348,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "ابحث عن ساعتك القادمة.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 348,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        390,
+        844
+      ]
+    }
+  ],
+  "canonicalEndingFeed": true,
+  "disclosureStates": [
+    {
+      "locale": "en",
+      "id": "00000000-0000-4000-8000-000000000002"
+    },
+    {
+      "locale": "en",
+      "id": "00000000-0000-4000-8000-000000000003"
+    },
+    {
+      "locale": "en",
+      "id": "00000000-0000-4000-8000-000000000004"
+    },
+    {
+      "locale": "ar",
+      "id": "00000000-0000-4000-8000-000000000002"
+    },
+    {
+      "locale": "ar",
+      "id": "00000000-0000-4000-8000-000000000003"
+    },
+    {
+      "locale": "ar",
+      "id": "00000000-0000-4000-8000-000000000004"
+    }
+  ],
+  "sparseReceiptStates": [
+    {
+      "locale": "en",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000009",
+      "width": 390,
+      "price": "Opening bid · no public bid yet4,000.00 USDTime remaining02:06:56Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.No accepted bids yet.",
+      "rows": 0
+    },
+    {
+      "locale": "en",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000010",
+      "width": 390,
+      "price": "Current canonical price4,300.00 USDTime remaining02:07:55Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.No public bids in this sequence window. Earlier bids may exist; private maximum changes do not create public bids.Showing public bids in the current bounded sequence window; earlier history is not included.",
+      "rows": 0
+    },
+    {
+      "locale": "en",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000011",
+      "width": 390,
+      "price": "Current canonical price4,300.00 USDTime remaining02:08:54Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.#1 · Bidder A19F4,300.00 USD4 Nov, 06:59:59",
+      "rows": 1
+    },
+    {
+      "locale": "en",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000009",
+      "width": 390,
+      "price": "Opening bid · no public bid yet4,000.00 USDTime remaining02:06:52Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.No accepted bids yet.",
+      "rows": 0
+    },
+    {
+      "locale": "en",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000010",
+      "width": 390,
+      "price": "Current canonical price4,300.00 USDTime remaining02:07:51Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.No public bids in this sequence window. Earlier bids may exist; private maximum changes do not create public bids.Showing public bids in the current bounded sequence window; earlier history is not included.",
+      "rows": 0
+    },
+    {
+      "locale": "en",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000011",
+      "width": 390,
+      "price": "Current canonical price4,300.00 USDTime remaining02:08:51Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.#1 · Bidder A19F4,300.00 USD4 Nov, 06:59:59",
+      "rows": 1
+    },
+    {
+      "locale": "ar",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000009",
+      "width": 390,
+      "price": "مزايدة الافتتاح · لا توجد مزايدة عامة بعد٤٬٠٠٠٫٠٠ USDالوقت المتبقي02:06:49مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.لا توجد مزايدات مقبولة بعد.",
+      "rows": 0
+    },
+    {
+      "locale": "ar",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000010",
+      "width": 390,
+      "price": "السعر الحالي المعتمد٤٬٣٠٠٫٠٠ USDالوقت المتبقي02:07:48مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.لا توجد مزايدات عامة في نافذة التسلسل هذه. قد توجد مزايدات أقدم؛ لا تنشئ تغييرات الحد الأقصى الخاص مزايدات عامة.تظهر المزايدات العامة ضمن نافذة التسلسل الحالية المحدودة؛ لا يشمل العرض السجل الأقدم.",
+      "rows": 0
+    },
+    {
+      "locale": "ar",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000011",
+      "width": 390,
+      "price": "السعر الحالي المعتمد٤٬٣٠٠٫٠٠ USDالوقت المتبقي02:08:47مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.#1 · Bidder A19F٤٬٣٠٠٫٠٠ USD٤ تشرين الثاني، ٠٦:٥٩:٥٩ ص",
+      "rows": 1
+    },
+    {
+      "locale": "ar",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000009",
+      "width": 390,
+      "price": "مزايدة الافتتاح · لا توجد مزايدة عامة بعد٤٬٠٠٠٫٠٠ USDالوقت المتبقي02:06:46مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.لا توجد مزايدات مقبولة بعد.",
+      "rows": 0
+    },
+    {
+      "locale": "ar",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000010",
+      "width": 390,
+      "price": "السعر الحالي المعتمد٤٬٣٠٠٫٠٠ USDالوقت المتبقي02:07:45مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.لا توجد مزايدات عامة في نافذة التسلسل هذه. قد توجد مزايدات أقدم؛ لا تنشئ تغييرات الحد الأقصى الخاص مزايدات عامة.تظهر المزايدات العامة ضمن نافذة التسلسل الحالية المحدودة؛ لا يشمل العرض السجل الأقدم.",
+      "rows": 0
+    },
+    {
+      "locale": "ar",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000011",
+      "width": 390,
+      "price": "السعر الحالي المعتمد٤٬٣٠٠٫٠٠ USDالوقت المتبقي02:08:44مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.#1 · Bidder A19F٤٬٣٠٠٫٠٠ USD٤ تشرين الثاني، ٠٦:٥٩:٥٩ ص",
+      "rows": 1
+    }
+  ],
+  "edgeViewports": [
+    {
+      "width": 320,
+      "clipped": []
+    },
+    {
+      "width": 850,
+      "clipped": []
+    },
+    {
+      "width": 851,
+      "clipped": []
+    }
+  ],
+  "twoViewerFixture": {
+    "bt-l04": {
+      "sequence": 2,
+      "observedAt": 1793783062124.9,
+      "history": 2,
+      "latencyMs": 637
+    },
+    "bt-l04-viewer": {
+      "sequence": 2,
+      "observedAt": 1793783061770.6,
+      "history": 2,
+      "latencyMs": 283
+    }
+  },
+  "clock": {
+    "before": "01:58:35",
+    "after": "01:58:33",
+    "clientDateNow": 1
+  },
+  "gapAndReconnect": true,
+  "mediaFailure": {
+    "requests": 11,
+    "honestUnavailable": true,
+    "recovered": true
+  },
+  "currentAuthorityAndNullPrice": true
+}

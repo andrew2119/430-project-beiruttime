@@ -1,0 +1,38 @@
+{
+  "items": [
+    {
+      "sequence": 1,
+      "bidder": "Bidder A19F",
+      "amount_minor": 430000,
+      "automatic": false,
+      "received_at": "2026-11-04T04:59:59Z"
+    }
+  ],
+  "has_more": false,
+  "next_sequence": 1,
+  "snapshot": {
+    "id": "50000000-0000-4000-8000-000000000001",
+    "listing_id": "00000000-0000-4000-8000-000000000001",
+    "currency": "USD",
+    "opening_minor": 400000,
+    "current_minor": 430000,
+    "next_minimum_minor": 440000,
+    "increment_bands": [
+      {
+        "from_minor": 0,
+        "step_minor": 10000
+      }
+    ],
+    "starts_at": "2026-11-04T00:00:00Z",
+    "ends_at": "2026-11-05T18:00:00Z",
+    "server_time": "2026-11-04T05:00:00Z",
+    "revision": 2,
+    "accepted_sequence": 1,
+    "rules_version": "ordinary.v1",
+    "extension_policy": "none.v1",
+    "high_value_minor": 1000000,
+    "reserve_set": false,
+    "leader": "Bidder A19F",
+    "status": "live"
+  }
+}
