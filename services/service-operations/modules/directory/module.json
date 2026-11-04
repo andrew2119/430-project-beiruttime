@@ -1,0 +1,1 @@
+{"version":1,"id":"L11.directory","dependencies":["fastapi","asyncpg","httpx","PyJWT"],"routes":["routes.py:router"],"migrations":["migrations/L11_0001_directory.sql"],"fixtures":{"demo":"fixtures.py:seed"},"workers":["dependencies.py:run"]}
