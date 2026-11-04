@@ -63,7 +63,27 @@ class Dependencies:
         return principal
 
     async def listing(self, request, listing_id):
-        return await self.json('catalog', 'GET', f'/v1/listings/{listing_id}', request)
+        # Catalog's canonical PublicListing V1 names the physical watch and
+        # organization explicitly and includes its immutable Orders registration.
+        publication = await self.json('catalog', 'GET', f'/v1/listings/{listing_id}', request)
+        try:
+            registration = publication['registration']
+            watch_id = UUID(publication['physical_watch_id'])
+            seller_id = UUID(publication['seller_id'])
+            organization = publication['organization_id']
+            if organization is not None:
+                organization = str(UUID(organization))
+            if (UUID(publication['id']) != listing_id
+                    or UUID(registration['watch_id']) != watch_id
+                    or UUID(registration['listing_id']) != listing_id
+                    or registration['sale_mode'] != 'auction'
+                    or publication['facts']['sale_mode'] != 'auction'):
+                raise ValueError()
+            return {'id':str(listing_id), 'watch_id':str(watch_id),
+                'seller_id':str(seller_id), 'seller_organization_id':organization,
+                'status':publication['status']}
+        except (KeyError, TypeError, ValueError):
+            raise PublicError('catalog_unavailable', 'The listing cannot currently be verified.', status=503) from None
 
     def service_headers(self, request, audience):
         if not self.service_key:
