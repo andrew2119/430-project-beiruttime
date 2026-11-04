@@ -3,7 +3,7 @@ from uuid import UUID
 from pydantic import Field
 from bt_bulkheads import DependencyClient, Unavailable
 from bt_contracts_core.models import Actor, Contract
-from bt_contracts_core.errors import AccessDenied
+from bt_contracts_core.errors import AccessDenied, PublicError
 
 
 class OrganizationGrant(Contract):
@@ -25,6 +25,8 @@ async def current_principal(identity: DependencyClient, token: str, request_id: 
         'Authorization': 'Bearer ' + token, 'X-Request-ID': request_id})
     if isinstance(response, Unavailable):
         return response
+    if response.status_code == 401:
+        raise PublicError('unauthorized', 'Sign in to continue.', status=401)
     if response.status_code != 200:
         raise AccessDenied('Current identity could not be established')
     return CurrentPrincipal.model_validate(response.json())

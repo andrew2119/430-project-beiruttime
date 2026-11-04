@@ -29,7 +29,9 @@ export async function forward(request: Request, context: { params: Promise<{ ser
     if(!authorization?.startsWith('Bearer ')) return error(401,'unauthorized',id);
     const identity=await dependencies.get('identity')!.request('GET','/internal/v1/principal',id,{headers:{Authorization:authorization}});
     if(!(identity instanceof Response)) return error(503,'unavailable',id);
-    if(!identity.ok) return error(401,'unauthorized',id);
+    if(identity.status===401) return error(401,'unauthorized',id);
+    if(identity.status===403) return error(403,'forbidden',id);
+    if(!identity.ok) return error(503,'unavailable',id);
     let roles:Role[]=[];
     try { const principal=await identity.json(); if(!principal.actor?.subject_id || !Array.isArray(principal.roles)) return error(401,'unauthorized',id); roles=principal.roles; } catch { return error(503,'unavailable',id); }
     if(!endpoint.roles.some(role=>roles.includes(role))) return error(403,'forbidden',id);
