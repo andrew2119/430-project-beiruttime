@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AuctionSnapshot } from '@contracts/contracts-catalog/discovery';
-import { countdown, reconcileSnapshot, secondsRemaining } from './projection';
+import { countdown, displayedPrice, reconcileSnapshot, secondsRemaining } from './projection';
 const snapshot:AuctionSnapshot={auction_id:'auction',listing_id:'watch',revision:2,last_sequence:1,current_price:{amount:'4300.00',currency:'USD'},server_time:'2026-01-01T00:00:00Z',ends_at:'2026-01-01T00:01:00Z',end_version:1,status:'open',bids:[{sequence:1,bidder_label:'Bidder A19F',amount:{amount:'4300.00',currency:'USD'},accepted_at:'2026-01-01T00:00:00Z'}],history_truncated:false};
 describe('canonical auction projection',()=>{
   it('recovers a sequence gap using a full snapshot',()=>{
@@ -20,6 +20,12 @@ describe('canonical auction projection',()=>{
   it('rejects changed price or sequence under an unchanged canonical revision',()=>{
     expect(reconcileSnapshot(snapshot,{...snapshot,current_price:{amount:'4400.00',currency:'USD'}})).toBeNull();
     expect(reconcileSnapshot(snapshot,{...snapshot,last_sequence:2})).toBeNull();
+  });
+  it('labels the opening price without fabricating a current accepted bid',()=>{
+    const empty={...snapshot,last_sequence:0,bids:[],current_price:{amount:'0.00',currency:'USD' as const},opening_price:{amount:'4000.00',currency:'USD' as const}};
+    expect(displayedPrice(empty)).toEqual({opening:true,money:empty.opening_price});
+    expect(displayedPrice({...snapshot,opening_price:empty.opening_price})).toEqual({opening:false,money:snapshot.current_price});
+    expect(reconcileSnapshot(snapshot,{...snapshot,revision:3,last_sequence:2})).not.toBeNull();
   });
   it('uses a monotonic server anchor, not the device wall clock',()=>{
     const clock={serverMs:Date.parse(snapshot.server_time),receivedAt:1000,roundTripMs:0};

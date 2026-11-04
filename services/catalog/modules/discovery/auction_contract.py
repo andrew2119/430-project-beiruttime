@@ -4,7 +4,7 @@ These are read DTOs only; no Auction rules, persistence or bid engine lives here
 Unknown fields (especially the seller-private reserve) fail closed.
 """
 from typing import Literal
-from pydantic import AwareDatetime, Field, StrictBool, StrictInt, field_validator
+from pydantic import AwareDatetime, Field, StrictBool, StrictInt, field_validator, model_validator
 from .models import MAX_MINOR, PublicModel, masked_label
 
 class Band(PublicModel):
@@ -17,7 +17,7 @@ class Snapshot(PublicModel):
     listing_id: str = Field(pattern=r'^[A-Za-z0-9_-]{1,100}$')
     currency: Literal['USD', 'LBP']
     opening_minor: StrictInt = Field(ge=1, le=MAX_MINOR)
-    current_minor: StrictInt = Field(ge=1, le=MAX_MINOR)
+    current_minor: StrictInt = Field(ge=0, le=MAX_MINOR)
     next_minimum_minor: StrictInt = Field(ge=1, le=MAX_MINOR)
     increment_bands: list[Band] = Field(min_length=1, max_length=20)
     starts_at: AwareDatetime
@@ -32,6 +32,15 @@ class Snapshot(PublicModel):
     leader: str | None
     status: Literal['live', 'scheduled', 'ended']
     _masked_leader = field_validator('leader')(masked_label)
+
+    @model_validator(mode='after')
+    def canonical_state(self):
+        expected='scheduled'if self.server_time<self.starts_at else'ended'if self.server_time>=self.ends_at else'live'
+        if self.ends_at<=self.starts_at or self.status!=expected:
+            raise ValueError('Inconsistent canonical auction clock')
+        if (self.current_minor==0)!=(self.accepted_sequence==0)or(self.current_minor==0)!=(self.leader is None):
+            raise ValueError('Inconsistent empty auction state')
+        return self
 
 class Bid(PublicModel):
     sequence: StrictInt = Field(ge=1, le=MAX_MINOR)

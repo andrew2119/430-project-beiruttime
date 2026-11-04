@@ -18,7 +18,7 @@ export type SearchPage = { items: WatchSummary[]; next_cursor: string | null; se
 export type PublicBid = { sequence: number; bidder_label: string; amount: Money; accepted_at: string };
 export type AuctionSnapshot = {
   auction_id: string; listing_id: string; revision: number; last_sequence: number;
-  current_price: Money; server_time: string; starts_at?: string | null; ends_at: string; end_version: number;
+  current_price: Money; opening_price?: Money | null; server_time: string; starts_at?: string | null; ends_at: string; end_version: number;
   status: 'scheduled' | 'open' | 'ended' | 'cancelled'; bids: PublicBid[];
   history_truncated: boolean;
 };

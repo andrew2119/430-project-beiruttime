@@ -76,6 +76,22 @@ def main():
             check(chrome(session,'eval',f'() => document.querySelector("main").textContent.includes({json.dumps(expected)})'),'modified/business disclosure state')
             evidence['disclosureStates'].append({'locale':locale,'id':identifier})
 
+    evidence['sparseReceiptStates']=[]
+    for locale in ('en','ar'):
+        for theme in ('light','dark'):
+            chrome(session,'eval',f"() => {{document.cookie='bt-theme={theme}; Path=/';return true;}}")
+            for index in (8,9,10):
+                chrome(session,'open',f'http://localhost:3044/{locale}/watches/{listing_id(index)}')
+                check(chrome(session,'eval',"async () => {for(let i=0;i<40;i++){if(document.querySelector('.live-auction')?.dataset.connection==='connected')return true;await new Promise(resolve=>setTimeout(resolve,100));}return false;}"),'empty and sparse receipt auctions must remain available')
+                measured=chrome(session,'eval',"() => ({width:innerWidth,theme:document.documentElement.dataset.theme,price:document.querySelector('.live-auction-stats')?.textContent,history:document.querySelector('.live-auction-history')?.textContent,rows:document.querySelectorAll('.live-auction-history li').length})")
+                check(measured['width']==390 and measured['theme']==theme,'sparse-receipt phone viewport and theme')
+                if index==8:
+                    check(('Opening bid' if locale=='en' else 'مزايدة الافتتاح')in measured['price'] and measured['rows']==0,'opening price is explicit, not a fabricated accepted bid')
+                elif index==9:
+                    check(('Earlier bids may exist' if locale=='en' else 'قد توجد مزايدات أقدم')in measured['history'] and measured['rows']==0,'empty bounded window must not imply no bids exist')
+                else:check(measured['rows']==1,'quiet receipt adds no public row and does not cause an outage')
+                evidence['sparseReceiptStates'].append({'locale':locale,'theme':theme,'id':listing_id(index),**measured})
+
     evidence['edgeViewports']=[]
     for width,height in ((320,568),(850,900),(851,900)):
         chrome(session,'emulate','--viewport',f'{width}x{height}x1'+(',mobile,touch' if width<=850 else ''))

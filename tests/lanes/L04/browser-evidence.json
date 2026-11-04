@@ -317,6 +317,116 @@
       "id": "00000000-0000-4000-8000-000000000004"
     }
   ],
+  "sparseReceiptStates": [
+    {
+      "locale": "en",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000009",
+      "width": 390,
+      "price": "Opening bid · no public bid yet4,000.00 USDTime remaining02:06:39Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.No accepted bids yet.",
+      "rows": 0
+    },
+    {
+      "locale": "en",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000010",
+      "width": 390,
+      "price": "Current canonical price4,300.00 USDTime remaining02:07:38Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.No public bids in this sequence window. Earlier bids may exist; private maximum changes do not create public bids.Showing public bids in the current bounded sequence window; earlier history is not included.",
+      "rows": 0
+    },
+    {
+      "locale": "en",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000011",
+      "width": 390,
+      "price": "Current canonical price4,300.00 USDTime remaining02:08:37Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.#1 · Bidder A19F4,300.00 USD4 Nov, 06:59:59",
+      "rows": 1
+    },
+    {
+      "locale": "en",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000009",
+      "width": 390,
+      "price": "Opening bid · no public bid yet4,000.00 USDTime remaining02:06:36Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.No accepted bids yet.",
+      "rows": 0
+    },
+    {
+      "locale": "en",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000010",
+      "width": 390,
+      "price": "Current canonical price4,300.00 USDTime remaining02:07:35Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.No public bids in this sequence window. Earlier bids may exist; private maximum changes do not create public bids.Showing public bids in the current bounded sequence window; earlier history is not included.",
+      "rows": 0
+    },
+    {
+      "locale": "en",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000011",
+      "width": 390,
+      "price": "Current canonical price4,300.00 USDTime remaining02:08:34Open",
+      "history": "Public bid historyBidder identities are masked. Private maximum bids are never displayed.#1 · Bidder A19F4,300.00 USD4 Nov, 06:59:59",
+      "rows": 1
+    },
+    {
+      "locale": "ar",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000009",
+      "width": 390,
+      "price": "مزايدة الافتتاح · لا توجد مزايدة عامة بعد٤٬٠٠٠٫٠٠ USDالوقت المتبقي02:06:33مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.لا توجد مزايدات مقبولة بعد.",
+      "rows": 0
+    },
+    {
+      "locale": "ar",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000010",
+      "width": 390,
+      "price": "السعر الحالي المعتمد٤٬٣٠٠٫٠٠ USDالوقت المتبقي02:07:32مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.لا توجد مزايدات عامة في نافذة التسلسل هذه. قد توجد مزايدات أقدم؛ لا تنشئ تغييرات الحد الأقصى الخاص مزايدات عامة.تظهر المزايدات العامة ضمن نافذة التسلسل الحالية المحدودة؛ لا يشمل العرض السجل الأقدم.",
+      "rows": 0
+    },
+    {
+      "locale": "ar",
+      "theme": "light",
+      "id": "00000000-0000-4000-8000-000000000011",
+      "width": 390,
+      "price": "السعر الحالي المعتمد٤٬٣٠٠٫٠٠ USDالوقت المتبقي02:08:31مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.#1 · Bidder A19F٤٬٣٠٠٫٠٠ USD٤ تشرين الثاني، ٠٦:٥٩:٥٩ ص",
+      "rows": 1
+    },
+    {
+      "locale": "ar",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000009",
+      "width": 390,
+      "price": "مزايدة الافتتاح · لا توجد مزايدة عامة بعد٤٬٠٠٠٫٠٠ USDالوقت المتبقي02:06:30مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.لا توجد مزايدات مقبولة بعد.",
+      "rows": 0
+    },
+    {
+      "locale": "ar",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000010",
+      "width": 390,
+      "price": "السعر الحالي المعتمد٤٬٣٠٠٫٠٠ USDالوقت المتبقي02:07:29مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.لا توجد مزايدات عامة في نافذة التسلسل هذه. قد توجد مزايدات أقدم؛ لا تنشئ تغييرات الحد الأقصى الخاص مزايدات عامة.تظهر المزايدات العامة ضمن نافذة التسلسل الحالية المحدودة؛ لا يشمل العرض السجل الأقدم.",
+      "rows": 0
+    },
+    {
+      "locale": "ar",
+      "theme": "dark",
+      "id": "00000000-0000-4000-8000-000000000011",
+      "width": 390,
+      "price": "السعر الحالي المعتمد٤٬٣٠٠٫٠٠ USDالوقت المتبقي02:08:28مفتوح",
+      "history": "سجل المزايدات العامهويات المزايدين محجوبة. لا تُعرض الحدود القصوى الخاصة للمزايدات أبداً.#1 · Bidder A19F٤٬٣٠٠٫٠٠ USD٤ تشرين الثاني، ٠٦:٥٩:٥٩ ص",
+      "rows": 1
+    }
+  ],
   "edgeViewports": [
     {
       "width": 320,
@@ -334,25 +444,25 @@
   "twoViewerFixture": {
     "bt-l04": {
       "sequence": 2,
-      "observedAt": 1793778617654.3,
+      "observedAt": 1793781499991.4001,
       "history": 2,
-      "latencyMs": 657
+      "latencyMs": 762
     },
     "bt-l04-viewer": {
       "sequence": 2,
-      "observedAt": 1793778617296.7,
+      "observedAt": 1793781499507.7,
       "history": 2,
-      "latencyMs": 300
+      "latencyMs": 279
     }
   },
   "clock": {
-    "before": "01:59:03",
-    "after": "01:59:01",
+    "before": "01:58:18",
+    "after": "01:58:16",
     "clientDateNow": 1
   },
   "gapAndReconnect": true,
   "mediaFailure": {
-    "requests": 11,
+    "requests": 10,
     "honestUnavailable": true,
     "recovered": true
   },

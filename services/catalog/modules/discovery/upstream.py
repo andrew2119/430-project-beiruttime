@@ -61,8 +61,9 @@ async def _read(client, identifier: str, request_id: str | None) -> AuctionRead:
         return AuctionRead(state='unavailable')
     bids, truncated = [], False
     if canonical.accepted_sequence:
-        # CP B-19: history carries its own canonical snapshot. If bids race the
-        # first read, resync the latest window at most once, never grow a queue.
+        # CP B-19: history carries its own canonical snapshot. Receipt sequences
+        # may have gaps: a private ceiling-only raise adds no public bid. If bids
+        # race the first read, resync the bounded window once, never grow a queue.
         for attempt in range(2):
             after = max(0, canonical.accepted_sequence-50)
             response = await _response(client, '/v1/auctions/'+quote(canonical.id, safe='')+'/history', headers, {'after_sequence': after, 'limit': 50})
@@ -72,12 +73,16 @@ async def _read(client, identifier: str, request_id: str | None) -> AuctionRead:
             current = history.snapshot
             if current.id != canonical.id or current.listing_id != identifier or current.revision < canonical.revision or current.accepted_sequence < canonical.accepted_sequence:
                 return AuctionRead(state='unavailable')
-            if any(bid.sequence <= after or bid.sequence > current.accepted_sequence for bid in history.items):
+            sequences = [bid.sequence for bid in history.items]
+            if (sequences != sorted(set(sequences))
+                or any(sequence <= after or sequence > current.accepted_sequence for sequence in sequences)
+                or history.next_sequence != (sequences[-1] if sequences else after)
+                or (history.has_more and not sequences)):
                 return AuctionRead(state='unavailable')
             canonical = current
-            if history.items and max(bid.sequence for bid in history.items) == current.accepted_sequence:
+            if not history.has_more:
                 bids = [PublicBid(sequence=bid.sequence, bidder_label=bid.bidder, amount=money(bid.amount_minor, current.currency), accepted_at=bid.received_at) for bid in history.items]
-                truncated = after > 0 or history.has_more or len(bids) < current.accepted_sequence
+                truncated = after > 0
                 break
             if attempt == 1:
                 return AuctionRead(state='unavailable')
@@ -86,6 +91,7 @@ async def _read(client, identifier: str, request_id: str | None) -> AuctionRead:
     snapshot = AuctionSnapshot(auction_id=canonical.id, listing_id=canonical.listing_id,
         revision=canonical.revision, last_sequence=canonical.accepted_sequence,
         current_price=money(canonical.current_minor, canonical.currency),
+        opening_price=money(canonical.opening_minor, canonical.currency),
         server_time=canonical.server_time, starts_at=canonical.starts_at, ends_at=canonical.ends_at,
         end_version=canonical.revision,
         status={'live':'open','scheduled':'scheduled','ended':'ended'}[canonical.status],

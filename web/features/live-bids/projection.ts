@@ -12,6 +12,10 @@ export function reconcileSnapshot(current: AuctionSnapshot|null, next: AuctionSn
   if(current&&next.revision===current.revision&&(next.last_sequence!==current.last_sequence||next.end_version!==current.end_version||next.current_price.amount!==current.current_price.amount||next.current_price.currency!==current.current_price.currency))return null;
   return next;
 }
+export function displayedPrice(snapshot: AuctionSnapshot) {
+  const opening=!!snapshot.opening_price&&/^0(?:\.0+)?$/.test(snapshot.current_price.amount);
+  return { opening, money: opening?snapshot.opening_price!:snapshot.current_price };
+}
 export type ServerClock = { serverMs: number; receivedAt: number; roundTripMs: number };
 export function secondsRemaining(endsAt: string, clock: ServerClock, monotonicNow: number): number {
   const authoritativeNow=clock.serverMs+Math.max(0,clock.roundTripMs)/2+Math.max(0,monotonicNow-clock.receivedAt);

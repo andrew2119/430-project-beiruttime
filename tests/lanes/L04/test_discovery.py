@@ -2,6 +2,7 @@
 import asyncio
 import copy
 import importlib
+import inspect
 import json
 from contextlib import asynccontextmanager
 from datetime import datetime,timedelta,timezone
@@ -36,10 +37,12 @@ PROVIDER_AUCTION=json.loads((FIXTURES/'provider-auction.v1.json').read_text())
 PROVIDER_HISTORY=json.loads((FIXTURES/'provider-history.v1.json').read_text())
 
 @pytest_asyncio.fixture
-async def database_access(monkeypatch):
+async def database_access(monkeypatch,request,tmp_path):
     # Module-scoped override: an external conftest would also shadow common proofs.
     monkeypatch.setenv('BT_MODULES_PATH','/app/modules/discovery')
-    generator=runtime_testing.database_access.__wrapped__()
+    wrapped=runtime_testing.database_access.__wrapped__
+    # Reused proof images may predate the foundation's explicit inventory fixture.
+    generator=wrapped(request,tmp_path)if inspect.signature(wrapped).parameters else wrapped()
     access=await anext(generator)
     try:yield access
     finally:await generator.aclose()
@@ -99,9 +102,13 @@ def test_public_models_reject_private_fields_and_false_business_inspection():
 def test_timing_before_equal_after_and_no_fabricated_extension():
     start=datetime(2026,11,4,12,tzinfo=timezone.utc);end=start+timedelta(hours=1)
     base={'auction_id':reference('5'),'listing_id':listing_id(),'starts_at':start,'scheduled_ends_at':end,'current_ends_at':end,'revision':1,'rules_version':'ordinary.v1','extension_policy':'none.v1'}
+    snapshot={**PROVIDER_AUCTION,'starts_at':start,'ends_at':end}
     for instant,status in ((start-timedelta(microseconds=1),'scheduled'),(start,'live'),(end-timedelta(microseconds=1),'live'),(end,'ended'),(end+timedelta(microseconds=1),'ended')):
         assert dependencies.Timing(**base,server_time=instant,status=status).status==status
+        assert upstream.Snapshot.model_validate({**snapshot,'server_time':instant,'status':status}).status==status
     with pytest.raises(ValidationError):dependencies.Timing(**base,server_time=end,status='live')
+    with pytest.raises(ValidationError):upstream.Snapshot.model_validate({**snapshot,'server_time':end,'status':'live'})
+    with pytest.raises(ValidationError):upstream.Snapshot.model_validate({**PROVIDER_AUCTION,'current_minor':0})
     extended={**base,'current_ends_at':end+timedelta(seconds=30)}
     with pytest.raises(ValidationError):dependencies.Timing(**extended,server_time=start,status='live')
 
@@ -271,6 +278,20 @@ async def test_auction_core_public_mapping_private_fields_and_binding():
     result=await call(PROVIDER_AUCTION)
     assert result.state=='available'and result.snapshot.current_price.amount==4300 and result.snapshot.status=='open'
     assert result.snapshot.end_version==PROVIDER_AUCTION['revision']
+    empty=copy.deepcopy(PROVIDER_AUCTION);empty.update(current_minor=0,accepted_sequence=0,revision=1,leader=None,next_minimum_minor=400000)
+    initial=await call(empty)
+    assert initial.state=='available'and not initial.snapshot.bids and not initial.snapshot.history_truncated
+    assert initial.snapshot.current_price.amount==0 and initial.snapshot.opening_price.amount==4000
+    quiet=copy.deepcopy(PROVIDER_AUCTION);quiet.update(accepted_sequence=2,revision=3)
+    unchanged=await call(quiet)
+    assert unchanged.state=='available'and unchanged.snapshot.last_sequence==2
+    assert len(unchanged.snapshot.bids)==1 and not unchanged.snapshot.history_truncated
+    quiet.update(accepted_sequence=60,revision=61)
+    exhausted={'items':[],'has_more':False,'next_sequence':10}
+    bounded=await call(quiet,history=exhausted)
+    assert bounded.state=='available'and not bounded.snapshot.bids and bounded.snapshot.history_truncated
+    exhausted['next_sequence']=60
+    assert(await call(quiet,history=exhausted)).state=='unavailable'
     assert(await call({})).state=='not_started'
     assert(await call({},404)).state=='unavailable'
     for field,value in [('private_maximum','4500'),('reserve_minor',500000),('listing_id','another-watch')]:
@@ -324,6 +345,26 @@ async def test_auction_history_race_has_one_bounded_resync():
         assert result.state=='available'and result.snapshot.last_sequence==51 and result.snapshot.current_price.amount==9100
         assert result.snapshot.history_truncated and len(result.snapshot.bids)==50 and after_values==[0,1]
     finally:await client.aclose()
+
+
+def test_connected_observer_compares_instants_and_exact_minor_units(monkeypatch):
+    import argparse
+    import connected_projection as observer
+    assert observer.origin('http://localhost:3044/')=='http://localhost:3044'
+    for value in ('http://user:secret@localhost','http://localhost/path','http://localhost?token=secret','file:///private'):
+        with pytest.raises(argparse.ArgumentTypeError):observer.origin(value)
+    provider_snapshot=copy.deepcopy(PROVIDER_AUCTION)
+    provider_snapshot['ends_at']=provider_snapshot['ends_at'].replace('Z','+00:00')
+    row=source_row()
+    def get(origin,path):
+        if path=='/v1/listings/'+listing_id():return row
+        if path.endswith('/auction'):return {'state':'available','snapshot':AUCTION}
+        assert origin=='http://auction'and path.endswith('/history?limit=100')
+        return {'snapshot':provider_snapshot}
+    monkeypatch.setattr(observer,'get',get)
+    assert observer.canonical('http://catalog','http://auction',listing_id())[1]==AUCTION
+    provider_snapshot['current_minor']+=1
+    with pytest.raises(AssertionError):observer.canonical('http://catalog','http://auction',listing_id())
 
 
 @pytest.mark.asyncio

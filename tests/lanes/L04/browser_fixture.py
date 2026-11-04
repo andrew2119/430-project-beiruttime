@@ -4,7 +4,10 @@ Every record is labeled sample content. Production never loads these routes or
 transport adapters; connected owning-service acceptance is a separate gate.
 """
 import asyncio
+import inspect
 import os
+from pathlib import Path
+from types import SimpleNamespace
 from contextlib import asynccontextmanager
 from datetime import datetime,timezone
 from uuid import UUID
@@ -20,7 +23,9 @@ from test_discovery import provider,PROVIDER_AUCTION
 
 async def main():
     os.environ['BT_MODULES_PATH']='/app/modules/discovery'
-    access_generator=database_access.__wrapped__();access=await anext(access_generator)
+    wrapped=database_access.__wrapped__
+    access_generator=wrapped(SimpleNamespace(param='service'),Path('/tmp'))if inspect.signature(wrapped).parameters else wrapped()
+    access=await anext(access_generator)
     rows=[source_row(index)for index in range(18)]
     change_mode(rows[1],'fixed_price');rows[1]['facts'].update(modified=True,reference='REF-TEST-36',modifications=[{'component':'Aftermarket strap','provenance':'aftermarket','modifier':'Declared sample modifier','warranty_issuer':'No manufacturer warranty claimed','notes':'Contract fixture: review seller disclosure.'}])
     for index,kind in ((2,'dealer'),(3,'brand')):
@@ -32,6 +37,13 @@ async def main():
     state.revoked_businesses.add(rows[3]['organization_id'])
     state.order_states[listing_id(6)]='reserved'
     del state.auctions[listing_id(7)]
+    # Public current_minor=0 is an empty canonical lot, not a free watch.
+    empty=state.auctions[listing_id(8)]
+    empty.update(current_minor=0,accepted_sequence=0,revision=1,leader=None,next_minimum_minor=empty['opening_minor'])
+    state.histories[empty['id']]=[]
+    # Quiet private ceiling receipts create gaps without invented public rows.
+    state.auctions[listing_id(9)].update(accepted_sequence=60,revision=61)
+    state.auctions[listing_id(10)].update(accepted_sequence=2,revision=3)
     clients=state.clients();app=create_app(Settings(database_url=access.runtime_url));lifespan=app.router.lifespan_context
     media_unavailable=False;media_requests=0
 

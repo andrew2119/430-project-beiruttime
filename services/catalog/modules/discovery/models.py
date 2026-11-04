@@ -124,6 +124,7 @@ class AuctionSnapshot(PublicModel):
     revision: StrictInt = Field(ge=1, le=MAX_MINOR)
     last_sequence: StrictInt = Field(ge=0, le=MAX_MINOR)
     current_price: PublicMoney
+    opening_price: PublicMoney | None = None
     server_time: AwareDatetime
     starts_at: AwareDatetime | None = None
     ends_at: AwareDatetime
