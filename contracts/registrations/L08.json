@@ -1,0 +1,1 @@
+{"version":1,"lane":"L08","contracts":[{"namespace":"orders.allocation.v1","path":"packages/contracts-orders/allocation","fixtures":["packages/contracts-orders/allocation/fixtures/reservation.v1.json"]},{"namespace":"catalog.request-drafts.v1","path":"packages/contracts-catalog/request-drafts","fixtures":[]}]}

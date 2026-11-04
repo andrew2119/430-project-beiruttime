@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "id": "L10.options-sophistication",
+  "dependencies": [
+    "fastapi",
+    "asyncpg",
+    "httpx",
+    "pydantic"
+  ],
+  "hooks": {
+    "catalog.options-sophistication.v1": "schema.py:validate"
+  }
+}

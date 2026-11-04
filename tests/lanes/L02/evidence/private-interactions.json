@@ -1,0 +1,35 @@
+{
+  "proof": "private connected interactions",
+  "results": [
+    {
+      "story": "contact proof",
+      "arabicDigits": true,
+      "verified": true,
+      "sampleDelivery": true
+    },
+    {
+      "story": "official brand onboarding",
+      "publicPrivateBoundary": true,
+      "sample": true,
+      "capabilities": [
+        "sales",
+        "customization",
+        "servicing"
+      ]
+    },
+    {
+      "story": "scoped colleague membership",
+      "organizationOnly": true,
+      "staffRead": true,
+      "operatorControlsHidden": true
+    },
+    {
+      "story": "private-seller review",
+      "realApplication": true,
+      "independentAssignment": true,
+      "evidenceActions": true,
+      "approved": true,
+      "ownerReasonHistory": true
+    }
+  ]
+}

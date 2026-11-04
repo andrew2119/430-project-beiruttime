@@ -67,6 +67,24 @@ async def test_expiry_is_rechecked_after_obtaining_the_listing_lock(api):
     assert current.json()["status"] == "draft"
 
 
+@pytest.mark.parametrize(
+    "outcome",
+    [
+        {"status": "denied", "code": "watch_already_registered"},
+        {"status": "succeeded", "resource_id": str(uuid4()), "watch": {}},
+        {"status": "available", "revision": 1},
+    ],
+)
+async def test_transport_success_without_canonical_registration_proof_stays_pending(api, outcome):
+    row, _ = await ready(api)
+    api.order_result["value"] = outcome
+    answer = await publish(api, row)
+    assert answer.status_code == 503
+    current = await api.client.get(f"/v1/seller/listings/{row['id']}", headers=headers())
+    assert current.json()["status"] == "publication_pending"
+    assert (await api.client.get(f"/v1/listings/{row['id']}/publication")).status_code == 404
+
+
 async def test_snapshot_stores_only_the_closed_publication_projection(api):
     row, _ = await ready(api)
     api.quotes["value"]["unrelated_private_payload"] = {"maximum_minor": 999999}

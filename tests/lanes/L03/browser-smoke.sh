@@ -39,6 +39,24 @@ for width in 1440 390; do
           if($width<=850&&links.some(a=>a.getBoundingClientRect().height<43))throw new Error('undersized phone link');
           return {heading:document.querySelector('main h1').textContent,dir:root.dir,theme:root.dataset.theme,images:images.length,innerWidth,innerHeight,dpr:devicePixelRatio,overflow:false};
         }"
+        if [[ "$route" == seller/listings/* && "${ALL_EDITOR_STEPS:-0}" == 1 ]]; then
+          for step in 1 2 3; do
+            browser_eval "() => {document.querySelectorAll('main nav button')[$step].click();return true;}" >/dev/null
+            chrome-devtools-axi wait 300 >/dev/null
+            printf '%s %s %s editor-step-%s: ' "$width" "$locale" "$theme" "$step"
+            browser_eval "async () => {
+              const heading=document.querySelector('main section h2')?.textContent;
+              const expected=document.querySelectorAll('main nav button')[$step].textContent;
+              if(!heading||($step!==2&&!expected.includes(heading)))throw new Error('editor step did not render');
+              if($step===2&&document.querySelectorAll('main input[type=file]').length!==2)throw new Error('media controls did not render');
+              if(innerWidth!==$width||document.documentElement.scrollWidth>innerWidth)throw new Error('editor step overflow');
+              if(document.querySelector('.le-document-list img'))throw new Error('private document entered gallery');
+              const images=[...document.querySelectorAll('main img')];
+              await Promise.race([Promise.all(images.map(image=>image.decode())),new Promise((_,reject)=>setTimeout(()=>reject(new Error('step image did not decode')),5000))]);
+              return {step:$step,heading,images:images.length,innerWidth,overflow:false};
+            }"
+          done
+        fi
       done
     done
   done

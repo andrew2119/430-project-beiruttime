@@ -79,6 +79,7 @@ async def api(database_url, monkeypatch):
     quotes = {}
     calls = []
     order_rows = []
+    order_result = {}
     fail = {"orders": False, "identity": False}
 
     async def remote(request):
@@ -144,12 +145,20 @@ async def api(database_url, monkeypatch):
             calls.append((request.headers.get("Idempotency-Key"), value))
             return httpx.Response(
                 200,
-                json={
-                    "watch_id": value["watch_id"],
-                    "listing_id": value["listing_id"],
-                    "sale_mode": value["sale_mode"],
-                    "status": "available",
-                    "revision": 1,
+                json=order_result.get("value")
+                or {
+                    "id": str(uuid4()),
+                    "request_id": "orders-proof",
+                    "status": "succeeded",
+                    "resource_id": value["watch_id"],
+                    "watch": {
+                        "watch_id": value["watch_id"],
+                        "listing_id": value["listing_id"],
+                        "sale_mode": value["sale_mode"],
+                        "status": "available",
+                        "revision": 1,
+                        "is_demo": value["is_demo"],
+                    },
                 },
             )
         return httpx.Response(503)
@@ -177,6 +186,7 @@ async def api(database_url, monkeypatch):
         calls=calls,
         fail=fail,
         order_rows=order_rows,
+        order_result=order_result,
     )
     await client.aclose()
     for upstream in app.state.catalog_clients.values():

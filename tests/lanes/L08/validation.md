@@ -1,0 +1,21 @@
+# L08 verification record
+
+## Verified locally on 2026-11-04
+
+The branch contains a normal merge of the shared foundation. Before merging, all 189 published foundation files were compared byte-for-byte with `origin/main`; only identical untracked copies were removed. The feature diff contains only the lane's owned paths. After Identity merged, its 25 identical temporary frontend/contract copies were removed and main's implementation was used for a repeated authenticated browser proof. Only the still-unmerged Pricing type contract remains a temporary consumer input.
+
+- Current-source Docker/PostgreSQL proofs reuse the existing dependency image: **39 Orders and 37 Catalog tests pass**. Each proof uses unique restricted database roles and its own disposable database. The suites cover physical-watch races, durable outcomes and restart, revisions, quotation boundaries, unknown dependency/authentication states, current organization scope, real custody facts and stale receipt fencing, owner-private drafts, source configuration bindings, directory purpose/cursor validation and transactional minimal events.
+- **10 owned web tests**, **10 evidence-runner tests** and **66 shared frontend tests** pass. Full typecheck, owned frontend lint, owned Python lint and production frontend build pass after the foundation merge. Runner tests prove validation mechanics only, not full-slice acceptance.
+- The actual published Identity sign-in/registration frontend and the actual Identity runtime were used for the browser proof. Its private-request API ran against an isolated real PostgreSQL database, not a success mock or a second authoritative Catalog database. The loopback Identity listener reused the real issuer/configuration with the exact proof origins allowed; no shared runtime was restarted.
+- The browser entered neutral sample notes, acknowledged the private save, edited them, switched locale and reopened the server-acknowledged revision. **Eight authenticated cases** passed: English/Arabic, light/dark, 1280px desktop and asserted `innerWidth === 390` phone emulation. RTL, rendered palette changes, keyboard focus, no horizontal overflow, 44px controls and 16px phone fields were checked.
+- Real logout and a second independently registered buyer produced **404** for the first buyer's draft. The prior private form and notes were absent. No private note or bearer credential appeared in browser storage. Submit, approve, pay, start, complete and collect each returned **409 capability_unreleased**. The expected denied-resource 404 was not a hydration failure.
+- The earlier signed-out matrix also checked checkout, nested order and private-request routes in both languages/themes at desktop and actual 390px. An actual stopped Orders dependency returned unavailable through the gateway; the partial HTTP evidence report retained `complete: false`.
+- All owned browser/listener/proof containers were stopped after use; existing images and shared services were retained.
+
+## Explicit remaining connected gate
+
+**Full E05 is not accepted by these local proofs.** Its complete report still requires real authorized private/dealer publication with attributed photos, current Catalog publication behind listing-bound Pricing, a live two-buyer reservation race, actual Auction/manual/private-maximum projection, moderation, business directory/options, consent and every early scoped workspace. An isolated draft database, a passing contract fixture, a route, or a health response cannot substitute for those facts.
+
+The released Pricing validation DTO is consumed exactly; proposed/sample price bases cannot authorize allocation. Directory V1 business/capability reads and the released L10 owned configuration revision are integrated. A buyer-safe request-bound technical-intake projection has not been released: staff-private intake records are not queried as buyer readiness. Unavailable facts remain unavailable. Payments, completed work, inspection/quality passes, final collection and payout are not manufactured.
+
+Run the owned scripts in `README.md` against the integrated application before changing this gate. Local generated evidence stays ignored and carries no credentials, private notes or provider response bodies.

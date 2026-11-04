@@ -3,8 +3,15 @@
 import hashlib
 import json
 import os
+import time
 from pathlib import Path
 from bt_bulkheads import DependencyClient, Unavailable
+
+
+def quote_operation(demo_key, revision, now=None):
+    # Preview receipts expire after fifteen minutes. A ten-minute window and
+    # draft revision bound replay without permanently pinning an expired quote.
+    return f"{demo_key}-quote-r{revision}-w{int(time.time() if now is None else now) // 600}"
 
 
 async def seed(settings):
@@ -120,14 +127,14 @@ async def seed(settings):
                 response = await pricing_client.request(
                     "POST",
                     "/v1/quotes",
-                    headers={**headers, "Idempotency-Key": item["id"] + ":quote"},
+                    headers={**headers, "Idempotency-Key": quote_operation(item["id"], row["revision"])},
                     json={
                         "subject_id": row["id"],
                         "subject_revision": row["revision"],
                         "purpose": "business_quote",
                         "source": "sample",
                         "schedule_id": "sample-v1",
-                        "price_minor": value["price_minor"],
+                        "price_minor": row["facts"]["price_minor"],
                         "currency": "USD",
                     },
                 )

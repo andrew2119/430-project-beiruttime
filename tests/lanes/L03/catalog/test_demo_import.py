@@ -100,6 +100,16 @@ async def test_demo_import_uses_publication_twice_without_duplicate_stock(api, t
         assert b"private serial" not in value and b"Fixture author" in value
 
 
+async def test_demo_quote_receipts_are_stable_but_do_not_pin_expired_or_stale_terms():
+    seed = next(m for m in discover(Path("/app/modules")) if m.id == "L03.listings").load("fixtures.py:seed")
+    operation = seed.__globals__["quote_operation"]
+    key = operation("DEMO-WATCH-01", 2, 6000)
+    assert 8 <= len(key) <= 128 and all(c.isalnum() or c in "-_" for c in key)
+    assert operation("DEMO-WATCH-01", 2, 6000) == operation("DEMO-WATCH-01", 2, 6599)
+    assert operation("DEMO-WATCH-01", 2, 6000) != operation("DEMO-WATCH-01", 2, 6600)
+    assert operation("DEMO-WATCH-01", 2, 6000) != operation("DEMO-WATCH-01", 3, 6000)
+
+
 async def test_demo_guard_missing_license_and_real_draft_preserved(api, tmp_path, monkeypatch):
     seed = next(m for m in discover(Path("/app/modules")) if m.id == "L03.listings").load("fixtures.py:seed")
     monkeypatch.setenv("BT_ENVIRONMENT", "production")

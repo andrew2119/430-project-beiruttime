@@ -228,7 +228,7 @@ async def publish(listing_id: UUID, body: Publish, request: Request):
             )
     facts = unpack(row["facts"])
     sale_mode = {"fixed_price": "fixed", "auction": "auction", "offer": "seller_base"}[facts["sale_mode"]]
-    registration = await service_request(
+    registered = await service_request(
         request,
         "orders",
         "POST",
@@ -244,8 +244,15 @@ async def publish(listing_id: UUID, body: Publish, request: Request):
             "organization_id": str(row["organization_id"]) if row["organization_id"] else None,
         },
     )
+    # Orders commands return a retained command outcome containing the minimal
+    # watch projection. A transport 200 or a denied outcome is never a fence.
+    registration = registered.get("watch") if isinstance(registered, dict) else None
     if (
-        registration.get("status") != "available"
+        not isinstance(registration, dict)
+        or registered.get("status") != "succeeded"
+        or registered.get("resource_id") != str(row["physical_watch_id"])
+        or registration.get("is_demo") is not row["is_demo"]
+        or registration.get("status") != "available"
         or registration.get("watch_id") != str(row["physical_watch_id"])
         or registration.get("listing_id") != str(listing_id)
         or registration.get("sale_mode") != sale_mode
