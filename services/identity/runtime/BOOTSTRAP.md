@@ -1,6 +1,6 @@
 # First platform operator
 
-Register an ordinary account through `/en/account/register` (or `/ar/account/register`). After Identity migrations, run this local administrative command in the Identity runtime:
+Open `/en/account` (or `/ar/account`), choose **Create an account**, and register an ordinary account. After Identity migrations, run this local administrative command in the Identity runtime:
 
 ```sh
 ./infra/foundation/compose.sh exec -T identity python -m service_app.bootstrap_operator \
