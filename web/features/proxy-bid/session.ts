@@ -7,6 +7,7 @@ export function useBuyerSession() {
   return {
     signedIn:Boolean(session),
     fingerprint:session?.access_fingerprint??null,
+    subjectId:session?.principal.actor.subject_id??null,
     roles:session?.principal.roles??[],
   };
 }

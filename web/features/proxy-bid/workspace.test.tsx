@@ -3,7 +3,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {LocaleContext} from '@/shell/locale-context';
 import BuyerWorkspace from './buyer-workspace';
-const session=vi.hoisted(()=>({fingerprint:'owner-A' as string|null,signedIn:true,roles:['buyer']}));
+const session=vi.hoisted(()=>({fingerprint:'owner-A' as string|null,subjectId:'00000000-0000-0000-0000-000000000001',signedIn:true,roles:['buyer']}));
 vi.mock('./session',()=>({useBuyerSession:()=>session,authenticatedRequest:vi.fn(),signInHref:(next:string,locale:string)=>`/${locale}/account?next=${encodeURIComponent(next)}`}));
 const activity={version:1,as_of:'2030-01-01T10:00:00Z',final_results_available:false,
   bids:{state:'available',next_cursor:null,items:[{auction_id:'auction-A',listing_id:'watch-A',status:'leading',current_price_minor:16000,currency:'USD',revision:1,ends_at:'2030-01-01T12:00:00Z',is_demo:true,private_maximum_minor:450000}]},

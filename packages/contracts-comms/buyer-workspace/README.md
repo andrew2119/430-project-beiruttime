@@ -16,10 +16,15 @@ under `packages/contracts-comms/buyer-workspace/`.
 
 ## Sources
 
-- Auction `GET /v1/my-bids?limit=100`: awaiting exact provider DTO. Provisional
-  fixture is `{items:[{auction_id,listing_id,buyer_id,status:leading|outbid,
-  current_price_minor,currency,revision,ends_at,is_demo}],next_cursor:null|string}`.
-  Unknown private fields or another owner's row fail unavailable.
+- Auction `GET /v1/my-bids?limit=100`: exact published own-bids v1 snapshot.
+  `status` is live/scheduled/ended; `my_status` alone maps to leading/outbid.
+  `id` must equal auction_id and current_minor must equal current_price_minor.
+  The input includes bounded canonical rules/timing/sequence fields; the compact
+  output strips those and buyer_id. Ended participation is excluded from active
+  bids without inventing a winner. No missing provenance becomes is_demo:false.
+  next_cursor is null or the final Auction UUID. Unknown private fields or
+  another owner's row fail unavailable. The exact synthetic source fixture is
+  exercised under `tests/lanes/L06/communications/fixtures/`.
 - Orders `GET /v1/me/reservations?limit=100`: published allocation v1 buyer-only
   projection, exactly `{items:[{reservation_id,listing_id,buyer_id,
   state:'awaiting_payment',total_minor,currency,revision,expires_at,is_demo}],

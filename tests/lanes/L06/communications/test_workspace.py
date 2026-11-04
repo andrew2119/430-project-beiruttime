@@ -27,9 +27,14 @@ RESOURCE = '00000000-0000-0000-0000-000000000008'
 
 
 def bid(**changes):
-    return dict(auction_id=RESOURCE, listing_id=RESOURCE, buyer_id=OWNER,
-                status='leading', current_price_minor=16000, currency='USD',
-                revision=2, ends_at='2030-01-01T12:00:00Z', is_demo=True, **changes)
+    record = dict(id=RESOURCE, auction_id=RESOURCE, listing_id=RESOURCE, buyer_id=OWNER,
+                  currency='USD', opening_minor=10000, current_minor=16000, current_price_minor=16000,
+                  next_minimum_minor=17000, increment_bands=[{'from_minor': 0, 'step_minor': 1000}],
+                  starts_at='2030-01-01T10:00:00Z', ends_at='2030-01-01T12:00:00Z',
+                  server_time='2030-01-01T11:00:00Z', revision=2, accepted_sequence=2,
+                  rules_version='ordinary.v1', extension_policy='none.v1', high_value_minor=1000000,
+                  reserve_set=False, leader='Bidder masked', status='live', my_status='leading', next_action='review_bid')
+    return {**record, **changes}
 
 
 def reservation():
@@ -56,6 +61,8 @@ async def test_real_source_composition_never_invents_payment_or_cap():
     try:
         result = await compose(UUID(OWNER), 'private-token', 'request-6', auction, orders)
         assert result['bids']['items'][0]['status'] == 'leading'
+        assert 'is_demo' not in result['bids']['items'][0]
+        assert 'leader' not in result['bids']['items'][0]
         assert result['reservations']['items'][0]['state'] == 'awaiting_payment'
         assert result['reservations']['items'][0]['payment_available'] is False
         assert result['final_results_available'] is False
@@ -71,6 +78,49 @@ def assert_path(request, path):
 
 
 @pytest.mark.asyncio
+async def test_exact_published_auction_my_bids_wire_fixture():
+    payload = json.loads((Path(__file__).parent / 'fixtures/my-bids.v1.json').read_text())
+    owner = UUID(payload['items'][0]['buyer_id'])
+    auction = client('auction', payload)
+    orders = client('orders', {'items': [], 'next_cursor': None})
+    try:
+        result = await compose(owner, 'private-token', 'request-6', auction, orders)
+        summary = result['bids']['items'][0]
+        assert summary['status'] == 'outbid' and summary['current_price_minor'] == 410000
+        assert summary['auction_id'] == payload['items'][0]['auction_id']
+        assert 'is_demo' not in summary and 'buyer_id' not in summary
+    finally:
+        await auction.aclose()
+        await orders.aclose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('my_status', ['leading', 'outbid'])
+async def test_my_status_not_auction_lifecycle_drives_buyer_label(my_status):
+    auction = client('auction', {'items': [bid(my_status=my_status)], 'next_cursor': None})
+    orders = client('orders', {'items': [], 'next_cursor': None})
+    try:
+        result = await compose(UUID(OWNER), 'private-token', 'request-6', auction, orders)
+        assert result['bids']['items'][0]['status'] == my_status
+    finally:
+        await auction.aclose()
+        await orders.aclose()
+
+
+@pytest.mark.asyncio
+async def test_ended_participation_never_becomes_active_or_a_fabricated_winner():
+    auction = client('auction', {'items': [bid(status='ended', next_action='auction_ended')], 'next_cursor': None})
+    orders = client('orders', {'items': [], 'next_cursor': None})
+    try:
+        result = await compose(UUID(OWNER), 'private-token', 'request-6', auction, orders)
+        assert result['bids']['state'] == 'available' and result['bids']['items'] == []
+        assert result['final_results_available'] is False
+    finally:
+        await auction.aclose()
+        await orders.aclose()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize('payload', [
     {'items': [{**bid(), 'buyer_id': OTHER}], 'next_cursor': None},
     {'items': [{**bid(), 'private_maximum_minor': 20000}], 'next_cursor': None},
@@ -78,6 +128,9 @@ def assert_path(request, path):
     {'items': [{**bid(), 'status': 'won'}], 'next_cursor': None},
     {'items': [{**bid(), 'ends_at': '2030-01-01'}], 'next_cursor': None},
     {'items': [bid()] * 101, 'next_cursor': None},
+    {'items': [{**bid(), 'id': OTHER}], 'next_cursor': None},
+    {'items': [{**bid(), 'current_minor': 17000}], 'next_cursor': None},
+    {'items': [{**bid(), 'next_action': 'auction_ended'}], 'next_cursor': None},
 ])
 async def test_malformed_cross_owner_or_secret_source_fails_closed(payload):
     auction, orders = client('auction', payload), client('orders', {'items': [], 'next_cursor': None})

@@ -38,10 +38,12 @@ async def compose(owner: UUID, token: str, request_id: str, auction, orders):
         _source(orders, '/v1/me/reservations?limit=100', Reservations, owner, headers),
     )
     if isinstance(bids, Bids):
-        bids = {'state': 'available', 'next_cursor': bids.next_cursor, 'items': [
-            {**item.model_dump(mode='json', exclude={'buyer_id'}),
+        bids = {'state': 'available', 'next_cursor': str(bids.next_cursor) if bids.next_cursor else None, 'items': [
+            {'auction_id': str(item.auction_id), 'listing_id': str(item.listing_id),
+             'status': item.my_status, 'current_price_minor': item.current_price_minor,
+             'currency': item.currency, 'revision': item.revision, 'ends_at': item.ends_at.isoformat(),
              'next_action': {'kind': 'view_auction', 'href': '/watches/' + str(item.listing_id)}}
-            for item in bids.items]}
+            for item in bids.items if item.status != 'ended']}
     if isinstance(reservations, Reservations):
         reservations = {'state': 'available', 'next_cursor': str(reservations.next_cursor) if reservations.next_cursor else None, 'items': [
             {**item.model_dump(mode='json', exclude={'buyer_id'}),
