@@ -1,7 +1,7 @@
 # Buyer workspace v1
 
 `GET /v1/buyer-workspace` on Communications requires a verified, current buyer
-session. Owner comes from the live session, never a URL/header/body. Responses
+session in individual context; represented-business context is denied. Owner comes from the live session, never a URL/header/body. Responses
 are no-store and omit other buyers, private caps, credentials and evidence.
 Auction and Orders use independent bounded clients; malformed/cross-owner or
 unavailable sources become unavailable sections, never empty-success or paid.
@@ -34,8 +34,10 @@ under `packages/contracts-comms/buyer-workspace/`.
   Unknown-payment/expired holds stay in Orders, never masquerade as ready.
 
 The output strips buyer_id and adds relative review actions constructed locally.
-`/checkout?order=<reservation_id>` links to the owning review workspace (confirm
-its resume behavior in connected integration). Payment/delivery remain false.
+`/checkout/<reservation_id>` links to the owning order-detail screen. The Orders
+projection uses its order ID as reservation_id; the general `/checkout` screen
+starts/reconciles a request and does not accept an order query parameter.
+Payment/delivery remain false.
 Unacknowledged/pending requests stay in Checkout, not invented as orders. A
 non-null cursor states that more source activity exists, not a complete archive.
 

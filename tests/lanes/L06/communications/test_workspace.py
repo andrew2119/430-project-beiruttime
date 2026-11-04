@@ -166,7 +166,7 @@ async def test_reservation_projection_is_owner_private_and_preserves_sample_labe
         result = await compose(UUID(OWNER), 'private-token', 'request-6', auction, orders)
         items = result['reservations']['items']
         assert len(items) == 1 and items[0]['reservation_id'] == RESOURCE
-        assert items[0]['next_action']['href'] == '/checkout?order=' + RESOURCE
+        assert items[0]['next_action']['href'] == '/checkout/' + RESOURCE
         assert items[0]['is_demo'] is True
         assert all(private not in json.dumps(items) for private in ['buyer_id', 'seller_id', 'watch_id', 'organization_id'])
     finally:

@@ -9,6 +9,7 @@ export function useBuyerSession() {
     signedIn:Boolean(session),
     fingerprint:session?.access_fingerprint??null,
     subjectId:session?.principal.actor.subject_id??null,
+    organizationId:session?.principal.actor.organization_id??null,
     roles:session?.principal.roles??[],
   };
 }

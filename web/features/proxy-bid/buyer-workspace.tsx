@@ -12,7 +12,7 @@ import ar from './ar.json';
 export default function BuyerWorkspace() {
   const locale=useLocale(), t=locale==='ar'?ar:en;
   const session=useBuyerSession();
-  const permitted=Boolean(session.state==='authenticated'&&session.signedIn&&session.fingerprint&&session.roles.includes('buyer'));
+  const permitted=Boolean(session.state==='authenticated'&&session.signedIn&&session.fingerprint&&!session.organizationId&&session.roles.includes('buyer'));
   const query=useQuery({queryKey:['L06','buyer-workspace',session.fingerprint], enabled:permitted,
     queryFn:({signal})=>authenticatedRequest<Workspace>('/api/web/v1/communications/v1/buyer-workspace',{signal,accessFingerprint:session.fingerprint!}),refetchInterval:15000});
   const date=(instant:string)=>new Intl.DateTimeFormat(locale==='ar'?'ar-LB':'en-LB',{
@@ -46,7 +46,7 @@ export default function BuyerWorkspace() {
               <BidiReference>{reservation.reservation_id}</BidiReference>
               <p>{reservation.total_minor===null?t.unknownTotal:<BidiReference>{formatMinor(reservation.total_minor,reservation.currency,locale)}</BidiReference>}</p>
               <p>{reservation.expires_at?<>{t.expires} <time dateTime={reservation.expires_at}>{date(reservation.expires_at)}</time></>:t.unknownExpiry}</p>
-              <Link className="button button-secondary" href={`/${locale}/checkout?order=${encodeURIComponent(reservation.reservation_id)}`}>{t.reviewReservation}</Link>
+              <Link className="button button-secondary" href={`/${locale}/checkout/${encodeURIComponent(reservation.reservation_id)}`}>{t.reviewReservation}</Link>
               <p className="buyer-note">{t.paymentUnavailable}</p>
             </li>)}</ul>}
           {data.reservations.next_cursor&&<p>{t.more}</p>}

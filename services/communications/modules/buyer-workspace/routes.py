@@ -44,7 +44,8 @@ async def workspace(request: Request, verified=Depends(require_principal)):
     if isinstance(principal, Unavailable):
         raise HTTPException(503)
     if (str(principal.actor.subject_id) != verified.subject or
-            principal.actor.session_id != verified.session_id or 'buyer' not in principal.roles):
+            principal.actor.session_id != verified.session_id or principal.actor.organization_id is not None or
+            'buyer' not in principal.roles):
         raise AccessDenied('Buyer session required')
     return await compose(principal.actor.subject_id, token, request.state.request_id,
                          upstreams['auction'], upstreams['orders'])

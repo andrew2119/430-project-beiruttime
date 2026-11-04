@@ -24,7 +24,7 @@ function MaximumFormForBuyer({auctionId,revision,currency,locale,onRefresh,getQu
   const [state,setState]=useState<'idle'|'quoting'|'quoted'|'quoteUnavailable'|'quoteExpired'|'sending'|'acknowledged'|'invalidAmount'|'denied'|'stale'|'uncertain'|'offline'>('idle');
   const intent=useRef<MaximumIntent|null>(null),generation=useRef(0),cancellation=useRef<AbortController|null>(null);
   const review=useRef<{key:string;quote:MaximumQuote;acknowledged:boolean}|null>(null);
-  const allowed=Boolean(session.state==='authenticated'&&session.signedIn&&session.subjectId&&session.fingerprint&&session.roles.includes('buyer'));
+  const allowed=Boolean(session.state==='authenticated'&&session.signedIn&&session.subjectId&&session.fingerprint&&!session.organizationId&&session.roles.includes('buyer'));
   useEffect(()=>()=>{generation.current++;cancellation.current?.abort();intent.current=null;review.current=null;},[]);
   async function submit() {
     if(!allowed||state==='sending'||state==='quoting'||!session.fingerprint||!getQuote) return;
@@ -103,12 +103,14 @@ export default function ProxyBidSlot({locale,resourceId}:SlotContext) {
   const validPage=Array.isArray(query.data?.items)&&query.data.items.length<=100;
   const auction=validPage?query.data!.items[0]:undefined;
   if(!resourceId||(!auction&&query.isSuccess&&validPage)) return null;
-  if(auction&&typeof auction.id==='string'&&auction.listing_id===resourceId&&auction.status==='live'&&(auction.currency==='USD'||auction.currency==='LBP')&&Number.isSafeInteger(auction.revision)&&auction.revision>0) {
+  const canonical=auction&&typeof auction.id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(auction.id)&&
+    auction.listing_id===resourceId&&(auction.currency==='USD'||auction.currency==='LBP')&&Number.isSafeInteger(auction.revision)&&auction.revision>0;
+  if(canonical&&auction.status==='live') {
     return <MaximumForm auctionId={auction.id} revision={auction.revision} currency={auction.currency} locale={locale}
       signInNext={`/buyer/auctions/${resourceId}`} getQuote={(amount,signal)=>previewMaximum(auction,amount,{subjectId:session.subjectId!,accessFingerprint:session.fingerprint!},signal)}
       onRefresh={()=>{void query.refetch();void cache.invalidateQueries({queryKey:['L06','buyer-workspace']});}}/>;
   }
-  const message=query.isPending?t.loading:auction?.status==='scheduled'?t.auctionScheduled:auction?.status==='ended'?t.auctionEnded:t.unavailable;
+  const message=query.isPending?t.loading:canonical&&auction.status==='scheduled'?t.auctionScheduled:canonical&&auction.status==='ended'?t.auctionEnded:t.unavailable;
   return <Card className="proxy-panel"><h2>{t.privateMaximum}</h2><p>{t.privacy}</p><p role="status">{message}</p>
     {query.isError&&<Button onClick={()=>void query.refetch()}>{t.retry}</Button>}</Card>;
 }

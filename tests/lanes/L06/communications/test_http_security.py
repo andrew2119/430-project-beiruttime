@@ -34,9 +34,10 @@ def token(private, **changes):
 
 
 @asynccontextmanager
-async def boundary(public, *, subject=OWNER, lineage='lineage-6', roles=None, identity_status=200):
+async def boundary(public, *, subject=OWNER, lineage='lineage-6', roles=None, organization=None, identity_status=200):
     calls = []
-    principal = {'actor': {'subject_id': subject, 'session_id': lineage}, 'roles': roles if roles is not None else ['buyer']}
+    principal = {'actor': {'subject_id': subject, 'session_id': lineage, 'organization_id': organization},
+                 'roles': roles if roles is not None else ['buyer']}
     def upstream(name):
         def handle(request):
             calls.append(name)
@@ -69,7 +70,7 @@ async def test_current_buyer_session_reaches_only_owner_private_sources(signing_
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('changes', [{'subject': OTHER}, {'lineage': 'revoked-lineage'}, {'roles': ['operator']}, {'roles': ['private_seller']}])
+@pytest.mark.parametrize('changes', [{'subject': OTHER}, {'lineage': 'revoked-lineage'}, {'roles': ['operator']}, {'roles': ['private_seller']}, {'organization': OTHER}])
 async def test_signature_never_substitutes_for_current_subject_lineage_or_role(signing_keys, changes):
     private, public = signing_keys
     async with boundary(public, **changes) as (http, calls):

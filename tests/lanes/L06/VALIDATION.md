@@ -19,24 +19,27 @@ Neither module needs an artificial migration or separate outbox.
   foundation copies were first refreshed to main. No foundation changes are
   contributed by this lane. Pricing's published quote contract remains an
   uncommitted dependency until its owning merge.
-- Owned Python suite: **63 passed**, including real ASGI/JWT boundary checks.
+- Owned Python suite: **64 passed**, including real ASGI/JWT boundary checks.
   Ruff passes for both modules and owned tests. Missing/expired/wrong-purpose
-  tokens, fresh Identity subject/session/role mismatch and 401/403, cross-owner
+  tokens, fresh Identity subject/session/role mismatch, represented-business
+  context and 401/403, cross-owner
   projection rows and malformed success responses fail closed. Dependency
   failures return unavailable, never fake empty activity.
-- Docker module proofs passed using the existing proof image. Latest
+- Docker module proofs passed using the existing proof image (latest
+  Communications module suite: **45 passed**). Latest
   Communications proof mounted main's current runtime read-only. Containers are
   retained stopped; no new images or shared-cache pruning under the disk rule.
-- **9 actual Auction SQL integration tests passed** against restricted disposable
-  databases using the existing Auction test image and main's mounted runtime.
-  The registered L06 maximum route persisted a 450000 cap and responded at
+- **72 actual Auction SQL regression tests passed**, including 9 proxy
+  integration cases, against restricted disposable databases using the existing
+  Auction test image and main's mounted runtime. The registered L06 maximum
+  route persisted a 450000 cap and responded at
   430000 to a 420000 manual bid. Other tests cover earliest equal caps, cap-bounded
   partial increments, leading-cap raises without price transitions, missing hooks,
   non-increasing caps, and no private cap in history/outbox. The owner suite's
   pure hook fixture is byte-identical to the installed L06 hook; the registered
   route case explicitly loads L06. Other-domain dependencies in this SQL suite
   are versioned transport fixtures, not a full live marketplace proof.
-- Owned web suite: **63 passed, 1 opt-in connected test skipped**. Covers exact
+- Owned web suite: **70 passed, 1 opt-in connected test skipped**. Covers exact
   Arabic/Persian digit parsing, safe money bounds, private cache partitions,
   signed-out/restoring/unavailable states, role denial, cancellation on account
   switch, retained uncertain command keys/body, reviewed fee snapshots and
@@ -50,8 +53,12 @@ Neither module needs an artificial migration or separate outbox.
   databases: two labeled sample buyers, retained owner quote and review,
   other-buyer denial, bid quote denied purchase-only reservation authority, and
   session logout. The proposed subject was explicitly NOT an existing Auction;
-  this proves private non-binding fee preview only. Repeat after the latest
-  access-fingerprint binding change and service integration.
+  this proves private non-binding fee preview only. Repeated successfully after
+  the final access-fingerprint binding change using isolated real Identity and
+  Pricing runtimes, existing images and restricted disposable databases.
+  Owner review, other-buyer denial and purchase-only rejection passed again.
+  Owned runtimes stopped and test databases were released; no shared service or
+  ordinary domain database was altered.
 - Chrome production checks covered both `/buyer` and
   `/buyer/auctions/[listingId]`, EN/AR, light/dark, desktop 1440x900/DPR1 and
   phone **actual 390x844/DPR3**, sixteen boundary cases. Phone emulation used
@@ -66,14 +73,17 @@ Neither module needs an artificial migration or separate outbox.
 
 ## Remaining connected acceptance
 
-- Repeat production browser matrix after the final session-state changes.
+- Latest session-state changes passed another sixteen production Chrome
+  boundary cases with actual 390px phone emulation, EN/AR and both themes.
+  Identity was unavailable: explicit retry rendered, with no cached private data.
 - Real two-buyer browser competition, fresh fee review, server admission,
   public-safe stream/outbid delivery, restart/concurrency and stale/self/late
   rejection must be checked together with all source services. SQL admission
   proofs above are not a replacement for the full connected demo.
 - Exercise actual `/v1/my-bids` and `/v1/me/reservations` responses together with
-  Communications and verify the `/checkout?order=<id>` resume link for a real,
-  unexpired awaiting-payment reservation. Auction lifecycle and buyer status
+  Communications and follow `/checkout/<id>` for a real, unexpired
+  awaiting-payment reservation. Current main's order-detail route and projection
+  confirm this ID binding; the obsolete ignored query parameter was removed. Auction lifecycle and buyer status
   remain distinct; ended participation is not a winner. Missing provenance is
   not silently labeled production content.
 - No final-results, payment or delivery action is fabricated. Sample fee policy

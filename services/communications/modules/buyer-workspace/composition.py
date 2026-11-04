@@ -47,7 +47,7 @@ async def compose(owner: UUID, token: str, request_id: str, auction, orders):
     if isinstance(reservations, Reservations):
         reservations = {'state': 'available', 'next_cursor': str(reservations.next_cursor) if reservations.next_cursor else None, 'items': [
             {**item.model_dump(mode='json', exclude={'buyer_id'}),
-             'next_action': {'kind': 'review_reservation', 'href': '/checkout?order=' + str(item.reservation_id)},
+             'next_action': {'kind': 'review_reservation', 'href': '/checkout/' + str(item.reservation_id)},
              'payment_available': False, 'delivery_available': False}
             for item in reservations.items]}
     return {'version': 1, 'as_of': datetime.now(timezone.utc).isoformat(),
