@@ -70,7 +70,11 @@ async def workspace():
                     "permissions": [],
                     "organizations": [str(org)],
                     "organization_grants": [
-                        {"organization_id": str(org), "roles": ["dealer"], "permissions": ["identity.listings.publish"]}
+                        {
+                            "organization_id": str(org),
+                            "roles": ["dealer"],
+                            "permissions": ["business.stock.write", "identity.listings.publish"],
+                        }
                     ],
                 },
             )

@@ -68,7 +68,7 @@ def incomplete(facts: WatchFacts, photo_count: int) -> list[str]:
         for key in ("brand", "model", "reference", "year", "condition", "location", "price_minor")
         if not getattr(facts, key)
     ]
-    if not facts.component_wear:
+    if not any(value.strip() for value in facts.component_wear.values()):
         missing.append("component_wear")
     if not facts.ownership_confirmed:
         missing.append("ownership_confirmed")

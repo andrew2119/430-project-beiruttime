@@ -60,7 +60,7 @@ async def workspace(request: Request):
     if isinstance(person, Unavailable):
         raise PublicError("identity_unavailable", "Identity is temporarily unavailable.", status=503)
     if person.actor.organization_id:
-        require_scope(person, "identity.listings.publish", person.actor.organization_id)
+        require_scope(person, "business.stock.write", person.actor.organization_id)
 
     async def section(service, path):
         response = await clients(request.app)[service].request(

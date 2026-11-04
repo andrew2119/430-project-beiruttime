@@ -17,6 +17,31 @@ async def create(body: CreateDraft, request: Request):
     kind = seller_scope(person)
     if body.demo_key and (os.getenv("BT_ENVIRONMENT") != "demo" or "catalog.demo.import" not in person.permissions):
         raise AccessDenied("Demo import is not enabled for this actor/environment")
+    label = ("Demonstration " if body.demo_key else "") + "private seller"
+    if person.actor.organization_id:
+        business = await upstream(request, "identity", "GET", f"/v1/businesses/{person.actor.organization_id}")
+        if (
+            not isinstance(business, dict)
+            or business.get("id") != str(person.actor.organization_id)
+            or business.get("kind") not in ("dealer", "brand")
+            or not isinstance(business.get("capabilities"), list)
+            or not isinstance(business.get("public_name"), str)
+            or not business["public_name"].strip()
+        ):
+            raise PublicError(
+                "identity_unavailable", "Official business details are temporarily unavailable.", status=503
+            )
+        if (
+            business.get("state") != "active"
+            or business.get("platform_onboarded") is not True
+            or business.get("authenticated_business") is not True
+            or "sales" not in business.get("capabilities", [])
+        ):
+            raise AccessDenied("An active official sales business is required")
+        kind = business["kind"]
+        label = ("Demonstration " if body.demo_key or business.get("sample") else "") + str(
+            business.get("public_name") or kind
+        )[:160]
     key = command_key(request)
     scope = f"create:{person.actor.subject_id}:{person.actor.organization_id}"
     payload = body.model_dump(mode="json")
@@ -33,8 +58,7 @@ async def create(body: CreateDraft, request: Request):
             person.actor.subject_id,
             person.actor.organization_id,
             kind,
-            ("Demonstration " if body.demo_key else "")
-            + ("private seller" if kind == "private" else "onboarded " + kind),
+            label,
             uuid4(),
             body.facts.model_dump_json(),
             bool(body.demo_key),

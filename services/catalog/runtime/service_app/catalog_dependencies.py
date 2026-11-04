@@ -63,12 +63,11 @@ async def principal(request):
 def seller_scope(person, permission=None):
     org = person.actor.organization_id
     if org:
-        require_scope(person, permission or "identity.listings.publish", org)
-        grants = next((g for g in person.organization_grants if g.organization_id == org), None)
-        role = next((r for r in ("brand", "dealer") if grants and r in grants.roles), None)
-        if not role:
-            raise AccessDenied("An official business grant is required")
-        return role
+        require_scope(person, "business.stock.write", org)
+        if permission:
+            require_scope(person, permission, org)
+        # Resolve official kind from Identity's public business DTO, not a job title.
+        return None
     # Any signed-in individual may prepare a private draft; publication alone
     # requires current private-seller approval from Identity.
     if permission:
@@ -82,7 +81,7 @@ def assert_owner(row, person):
     if row["organization_id"]:
         if row["organization_id"] != person.actor.organization_id:
             raise AccessDenied("Organization scope differs")
-        require_scope(person, "identity.listings.publish", row["organization_id"])
+        require_scope(person, "business.stock.write", row["organization_id"])
     elif row["owner_subject_id"] != person.actor.subject_id or person.actor.organization_id:
         raise AccessDenied("Listing ownership differs")
 

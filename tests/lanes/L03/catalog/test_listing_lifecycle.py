@@ -53,7 +53,11 @@ async def api(database_url, monkeypatch):
             "permissions": [],
             "organizations": [str(org)],
             "organization_grants": [
-                {"organization_id": str(org), "roles": ["dealer"], "permissions": ["identity.listings.publish"]}
+                {
+                    "organization_id": str(org),
+                    "roles": ["dealer"],
+                    "permissions": ["business.stock.write", "identity.listings.publish"],
+                }
             ],
         },
         "wrong_org": {
@@ -62,7 +66,11 @@ async def api(database_url, monkeypatch):
             "permissions": [],
             "organizations": [str(other_org)],
             "organization_grants": [
-                {"organization_id": str(org), "roles": ["dealer"], "permissions": ["identity.listings.publish"]}
+                {
+                    "organization_id": str(org),
+                    "roles": ["dealer"],
+                    "permissions": ["business.stock.write", "identity.listings.publish"],
+                }
             ],
         },
     }
@@ -77,6 +85,22 @@ async def api(database_url, monkeypatch):
         if fail.get(dependency):
             return httpx.Response(503)
         if dependency == "identity":
+            if request.url.path.startswith("/v1/businesses/"):
+                return httpx.Response(
+                    200,
+                    json={
+                        "id": str(org),
+                        "public_name": "Sample dealer",
+                        "kind": "dealer",
+                        "capabilities": ["sales"],
+                        "state": "active",
+                        "revision": 1,
+                        "sample": True,
+                        "platform_onboarded": True,
+                        "authenticated_business": True,
+                        "independent_watch_authentication_required": False,
+                    },
+                )
             name = request.headers.get("Authorization", "")[7:]
             return httpx.Response(200, json=tokens[name]) if name in tokens else httpx.Response(401)
         if dependency == "pricing":
@@ -262,6 +286,16 @@ async def test_incomplete_draft_can_resume_but_not_publish(api):
     assert not api.calls
 
 
+async def test_empty_component_notes_remain_an_incomplete_draft(api):
+    value = facts()
+    value["component_wear"] = {"case": "   "}
+    row = await draft(api, value=value)
+    row = (await photo(api, row))["listing"]
+    answer = await publish(api, row)
+    assert answer.status_code == 422 and "component_wear" in answer.json()["error"]["details"]["fields"]
+    assert not api.calls
+
+
 async def test_modified_watch_requires_explicit_components(api):
     value = facts()
     value["modified"] = True
@@ -340,6 +374,15 @@ async def test_media_private_cross_case_and_bad_image_denied(api):
             )
             == 1
         )
+
+
+async def test_business_kind_is_not_inferred_from_staff_job_title(api):
+    api.tokens["dealer"]["organization_grants"][0]["roles"] = ["sales_staff"]
+    row = await draft(api, "dealer")
+    assert row["seller_type"] == "dealer" and "Sample dealer" in row["seller_label"]
+    api.tokens["dealer"]["organization_grants"][0]["permissions"] = ["identity.listings.publish"]
+    answer = await api.client.post("/v1/seller/listings", json={}, headers=headers("dealer"))
+    assert answer.status_code == 403
 
 
 async def test_business_permissions_never_union_across_organizations(api):
