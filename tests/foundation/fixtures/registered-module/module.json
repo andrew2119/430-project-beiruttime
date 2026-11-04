@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "id": "L01.foundation-ledger-fixture",
+  "migrations": ["L01_0001_registered.sql"],
+  "routes": []
+}
