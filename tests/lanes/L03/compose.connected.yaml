@@ -1,0 +1,17 @@
+# Local proof only: reuse the existing Catalog image with current owned modules
+# and main's shared packages. Does not recreate another domain's authority.
+services:
+  catalog:
+    volumes:
+      - ./services/catalog/runtime/service_app:/app/service_app:ro
+      - ./services/catalog/modules:/app/modules:ro
+      - ./packages/runtime/src/bt_runtime:/opt/venv/lib/python3.11/site-packages/bt_runtime:ro
+      - ./packages/events/src/bt_events:/opt/venv/lib/python3.11/site-packages/bt_events:ro
+      - ./packages/contracts-catalog/listings:/opt/domain-contracts/bt_contracts/catalog/listings:ro
+      - ./demo/images-manifest.json:/app/demo/images-manifest.json:ro
+      - ./demo/listings.json:/app/demo/listings.json:ro
+      - ./web/public/demo/watches:/app/demo/watches:ro
+  catalog-migrate:
+    volumes:
+      - ./services/catalog/modules:/app/modules:ro
+      - ./packages/runtime/src/bt_runtime:/opt/venv/lib/python3.11/site-packages/bt_runtime:ro
