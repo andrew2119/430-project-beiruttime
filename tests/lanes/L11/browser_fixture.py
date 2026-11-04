@@ -4,28 +4,18 @@ No ordinary domain database or shared runtime is changed. Real-Accounts mode pro
 buyer sessions and owner-private UI persistence; it does not certify business onboarding.
 """
 import asyncio
-from contextlib import AsyncExitStack, asynccontextmanager, contextmanager
+from contextlib import AsyncExitStack, contextmanager
 import os
 import signal
 import httpx
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from bt_runtime.testing import database_access
 from .conftest import IdentityFixture, module_stack, BRAND
 from .service_operations_helpers import headers
 from .service_operations_tests_data import profile, option
 from .real_accounts import accounts_routes
-
-
-@asynccontextmanager
-async def disposable():
-    fixture = database_access.__wrapped__()
-    access = await anext(fixture)
-    try:
-        yield access
-    finally:
-        await fixture.aclose()
+from .testing_database import disposable_database
 
 
 class ProofServer(uvicorn.Server):
@@ -41,11 +31,11 @@ async def main():
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
     async with AsyncExitStack() as stack:
-        directory_db = await stack.enter_async_context(disposable())
-        catalog_db = await stack.enter_async_context(disposable())
+        directory_db = await stack.enter_async_context(disposable_database())
+        catalog_db = await stack.enter_async_context(disposable_database())
         accounts_app = None
         if os.environ.get('L11_REAL_ACCOUNTS_PROOF') == '1':
-            accounts_db = await stack.enter_async_context(disposable())
+            accounts_db = await stack.enter_async_context(disposable_database())
             accounts_app = await stack.enter_async_context(accounts_routes(accounts_db))
         dc, directory_app, identity = await stack.enter_async_context(module_stack(
             'directory',directory_db.runtime_url,directory_db.owner_url,accounts_app))

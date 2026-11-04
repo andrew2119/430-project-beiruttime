@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "lane": "L00",
+  "contracts": [
+    {"namespace":"core.v1","path":"packages/contracts-core/src/index.ts","fixtures":["contracts/fixtures/event.v1.json","contracts/fixtures/error.v1.json","contracts/fixtures/core.v1.json"]}
+  ]
+}

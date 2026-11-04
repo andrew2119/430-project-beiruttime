@@ -20,6 +20,7 @@ async def prove_signed_delivery(app, monkeypatch, receiver_status=204):
     verified = []
     def receive(request):
         stop.set()
+        assert request.method=='POST' and request.url.path=='/internal/v1/inbox/events'
         claims = jwt.decode(request.headers['Authorization'][7:], private.public_key(), algorithms=['RS256'],
             issuer=app.state.settings.auth_issuer, audience='communications')
         envelope = json.loads(request.content)

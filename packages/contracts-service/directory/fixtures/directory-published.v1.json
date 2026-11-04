@@ -1,0 +1,13 @@
+{
+  "specversion": "1.0",
+  "id": "00000000-0011-4000-8000-000000001001",
+  "type": "service.directory-published.v1",
+  "source": "service-operations",
+  "subject": "00000000-0011-4000-8000-000000000001",
+  "time": "2026-11-04T08:00:00Z",
+  "request_id": "sample-care-event-v1",
+  "data": {
+    "resource_id": "00000000-0011-4000-8000-000000000001",
+    "revision": 1
+  }
+}

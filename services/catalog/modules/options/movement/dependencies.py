@@ -28,6 +28,18 @@ class OfficialBusiness(BaseModel):
     independent_watch_authentication_required: Literal[False] = False
 
 
+class InboxDestination:
+    """Communications Events V1: adapt only the relay path, never its bounded transport."""
+    def __init__(self, client):
+        self.client = client
+        self.timeout = client.timeout
+
+    async def request(self, method, path, **kwargs):
+        if method != 'POST' or path != '/internal/v1/events':
+            raise ValueError('Only the registered outbox event operation is supported')
+        return await self.client.request(method, '/internal/v1/inbox/events', **kwargs)
+
+
 def identity_for(app):
     if not hasattr(app.state, 'l11_identity'):
         app.state.l11_identity = DependencyClient('identity', os.getenv('IDENTITY_API_URL', 'http://identity:8000'), timeout=0.5, concurrency=4)
@@ -90,7 +102,7 @@ async def run(app, stop):
         now = datetime.now(timezone.utc)
         token = jwt.encode({'iss': app.state.settings.auth_issuer, 'sub': app.state.settings.service_name, 'aud': destination, 'type': 'service', 'iat': now, 'exp': now + timedelta(seconds=60)}, key, algorithm='RS256')
         return {'Authorization': 'Bearer ' + token}
-    relay = OutboxRelay(app.state.pool, {'communications': communications}, headers=headers, batch_size=8, concurrency=2)
+    relay = OutboxRelay(app.state.pool, {'communications': InboxDestination(communications)}, headers=headers, batch_size=8, concurrency=2)
     try:
         # No configured signer means pending intent, not a competing relay that steals retries.
         if not os.getenv('BT_SERVICE_AUTH_PRIVATE_KEY', ''):
