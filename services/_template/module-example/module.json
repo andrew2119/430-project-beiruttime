@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "id": "L01.example",
+  "dependencies": ["fastapi", "asyncpg"],
+  "routes": ["routes.py:router"],
+  "authorization": "authorization.py:authorize",
+  "migrations": ["migrations/L01_0001_example.sql"],
+  "fixtures": {"demo": "fixtures.py:seed"}
+}

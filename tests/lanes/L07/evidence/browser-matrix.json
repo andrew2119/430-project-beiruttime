@@ -1,6 +1,6 @@
 {
-  "checked_at_utc": "2026-11-04T07:29:31.593978+00:00",
-  "environment": "Isolated real Identity, Pricing and Communications; frozen Identity browser source and actual feature/shell components",
+  "checked_at_utc": "2026-11-04T09:44:29.925891+00:00",
+  "environment": "Integrated production web on main 6c97050; canonical Account registration, logout/sign-in and Consent navigation; isolated real Identity, Pricing and Communications; dedicated IPv4 origin",
   "observations": [
     {
       "route": "/buying",

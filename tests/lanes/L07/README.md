@@ -4,9 +4,10 @@
 
 - `BT_TEST_LANE=L07 python3 scripts/test-services.py pricing communications`: isolated PostgreSQL databases/roles; Docker domain and foundation proofs.
 - `./infra/foundation/dev.sh pricing communications`: build real production images, apply module-local migrations, start the two runtime owners. Preserve shared PostgreSQL; stop only these two containers after a local run.
-- `pnpm --filter beirut-time-web exec tsc --noEmit -p ../tests/lanes/L07/tsconfig.json`: compile the L07 screens against the frozen Identity session type fixture while L01 has not been integrated.
+- `pnpm --filter beirut-time-web build`: integrated production build and TypeScript against the merged canonical Identity provider. The scoped `tsconfig.json` fixture remains useful only for contract-isolation checks.
 - `pnpm --filter beirut-time-web exec vitest run --config "$PWD/tests/lanes/L07/vitest.config.ts" --root "$PWD"`: exact localized money parsing/display.
-- After L01 integration: full web typecheck/build/lint/unit tests and `bash tests/lanes/L07/browser-matrix.sh` against a local real app. It uses the named `bt-l07` Chrome session, requires prior real Account sign-in and records 24 route/locale/theme/width geometry observations and screenshots under ignored `.runtime/`.
+- `BT_BROWSER_ORIGIN=http://127.0.0.1:3177 bash tests/lanes/L07/browser-matrix.sh` against the integrated production app: canonical Account registration, logout/sign-in and Consent navigation, then 24 authenticated route/locale/theme/width geometry observations under ignored `.runtime/`. It creates fresh synthetic buyers and saves real previews/drafts. Use a dedicated named Chrome session and stop it afterward. Screenshot output paths must be checked separately.
+- Check the chosen port with `lsof -nP -iTCP:3177 -sTCP:LISTEN`, bind explicitly to `127.0.0.1`, and configure exactly the same origin in the isolated Identity `BT_ALLOWED_WEB_ORIGINS`/`BT_WEB_ORIGIN` and web `BT_PUBLIC_WEB_ORIGINS`. Do not stop another process using a conflicting port.
 
 No fixture grants authority or fabricates a successful transaction. HTTPX transports in service tests model independently versioned dependencies, and are never enabled by the application. The production application must be tested with the real Identity, Pricing, Communications and Orders APIs before final acceptance.
 

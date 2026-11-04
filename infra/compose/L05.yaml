@@ -1,0 +1,26 @@
+services:
+  auction:
+    image: beirut-time/auction:local
+    build:
+      context: .
+      dockerfile: services/auction/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/auction
+    environment:
+      IDENTITY_URL: http://identity:8000
+      CATALOG_URL: http://catalog:8000
+      PRICING_URL: http://pricing:8000
+      ORDERS_URL: http://orders:8000
+      COMMUNICATIONS_URL: http://communications:8000
+      BT_AUTH_PUBLIC_KEY: ${BT_AUTH_PUBLIC_KEY:-}
+      BT_SERVICE_AUTH_PUBLIC_KEY: ${BT_SERVICE_AUTH_PUBLIC_KEY:-}
+      BT_SERVICE_AUTH_PRIVATE_KEY: ${BT_AUCTION_SERVICE_AUTH_PRIVATE_KEY:-}
+      AUCTION_HIGH_VALUE_USD_MINOR: '1000000'
+      AUCTION_HIGH_VALUE_LBP_MINOR: '89500000000'
+  auction-migrate:
+    image: beirut-time/auction:local
+    build:
+      context: .
+      dockerfile: services/auction/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/auction

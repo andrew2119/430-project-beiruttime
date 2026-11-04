@@ -9,12 +9,27 @@ for width in 1440 390; do
   if [ "$width" = 390 ]; then chrome-devtools-axi emulate --viewport '390x844x3,mobile,touch' >/dev/null; else chrome-devtools-axi emulate --viewport '1440x900x1' >/dev/null; fi
   # Device emulation may change a browser's session binding. Create a fresh, real
   # synthetic buyer per viewport; this also proves prior-user private cache purge.
-  chrome-devtools-axi open "$base/en/account" >/dev/null
+  chrome-devtools-axi open "$base/en/account?next=%2Fprices" >/dev/null
   chrome-devtools-axi run <<'JS'
-await page.eval(()=>{document.querySelector('input[name=email]').value=`sample-l07-matrix-${Date.now()}@example.invalid`;document.querySelector('input[name=password]').value=`Sample-validation-${Date.now()}!`;document.querySelector('form button').click();});
-let status='';for(let i=0;i<50;i++){await page.wait(100);status=await page.eval(()=>document.querySelector('[role=status]')?.textContent??'');if(status)break;}
-if(!status.includes('Signed in'))throw new Error('Real matrix buyer registration failed');
-await page.open((await page.eval(()=>location.origin))+'/en/prices');
+const origin=await page.eval(()=>location.origin);
+for(let i=0;i<60;i++){if(await page.eval(()=>!!document.querySelector('.identity-tabs')))break;await page.eval(()=>[...document.querySelectorAll('.identity-page button')].find(button=>button.textContent==='Sign out')?.click());await page.wait(100);}
+await page.eval(()=>[...document.querySelectorAll('.identity-tabs button')].find(button=>button.textContent==='Create an account').click());
+await page.wait('input[name=display_name]');
+const email=`sample-l07-matrix-${Date.now()}@example.invalid`,password=`Sample-validation-${Date.now()}!`;
+await page.eval(`()=>{const set=(name,value)=>{const input=document.querySelector('input[name='+name+']');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));};set('display_name','Sample Buying Check');set('email',${JSON.stringify(email)});set('password',${JSON.stringify(password)});document.querySelector('.identity-form button').click();}`);
+for(let i=0;i<60;i++){if(await page.eval(()=>!!document.querySelector('.l07-form')))break;await page.wait(100);}
+if(!await page.eval(()=>location.pathname==='/en/prices'&&!!document.querySelector('.l07-form')))throw new Error('Canonical registration did not restore its return path');
+await page.open(origin+'/en/account?next=%2Fprices');
+await page.wait('.identity-actions');
+await page.eval(()=>[...document.querySelectorAll('.identity-page button')].find(button=>button.textContent==='Sign out').click());
+await page.wait('.identity-tabs');
+await page.eval(`()=>{const set=(name,value)=>{const input=document.querySelector('input[name='+name+']');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));};set('email',${JSON.stringify(email)});set('password',${JSON.stringify(password)});document.querySelector('.identity-form button').click();}`);
+for(let i=0;i<60;i++){if(await page.eval(()=>!!document.querySelector('.l07-form')))break;await page.wait(100);}
+if(!await page.eval(()=>location.pathname==='/en/prices'&&!!document.querySelector('.l07-form')))throw new Error('Canonical sign-in did not restore its return path');
+// Real consent UI, without inventing a Brand Request or submitting an unbound grant.
+await page.open(origin+'/en/consent');await page.wait('input[name=request_id]');
+if(!await page.eval(()=>!!document.querySelector('.consent-choices')))throw new Error('Canonical consent view did not load');
+await page.open(origin+'/en/prices');
 for(let i=0;i<50;i++){if(await page.eval(()=>!!document.querySelector('input[name=subject]')))break;await page.wait(100);}
 await page.eval(()=>{const set=(name,value)=>{const input=document.querySelector(`input[name=${name}]`);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));};set('subject','00000000-0000-4000-8000-000000005000');set('price','٥٠٠٠٫٠٠');});
 await page.wait(50);

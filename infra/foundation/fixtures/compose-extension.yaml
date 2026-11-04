@@ -1,0 +1,8 @@
+# Configuration-only proof. Never started or published as an application runtime.
+services:
+  identity:
+    image: beirut-time/registration-proof:fixture
+    environment:
+      BT_REGISTRATION_PROOF: loaded
+  identity-migrate:
+    image: beirut-time/registration-proof:fixture
