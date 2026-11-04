@@ -37,6 +37,8 @@ FROM base AS runtime
 ARG SERVICE_PATH=services/_template
 COPY --chown=app:app ${SERVICE_PATH}/runtime/service_app /app/service_app
 COPY --chown=app:app ${SERVICE_PATH}/modules /app/modules
+COPY --chown=app:app demo /app/demo
+COPY --chown=app:app web/public/demo/watches /app/demo/watches
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=6 CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)"]
