@@ -13,7 +13,8 @@
   ],
   "migrations": [
     "migrations/L01_0001_accounts.sql",
-    "migrations/L01_0002_reauthentication.sql"
+    "migrations/L01_0002_reauthentication.sql",
+    "migrations/L01_0003_operator_bootstrap.sql"
   ],
   "workers": [
     "workers.py:run"
