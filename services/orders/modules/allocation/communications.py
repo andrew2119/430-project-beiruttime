@@ -7,6 +7,8 @@ from bt_events import enqueue
 class InboxDestination:
     def __init__(self, dependency):
         self.dependency = dependency
+        # The relay sizes its lease from every adapted client's real deadline.
+        self.timeout = dependency.timeout
 
     async def request(self, method, path, **options):
         if method != "POST" or path != "/internal/v1/events":

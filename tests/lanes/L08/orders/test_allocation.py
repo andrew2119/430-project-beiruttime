@@ -142,6 +142,10 @@ async def test_racing_buyers_exclusive_persistent_outcome(market):
     loser = next(r.json() for r in results if r.json()["status"] == "denied")
     assert loser["code"] == "watch_unavailable" and loser["payment_authority"] is False
     assert winner["order"]["state"] == "awaiting_payment" and not winner["order"]["payment_authority"]
+    assert winner["order"]["quote_id"] == (qa if winner["order"]["buyer_id"] == str(a) else qb)
+    winning_headers = ha if winner["order"]["buyer_id"] == str(a) else hb
+    detail = (await c.get('/v1/orders/' + winner['resource_id'], headers=winning_headers)).json()
+    assert detail['order']['quote_id'] == winner['order']['quote_id']
     assert await app.state.pool.fetchval("SELECT count(*) FROM l08_orders") == 1
     token = ha if winner["order"]["buyer_id"] == str(a) else hb
     repeated = await reserve(c, watch, qa if token == ha else qb, token, "buyer-a" if token == ha else "buyer-b")
@@ -361,6 +365,13 @@ async def test_custody_pre_release_and_org_scope(market):
     assert proof["id"] == result.json()["resource_id"] and proof["order_id"] == order_id
     assert "condition" not in proof and "actual_watch" not in proof
     assert (await c.get(receipt_url, headers=headers)).status_code == 403
+    _, staff = user(['business_staff'], org=org, grants=[{'organization_id':str(org), 'permissions':['business.records.read','business.jobs.write'], 'roles':['business_staff']}])
+    assert (await c.get(receipt_url, headers=staff)).json()['valid'] is True
+    other_org = uuid4()
+    _, unrelated = user(['business_staff'], org=other_org, grants=[{'organization_id':str(other_org), 'permissions':['business.records.read'], 'roles':['business_staff']}])
+    assert (await c.get(receipt_url, headers=unrelated)).status_code == 403
+    _, unscoped = user(['operator'], ['business.records.read'], org=org)
+    assert (await c.get(receipt_url, headers=unscoped)).status_code == 403
     newer = await c.post(url, json={**fact, "expected_revision": 2}, headers={**right, "Idempotency-Key": "next-fact"})
     assert newer.json()["status"] == "succeeded"
     assert (await c.get(receipt_url, headers=right)).status_code == 409
@@ -491,6 +502,9 @@ async def test_released_communications_receiver_keeps_the_bounded_client(market)
     dependency = DependencyClient("communications", "http://communications", transport=httpx.MockTransport(receiver))
     try:
         adapter = module.InboxDestination(dependency)
+        from bt_events import OutboxRelay
+        relay = OutboxRelay(app.state.pool, {'communications':adapter}, headers=lambda _: {})
+        assert adapter.timeout == dependency.timeout and relay.lease_seconds >= 30
         response = await adapter.request(
             "POST", "/internal/v1/events", json={"id": "same-event"}, headers={"Authorization": "Bearer service-test"}
         )
