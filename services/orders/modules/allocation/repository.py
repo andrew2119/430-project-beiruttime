@@ -22,6 +22,7 @@ def order_view(row):
             "id",
             "watch_id",
             "listing_id",
+            "quote_id",
             "buyer_id",
             "seller_id",
             "organization_id",

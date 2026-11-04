@@ -394,7 +394,7 @@ async def custody_receipt(receipt_id: UUID, request: Request, actor=Depends(prin
     if selected.actor.subject_id != actor.actor.subject_id:
         raise AccessDenied("Identity scope changed")
     allowed = False
-    for permission in ("orders.intake", "intake.read", "intake.write"):
+    for permission in ("orders.intake", "intake.read", "intake.write", "business.records.read"):
         try:
             require_scope(selected, permission, fact["organization_id"])
             allowed = True
