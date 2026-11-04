@@ -1,0 +1,338 @@
+services:
+  identity-migrate:
+    image: beirut-time/foundation-service:local
+    command: [python, -m, service_app.migrate]
+    environment:
+      BT_SERVICE_NAME: identity
+      BT_DATABASE_URL: postgresql://bt_identity_owner:${IDENTITY_OWNER_PASSWORD:-local-identity-owner}@postgres:5432/bt_identity
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+  identity:
+    image: beirut-time/foundation-service:local
+    build:
+      context: .
+      dockerfile: services/_template/runtime/Dockerfile
+    environment:
+      BT_SERVICE_NAME: identity
+      BT_DATABASE_URL: postgresql://bt_identity:${IDENTITY_DB_PASSWORD:-local-identity}@postgres:5432/bt_identity
+      BT_AUTH_ISSUER: beirut-time-identity
+      BT_AUTH_AUDIENCE: beirut-time
+    ports: ["127.0.0.1:8101:8000"]
+    depends_on:
+      identity-migrate: {condition: service_completed_successfully}
+    init: true
+    cpus: 0.5
+    mem_limit: 192m
+    pids_limit: 100
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  catalog-migrate:
+    image: beirut-time/foundation-service:local
+    command: [python, -m, service_app.migrate]
+    environment:
+      BT_SERVICE_NAME: catalog
+      BT_DATABASE_URL: postgresql://bt_catalog_owner:${CATALOG_OWNER_PASSWORD:-local-catalog-owner}@postgres:5432/bt_catalog
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+  catalog:
+    image: beirut-time/foundation-service:local
+    build:
+      context: .
+      dockerfile: services/_template/runtime/Dockerfile
+    environment:
+      BT_SERVICE_NAME: catalog
+      BT_DATABASE_URL: postgresql://bt_catalog:${CATALOG_DB_PASSWORD:-local-catalog}@postgres:5432/bt_catalog
+      BT_AUTH_ISSUER: beirut-time-identity
+      BT_AUTH_AUDIENCE: beirut-time
+    ports: ["127.0.0.1:8102:8000"]
+    depends_on:
+      catalog-migrate: {condition: service_completed_successfully}
+    init: true
+    cpus: 0.5
+    mem_limit: 192m
+    pids_limit: 100
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  auction-migrate:
+    image: beirut-time/foundation-service:local
+    command: [python, -m, service_app.migrate]
+    environment:
+      BT_SERVICE_NAME: auction
+      BT_DATABASE_URL: postgresql://bt_auction_owner:${AUCTION_OWNER_PASSWORD:-local-auction-owner}@postgres:5432/bt_auction
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+  auction:
+    image: beirut-time/foundation-service:local
+    build:
+      context: .
+      dockerfile: services/_template/runtime/Dockerfile
+    environment:
+      BT_SERVICE_NAME: auction
+      BT_DATABASE_URL: postgresql://bt_auction:${AUCTION_DB_PASSWORD:-local-auction}@postgres:5432/bt_auction
+      BT_AUTH_ISSUER: beirut-time-identity
+      BT_AUTH_AUDIENCE: beirut-time
+    ports: ["127.0.0.1:8103:8000"]
+    depends_on:
+      auction-migrate: {condition: service_completed_successfully}
+    init: true
+    cpus: 0.5
+    mem_limit: 192m
+    pids_limit: 100
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  pricing-migrate:
+    image: beirut-time/foundation-service:local
+    command: [python, -m, service_app.migrate]
+    environment:
+      BT_SERVICE_NAME: pricing
+      BT_DATABASE_URL: postgresql://bt_pricing_owner:${PRICING_OWNER_PASSWORD:-local-pricing-owner}@postgres:5432/bt_pricing
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+  pricing:
+    image: beirut-time/foundation-service:local
+    build:
+      context: .
+      dockerfile: services/_template/runtime/Dockerfile
+    environment:
+      BT_SERVICE_NAME: pricing
+      BT_DATABASE_URL: postgresql://bt_pricing:${PRICING_DB_PASSWORD:-local-pricing}@postgres:5432/bt_pricing
+      BT_AUTH_ISSUER: beirut-time-identity
+      BT_AUTH_AUDIENCE: beirut-time
+    ports: ["127.0.0.1:8104:8000"]
+    depends_on:
+      pricing-migrate: {condition: service_completed_successfully}
+    init: true
+    cpus: 0.5
+    mem_limit: 192m
+    pids_limit: 100
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  orders-migrate:
+    image: beirut-time/foundation-service:local
+    command: [python, -m, service_app.migrate]
+    environment:
+      BT_SERVICE_NAME: orders
+      BT_DATABASE_URL: postgresql://bt_orders_owner:${ORDERS_OWNER_PASSWORD:-local-orders-owner}@postgres:5432/bt_orders
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+  orders:
+    image: beirut-time/foundation-service:local
+    build:
+      context: .
+      dockerfile: services/_template/runtime/Dockerfile
+    environment:
+      BT_SERVICE_NAME: orders
+      BT_DATABASE_URL: postgresql://bt_orders:${ORDERS_DB_PASSWORD:-local-orders}@postgres:5432/bt_orders
+      BT_AUTH_ISSUER: beirut-time-identity
+      BT_AUTH_AUDIENCE: beirut-time
+    ports: ["127.0.0.1:8105:8000"]
+    depends_on:
+      orders-migrate: {condition: service_completed_successfully}
+    init: true
+    cpus: 0.5
+    mem_limit: 192m
+    pids_limit: 100
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  eligibility-migrate:
+    image: beirut-time/foundation-service:local
+    command: [python, -m, service_app.migrate]
+    environment:
+      BT_SERVICE_NAME: eligibility
+      BT_DATABASE_URL: postgresql://bt_eligibility_owner:${ELIGIBILITY_OWNER_PASSWORD:-local-eligibility-owner}@postgres:5432/bt_eligibility
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+  eligibility:
+    image: beirut-time/foundation-service:local
+    build:
+      context: .
+      dockerfile: services/_template/runtime/Dockerfile
+    environment:
+      BT_SERVICE_NAME: eligibility
+      BT_DATABASE_URL: postgresql://bt_eligibility:${ELIGIBILITY_DB_PASSWORD:-local-eligibility}@postgres:5432/bt_eligibility
+      BT_AUTH_ISSUER: beirut-time-identity
+      BT_AUTH_AUDIENCE: beirut-time
+    ports: ["127.0.0.1:8106:8000"]
+    depends_on:
+      eligibility-migrate: {condition: service_completed_successfully}
+    init: true
+    cpus: 0.5
+    mem_limit: 192m
+    pids_limit: 100
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  trust-migrate:
+    image: beirut-time/foundation-service:local
+    command: [python, -m, service_app.migrate]
+    environment:
+      BT_SERVICE_NAME: trust
+      BT_DATABASE_URL: postgresql://bt_trust_owner:${TRUST_OWNER_PASSWORD:-local-trust-owner}@postgres:5432/bt_trust
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+  trust:
+    image: beirut-time/foundation-service:local
+    build:
+      context: .
+      dockerfile: services/_template/runtime/Dockerfile
+    environment:
+      BT_SERVICE_NAME: trust
+      BT_DATABASE_URL: postgresql://bt_trust:${TRUST_DB_PASSWORD:-local-trust}@postgres:5432/bt_trust
+      BT_AUTH_ISSUER: beirut-time-identity
+      BT_AUTH_AUDIENCE: beirut-time
+    ports: ["127.0.0.1:8107:8000"]
+    depends_on:
+      trust-migrate: {condition: service_completed_successfully}
+    init: true
+    cpus: 0.5
+    mem_limit: 192m
+    pids_limit: 100
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  communications-migrate:
+    image: beirut-time/foundation-service:local
+    command: [python, -m, service_app.migrate]
+    environment:
+      BT_SERVICE_NAME: communications
+      BT_DATABASE_URL: postgresql://bt_communications_owner:${COMMUNICATIONS_OWNER_PASSWORD:-local-communications-owner}@postgres:5432/bt_communications
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+  communications:
+    image: beirut-time/foundation-service:local
+    build:
+      context: .
+      dockerfile: services/_template/runtime/Dockerfile
+    environment:
+      BT_SERVICE_NAME: communications
+      BT_DATABASE_URL: postgresql://bt_communications:${COMMUNICATIONS_DB_PASSWORD:-local-communications}@postgres:5432/bt_communications
+      BT_AUTH_ISSUER: beirut-time-identity
+      BT_AUTH_AUDIENCE: beirut-time
+    ports: ["127.0.0.1:8108:8000"]
+    depends_on:
+      communications-migrate: {condition: service_completed_successfully}
+    init: true
+    cpus: 0.5
+    mem_limit: 192m
+    pids_limit: 100
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  service-operations-migrate:
+    image: beirut-time/foundation-service:local
+    command: [python, -m, service_app.migrate]
+    environment:
+      BT_SERVICE_NAME: service-operations
+      BT_DATABASE_URL: postgresql://bt_service_ops_owner:${SERVICE_OPS_OWNER_PASSWORD:-local-service-ops-owner}@postgres:5432/bt_service_ops
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+  service-operations:
+    image: beirut-time/foundation-service:local
+    build:
+      context: .
+      dockerfile: services/_template/runtime/Dockerfile
+    environment:
+      BT_SERVICE_NAME: service-operations
+      BT_DATABASE_URL: postgresql://bt_service_ops:${SERVICE_OPS_DB_PASSWORD:-local-service-ops}@postgres:5432/bt_service_ops
+      BT_AUTH_ISSUER: beirut-time-identity
+      BT_AUTH_AUDIENCE: beirut-time
+    ports: ["127.0.0.1:8109:8000"]
+    depends_on:
+      service-operations-migrate: {condition: service_completed_successfully}
+    init: true
+    cpus: 0.5
+    mem_limit: 192m
+    pids_limit: 100
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-bootstrap-only}
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:-local-identity}
+      IDENTITY_OWNER_PASSWORD: ${IDENTITY_OWNER_PASSWORD:-local-identity-owner}
+      CATALOG_DB_PASSWORD: ${CATALOG_DB_PASSWORD:-local-catalog}
+      CATALOG_OWNER_PASSWORD: ${CATALOG_OWNER_PASSWORD:-local-catalog-owner}
+      AUCTION_DB_PASSWORD: ${AUCTION_DB_PASSWORD:-local-auction}
+      AUCTION_OWNER_PASSWORD: ${AUCTION_OWNER_PASSWORD:-local-auction-owner}
+      PRICING_DB_PASSWORD: ${PRICING_DB_PASSWORD:-local-pricing}
+      PRICING_OWNER_PASSWORD: ${PRICING_OWNER_PASSWORD:-local-pricing-owner}
+      ORDERS_DB_PASSWORD: ${ORDERS_DB_PASSWORD:-local-orders}
+      ORDERS_OWNER_PASSWORD: ${ORDERS_OWNER_PASSWORD:-local-orders-owner}
+      ELIGIBILITY_DB_PASSWORD: ${ELIGIBILITY_DB_PASSWORD:-local-eligibility}
+      ELIGIBILITY_OWNER_PASSWORD: ${ELIGIBILITY_OWNER_PASSWORD:-local-eligibility-owner}
+      TRUST_DB_PASSWORD: ${TRUST_DB_PASSWORD:-local-trust}
+      TRUST_OWNER_PASSWORD: ${TRUST_OWNER_PASSWORD:-local-trust-owner}
+      COMMUNICATIONS_DB_PASSWORD: ${COMMUNICATIONS_DB_PASSWORD:-local-communications}
+      COMMUNICATIONS_OWNER_PASSWORD: ${COMMUNICATIONS_OWNER_PASSWORD:-local-communications-owner}
+      SERVICE_OPS_DB_PASSWORD: ${SERVICE_OPS_DB_PASSWORD:-local-service-ops}
+      SERVICE_OPS_OWNER_PASSWORD: ${SERVICE_OPS_OWNER_PASSWORD:-local-service-ops-owner}
+    ports: ["127.0.0.1:54329:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/foundation/postgres-init.sh:/docker-entrypoint-initdb.d/01-databases.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -h 127.0.0.1 -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    mem_limit: 512m
+  web:
+    build: {context: ., dockerfile: web/Dockerfile}
+    environment:
+      HOSTNAME: 0.0.0.0
+      BT_PUBLIC_WEB_ORIGINS: ${BT_PUBLIC_WEB_ORIGINS-http://localhost:3000,http://127.0.0.1:3000}
+      BT_TRUST_FORWARDED_ORIGIN: ${BT_TRUST_FORWARDED_ORIGIN:-false}
+      IDENTITY_API_URL: http://identity:8000
+      CATALOG_API_URL: http://catalog:8000
+      AUCTION_API_URL: http://auction:8000
+      PRICING_API_URL: http://pricing:8000
+      ORDERS_API_URL: http://orders:8000
+      ELIGIBILITY_API_URL: http://eligibility:8000
+      TRUST_API_URL: http://trust:8000
+      COMMUNICATIONS_API_URL: http://communications:8000
+      SERVICE_OPERATIONS_API_URL: http://service-operations:8000
+    ports: ["127.0.0.1:3000:3000"]
+    init: true
+    mem_limit: 512m
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+volumes:
+  postgres-data:

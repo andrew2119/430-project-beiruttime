@@ -1,0 +1,12 @@
+{
+  "money": {"amount":"1250.00","currency":"USD"},
+  "actor": {"subject_id":"00000000-0000-4000-8000-000000000010","organization_id":null,"session_id":"synthetic-contract-session"},
+  "revision": {"revision":1},
+  "operation": {"id":"00000000-0000-4000-8000-000000000020","status":"pending","resource_id":null,"request_id":"contract-proof"},
+  "policy_cases": [
+    {"case":"cross-owner-read","expected":"denied"},
+    {"case":"unavailable-sale-fence","expected":"pending-or-denied"},
+    {"case":"withdrawn-consent","expected":"denied"},
+    {"case":"unconfirmed-payment","expected":"not-paid"}
+  ]
+}
