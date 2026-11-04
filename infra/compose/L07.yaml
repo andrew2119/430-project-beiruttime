@@ -1,0 +1,36 @@
+services:
+  pricing:
+    image: beirut-time/pricing:local
+    build:
+      context: .
+      dockerfile: services/pricing/runtime/Dockerfile
+      args: {SERVICE_PATH: services/pricing}
+    environment:
+      IDENTITY_API_URL: http://identity:8000
+      COMMUNICATIONS_API_URL: http://communications:8000
+      CATALOG_API_URL: http://catalog:8000
+      BT_COMMUNICATIONS_SERVICE_TOKEN: ${BT_PRICING_COMMS_TOKEN:-}
+      BT_PRICING_EVENT_PRIVATE_KEY: ${BT_PRICING_EVENT_PRIVATE_KEY:-}
+  pricing-migrate:
+    image: beirut-time/pricing:local
+    build:
+      context: .
+      dockerfile: services/pricing/runtime/Dockerfile
+      args: {SERVICE_PATH: services/pricing}
+  communications:
+    image: beirut-time/communications:local
+    build:
+      context: .
+      dockerfile: services/communications/runtime/Dockerfile
+      args: {SERVICE_PATH: services/communications}
+    environment:
+      IDENTITY_API_URL: http://identity:8000
+      PRICING_API_URL: http://pricing:8000
+      ORDERS_API_URL: http://orders:8000
+      BT_SERVICE_AUTH_PUBLIC_KEY: ${BT_SERVICE_AUTH_PUBLIC_KEY:-}
+  communications-migrate:
+    image: beirut-time/communications:local
+    build:
+      context: .
+      dockerfile: services/communications/runtime/Dockerfile
+      args: {SERVICE_PATH: services/communications}

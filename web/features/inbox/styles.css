@@ -1,0 +1,6 @@
+.l07-inbox-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; border-inline-start:3px solid var(--accent); }
+.l07-inbox-row[data-read=true] { border-inline-start-color:var(--border); }
+.l07-inbox-row p { margin-block:8px; }
+.l07-inbox-pref { display:flex; align-items:center; gap:12px; min-block-size:44px; }
+.l07-inbox-pref input { inline-size:20px; block-size:20px; accent-color:var(--brand); }
+@container(max-width:44rem) { .l07-inbox-row { grid-template-columns:minmax(0,1fr); } }
