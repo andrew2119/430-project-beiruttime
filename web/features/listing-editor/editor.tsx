@@ -10,7 +10,13 @@ import {
   Input,
   Skeleton,
   BidiReference,
+  Checkbox,
+  Textarea,
 } from "@beirut-time/ui";
+import { ArrowLeft, ClipboardList, Images, Save, Send, ShieldCheck, Watch } from "lucide-react";
+import { HeaderTabs } from '@beirut-time/ui';
+import { PageHeader, PageLayout } from "@/shell/page-header";
+import { Select } from '@beirut-time/ui';
 import { normalizeDigits } from "@beirut-time/i18n";
 import { useLocale } from "@/shell/locale-context";
 import { useAccessContext } from "@/shell/access-context";
@@ -63,17 +69,15 @@ function DraftLoader({
   if (query.isPending) return <Skeleton label={t.loading} />;
   if (!query.data)
     return (
-      <div className="le-page">
-        <header className="le-page-header">
-          <h1>{t.newListing}</h1>
-        </header>
+      <PageLayout className="le-page">
+        <PageHeader title={t.newListing} />
         <Failure
           error={query.error}
           t={t}
           locale={locale}
           retry={() => void query.refetch()}
         />
-      </div>
+      </PageLayout>
     );
   return (
     <DraftEditor
@@ -246,50 +250,15 @@ function DraftEditor({
       currency: "USD",
     }).format(minor / 100);
   return (
-    <div className="le-page">
-      <header className="le-page-header">
-        <div>
-          <ButtonLink
-            className="le-back button-secondary"
-            href={scopedHref(`/${locale}/seller/listings`, organization)}
-          >
-            ← {t.listings}
-          </ButtonLink>
-          <p className="le-eyebrow">{t.eyebrow}</p>
-          <h1>
-            {form.brand || t.newListing} {form.model}
-          </h1>
-          <div className="le-inline">
-            <Status row={current} t={t} />
-            <small>
-              {t.revision} <BidiReference>{current.revision}</BidiReference>
-            </small>
-            {current.is_demo && <small>{t.demo}</small>}
-          </div>
-        </div>
-        <div className="le-actions">
-          <span role="status">{dirty ? t.unsaved : notice || t.saved}</span>
-          <Button
-            disabled={!editable || busy || !dirty}
-            onClick={() => void run(save)}
-          >
-            {busy ? t.working : t.save}
-          </Button>
-        </div>
-      </header>
-      <nav className="le-steps" aria-label={t.newListing}>
-        {labels.map((label, i) => (
-          <Button
-            key={label}
-            className={step === i ? "le-step-active" : "button-secondary"}
-            aria-current={step === i ? "step" : undefined}
-            onClick={() => setStep(i)}
-          >
-            <span aria-hidden="true">0{i + 1}</span>
-            {label}
-          </Button>
-        ))}
-      </nav>
+    <PageLayout className="le-page">
+      <PageHeader
+        title={`${form.brand || t.newListing} ${form.model}`}
+        lead={<ButtonLink variant="outline" size="sm" href={scopedHref(`/${locale}/seller/listings`, organization)}><ArrowLeft className="le-directional" aria-hidden="true" />{t.listings}</ButtonLink>}
+        count={<span className="le-inline"><Status row={current} t={t} /><span>{t.revision} <BidiReference>{current.revision}</BidiReference></span>{current.is_demo && <span>{t.demo}</span>}</span>}
+        actions={[{id:"save",label:busy ? t.working : t.save,icon:Save,primary:true,busy,disabled:!editable || !dirty,onSelect:() => void run(save)}]}
+        status={<span role="status">{dirty ? t.unsaved : notice || t.saved}</span>}
+        nav={<HeaderTabs value={String(step)} onChange={value => setStep(Number(value))} items={labels.map((label, i) => ({id:String(i),label,icon:[ClipboardList,ShieldCheck,Images,Send][i]}))} label={t.newListing} />}
+      />
       {!organization &&
         session &&
         !session.principal.permissions.includes(
@@ -324,7 +293,7 @@ function DraftEditor({
         </div>
       )}
       <div className="le-editor-layout">
-        <div className="le-editor-main">
+        <div key={step} className="le-editor-main pg-detail-arrive">
           {step === 0 && (
             <section className="le-panel">
               <h2>{t.facts}</h2>
@@ -369,7 +338,7 @@ function DraftEditor({
                   </label>
                   <label className="le-full">
                     {t.condition}
-                    <textarea
+                    <Textarea
                       rows={4}
                       maxLength={2000}
                       value={form.condition}
@@ -378,23 +347,7 @@ function DraftEditor({
                   </label>
                   <label>
                     {t.saleMode}
-                    <select
-                      value={form.sale_mode}
-                      onChange={(e) =>
-                        field(
-                          "sale_mode",
-                          e.target.value as WatchFacts["sale_mode"],
-                        )
-                      }
-                    >
-                      {(["fixed_price", "auction", "offer"] as const).map(
-                        (mode) => (
-                          <option value={mode} key={mode}>
-                            {t[mode]}
-                          </option>
-                        ),
-                      )}
-                    </select>
+                    <Select value={form.sale_mode} aria-label={t.saleMode} disabled={!editable || busy} onValueChange={value => field("sale_mode", value as WatchFacts["sale_mode"])} options={(["fixed_price", "auction", "offer"] as const).map(mode => ({value:mode,label:t[mode]}))} />
                   </label>
                 </div>
                 <h3>{t.wear}</h3>
@@ -420,9 +373,7 @@ function DraftEditor({
                 <h3>{t.included}</h3>
                 <div className="le-inline">
                   {(["box", "papers", "links"] as const).map((item) => (
-                    <label className="le-check" key={item}>
-                      <input
-                        type="checkbox"
+                    <Checkbox className="le-check" key={item}
                         checked={form.included.includes(item)}
                         onChange={(e) =>
                           field(
@@ -432,29 +383,25 @@ function DraftEditor({
                               : form.included.filter((value) => value !== item),
                           )
                         }
-                      />
+                      >
                       {t[item]}
-                    </label>
+                    </Checkbox>
                   ))}
                 </div>
-                <label className="le-check">
-                  <input
-                    type="checkbox"
+                <Checkbox className="le-check"
                     checked={form.no_documents}
                     onChange={(e) => field("no_documents", e.target.checked)}
-                  />
+                  >
                   {t.noDocuments}
-                </label>
-                <label className="le-check">
-                  <input
-                    type="checkbox"
+                </Checkbox>
+                <Checkbox className="le-check"
                     checked={form.ownership_confirmed}
                     onChange={(e) =>
                       field("ownership_confirmed", e.target.checked)
                     }
-                  />
+                  >
                   {t.ownership}
-                </label>
+                </Checkbox>
               </fieldset>
             </section>
           )}
@@ -465,16 +412,13 @@ function DraftEditor({
               <fieldset disabled={!editable || busy}>
                 <label>
                   {t.modifiedQuestion}
-                  <select
+                  <Select
+                    aria-label={t.modifiedQuestion}
+                    disabled={!editable || busy}
                     value={form.modified === null ? "" : String(form.modified)}
-                    onChange={(e) => {
-                      field(
-                        "modified",
-                        e.target.value === ""
-                          ? null
-                          : e.target.value === "true",
-                      );
-                      if (e.target.value === "false") {
+                    onValueChange={(value) => {
+                      field("modified", value === "" ? null : value === "true");
+                      if (value === "false") {
                         setFacts({
                           ...form,
                           modified: false,
@@ -483,11 +427,8 @@ function DraftEditor({
                         setDirty(true);
                       }
                     }}
-                  >
-                    <option value="">{t.choose}</option>
-                    <option value="false">{t.no}</option>
-                    <option value="true">{t.yes}</option>
-                  </select>
+                    options={[{value:"",label:t.choose},{value:"false",label:t.no},{value:"true",label:t.yes}]}
+                  />
                 </label>
                 {form.modified && (
                   <>
@@ -507,25 +448,7 @@ function DraftEditor({
                             </label>
                             <label>
                               {t.provenance}
-                              <select
-                                value={item.provenance}
-                                onChange={(e) =>
-                                  modify(index, "provenance", e.target.value)
-                                }
-                              >
-                                {(
-                                  [
-                                    "genuine",
-                                    "aftermarket",
-                                    "reworked",
-                                    "unknown",
-                                  ] as const
-                                ).map((kind) => (
-                                  <option value={kind} key={kind}>
-                                    {t[kind]}
-                                  </option>
-                                ))}
-                              </select>
+                              <Select aria-label={t.provenance} disabled={!editable || busy} value={item.provenance} onValueChange={value => modify(index, "provenance", value)} options={(["genuine", "aftermarket", "reworked", "unknown"] as const).map(kind => ({value:kind,label:t[kind]}))} />
                             </label>
                             <label>
                               {t.modifier}
@@ -553,7 +476,7 @@ function DraftEditor({
                             </label>
                             <label className="le-full">
                               {t.notes}
-                              <textarea
+                              <Textarea
                                 value={item.notes}
                                 maxLength={1000}
                                 onChange={(e) =>
@@ -563,7 +486,7 @@ function DraftEditor({
                             </label>
                           </div>
                           <Button
-                            className="button-secondary"
+                            variant="outline"
                             onClick={() =>
                               field(
                                 "modifications",
@@ -579,7 +502,7 @@ function DraftEditor({
                       ))}
                     </div>
                     <Button
-                      className="button-secondary"
+                      variant="outline"
                       disabled={form.modifications.length >= 20}
                       onClick={() =>
                         field("modifications", [
@@ -606,14 +529,12 @@ function DraftEditor({
               <section className="le-panel">
                 <h2>{t.publicPhotos}</h2>
                 <p>{t.photoHint}</p>
-                <label className="le-check">
-                  <input
-                    type="checkbox"
+                <Checkbox className="le-check"
                     checked={safe}
                     onChange={(e) => setSafe(e.target.checked)}
-                  />
+                  >
                   {t.photoSafety}
-                </label>
+                </Checkbox>
                 <label className={`le-upload ${!safe ? "le-disabled" : ""}`}>
                   {t.addPhoto}
                   <input
@@ -637,7 +558,7 @@ function DraftEditor({
                       />
                       <div className="le-inline">
                         <Button
-                          className="button-secondary"
+                          variant="outline"
                           disabled={
                             !editable ||
                             busy ||
@@ -649,7 +570,7 @@ function DraftEditor({
                           {asset === current.cover_id ? t.cover : t.makeCover}
                         </Button>
                         <Button
-                          className="button-secondary"
+                          variant="outline"
                           aria-label={t.moveEarlier}
                           disabled={!editable || busy || dirty || index === 0}
                           onClick={() => {
@@ -664,7 +585,7 @@ function DraftEditor({
                           ↑
                         </Button>
                         <Button
-                          className="button-secondary"
+                          variant="outline"
                           aria-label={t.moveLater}
                           disabled={
                             !editable ||
@@ -684,7 +605,7 @@ function DraftEditor({
                           ↓
                         </Button>
                         <Button
-                          className="button-secondary"
+                          variant="outline"
                           disabled={!editable || busy || dirty}
                           onClick={() => void remove(asset)}
                         >
@@ -729,7 +650,7 @@ function DraftEditor({
                           <BidiReference>{asset.mime}</BidiReference>
                         </span>
                         <Button
-                          className="button-secondary"
+                          variant="outline"
                           onClick={() =>
                             void run(async () => {
                               const blob = await listingApi.file(
@@ -750,7 +671,7 @@ function DraftEditor({
                           {t.download}
                         </Button>
                         <Button
-                          className="button-secondary"
+                          variant="outline"
                           disabled={!editable || busy || dirty}
                           onClick={() => void remove(asset.id)}
                         >
@@ -796,7 +717,7 @@ function DraftEditor({
               </dl>
               <p>{t.feeHint}</p>
               <Button
-                className="button-secondary"
+                variant="outline"
                 disabled={busy || dirty || !editable}
                 onClick={() =>
                   void run(async () =>
@@ -867,7 +788,7 @@ function DraftEditor({
               />
             ) : (
               <div className="le-photo-frame le-photo-empty" aria-hidden="true">
-                ◇
+                <Watch aria-hidden="true" />
               </div>
             )}
             <div>
@@ -894,7 +815,7 @@ function DraftEditor({
       </div>
       <footer className="le-editor-footer">
         <Button
-          className="button-secondary"
+          variant="outline"
           onClick={() => {
             setStep((step + 1) % 4);
             document
@@ -911,6 +832,6 @@ function DraftEditor({
           {busy ? t.working : t.save}
         </Button>
       </footer>
-    </div>
+    </PageLayout>
   );
 }

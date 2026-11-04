@@ -1,0 +1,865 @@
+/* LAB PROTOTYPE ONLY (batch 2): the Settings button and page. Site tokens only.
+   Structure: sidebar button · page frame, header and index · section cards,
+   blocks and panels · profile · notifications · account · appearance · narrow
+   and phone · reduced motion.
+   The page is a pg-list-page (a size container): at 56rem and wider the index
+   sits in a sticky column beside the sections; narrower, it is a row in the
+   header plus a pinned bar. Each section card is a container too, so its two
+   panels sit side by side from 44rem and stack below that. */
+
+/* ---- Sidebar button: lit while on the Settings page; the cog turns once on arrival
+   (the nav icons' own spin keyframe, on the expressive step). ---- */
+.proto-settings-btn[aria-current="page"] {
+  background: var(--accent);
+  color: var(--primary-ink);
+}
+.proto-settings-btn[aria-current="page"] svg {
+  animation: pg-icon-spin var(--ds-motion-expressive) var(--ease-settle) 1;
+}
+
+/* ---- Page frame: the full tray width, like Campaigns and Creators. The room
+   below the last card for the dock is the shell's, on every page (styles/shell.css
+   .pg-tray, the dock's room). ---- */
+.proto-set-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+/* Phones: the header's tiles (proto-tabs.css) for six sections need about 373px
+   and the row has 318 at 390, and six 44px targets alone outgrow a 320 phone, so
+   the tiles stand in two rows of three that share the width, each column at
+   least as wide as its longest label: no sideways slide, every label whole (the
+   phone tab rule, docs/features/P15-phone-optimization.md). Five go to two rows
+   only where one row cannot hold them. */
+@container hx (max-width: 30rem) {
+  .proto-set-header .hx-tabs[data-fit="stack"][data-count="6"] { display: grid; grid-template-columns: repeat(3, minmax(max-content, 1fr)); grid-auto-flow: row; }
+}
+@container hx (max-width: 21.5rem) {
+  .proto-set-header .hx-tabs[data-fit="stack"][data-count="5"] { display: grid; grid-template-columns: repeat(3, minmax(max-content, 1fr)); grid-auto-flow: row; }
+}
+.proto-set-stack {
+  display: grid;
+  min-inline-size: 0;
+  gap: 1rem;
+}
+/* C3: the section cards' placeholder while the settings read runs, and the
+   index's in the route's loading face (components/proto/settings/settings-waiting.tsx). */
+.proto-set-wait { block-size: 18rem; }
+.proto-set-index.pg-skeleton { block-size: 13.6875rem; }
+/* The face's lead row stands as tall as the back link it waits for (.hx-back). */
+.proto-set-header .ph-lead:has(> .pg-skeleton-line) { min-block-size: var(--ds-control-target); }
+/* Its tools row stands for the sections' tabs, which the header carries only on
+   trays without the index column (settings-page useWideTray, the same step). */
+.proto-set-header .ph-tools-row > .ph-skel-search { flex: 1 1 auto; block-size: 3.75rem; }
+@container (min-width: 56rem) {
+  .proto-set-header .ph-tools-row:has(> .ph-skel-search) { display: none; }
+}
+
+/* Header (round 5): the shared page header; its lead line is the back link (the
+   header's own back-link look), then 16 (phone 12) to the content. */
+.proto-set-header { margin-block-end: var(--ds-gap-content); }
+.proto-set-back { max-inline-size: min(100%, 26rem); font-family: inherit; }
+.proto-set-back:empty { inline-size: 9rem; }
+@container hx (max-width: 30rem) {
+  .proto-set-header .hx-lip > .hx-pilltabs { flex: 1 1 100%; }
+}
+
+/* The index column (wide trays only): the shared Segmented, stood upright; the
+   sliding thumb is the sidebar's accent fill, never a coloured edge stripe. */
+.proto-set-index { display: none; }
+.proto-set-index-nav.pg-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.125rem;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.proto-set-index-nav .pg-seg-item {
+  justify-content: flex-start;
+  gap: 0.625rem;
+  min-block-size: 2.25rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+}
+.proto-set-index-nav .pg-seg-item[aria-current] { color: var(--foreground); }
+.proto-set-index-nav .pg-seg-thumb {
+  background: var(--accent);
+  box-shadow: none;
+}
+.proto-set-index-nav .proto-set-nav-icon { inline-size: 1rem; block-size: 1rem; }
+.proto-set-index-nav .pg-seg-item:not([aria-current]) .proto-set-nav-icon { color: var(--muted-foreground); }
+.proto-set-index-nav .pg-seg-item[aria-current] .proto-set-nav-icon { color: var(--primary-ink); }
+.proto-set-index-foot {
+  margin-block-start: 0.5rem;
+  padding: 0.625rem 0.75rem 0.25rem;
+  border-block-start: 0.0625rem solid var(--border);
+}
+.proto-set-index-foot .proto-set-status { justify-items: start; }
+
+@container (min-width: 56rem) {
+  .proto-set-layout {
+    grid-template-columns: 13.5rem minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+  .proto-set-index {
+    position: sticky;
+    inset-block-start: 1rem;
+    display: block;
+    padding: 0.5rem;
+    animation: pg-contentIn var(--ds-motion-overlay) var(--ease-out-soft) both;
+  }
+  .proto-set-float { display: none; }
+  .proto-set-card,
+  .proto-set-more { scroll-margin-block-start: 1rem; }
+}
+.proto-set-card,
+.proto-set-more {
+  animation: pg-contentIn var(--ds-motion-overlay) var(--ease-out-soft) both;
+  animation-delay: calc(var(--i, 0) * var(--ds-motion-fast) / 2);
+  /* Lands clear of the pinned bar. */
+  scroll-margin-block-start: 4.5rem;
+}
+/* Under the shell's pinned header a section lands below it, by the measure
+ * proto-sticky.css gives the page's own pinned pieces (the captain's pick F-6 a). */
+.pg-tray[data-sx-on] :is(.proto-set-card, .proto-set-more) {
+  scroll-margin-block-start: calc(var(--sx-gap) + var(--sx-lift, 0px) + var(--sx-hs, 0px) + var(--sx-tb-h, 0px) + var(--ds-space-4));
+}
+.proto-set-card[data-flash] {
+  animation: proto-set-flash var(--ds-motion-expressive) var(--ease-standard);
+}
+@keyframes proto-set-flash {
+  0%, 100% { box-shadow: var(--ds-shadow-border); }
+  35% { box-shadow: var(--ds-shadow-border), 0 0 0 0.1875rem color-mix(in oklab, var(--ring) 30%, transparent); }
+}
+
+/* Header: the save status sits where Campaigns keeps its actions. */
+.proto-set-status {
+  display: inline-grid;
+  align-items: center;
+  justify-items: end;
+  min-block-size: 1.875rem;
+  font-size: 0.75rem;
+}
+.proto-set-status-item {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(0.25rem);
+  transition: opacity var(--ds-motion-popover) var(--ease-standard),
+    transform var(--ds-motion-popover) var(--ease-settle);
+}
+.proto-set-status-item[data-on] {
+  opacity: 1;
+  transform: none;
+}
+.proto-set-status-item svg { inline-size: 0.875rem; block-size: 0.875rem; }
+/* Round 5: the header's phone title line shows the icon alone (words in the tooltip). */
+.proto-set-status[data-compact] { justify-items: center; min-inline-size: var(--ds-control); }
+.proto-set-status[data-compact] .proto-set-status-item { gap: 0; font-size: 0; }
+.proto-set-status[data-compact] .proto-set-status-item svg { inline-size: 1rem; block-size: 1rem; }
+.proto-set-status-done {
+  color: var(--green-ink);
+  font-weight: var(--ds-weight-strong);
+}
+[data-theme="dark"] .proto-set-status-done {
+  color: color-mix(in oklab, var(--green-ink) 65%, var(--foreground));
+}
+.proto-set-spin {
+  animation: pg-icon-spin calc(var(--ds-motion-expressive) * 1.5) linear infinite;
+}
+
+/* Pinned bar: sticks to the top of the tray and takes no space; it rises into
+   view once the header has scrolled away, and settles back out when it returns. */
+.proto-set-float {
+  position: sticky;
+  inset-block-start: 0.75rem;
+  z-index: 6;
+  block-size: 0;
+}
+.proto-set-float-bar {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.375rem 0.5rem 0.375rem 1.125rem;
+  border-radius: var(--radius-2xl);
+  background: var(--card);
+  box-shadow: var(--ds-shadow-menu), inset 0 1px 0 var(--ds-gloss-line);
+  opacity: 0;
+  transform: translateY(-0.5rem) scale(0.985);
+  pointer-events: none;
+  transition: opacity var(--ds-motion-overlay) var(--ease-standard),
+    transform var(--ds-motion-overlay) var(--ease-settle);
+}
+/* Above the pinned bar, content hides under the tray's paint instead of peeking out. */
+.proto-set-float::before {
+  content: "";
+  position: absolute;
+  inset-inline: -0.5rem;
+  inset-block-start: -0.875rem;
+  block-size: 2.5rem;
+  /* The tray's own flat paint (shell.css .pg-tray), so the veil is invisible
+     where nothing sits under it. Round 5: flat, no fading edge: the veil ends
+     behind the (opaque) bar, so its lower edge never shows. */
+  background: color-mix(in oklab, var(--card) 78%, var(--background));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ds-motion-overlay) var(--ease-standard);
+}
+.proto-set-float[data-show]::before { opacity: 1; }
+.proto-set-float[data-show] .proto-set-float-bar {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.proto-set-float-title {
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: var(--ds-weight-black);
+  letter-spacing: -0.015em;
+}
+.proto-set-float-status { margin-inline-start: auto; padding-inline-end: 0.375rem; }
+
+/* Section jumper: the shared Segmented; it scrolls sideways when narrow. */
+.proto-set-nav {
+  max-inline-size: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.proto-set-nav::-webkit-scrollbar { display: none; }
+.proto-set-nav > .pg-seg-item { flex-shrink: 0; }
+.proto-set-nav-icon { inline-size: 0.875rem; block-size: 0.875rem; }
+.proto-set-nav > .pg-seg-item:not([aria-current]) .proto-set-nav-icon { color: var(--muted-foreground); }
+.proto-set-nav > .pg-seg-item[aria-current] .proto-set-nav-icon { color: var(--primary-ink); }
+
+/* ---- Section card ---- */
+.proto-set-card { container: set-card / inline-size; }
+.proto-set-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1.125rem 1.5rem;
+  border-block-end: 0.0625rem solid var(--border);
+}
+.proto-set-icon {
+  display: grid;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+  color: var(--primary-ink);
+  box-shadow: var(--ds-shadow-small);
+}
+.proto-set-icon svg { inline-size: 1.125rem; block-size: 1.125rem; }
+.proto-set-card-sub {
+  margin-block-start: 0.125rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+.proto-set-tag-muted {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+/* The muted tag's words read under 4.5:1 on its fill in Classic (4.07) and in Dark (4.43), so each
+   takes the smallest whole step toward the text ink that passes (4.53 and 4.55). Light keeps the lab's. */
+[data-theme="classic"] .proto-set-tag-muted { color: color-mix(in oklab, var(--muted-foreground) 85%, var(--foreground)); }
+[data-theme="dark"] .proto-set-tag-muted { color: color-mix(in oklab, var(--muted-foreground) 98%, var(--foreground)); }
+
+/* Blocks (full width) and panels (two side by side), divided by one hairline. */
+.proto-set-block,
+.proto-set-panel { padding: 1.25rem 1.5rem 1.375rem; }
+.proto-set-block + .proto-set-block { border-block-start: 0.0625rem solid var(--border); }
+.proto-set-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.proto-set-panel { min-inline-size: 0; container: set-panel / inline-size; }
+.proto-set-panel + .proto-set-panel { border-block-start: 0.0625rem solid var(--border); }
+@container set-card (min-width: 44rem) {
+  .proto-set-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .proto-set-panel + .proto-set-panel {
+    border-block-start: 0;
+    border-inline-start: 0.0625rem solid var(--border);
+  }
+}
+.proto-set-foot { padding: 0 1.5rem 1.25rem; }
+.proto-set-foot .proto-set-labnote { margin-block-start: 0; }
+
+/* Part headings match the site's two-factor section (15 px title, relaxed hint),
+   so the real email and two-factor parts read like every other part here. */
+/* Title and control share the first line; the hint runs the full width below. */
+.proto-set-part-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 1.5rem;
+  margin-block-end: 1rem;
+}
+.proto-set-part-head > .proto-set-desc { grid-column: 1 / -1; margin-block-start: 0.375rem; }
+.proto-set-h {
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  font-weight: var(--ds-weight-strong);
+  line-height: 1.4;
+}
+.proto-set-desc {
+  max-inline-size: 40rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.625;
+}
+.proto-set-part-control {
+  display: flex;
+  min-block-size: 1.3rem;
+  flex: 0 0 auto;
+  align-items: center;
+}
+.proto-set-row-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: var(--ds-weight-strong);
+  line-height: 1.3;
+}
+.proto-set-row-hint {
+  margin-block-start: 0.1875rem;
+  max-inline-size: 38rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.proto-set-footnote {
+  margin-block-start: 0.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  line-height: 1.45;
+}
+.proto-set-labnote {
+  margin-block-start: 0.875rem;
+  padding-block-start: 0.75rem;
+  border-block-start: 0.0625rem dashed var(--border);
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-style: italic;
+}
+.proto-set-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-ink);
+  font-weight: var(--ds-weight-strong);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+/* The switch: the site's pg-view-switch drawn inside a bare button (the press
+   target); the track colour now eases with the knob. */
+.proto-set-switch {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-2xl);
+  background: none;
+  cursor: pointer;
+  outline: none;
+}
+.proto-set-switch::after {
+  /* Desktop press area: a little larger than the drawn 36 x 20. */
+  content: "";
+  position: absolute;
+  inset: -0.625rem -0.375rem;
+}
+.proto-set-switch .pg-view-switch {
+  transition: background-color var(--ds-motion-popover) var(--ease-standard),
+    box-shadow var(--ds-motion-fast) var(--ease-standard);
+}
+.proto-set-switch:focus-visible .pg-view-switch {
+  box-shadow: 0 0 0 0.125rem var(--card), 0 0 0 0.25rem var(--ring);
+}
+.proto-set-switch:disabled { cursor: default; }
+.proto-set-switch .pg-view-switch-knob {
+  transition: transform var(--ds-motion-popover) var(--ease-settle),
+    inline-size var(--ds-motion-fast) var(--ease-standard);
+}
+/* Pressing stretches the knob a touch, like a real switch under a finger. */
+.proto-set-switch:active:not(:disabled) .pg-view-switch-knob { inline-size: 1.125rem; }
+.proto-set-switch:active:not(:disabled) .pg-view-switch-knob-active { transform: translateX(0.875rem); }
+.proto-set-locked {
+  display: inline-grid;
+  inline-size: 2.25rem;
+  block-size: 1.25rem;
+  place-items: center;
+  border-radius: var(--radius-2xl);
+  background: color-mix(in oklab, var(--color-status-green) 14%, transparent);
+  color: var(--green-ink);
+  cursor: help;
+}
+.proto-set-locked svg { inline-size: 0.75rem; block-size: 0.75rem; }
+
+/* ---- Profile ---- */
+.proto-set-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.proto-set-photo {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow var(--ds-motion-popover) var(--ease-standard);
+}
+.proto-set-photo:focus-visible,
+.proto-set-photo[data-dragging] {
+  box-shadow: 0 0 0 0.1875rem var(--ring);
+}
+.proto-set-photo .ui-avatar { box-shadow: var(--ds-shadow-small); }
+/* The shared initials glyph is sized for 32 px avatars; this one is 64 px.
+   Marked important: the glyph's size is a Tailwind utility (text-[11px],
+   components/ui/avatar-placeholder.tsx), a later layer than this vocabulary. */
+.proto-set-photo .ui-avatar-initials { font-size: 1.25rem !important; }
+.proto-set-photo-veil {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-avatar);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--color-sand-800) 55%, transparent);
+  color: var(--ds-ink-on-dark);
+  opacity: 0;
+  transition: opacity var(--ds-motion-popover) var(--ease-standard);
+}
+.proto-set-photo-veil svg { inline-size: 1.25rem; block-size: 1.25rem; }
+.proto-set-photo:focus-visible .proto-set-photo-veil,
+.proto-set-photo[data-dragging] .proto-set-photo-veil,
+.proto-set-photo[data-busy] .proto-set-photo-veil { opacity: 1; }
+.proto-set-photo[data-busy] .proto-set-photo-veil svg {
+  animation: pg-icon-breathe calc(var(--ds-motion-expressive) * 2) var(--ease-standard) infinite;
+}
+@media (hover: hover) and (pointer: fine) {
+  .proto-set-photo:hover .proto-set-photo-veil { opacity: 1; }
+}
+.proto-set-photo-who {
+  min-inline-size: 0;
+  flex: 1 1 0%;
+}
+.proto-set-photo-name {
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  font-weight: var(--ds-weight-heavy);
+  letter-spacing: -0.01em;
+}
+.proto-set-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin-block-start: 0.625rem;
+}
+.proto-set-inline-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: var(--ds-weight-strong);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.proto-set-tz-select { inline-size: min(24rem, 100%); }
+.proto-set-tz-now {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-block-start: 0.625rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.proto-set-tz-now svg { inline-size: 0.875rem; block-size: 0.875rem; flex: 0 0 auto; }
+.proto-set-tz-src { color: color-mix(in oklab, var(--muted-foreground) 75%, transparent); }
+[data-theme="classic"] .proto-set-tz-src { color: color-mix(in oklab, var(--muted-foreground) 95%, transparent); }
+[data-theme="light"] .proto-set-tz-src { color: color-mix(in oklab, var(--muted-foreground) 88%, transparent); }
+[data-theme="dark"] .proto-set-tz-src { color: color-mix(in oklab, var(--muted-foreground) 91%, transparent); }
+.proto-set-tz-diff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-block-start: 0.625rem;
+}
+
+/* ---- Notifications ---- */
+.proto-set-alert-state {
+  display: flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  align-items: center;
+  gap: 0.375rem;
+  margin-block-start: 0.75rem;
+  padding: 0.4375rem 0.75rem;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  transition: background-color var(--ds-motion-popover) var(--ease-standard),
+    color var(--ds-motion-popover) var(--ease-standard);
+}
+.proto-set-alert-state svg { inline-size: 0.875rem; block-size: 0.875rem; flex: 0 0 auto; }
+[data-theme="classic"] .proto-set-alert-state:is(
+  [data-alert-state="off"],
+  [data-alert-state="denied"],
+  [data-alert-state="unsupported"]
+) {
+  color: color-mix(in oklab, var(--foreground) 85%, var(--muted-foreground));
+}
+[data-theme="dark"] .proto-set-alert-state:is(
+  [data-alert-state="off"],
+  [data-alert-state="denied"],
+  [data-alert-state="unsupported"]
+) {
+  color: color-mix(in oklab, var(--foreground) 98%, var(--muted-foreground));
+}
+.proto-set-alert-state[data-on] {
+  background: color-mix(in oklab, var(--color-status-green) 12%, transparent);
+  color: var(--green-ink);
+  font-weight: var(--ds-weight-strong);
+}
+[data-theme="dark"] .proto-set-alert-state[data-on],
+[data-theme="dark"] .proto-set-locked {
+  color: color-mix(in oklab, var(--green-ink) 65%, var(--foreground));
+}
+
+/* Both tables share ONE column grid, so every switch sits in a fixed slot:
+   icon · text · Bell · Browser alert (a chat group's Mute sits in the last slot). */
+.proto-set-grid-head,
+.proto-set-grid-row {
+  --col: 7.5rem;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) var(--col) var(--col);
+  align-items: center;
+  column-gap: 0.875rem;
+}
+.proto-set-grid-head { padding-block-end: 0.5rem; }
+.proto-set-col {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3125rem;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: var(--ds-weight-strong);
+  white-space: nowrap;
+  transition: opacity var(--ds-motion-popover) var(--ease-standard);
+}
+.proto-set-col svg { inline-size: 0.75rem; block-size: 0.75rem; flex: 0 0 auto; }
+.proto-set-col[data-dim] { opacity: 0.5; }
+[data-theme="classic"] .proto-set-col[data-dim] { opacity: 0.95; }
+[data-theme="light"] .proto-set-col[data-dim] { opacity: 0.88; }
+[data-theme="dark"] .proto-set-col[data-dim] { opacity: 0.91; }
+.proto-set-grid-row {
+  min-block-size: 3.5rem;
+  padding-block: 0.625rem;
+  border-block-start: 0.0625rem solid color-mix(in oklab, var(--border) 70%, transparent);
+}
+.proto-set-kind-icon,
+.proto-set-group-icon {
+  display: grid;
+  inline-size: 2rem;
+  block-size: 2rem;
+  place-items: center;
+  border-radius: var(--radius-lg);
+}
+.proto-set-kind-icon {
+  /* The kind's own tone (from the notification panel), as a soft tint. */
+  background: color-mix(in oklab, var(--tone) 12%, transparent);
+  color: var(--tone-ink, var(--tone));
+}
+/* On the dark ground the tones are lifted toward the text colour to stay legible. */
+[data-theme="dark"] .proto-set-kind-icon {
+  background: color-mix(in oklab, var(--tone) 22%, transparent);
+  color: color-mix(in oklab, var(--tone-ink, var(--tone)) 70%, var(--foreground));
+}
+.proto-set-kind-icon svg,
+.proto-set-group-icon svg { inline-size: 1rem; block-size: 1rem; }
+.proto-set-grid-text { min-inline-size: 0; }
+.proto-set-grid-text .proto-set-row-hint { margin-block-start: 0.125rem; }
+.proto-set-grid-cell {
+  display: flex;
+  justify-content: center;
+  transition: opacity var(--ds-motion-popover) var(--ease-standard);
+}
+.proto-set-grid-cell[data-dim] { opacity: 0.45; }
+/* View only (the captain's pick N-1, look 1): a card the person may see but not
+ * change shows its choices dimmed from the start, as the Alert column is while
+ * alerts are off (0.45), and its other controls as a disabled button looks (0.5). */
+.proto-set-card[data-readonly] .proto-set-grid-cell { opacity: 0.45; pointer-events: none; }
+.proto-set-card[data-readonly] :not(.proto-set-grid-cell) > .proto-set-switch { opacity: 0.5; pointer-events: none; }
+.proto-set-group-icon {
+  background: var(--accent);
+  color: var(--muted-foreground);
+  transition: color var(--ds-motion-popover) var(--ease-standard);
+}
+.proto-set-grid-row[data-muted] .proto-set-group-icon { color: var(--primary-ink); }
+.proto-set-grid-row .proto-set-row-title { transition: color var(--ds-motion-popover) var(--ease-standard); }
+.proto-set-grid-row[data-muted] .proto-set-row-title { color: var(--muted-foreground); }
+.proto-set-mention {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-start: 0.5rem;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: var(--radius-2xl);
+  background: var(--muted);
+  color: var(--foreground);
+  font-size: 0.6875rem;
+  font-weight: var(--ds-weight-strong);
+  animation: pg-listIn var(--ds-motion-image-reveal) var(--ease-out-soft) both;
+}
+.proto-set-mention svg { inline-size: 0.6875rem; block-size: 0.6875rem; color: var(--primary-ink); }
+
+/* ---- Chat (round 3): last seen and each group's notifications ---- */
+.proto-set-seen { color: var(--foreground); }
+.proto-set-seen b { font-weight: var(--ds-weight-strong); }
+.proto-set-seen svg { color: var(--muted-foreground); }
+.proto-set-chat-box { --scroll-box-max: calc(7 * 3.5rem); }
+.proto-set-chatrow {
+  --pc-ring: var(--card);
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.875rem;
+  min-block-size: 3.5rem;
+  padding-block: 0.625rem;
+  border-block-start: 0.0625rem solid color-mix(in oklab, var(--border) 70%, transparent);
+}
+.proto-set-chatrow-mode { justify-self: end; }
+
+/* ---- Account: the Account window's email change and two-factor, side by side ---- */
+.proto-set-mfa,
+.proto-set-email-form { max-inline-size: 32rem; }
+/* In a narrow panel the site's recovery codes (29 characters each) take one
+   column instead of wrapping mid-code. Marked important: the component's grid
+   is a Tailwind utility, a later layer than this vocabulary. */
+@container set-panel (max-width: 30rem) {
+  .proto-set-mfa .grid-cols-2 { grid-template-columns: minmax(0, 1fr) !important; }
+}
+.proto-set-email {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+}
+.proto-set-email-value {
+  display: flex;
+  min-inline-size: 0;
+  flex: 1 1 14rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-block-size: 2.25rem;
+  padding: 0.4375rem 0.75rem;
+  border-radius: var(--radius-lg);
+  background: var(--accent);
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  box-shadow: var(--ds-shadow-border);
+}
+.proto-set-email-value svg { inline-size: 0.875rem; block-size: 0.875rem; flex: 0 0 auto; color: var(--muted-foreground); }
+/* An account that signs in only with Google: the note in Change email's place (pick S-13). */
+.proto-set-google { white-space: nowrap; }
+.proto-set-autoheight {
+  overflow: clip;
+  overflow-clip-margin: 0.5rem;
+  transition: block-size var(--ds-motion-overlay) var(--ease-settle);
+}
+
+/* ---- Appearance: three miniatures, each painted by its own theme's tokens ---- */
+.proto-set-themes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.875rem;
+}
+.proto-set-theme {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  text-align: start;
+  box-shadow: var(--ds-shadow-border);
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow var(--ds-motion-popover) var(--ease-standard),
+    transform var(--ds-motion-fast) var(--ease-settle);
+}
+.proto-set-theme[aria-checked="true"] {
+  box-shadow: 0 0 0 0.125rem var(--primary-ink), var(--ds-shadow-medium);
+}
+.proto-set-theme:focus-visible {
+  outline: 0.125rem solid var(--ring);
+  outline-offset: 0.1875rem;
+}
+.proto-set-theme:active { transform: scale(0.985); }
+@media (hover: hover) and (pointer: fine) {
+  .proto-set-theme:hover { transform: translateY(-0.0625rem); }
+  .proto-set-theme:not([aria-checked="true"]):hover { box-shadow: var(--ds-shadow-medium); }
+}
+.proto-set-shot {
+  display: flex;
+  aspect-ratio: 16 / 9;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  background: var(--ds-canvas);
+  color: var(--foreground);
+}
+.proto-set-shot-rail {
+  display: flex;
+  inline-size: 26%;
+  flex-direction: column;
+  gap: 0.3125rem;
+  padding: 0.4375rem 0.375rem;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--ds-shadow-border);
+}
+.proto-set-shot i,
+.proto-set-shot b,
+.proto-set-shot em { display: block; border-radius: var(--radius-sm); }
+.proto-set-shot-rail i { block-size: 0.3125rem; background: var(--muted); }
+.proto-set-shot-rail i[data-on] { inline-size: 75%; background: var(--primary); }
+.proto-set-shot-tray {
+  display: flex;
+  min-inline-size: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.4375rem;
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--card) 78%, var(--background));
+  box-shadow: var(--ds-shadow-border);
+}
+.proto-set-shot-card {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.375rem;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--ds-shadow-border);
+}
+.proto-set-shot-card b { inline-size: 45%; block-size: 0.375rem; background: var(--foreground); }
+.proto-set-shot-card i { block-size: 0.25rem; background: var(--muted); }
+.proto-set-shot-card i[data-short] { inline-size: 60%; }
+.proto-set-shot-bar { display: flex; gap: 0.25rem; }
+.proto-set-shot-bar em { inline-size: 32%; block-size: 0.5625rem; background: var(--primary); }
+.proto-set-shot-bar i { flex: 1 1 0%; block-size: 0.5625rem; background: var(--accent); }
+.proto-set-theme-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border-block-start: 0.0625rem solid var(--border);
+}
+.proto-set-theme-foot .proto-set-row-hint { margin-block-start: 0.0625rem; }
+.proto-set-theme-hint { display: block; }
+.proto-set-radio {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 0.09375rem var(--border);
+  transition: box-shadow var(--ds-motion-popover) var(--ease-settle);
+}
+.proto-set-theme[aria-checked="true"] .proto-set-radio {
+  box-shadow: inset 0 0 0 0.3125rem var(--primary-ink);
+}
+
+/* ---- More to design together ---- */
+.proto-set-more {
+  display: grid;
+  justify-items: center;
+  gap: 0.125rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-2xl);
+}
+.proto-set-more .pg-empty-title { margin-block-end: 0; }
+.proto-set-more-icon {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  margin-block-end: 0.375rem;
+  color: var(--primary-ink);
+}
+
+/* ---- Narrow cards (phones) ---- */
+@container set-card (max-width: 40rem) {
+  .proto-set-card-head,
+  .proto-set-block,
+  .proto-set-panel { padding-inline: 1rem; }
+  .proto-set-foot { padding-inline: 1rem; }
+  .proto-set-part-head { column-gap: 1rem; }
+  .proto-set-grid-head,
+  .proto-set-grid-row { --col: 3.5rem; column-gap: 0.625rem; }
+  .proto-set-col { flex-direction: column; gap: 0.125rem; font-size: 0.625rem; white-space: normal; text-align: center; }
+  .proto-set-mention { margin-inline-start: 0; margin-block-start: 0.25rem; }
+  .proto-set-chatrow { row-gap: 0.5rem; }
+  .proto-set-chatrow-mode { grid-column: 2 / -1; justify-self: start; }
+  .proto-set-themes { gap: 0.5rem; }
+  .proto-set-theme-foot { padding: 0.625rem; gap: 0.5rem; }
+  .proto-set-theme-hint { display: none; }
+}
+/* Narrow trays: the pinned bar keeps just the sections. */
+@container (max-width: 40rem) {
+  .proto-set-nav-icon { display: none; }
+  .proto-set-float-title,
+  .proto-set-float-status { display: none; }
+  .proto-set-float-bar { padding: 0.3125rem; justify-content: center; }
+}
+
+/* ---- Reduced motion: every change is instant ---- */
+@media (prefers-reduced-motion: reduce) {
+  .proto-settings-btn[aria-current="page"] svg,
+  .proto-set-card,
+  .proto-set-more,
+  .proto-set-index,
+  .proto-set-mention,
+  .proto-set-card[data-flash],
+  .proto-set-spin,
+  .proto-set-photo[data-busy] .proto-set-photo-veil svg { animation: none; }
+  .proto-set-status-item,
+  .proto-set-float-bar,
+  .proto-set-float::before,
+  .proto-set-autoheight,
+  .proto-set-theme,
+  .proto-set-switch .pg-view-switch,
+  .proto-set-switch .pg-view-switch-knob { transition: none; }
+  .proto-set-status-item,
+  .proto-set-float-bar { transform: none; }
+  .proto-set-theme:hover,
+  .proto-set-theme:active { transform: none; }
+}

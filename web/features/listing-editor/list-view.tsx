@@ -2,7 +2,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button, ButtonLink, Skeleton } from "@beirut-time/ui";
+import { Button, State } from "@beirut-time/ui";
+import { LayoutDashboard, Plus } from "lucide-react";
+import { PageHeader, PageLayout } from "@/shell/page-header";
+import { ListingSkeleton } from "./row-skeleton";
 import { useLocale } from "@/shell/locale-context";
 import { useAccessContext } from "@/shell/access-context";
 import { listingApiFor, scopedHref } from "./api";
@@ -68,25 +71,11 @@ function ListingIndex({
     }
   }
   return (
-    <div className="le-page">
-      <header className="le-page-header">
-        <div>
-          <p className="le-eyebrow">{t.eyebrow}</p>
-          <h1>{t.title}</h1>
-          <p>{t.intro}</p>
-        </div>
-        <div className="le-actions">
-          <ButtonLink
-            className="button-secondary"
-            href={scopedHref(`/${locale}/seller/dashboard`, organization)}
-          >
-            {t.dashboard}
-          </ButtonLink>
-          <Button disabled={busy} onClick={() => void create()}>
-            {busy ? t.working : t.newListing} <span aria-hidden="true">＋</span>
-          </Button>
-        </div>
-      </header>
+    <PageLayout className="le-page">
+      <PageHeader title={t.title} count={t.intro} actions={[
+        { id: "dashboard", label: t.dashboard, icon: LayoutDashboard, onSelect: () => router.push(scopedHref(`/${locale}/seller/dashboard`, organization)) },
+        { id: "new", label: busy ? t.working : t.newListing, icon: Plus, primary: true, busy, onSelect: () => void create() },
+      ]} />
       {Boolean(failure || query.error) && (
         <Failure
           error={failure || query.error}
@@ -99,7 +88,7 @@ function ListingIndex({
         />
       )}
       {query.isPending ? (
-        <Skeleton label={t.loading} />
+        <ListingSkeleton label={t.loading} />
       ) : rows.length ? (
         <ListingCards
           rows={rows}
@@ -109,20 +98,17 @@ function ListingIndex({
         />
       ) : (
         query.data && (
-          <section className="le-empty">
-            <span aria-hidden="true">◇</span>
-            <h2>{t.empty}</h2>
-            <p>{t.emptyBody}</p>
-            <Button onClick={() => void create()} disabled={busy}>
-              {t.newListing}
+          <State title={t.empty} body={t.emptyBody}>
+            <Button chonk onClick={() => void create()} disabled={busy}>
+              <Plus aria-hidden="true" />{t.newListing}
             </Button>
-          </section>
+          </State>
         )
       )}
       {query.hasNextPage && (
         <div className="le-pager">
           <Button
-            className="button-secondary"
+            variant="outline"
             disabled={query.isFetchingNextPage}
             onClick={() => void query.fetchNextPage()}
           >
@@ -130,6 +116,6 @@ function ListingIndex({
           </Button>
         </div>
       )}
-    </div>
+    </PageLayout>
   );
 }

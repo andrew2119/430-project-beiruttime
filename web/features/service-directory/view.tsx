@@ -1,7 +1,10 @@
 'use client';
 import { useRef, useState } from 'react';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, ButtonLink, Card } from '@beirut-time/ui';
+import Link from 'next/link';
+import { Building2, ArrowRight } from 'lucide-react';
+import { Button, Card, State, SegmentedGroup, StatusBadge, AnimatedList } from '@beirut-time/ui';
+import { PageHeader, PageLayout } from '@/shell/page-header';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from '@/shell/locale-context';
 import { useAccessContext } from '@/shell/access-context';
@@ -56,39 +59,37 @@ function DirectoryContent() {
     router.replace(url.pathname+url.search,{scroll:false});
     requestAnimationFrame(()=>{detail.current?.focus({preventScroll:true});detail.current?.scrollIntoView({block:'nearest',behavior:'instant'});});
   };
-  return <div className="directory-page">
-    <header className="directory-heading"><p className="eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p>{t.intro}</p></header>
-    <nav className="directory-tabs" aria-label={t.capability}>
-      <ButtonLink className={purpose==='servicing'?'':'button-secondary'} href={`/${locale}/services`} aria-current={purpose==='servicing'?'page':undefined}>{t.servicing}</ButtonLink>
-      <ButtonLink className={purpose==='customization'?'':'button-secondary'} href={`/${locale}/services?purpose=customization`} aria-current={purpose==='customization'?'page':undefined}>{t.customization}</ButtonLink>
-    </nav>
-    <p className="directory-notice">{t.notice}</p>
+  return <PageLayout className="directory-page">
+    <PageHeader lead={t.eyebrow} title={t.title} count={t.intro} views={<nav className="directory-tabs" aria-label={t.capability}><SegmentedGroup activeKey={purpose}>
+      <Link className={`pg-toggle-item pg-seg-item ${purpose==='servicing'?'pg-seg-item-active':'pg-toggle-item-inactive'}`} data-seg-active={purpose==='servicing'?'':undefined} href={`/${locale}/services`} aria-current={purpose==='servicing'?'page':undefined}>{t.servicing}</Link>
+      <Link className={`pg-toggle-item pg-seg-item ${purpose==='customization'?'pg-seg-item-active':'pg-toggle-item-inactive'}`} data-seg-active={purpose==='customization'?'':undefined} href={`/${locale}/services?purpose=customization`} aria-current={purpose==='customization'?'page':undefined}>{t.customization}</Link>
+    </SegmentedGroup></nav>} notice={<p className="directory-notice">{t.notice}</p>}/>
     {savedChoice && <p className="directory-restored"><span>{t.restored} · {t[savedChoice.capability]}</span>{savedBusiness&&<> · <bdi>{savedBusiness.display_name}</bdi></>}</p>}
-    {selectedDetail.isError && <div className="notice" role="alert"><p>{t.unavailable}</p><Button className="button-secondary" onClick={()=>void selectedDetail.refetch()}>{t.retry}</Button></div>}
-    {directory.isPending ? <div className="directory-loading" role="status">{t.loading}</div> : directory.isError ? <Card><p role="alert">{t.unavailable}</p><Button className="button-secondary" onClick={()=>void directory.refetch()}>{t.retry}</Button></Card> : <div className="directory-columns">
-      <section aria-label={t.all} className="directory-list"><div className="directory-list-heading"><p>{t.businesses} · {new Intl.NumberFormat(locale==='ar'?'ar-LB':'en-LB').format(businesses.length)}</p><Button className="button-secondary" onClick={()=>void directory.refetch()}>{t.refresh}</Button></div>
-        {businesses.length===0 && <Card><p>{t.empty}</p></Card>}
-        {businesses.map(business=><Card key={business.organization_id} className={`directory-business ${selected?.organization_id===business.organization_id?'is-selected':''}`}>
-          <div className="directory-business-type"><span className="directory-seal" aria-hidden="true">◇</span><p className="eyebrow">{t[business.kind]}</p></div>
+    {selectedDetail.isError && <div className="notice" role="alert"><p>{t.unavailable}</p><Button variant="outline" onClick={()=>void selectedDetail.refetch()}>{t.retry}</Button></div>}
+    {directory.isPending ? <State kind="loading" title={t.title} body={t.loading}/> : directory.isError ? <State kind="error" title={t.title} body={t.unavailable}><Button variant="outline" onClick={()=>void directory.refetch()}>{t.retry}</Button></State> : <div className="directory-columns">
+      <section aria-label={t.all} className="directory-list"><div className="directory-list-heading"><p>{t.businesses} · {new Intl.NumberFormat(locale==='ar'?'ar-LB':'en-LB').format(businesses.length)}</p><Button variant="outline" onClick={()=>void directory.refetch()}>{t.refresh}</Button></div>
+        {businesses.length===0 && <State title={t.businesses} body={t.empty}/>}
+        <AnimatedList items={businesses} getKey={business=>business.organization_id}>{business=><Card className={`directory-business ${selected?.organization_id===business.organization_id?'is-selected':''}`}>
+          <div className="directory-business-type"><span className="directory-seal" aria-hidden="true"><Building2/></span><p className="eyebrow">{t[business.kind]}</p></div>
           <h2>{business.display_name}</h2>{business.sample&&<p className="directory-demo">{t.sample}</p>}
           <p className="directory-muted">{locale==='ar'?business.scope_ar:business.scope_en}</p>
-          <ul className="directory-capabilities">{business.capabilities.map(item=><li key={item}>{t[item]}</li>)}</ul>
-          <Button className="button-secondary" aria-label={`${t.details}: ${business.display_name}`} aria-pressed={selected?.organization_id===business.organization_id} onClick={()=>chooseBusiness(business.organization_id)}>{t.details}<span aria-hidden="true" className="direction-arrow">→</span></Button>
-        </Card>)}
-        {directory.hasNextPage&&<Button className="button-secondary" disabled={directory.isFetchingNextPage} onClick={()=>void directory.fetchNextPage()}>{directory.isFetchingNextPage?'…':t.more}</Button>}
+          <ul className="directory-capabilities">{business.capabilities.map(item=><li key={item}><StatusBadge hue="neutral">{t[item]}</StatusBadge></li>)}</ul>
+          <Button variant="outline" aria-label={`${t.details}: ${business.display_name}`} aria-pressed={selected?.organization_id===business.organization_id} onClick={()=>chooseBusiness(business.organization_id)}>{t.details}<ArrowRight aria-hidden="true" className="direction-arrow"/></Button>
+        </Card>}</AnimatedList>
+        {directory.hasNextPage&&<Button variant="outline" disabled={directory.isFetchingNextPage} onClick={()=>void directory.fetchNextPage()}>{directory.isFetchingNextPage?'…':t.more}</Button>}
       </section>
-      <aside ref={detail} tabIndex={-1} className="directory-detail" aria-label={t.scope}>{!selected?<Card className="directory-placeholder"><span aria-hidden="true">◷</span><h2>{t.select}</h2></Card>:<>
+      <aside ref={detail} tabIndex={-1} className="directory-detail" aria-label={t.scope}>{!selected?<State title={t.select} body={t.scope}/>:<>
         <Card><p className="eyebrow">{t.scope}</p><h2>{selected.display_name}</h2><p>{locale==='ar'?selected.scope_ar:selected.scope_en}</p>
           <h3>{t.visit}</h3><p><bdi dir="auto">{selected.contact}</bdi></p><p>{locale==='ar'?selected.visit_ar:selected.visit_en}</p>
           <form onSubmit={event=>{event.preventDefault();mutation.mutate();}}><label>{t.capability}<select value={selectedCapability??''} onChange={event=>{setCapability(event.target.value as Capability);mutation.reset();}}>{capabilityOptions.map(item=><option key={item} value={item}>{t[item]}</option>)}</select></label>
             {mutation.isSuccess&&<p className="notice" role="status">{t.saved}</p>}
             {mutation.isError&&<p role="alert">{mutation.error instanceof ApiError&&mutation.error.code==='stale_revision'?t.stale:t.error}</p>}
-            {saved.isError&&<p role="alert">{t.error}<Button type="button" className="button-secondary" onClick={()=>void saved.refetch()}>{t.retry}</Button></p>}
-            {signedIn?<Button aria-busy={mutation.isPending} disabled={mutation.isPending||saved.isPending||saved.isError||!selectedCapability}>{mutation.isPending?t.saving:t.choose}</Button>:<SignInAction next={`/services?purpose=${purpose}&business=${selected.organization_id}`} label={t.signin}/>}
+            {saved.isError&&<p role="alert">{t.error}<Button type="button" variant="outline" onClick={()=>void saved.refetch()}>{t.retry}</Button></p>}
+            {signedIn?<Button chonk aria-busy={mutation.isPending} disabled={mutation.isPending||saved.isPending||saved.isError||!selectedCapability}>{mutation.isPending?t.saving:t.choose}</Button>:<SignInAction next={`/services?purpose=${purpose}&business=${selected.organization_id}`} label={t.signin}/>}
           </form>
         </Card>
         {selected.kind==='brand'&&selected.capabilities.includes('customization')&&<MovementOption key={`${selected.organization_id}:${access.fingerprint}`} brandId={selected.organization_id} sample={selected.sample}/>}
       </>}</aside>
     </div>}
-  </div>;
+  </PageLayout>;
 }

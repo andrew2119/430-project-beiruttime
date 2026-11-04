@@ -1,0 +1,238 @@
+/* ============================================================================
+   styles/motion.css - keyframes, the shared motion classes, and the ONE global
+   reduced-motion baseline.
+   - Keyframes stay top level (they are not cascaded).
+   - The class vocabulary sits in @layer components so co-applied Tailwind
+     utilities win at mixed call sites (the cascade footgun fix).
+   - The reduced-motion baseline is deliberately UNLAYERED so it outranks every
+     layered declaration (utilities included) without per-surface repetition.
+   Every duration and curve comes from styles/tokens.css; no literals here.
+   ========================================================================== */
+
+/* Radix popover/dropdown enter-exit (the shadcn/v0 pair) */
+/* Entrances end on `transform: none`, not an identity scale: the held end state (fill
+   both) then carries no matrix, so measured geometry is exact in every engine (Firefox
+   float-rounded rects under a held scale(1)). */
+@keyframes pg-slideUpAndFade {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pg-fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Overlay + modal */
+@keyframes pg-overlayIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pg-overlayOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes pg-modalIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pg-modalOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.975); }
+}
+
+/* List transitions (ADR-0033, components/ui/animated-list.tsx): a row enters
+   on the image-reveal step and leaves on the fast step; both end on
+   `transform: none` so a settled list carries no matrix. */
+@keyframes pg-listIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+/* Route content arrival (ADR-0036): the monolith's campaign body fade,
+   opacity plus a 12px rise, on the overlay step. */
+@keyframes pg-contentIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pg-listOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Skeleton shimmer (the Maintenance page's skeleton cards still name it,
+   styles/proto-maintenance.css) */
+@keyframes pg-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+/* Skeleton pulse (no gradients, captain 2026-09-30): the whole placeholder
+   breathes between two flat tones. The light tone keeps most of --muted so the
+   block never melts into the page ground at the top of the breath. */
+@keyframes pg-skeleton-pulse {
+  0%, 100% { background-color: var(--muted); }
+  50% { background-color: color-mix(in oklab, var(--muted) 65%, var(--card)); }
+}
+
+/* Public share report entrance (client-dashboard.html fadeUp parity —
+   SPEC-01 §7.5) */
+@keyframes share-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer components {
+  /* Radix popover/dropdown: open on the popover step with overshoot, close on
+     the fast step. transform-origin follows the popper side. */
+  .pg-popover { transform-origin: var(--radix-popper-transform-origin); }
+  .pg-popover[data-state="open"] {
+    animation: pg-slideUpAndFade var(--ds-motion-popover) var(--ease-overshoot);
+  }
+  .pg-popover[data-state="closed"] {
+    animation: pg-fadeOut var(--ds-motion-fast) var(--ease-in-hard);
+  }
+
+  /* Campaign detail body: arrives on entry and on every sub-tab change
+     (components/campaigns/campaign-detail-shell.tsx keys the wrapper per
+     path). `both` keeps the content unpainted until the first frame. */
+  .pg-detail-arrive { animation: pg-contentIn var(--ds-motion-overlay) var(--ease-out-soft) both; }
+
+  /* Overlay + modal: enter on the overlay step, exit on the fast step. */
+  .pg-modal { transform-origin: center; }
+  .pg-overlay[data-state="open"] { animation: pg-overlayIn var(--ds-motion-overlay) var(--ease-out-soft) both; }
+  .pg-modal[data-state="open"] { animation: pg-modalIn var(--ds-motion-overlay) var(--ease-settle) both; }
+  .pg-overlay[data-state="closed"] { animation: pg-overlayOut var(--ds-motion-fast) var(--ease-in-hard) both; }
+  .pg-modal[data-state="closed"] { animation: pg-modalOut var(--ds-motion-fast) var(--ease-in-hard) both; }
+
+  /* Skeleton pulse (also the composed row skeleton's pseudo-element media
+     box and text lines, components/ui/row-skeleton.tsx, and the boot frame's
+     bars) */
+  .pg-skeleton,
+  .pg-boot-shimmer,
+  .pg-skeleton-row-composed::before,
+  .pg-skeleton-copy::before,
+  .pg-skeleton-copy::after {
+    /* The pulse's light tone mixes toward --card so it reads in EVERY theme
+       (in classic, --accent == --muted and a muted-to-accent change is
+       invisible). Reduced motion holds the flat --muted. */
+    background: var(--muted);
+    animation: pg-skeleton-pulse var(--ds-motion-shimmer) var(--ease-standard) infinite;
+  }
+
+  /* Icon micro-motion on hover (the v0 subtle icon nudge Andrew liked) */
+  .pg-iconbtn svg {
+    transition: transform var(--ds-motion-fast) var(--ease-overshoot);
+  }
+  .pg-iconbtn:active svg { transform: translateY(0) scale(0.96); }
+
+  /* Nav item hover: color eases in, label nudges (0.15s ladder). The nudge is
+     hover-capability guarded (mockup law: no hover transforms on touch). */
+  .pg-nav-item {
+    transition: color var(--ds-motion-fast) var(--ease-standard),
+      transform var(--ds-motion-fast) var(--ease-settle);
+  }
+
+  /* Row hover for tables (restored: campaign-row.tsx and
+     efficiency/EfficiencyDashboard.tsx still emit pg-row). */
+  .pg-row {
+    transition: background-color var(--ds-motion-fast) var(--ease-standard);
+  }
+
+  /* The ONE list-transition layer. The item box is a plain block so a row's
+     margins keep collapsing through it exactly as they did without the box;
+     inside a card grid (`.pg-list-grid`) the box is itself a grid so the card
+     stretches to the row height as a direct grid child would. Enter plays only
+     for a row the caller marks as a live arrival, every arrival of a batch at
+     once (captain 2026-10-24); exit holds the box for one fast beat with
+     pointer events off; a reorder releases its FLIP transform on the popover
+     step. */
+  .pg-list-item {
+    display: block;
+    min-inline-size: 0;
+  }
+  .pg-list-grid > .pg-list-item { display: grid; }
+  /* `backwards`, not `both`: once the beat ends the row returns to its natural
+     styles, so a settled row carries no held matrix (a `both` fill of
+     `transform: none` still resolves to an identity matrix in Chromium). */
+  .pg-list-item[data-list-enter] {
+    animation: pg-listIn var(--ds-motion-image-reveal) var(--ease-out-soft) backwards;
+  }
+  /* A row that enters fades its picture in too, even one that was ready
+     (captain 2026-10-24); the reduced-motion baseline below still wins. */
+  .pg-list-item[data-list-enter] .ui-image-frame-img,
+  .pg-list-item[data-list-enter] .ui-image-frame-placeholder {
+    transition: opacity var(--ds-motion-image-reveal) var(--ease-out-soft);
+  }
+  .pg-list-item[data-list-exit] {
+    animation: pg-listOut var(--ds-motion-fast) var(--ease-in-hard) both;
+    pointer-events: none;
+  }
+  .pg-list-item[data-list-flip] {
+    transition: transform var(--ds-motion-popover) var(--ease-settle);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .pg-iconbtn:hover svg { transform: translateY(-1px) scale(1.08); }
+    .pg-nav-item:hover { transform: translateX(2px); }
+  }
+
+  /* Theme cross-fade gate: while the View Transition snapshots run, the
+     body and card colour transitions would animate underneath the new
+     snapshot; the cross-fade owns that moment alone. The provider already
+     skips the transition under reduced motion, where the global baseline
+     zeroes these transitions anyway. */
+  :root:active-view-transition body,
+  :root:active-view-transition .pg-card,
+  :root:active-view-transition .pg-dept-card { transition: none; }
+}
+
+/* ============================================================================
+   The ONE global reduced-motion baseline (unlayered on purpose).
+   Neutralizes every transition/animation duration in the app (the shared
+   vocabulary, Tailwind animate and transition utilities, department-local
+   keyframes) and the theme view-transition cross-fade. Per-surface blocks may
+   still reset end-state transforms (a jump is still a jump); they no longer
+   need to zero durations themselves.
+   App styles are layered by globals.css; the loader also uses layered CSS
+   instead of inline animation shorthands, so this needs no cascade override.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: var(--ds-motion-reduced);
+    animation-delay: 0ms;
+    animation-iteration-count: 1;
+    transition-duration: var(--ds-motion-reduced);
+    transition-delay: 0ms;
+    scroll-behavior: auto;
+  }
+  /* Image reveal (ADR-0031) is atomic under reduced motion: no fade at all,
+     the decoded picture simply replaces the placeholder. */
+  .ui-image-frame-img,
+  .ui-image-frame-placeholder,
+  .ui-image-frame-glyph {
+    transition: none;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+  /* End-state resets for the shared vocabulary. */
+  .pg-skeleton,
+  .pg-boot-shimmer,
+  .pg-skeleton-row-composed::before,
+  .pg-skeleton-copy::before,
+  .pg-skeleton-copy::after { animation: none; }
+  .pg-nav-item:hover,
+  .pg-iconbtn:hover svg,
+  .pg-iconbtn:active svg { transform: none; }
+  .pg-chonk:hover::after,
+  .pg-chonk:hover > span { transform: translateY(-2px); }
+  .pg-nav-icon .pg-nav-icon-glyph { animation: none; transform: none; opacity: 1; }
+  .pg-dept-link:hover .pg-dept-card,
+  .pg-dept-link:active .pg-dept-card,
+  .pg-dept-card-go { transform: none; }
+  .pg-nav-icon::before { transition: none; }
+  /* Lists mount and unmount atomically; the primitive also skips the exit
+     hold and the FLIP under this query. */
+  .pg-list-item[data-list-enter],
+  .pg-list-item[data-list-exit] { animation: none; }
+  .pg-list-item[data-list-flip] { transition: none; transform: none; }
+  .pg-seg-thumb { transition: none; }
+  /* Campaign detail content mounts atomically. */
+  .pg-detail-arrive { animation: none; }
+}

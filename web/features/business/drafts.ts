@@ -31,8 +31,12 @@ export function usePublicBusinessDraft(owner: string | null) {
       if (
         kind instanceof HTMLSelectElement &&
         (draft.kind === "brand" || draft.kind === "dealer")
-      )
+      ) {
         kind.value = draft.kind;
+        // Update the menu bridge without re-saving a half-restored form through
+        // the parent's autosave while capabilities are still being restored.
+        kind.dispatchEvent(new Event("change"));
+      }
       form.current
         .querySelectorAll<HTMLInputElement>('input[name="capabilities"]')
         .forEach((input) => {

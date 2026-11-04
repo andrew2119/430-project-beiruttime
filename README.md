@@ -85,7 +85,7 @@ Errors use `{ "error": { "code", "message", "request_id", "details" } }`. `X-Req
 
 ## Design and phone behavior
 
-English/Arabic and the saved light/dark preference are stamped by the server before paint. Locale switching preserves the current public route/query. Feature dictionaries and styles stay local. Shared primitives adapt Creator Pipeline F-01, F-13, F-33–41 and F-73 without its product workflows.
+English/Arabic and the saved light/dark preference are stamped by the server before paint. Locale switching preserves the current public route/query. Feature dictionaries and layout adapters stay local. The shared interface ports Creator Pipeline's Lexend Deca typography, token palettes, primitives, shell, headers and motion without its product workflows. The app opens into a role-filtered dashboard; Settings contains profile/account, language and theme preferences. See [the shared design contract](docs/design-system.md).
 
 The single phone shell breakpoint is **850px**. One persistent inner scroller sits between a header and a safe-area-aware bottom row; a modal menu replaces desktop navigation. Hit targets are at least 44px, with 36px painted buttons; input text remains at least 16px. Logical CSS and isolated LTR references support Arabic. Non-secret same-user draft conveniences are scoped and purged on identity/access changes; credentials and private evidence must never enter web storage.
 

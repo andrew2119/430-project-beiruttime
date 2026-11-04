@@ -1,4 +1,22 @@
-/* CP mobile §3.4: stable form content, container-selected stacking, no phone clone. */
-.request-page{max-inline-size:1180px;margin-inline:auto;padding:40px;container-type:inline-size}.request-page header{max-inline-size:760px;margin-block-end:24px}.request-page h1{font-size:40px;line-height:1.3;margin-block:12px}.request-page bdi{overflow-wrap:anywhere}.request-page h2{font-size:24px;margin-block-end:12px}.request-page p{color:var(--muted)}.request-grid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:24px;align-items:start}.request-form{display:grid;gap:16px}.request-form label{display:grid;gap:8px;font-size:13px}.request-form textarea{min-block-size:112px;resize:vertical;font:inherit}.request-form select{font:inherit}.request-option-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.request-readiness{list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0;margin-block:20px}.request-readiness li{border:1px solid var(--border);padding:16px}.request-readiness li strong{display:block}.request-readiness li span{display:block;font-size:12px;color:var(--muted)}.request-list{list-style:none;padding:0;display:grid;gap:12px}.request-list button{text-align:start;min-block-size:44px;inline-size:100%;white-space:normal;overflow-wrap:anywhere}.request-list small{display:block;color:var(--muted);margin-block:4px 12px}.request-notice{border-inline-start:3px solid var(--accent);padding:16px;background:var(--accent-soft);margin-block:16px;font-size:13px}.request-tools{display:flex;gap:8px;flex-wrap:wrap;margin-block:16px}.request-support{overflow-wrap:anywhere}.request-form fieldset{border:1px solid var(--border);padding:16px;min-inline-size:0}.request-form legend{padding-inline:8px;color:var(--accent)}.request-form fieldset p{font-size:13px;margin-block-end:12px}
-@container(max-width:48rem){.request-grid{grid-template-columns:minmax(0,1fr)}.request-grid aside{order:2}}
-@media(max-width:850px){.request-page{padding:16px 12px}.request-page h1{font-size:28px}.request-page header{margin-block-end:16px}.request-grid{gap:12px}.request-page .card{padding:16px}.request-form :is(input,textarea,select){font-size:16px;min-block-size:44px}.request-page :is(button,a){min-block-size:44px}.request-option-grid,.request-readiness{grid-template-columns:minmax(0,1fr)}.request-tools .button{flex:1 1 auto}}
+/* CP Settings cards and Requests metadata rows; shared form recipe is in identity/styles.css. */
+.request-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,18rem);gap:var(--ds-space-4);align-items:start;margin-block-start:var(--ds-gap-content)}
+.request-grid>div,.request-grid>aside{display:grid;gap:var(--ds-space-4);min-inline-size:0}
+.request-form small,.request-support{color:var(--muted-foreground);font-size:0.75rem;line-height:1.625;overflow-wrap:anywhere}
+.request-form .ui-textarea{min-block-size:7rem;resize:vertical}
+.request-option-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ds-space-3)}
+.request-readiness{list-style:none;display:grid;gap:0;padding:0;margin:0}
+.request-readiness li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--ds-space-3);border-block-start:0.0625rem solid var(--border);padding-block:var(--ds-space-3);font-size:0.8125rem}
+.request-readiness li strong{font-weight:var(--ds-weight-strong)}
+.request-readiness li span{font-size:0.75rem;color:var(--muted-foreground)}
+.request-list{min-inline-size:0}
+.request-list-row{padding-block:var(--ds-space-3);border-block-start:0.0625rem solid var(--border)}
+.request-list-row button{justify-content:flex-start;inline-size:100%;block-size:auto;white-space:normal;overflow-wrap:anywhere;text-align:start}
+.request-list-row small{display:block;color:var(--muted-foreground);font-size:0.6875rem;margin-block-start:var(--ds-space-2)}
+.request-notice{padding:var(--ds-space-3);background:var(--muted);border-radius:var(--radius-lg);font-size:0.75rem;display:grid;gap:var(--ds-space-2)}
+.request-notice[role=alert]{color:var(--destructive-ink)}
+.request-tools{display:flex;gap:var(--ds-space-2);flex-wrap:wrap}
+.request-form fieldset{border:0;border-block-start:0.0625rem solid var(--border);padding:var(--ds-space-4) 0 0;min-inline-size:0}
+.request-form legend{font-size:0.875rem;font-weight:var(--ds-weight-strong)}
+.request-form fieldset p{font-size:0.75rem;color:var(--muted-foreground);margin-block-end:var(--ds-space-3)}
+@container(max-width:48rem){.request-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:850px){.request-option-grid{grid-template-columns:minmax(0,1fr)}.request-tools .ui-btn{flex:1 1 auto}}

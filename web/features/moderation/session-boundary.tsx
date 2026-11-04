@@ -1,13 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { refreshSession, signInHref, useSession } from '@/features/identity/session';
 import { ApiError } from '@/lib/api/client';
-import { Card } from '@beirut-time/ui';
+import { ButtonLink, State } from '@beirut-time/ui';
 import ModerationScreen from './moderation-screen';
 import DashboardScreen from './dashboard-screen';
 import IntakeScreen from './intake-screen';
-import { ErrorNotice, FeatureFrame, useCopy } from './common';
+import { ErrorNotice, FeatureFrame, LoadState, useCopy } from './common';
 
 export default function OperationsBoundary({screen,initialCase,queueId}:{screen:'moderation'|'dashboard'|'intake';initialCase?:string;queueId?:string}) {
   const session=useSession();
@@ -28,5 +27,5 @@ export default function OperationsBoundary({screen,initialCase,queueId}:{screen:
   }
   const next=screen==='intake'?'/business-intake':`/operations/${screen}`;
   const unauthorized=state.error instanceof ApiError&&state.error.status===401;
-  return <FeatureFrame title={screen} intro={`${screen}Intro`}>{state.loading?<Card role="status" aria-busy="true">{t('loading')}</Card>:unauthorized?<Card><h2>{t('signIn')}</h2><p>{t('signInBody')}</p><Link className="button" href={signInHref(next,locale)}>{t('account')}</Link></Card>:<ErrorNotice error={state.error} retry={()=>{setState({loading:true});setRetry(value=>value+1);}}/>}</FeatureFrame>;
+  return <FeatureFrame title={screen} intro={`${screen}Intro`}>{state.loading?<LoadState loading refresh={()=>{}}/>:unauthorized?<State title={t('signIn')} body={t('signInBody')}><ButtonLink href={signInHref(next,locale)}>{t('account')}</ButtonLink></State>:<ErrorNotice error={state.error} retry={()=>{setState({loading:true});setRetry(value=>value+1);}}/>}</FeatureFrame>;
 }

@@ -1,0 +1,863 @@
+/* LAB PROTOTYPE ONLY (2026-10-02 evening; round 2 liquid glass at the end). Tabs and mode switches: three options replacing the red underline. Imported last. */
+
+/* The captain (round 7): "I don't like the design you added where there's this line
+   in red below ... it just doesn't fit with the design that I'm looking for." The
+   header's tabs (components/proto/tabs/header-tabs.tsx, rendered by the shared page
+   header wherever it shows tabs) come in three looks on the lab bar's "Tabs" switch:
+
+     A "Tray"   - one recessed track; a raised key glides between the tabs (the same
+                  language as the site's Segmented mode switches).
+     B "Ink"    - free labels; the current tab is a solid ink plate that stretches
+                  across, leading edge first; a soft ghost follows the mouse. The
+                  header's mode switches take the same ink key.
+     C "Folder" - a recessed band on the card's bottom edge; the current tab is a
+                  sheet of the page below, joined to it by curved feet, sliding along.
+
+   No underline, no tint on the current tab, no gradients. Every size, colour, radius
+   and duration comes from the tokens; the motion is one measured piece per look and
+   is instant under reduced motion. These rules override the round 6 hx-tab* rules
+   in proto-page-header.css (left untouched). */
+
+/* ============================================================================
+   Shared anatomy (all looks)
+   ========================================================================== */
+.hx-tabs[data-look] {
+  --tabs-move: var(--ds-motion-overlay);
+  gap: var(--ds-space-1);
+  align-items: center;
+}
+.hx-tabs[data-look] > .hx-tab {
+  z-index: 1;
+  justify-content: center;
+  font-weight: var(--ds-weight-strong);
+  transition: color var(--tabs-move) var(--ease-standard),
+    background-color var(--ds-motion-fast) var(--ease-standard);
+}
+.hx-tabs[data-look] > .hx-tab[data-on] { font-weight: var(--ds-weight-heavy); }
+.hx-tabs[data-look] > .hx-tab svg { flex: none; transition: color var(--tabs-move) var(--ease-standard); }
+
+/* The label reserves its heavy width, so nothing shifts when a tab becomes current. */
+.hx-tab-label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+.hx-tab-label::after {
+  content: attr(data-text);
+  block-size: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font-weight: var(--ds-weight-heavy);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* The moving piece: placed by the measured rect of the current tab. */
+.hx-tabs[data-look] > .hx-ind {
+  z-index: 0;
+  inset-block: 0 auto;
+  inset-inline-start: 0;
+  inline-size: var(--hx-ind-w);
+  block-size: var(--hx-ind-h);
+  border-radius: var(--radius-lg);
+  background: none;
+  transform: translate(var(--hx-ind-x), var(--hx-ind-y));
+}
+
+/* Counts: a quiet chip; never red. A fan page's "needs a song" alert keeps its own tone. */
+.hx-tabs[data-look] .hx-tab .hx-tab-count:not(:has(> .fa-tab-alert)) {
+  display: inline-grid;
+  min-inline-size: 20px;
+  place-items: center;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--foreground) 8%, transparent);
+  color: var(--muted-foreground);
+  transition: color var(--tabs-move) var(--ease-standard),
+    background-color var(--tabs-move) var(--ease-standard);
+}
+
+/* The captain's readability rule (2026-10-10; A-3 b), each count in its failing look
+   only (measured on the campaign header): a tab that is not current read 4.38:1 in
+   Classic (3.83 under the pointer) and 2.92 in Dark (3.41), its quiet text on its own chip.
+   The smallest steps toward the normal text colour that read 4.5:1 are Classic 96%
+   (4.51), 76% under the pointer (4.53), and Dark 55% (4.50, which also holds under
+   the pointer). Light already passes. */
+[data-theme="classic"] .hx-tabs[data-look] > .hx-tab:not([data-on]) .hx-tab-count:not(:has(> .fa-tab-alert)) {
+  color: color-mix(in oklab, var(--muted-foreground) 96%, var(--foreground));
+}
+[data-theme="dark"] .hx-tabs[data-look] > .hx-tab:not([data-on]) .hx-tab-count:not(:has(> .fa-tab-alert)) {
+  color: color-mix(in oklab, var(--muted-foreground) 55%, var(--foreground));
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-theme="classic"] .hx-tabs[data-look] > .hx-tab:not([data-on]):hover .hx-tab-count:not(:has(> .fa-tab-alert)) {
+    color: color-mix(in oklab, var(--muted-foreground) 76%, var(--foreground));
+  }
+}
+
+/* A fan page's alert count keeps its orange tone, on a card base so it reads on a
+   tray or a band too. */
+.hx-tabs[data-look] .hx-tab .hx-tab-count:has(> .fa-tab-alert) {
+  background: color-mix(in oklab, var(--color-status-orange) 16%, var(--card));
+}
+
+/* Before the first measurement the current tab paints its own piece. */
+.hx-tabs[data-look="A"]:not([data-measured]) > .hx-tab[data-on] { background: var(--tabs-key); box-shadow: var(--ds-shadow-small); }
+.hx-tabs[data-look="B"]:not([data-measured]) > .hx-tab[data-on] { background: var(--tabs-ink); }
+.hx-tabs[data-look="C"]:not([data-measured]) > .hx-tab[data-on] { background: var(--card); }
+
+/* The fit check's single-line copy: invisible, outside the layout. */
+.hx-tabs-rulerbox {
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+.hx-tabs-rulerbox > .hx-tabs.hx-tabs-ruler {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  display: flex;
+  inline-size: max-content;
+  max-inline-size: none;
+  overflow: visible;
+}
+
+/* Where the row sits: A and B live inside the card (its bottom padding comes back,
+   no hairline); C keeps the card's bottom edge for its band. */
+.hx-head[data-opt="A"][data-nav]:has(> .hx-navrow > .hx-tabs:is([data-look="A"], [data-look="B"])) {
+  padding-block-end: var(--ds-pad-header-block);
+}
+.hx-head[data-opt="A"] > .hx-navrow:has(> .hx-tabs:is([data-look="A"], [data-look="B"])) {
+  margin-inline: 0;
+  padding-inline: 0;
+  box-shadow: none;
+}
+
+/* ============================================================================
+   A "Tray": a recessed track and a raised key
+   ========================================================================== */
+.hx-tabs[data-look="A"] {
+  --tabs-key: var(--card);
+  --tabs-track: var(--muted);
+  inline-size: max-content;
+  max-inline-size: 100%;
+  gap: 2px;
+  padding: var(--ds-space-1);
+  border-radius: var(--radius-xl);
+  background: var(--tabs-track);
+  box-shadow: inset 0 0 0 1px var(--ds-hairline), var(--ds-shadow-key);
+}
+:root[data-theme="dark"] .hx-tabs[data-look="A"] {
+  --tabs-key: color-mix(in oklab, var(--foreground) 11%, var(--card));
+  --tabs-track: color-mix(in oklab, var(--background) 65%, var(--card));
+}
+.hx-tabs[data-look="A"] > .hx-tab {
+  block-size: calc(var(--ds-tab-height) - 2 * var(--ds-space-1));
+  padding: 0 var(--ds-space-4);
+  border-radius: var(--radius-lg);
+  color: var(--muted-foreground);
+}
+.hx-tabs[data-look="A"] > .hx-tab[data-on] { color: var(--foreground); background: transparent; }
+.hx-tabs[data-look="A"] > .hx-tab[data-on] svg { color: var(--primary-ink); }
+.hx-tabs[data-look="A"] > .hx-ind {
+  border-radius: var(--radius-lg);
+  background: var(--tabs-key);
+  box-shadow: var(--ds-shadow-small), inset 0 1px 0 var(--ds-gloss-line);
+  transition: transform var(--tabs-move) var(--ease-settle),
+    inline-size var(--tabs-move) var(--ease-settle),
+    block-size var(--tabs-move) var(--ease-settle);
+}
+.hx-tabs[data-look="A"] > .hx-tab[data-on] .hx-tab-count:not(:has(> .fa-tab-alert)) {
+  background: var(--muted);
+  color: var(--foreground);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hx-tabs[data-look="A"] > .hx-tab:not([data-on]):hover {
+    background: color-mix(in oklab, var(--tabs-key) 50%, transparent);
+    color: var(--foreground);
+  }
+}
+
+/* A's mode switches are the same tray: in the dark theme the header's Segmented
+   takes the tabs' recessed track and raised key too (classic already matches). */
+:root[data-lab-tabs="A"][data-theme="dark"] .hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) {
+  background: color-mix(in oklab, var(--background) 65%, var(--card));
+}
+:root[data-lab-tabs="A"][data-theme="dark"] .hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) > .pg-seg-thumb {
+  background: color-mix(in oklab, var(--foreground) 11%, var(--card));
+  box-shadow: var(--ds-shadow-small), inset 0 1px 0 var(--ds-gloss-line);
+}
+
+/* ============================================================================
+   B "Ink": a solid plate that stretches, a ghost that follows the mouse
+   ========================================================================== */
+.hx-tabs[data-look="B"] {
+  --tabs-ink: var(--foreground);
+  --tabs-on-ink: var(--card);
+  inline-size: max-content;
+  max-inline-size: calc(100% + 8px);
+  gap: var(--ds-space-1);
+  /* Room inside the scrolling row for the plate's soft shadow and the focus ring
+     drawn outside the plate. */
+  padding: var(--ds-space-1);
+  margin: calc(-1 * var(--ds-space-1));
+}
+.hx-tabs[data-look="B"] > .hx-tab {
+  block-size: calc(var(--ds-tab-height) - var(--ds-space-1));
+  padding: 0 var(--ds-space-4);
+  border-radius: var(--ds-radius-chonk);
+  color: var(--muted-foreground);
+}
+/* The real labels stay quiet; the plate's own copy shows the light ones. */
+.hx-tabs[data-look="B"]:not(.hx-ind-copy) > .hx-tab[data-on] { color: var(--muted-foreground); background: transparent; }
+.hx-tabs[data-look="B"]:not([data-measured]) > .hx-tab[data-on] { color: var(--tabs-on-ink); }
+.hx-tabs[data-look="B"] > .hx-tab:focus-visible { outline-offset: 2px; }
+/* Physical edges (the measured offsets are physical): the edge in the direction of
+   travel leaves first and the other follows, so the plate stretches, then settles. */
+.hx-tabs[data-look="B"] > .hx-ind {
+  inset-block: 0 auto;
+  left: var(--hx-ind-x);
+  right: var(--hx-ind-r);
+  inline-size: auto;
+  border-radius: var(--ds-radius-chonk);
+  background: var(--tabs-ink);
+  box-shadow: var(--ds-shadow-small), inset 0 1px 0 color-mix(in oklab, var(--tabs-on-ink) 16%, transparent);
+  z-index: 2;
+  overflow: hidden;
+  transform: translateY(var(--hx-ind-y));
+  pointer-events: none;
+  transition: left var(--tabs-move) var(--ease-expressive),
+    right var(--tabs-move) var(--ease-expressive),
+    transform var(--tabs-move) var(--ease-expressive),
+    block-size var(--tabs-move) var(--ease-expressive);
+}
+.hx-tabs[data-look="B"][data-dir="fwd"] > .hx-ind { transition-delay: calc(var(--ds-motion-fast) / 2), 0s, 0s, 0s; }
+.hx-tabs[data-look="B"][data-dir="back"] > .hx-ind { transition-delay: 0s, calc(var(--ds-motion-fast) / 2), 0s, 0s; }
+/* The plate's own copy of the row, in ink colours, counter-moved with the very same
+   timing as the plate's leading edge so it stays exactly over the real labels. */
+.hx-ind > .hx-tabs.hx-ind-copy[data-look] {
+  position: absolute;
+  inset-block-start: calc(-1 * var(--hx-ind-y));
+  left: calc(-1 * var(--hx-ind-x));
+  inline-size: calc(var(--hx-ind-x) + var(--hx-ind-w) + var(--hx-ind-r));
+  max-inline-size: none;
+  margin: 0;
+  overflow: visible;
+  transition: left var(--tabs-move) var(--ease-expressive),
+    inset-block-start var(--tabs-move) var(--ease-expressive);
+}
+.hx-tabs[data-look="B"][data-dir="fwd"] > .hx-ind > .hx-ind-copy { transition-delay: calc(var(--ds-motion-fast) / 2), 0s; }
+.hx-ind > .hx-ind-copy[data-look="B"] > .hx-tab { color: var(--tabs-on-ink); background: transparent; transition: none; }
+.hx-ind > .hx-ind-copy[data-look="B"] > .hx-tab svg { transition: none; }
+.hx-ind > .hx-ind-copy[data-look="B"] > .hx-tab .hx-tab-count:not(:has(> .fa-tab-alert)) {
+  background: color-mix(in oklab, var(--tabs-on-ink) 20%, transparent);
+  color: var(--tabs-on-ink);
+  transition: none;
+}
+/* The ghost: fades in where the mouse is, then glides from tab to tab. */
+.hx-tabs[data-look="B"] > .hx-ghost {
+  position: absolute;
+  z-index: 0;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: var(--hx-ghost-w);
+  block-size: var(--hx-ghost-h);
+  border-radius: var(--ds-radius-chonk);
+  background: var(--accent);
+  opacity: 0;
+  transform: translate(var(--hx-ghost-x), var(--hx-ghost-y));
+  transition: opacity var(--ds-motion-fast) var(--ease-standard);
+  pointer-events: none;
+}
+.hx-tabs[data-look="B"] > .hx-ghost[data-on] {
+  opacity: 1;
+  transition: opacity var(--ds-motion-fast) var(--ease-standard),
+    transform var(--ds-motion-popover) var(--ease-settle),
+    inline-size var(--ds-motion-popover) var(--ease-settle);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hx-tabs[data-look="B"] > .hx-tab:not([data-on]):hover { color: var(--foreground); }
+}
+
+/* B's mode switches: every Segmented in a page header card (UGC / Fan Accounts, My
+   day / Team, By campaign / By marketer) and the sub-campaign switcher take the ink
+   key. A campaign tab's own toolbar (its saved views) keeps the quiet key. */
+:root[data-lab-tabs="B"] .hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) > .pg-seg-thumb {
+  background: var(--foreground);
+  box-shadow: var(--ds-shadow-small);
+}
+:root[data-lab-tabs="B"] .hx-zone > .hx-head .pg-seg :is(.pg-seg-item-active, [data-seg-active]),
+:root[data-lab-tabs="B"] .hx-zone > .hx-head .proto-fam-track .proto-fam-seg[aria-current="page"] {
+  color: var(--card);
+}
+:root[data-lab-tabs="B"] .hx-zone > .hx-head .pg-seg:not([data-seg-measured]) [data-seg-active] { background: var(--foreground); }
+
+/* ============================================================================
+   C "Folder": a recessed band on the card's edge, the current tab a sheet of the
+   page below with curved feet
+   ========================================================================== */
+.hx-head[data-opt="A"] > .hx-navrow:has(> .hx-tabs[data-look="C"]) {
+  --tabs-band: var(--muted);
+  margin-inline: calc(-1 * var(--ds-pad-header-inline));
+  padding: var(--ds-space-2) calc(var(--ds-pad-header-inline) - var(--ds-space-4) - var(--radius-lg)) 0;
+  border-end-start-radius: var(--radius-2xl);
+  border-end-end-radius: var(--radius-2xl);
+  background: var(--tabs-band);
+  box-shadow: inset 0 1px 0 var(--ds-hairline);
+  overflow: clip;
+}
+:root[data-theme="dark"] .hx-head[data-opt="A"] > .hx-navrow:has(> .hx-tabs[data-look="C"]) {
+  --tabs-band: color-mix(in oklab, var(--background) 65%, var(--card));
+}
+/* On a campaign page the header and the tab's body are one card: the band sits on
+   the seam and the sheet runs into the body below. */
+.hx-detail-page .hx-head[data-opt="A"] > .hx-navrow:has(> .hx-tabs[data-look="C"]) {
+  border-radius: 0;
+  overflow: visible;
+}
+.hx-tabs[data-look="C"] {
+  --flare: var(--radius-lg);
+  gap: 2px;
+  align-items: flex-end;
+  /* Room inside the scrolling row for the feet, the top hairline and the foot
+     over the seam. */
+  padding: 2px var(--flare);
+  margin-block: -2px;
+}
+.hx-tabs[data-look="C"] > .hx-tab {
+  block-size: var(--ds-tab-height);
+  padding: 0 var(--ds-space-4);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  color: var(--muted-foreground);
+}
+.hx-tabs[data-look="C"] > .hx-tab[data-on] { color: var(--foreground); background: transparent; }
+.hx-tabs[data-look="C"] > .hx-tab[data-on] svg { color: var(--primary-ink); }
+.hx-tabs[data-look="C"] > .hx-ind {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--card);
+  filter: drop-shadow(0 -1px 0 var(--ds-hairline));
+  transition: transform var(--tabs-move) var(--ease-expressive),
+    inline-size var(--tabs-move) var(--ease-expressive),
+    block-size var(--tabs-move) var(--ease-expressive);
+}
+.hx-detail-page .hx-tabs[data-look="C"] > .hx-ind { block-size: calc(var(--hx-ind-h) + 1px); }
+/* The curved feet: a square whose rounded corner is cut away, painted only in the
+   cut by its own spread shadow (no gradient), one on each side of the sheet. */
+.hx-tabs[data-look="C"] > .hx-ind::before,
+.hx-tabs[data-look="C"] > .hx-ind::after {
+  content: "";
+  position: absolute;
+  inset-block-end: 0;
+  inline-size: var(--flare);
+  block-size: var(--flare);
+  box-shadow: 0 0 0 var(--flare) var(--card);
+  clip-path: inset(0);
+}
+.hx-tabs[data-look="C"] > .hx-ind::before { right: 100%; border-end-end-radius: var(--flare); }
+.hx-tabs[data-look="C"] > .hx-ind::after { left: 100%; border-end-start-radius: var(--flare); }
+.hx-tabs[data-look="C"] > .hx-tab[data-on] .hx-tab-count:not(:has(> .fa-tab-alert)) {
+  background: var(--muted);
+  color: var(--foreground);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hx-tabs[data-look="C"] > .hx-tab:not([data-on]):hover {
+    background: color-mix(in oklab, var(--card) 50%, transparent);
+    color: var(--foreground);
+  }
+}
+
+/* ============================================================================
+   Phones (the header's own width, 30rem): the row fills the card. One line when
+   every label fits beside its icon; tiles with the icon over the label otherwise.
+   ========================================================================== */
+@container hx (max-width: 30rem) {
+  .hx-tabs[data-look][data-nav] { display: flex; gap: 2px; }
+  .hx-tabs[data-look]:not(.hx-tabs-ruler) { inline-size: 100%; max-inline-size: 100%; }
+  .hx-tabs[data-look="B"]:not(.hx-tabs-ruler) { inline-size: calc(100% + 8px); max-inline-size: calc(100% + 8px); }
+  .hx-tabs[data-look][data-fit="line"]:not(.hx-tabs-ruler) > .hx-tab { flex: 1 0 auto; }
+  /* Tiles share the room by their labels' widths, so a long label never touches. */
+  .hx-tabs[data-look][data-fit="stack"] > .hx-tab { flex: 1 1 auto; }
+  .hx-tabs[data-look] > .hx-tab { min-inline-size: 0; }
+
+  /* One line: drawn 36 (A inside its 44 tray, B on its own, C 40 on the band). */
+  .hx-tabs[data-look][data-fit="line"] > .hx-tab {
+    flex-direction: row;
+    gap: 5px;
+    padding: 0 var(--ds-space-2);
+    font-size: var(--ds-control-text);
+  }
+  .hx-tabs[data-look][data-fit="line"] > .hx-tab svg { inline-size: 15px; block-size: 15px; }
+  .hx-tabs[data-look="A"][data-fit="line"] > .hx-tab,
+  .hx-tabs[data-look="B"][data-fit="line"] > .hx-tab { block-size: var(--ds-phone-control); }
+  .hx-tabs[data-look="C"][data-fit="line"] > .hx-tab { block-size: var(--ds-tab-height); }
+  .hx-tabs[data-look][data-fit="line"] .hx-tab .hx-tab-count {
+    position: static;
+    min-inline-size: 18px;
+    block-size: auto;
+    padding: 3px 5px;
+    font-size: 0.625rem;
+  }
+
+  /* Tiles: icon over label, the count as a badge on the icon's shoulder. */
+  .hx-tabs[data-look][data-fit="stack"] > .hx-tab {
+    flex-direction: column;
+    gap: 3px;
+    block-size: 52px;
+    padding: 6px 2px 4px;
+    font-size: 0.6875rem;
+  }
+  .hx-tabs[data-look][data-fit="stack"] .hx-tab .hx-tab-count {
+    position: absolute;
+    inset-block-start: 4px;
+    inset-inline-start: calc(50% + 6px);
+    min-inline-size: 16px;
+    block-size: 16px;
+    padding: 0 4px;
+    font-size: 0.625rem;
+  }
+  .hx-tabs[data-look][data-fit="stack"] .hx-tab-label { max-inline-size: 100%; }
+  .hx-tabs[data-look="C"][data-fit="stack"] > .hx-tab { block-size: 54px; }
+
+  .hx-tabs[data-look="A"] { padding: var(--ds-space-1); }
+  .hx-head[data-opt="A"] > .hx-navrow:has(> .hx-tabs[data-look="C"]) {
+    padding: var(--ds-space-2) 0 0;
+  }
+}
+
+/* ============================================================================
+   Reduced motion: every piece jumps; colours change at once.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .hx-tabs[data-look] > :is(.hx-ind, .hx-ghost, .hx-tab),
+  .hx-ind > .hx-tabs.hx-ind-copy[data-look],
+  .hx-tabs[data-look] > .hx-tab :is(svg, .hx-tab-count),
+  .hx-tabs[data-look] > .hx-ghost[data-on] {
+    transition: none;
+  }
+}
+
+/* ############################################################################
+   ROUND 2 (2026-10-02 night): LIQUID GLASS
+   The captain locked Ink, then: "I'm having second thoughts on the ink part ...
+   make it maybe liquid glass as that would be better and would avoid this
+   unnecessary contrast." Three takes on the lab bar's "Tabs" switch (the looks
+   above stay, unused): A Frost (data-look="frost"), B Lens ("lens"), C Pane
+   ("pane"). Glass = translucency + backdrop blur and saturation + a thin light
+   inner edge + a soft shadow. No gradients: the specular light is an inset line.
+   ############################################################################ */
+
+/* The glass materials, shared by the tabs and every mode switch: the header's and,
+   since finding 28, a card's own (so they are set on the page root as well). */
+
+
+
+/* Where the row sits: inside the card, like Tray and Ink. */
+.hx-head[data-opt="A"][data-nav]:has(> .hx-navrow > .hx-tabs:is([data-look="frost"], [data-look="lens"], [data-look="pane"])) {
+  padding-block-end: var(--ds-pad-header-block);
+}
+.hx-head[data-opt="A"] > .hx-navrow:has(> .hx-tabs:is([data-look="frost"], [data-look="lens"], [data-look="pane"])) {
+  margin-inline: 0;
+  padding-inline: 0;
+  box-shadow: none;
+}
+.hx-lens-defs { position: absolute; inline-size: 0; block-size: 0; overflow: hidden; pointer-events: none; }
+
+/* Shared: the glass tabs' labels; the current one darkens, its icon keeps the
+   label's brand touch; counts stay quiet chips. */
+.hx-tabs:is([data-look="frost"], [data-look="lens"], [data-look="pane"]) > .hx-tab {
+  padding: 0 var(--ds-space-4);
+  color: var(--muted-foreground);
+  background: transparent;
+}
+/* Finding 28: the current tab's label and icon are the calm plain ink, so a colour
+   only ever means a status. */
+.hx-tabs:is([data-look="frost"], [data-look="pane"]) > .hx-tab[data-on] { color: var(--calm-ink); background: transparent; }
+.hx-tabs:is([data-look="frost"], [data-look="pane"]) > .hx-tab[data-on] svg { color: var(--calm-ink); }
+.hx-tabs:is([data-look="frost"], [data-look="lens"], [data-look="pane"]) > .hx-tab[data-on] .hx-tab-count:not(:has(> .fa-tab-alert)) {
+  background: color-mix(in oklab, var(--foreground) 10%, transparent);
+  color: var(--foreground);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hx-tabs:is([data-look="frost"], [data-look="lens"], [data-look="pane"]) > .hx-tab:not([data-on]):hover { color: var(--foreground); }
+}
+/* Before the first measurement the current tab is its own glass. */
+.hx-tabs:is([data-look="frost"], [data-look="lens"], [data-look="pane"]):not([data-measured]) > .hx-tab[data-on] {
+  background: var(--glass-milk);
+  box-shadow: var(--glass-edge);
+}
+
+/* ============================================================================
+   A "Frost": a milky frosted key raised out of a sunken glass track
+   ========================================================================== */
+.hx-tabs[data-look="frost"] {
+  inline-size: max-content;
+  max-inline-size: 100%;
+  gap: 2px;
+  padding: var(--ds-space-1);
+  border-radius: var(--radius-xl);
+  background: var(--glass-track);
+  box-shadow: var(--glass-sunk);
+}
+.hx-tabs[data-look="frost"] > .hx-tab {
+  block-size: calc(var(--ds-tab-height) - 2 * var(--ds-space-1));
+  border-radius: var(--radius-lg);
+}
+.hx-tabs[data-look="frost"] > .hx-ind {
+  border-radius: var(--radius-lg);
+  background: var(--glass-milk);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  box-shadow: var(--glass-edge), var(--glass-drop);
+  transition: transform var(--tabs-move) var(--ease-settle),
+    inline-size var(--tabs-move) var(--ease-settle),
+    block-size var(--tabs-move) var(--ease-settle);
+}
+
+/* ============================================================================
+   B "Lens": a clear lens over free labels; it stretches like Ink and shows the
+   labels it passes over slightly magnified, bent at its rim
+   ========================================================================== */
+.hx-tabs[data-look="lens"] {
+  --lens-zoom: 1.06;
+  inline-size: max-content;
+  max-inline-size: calc(100% + 8px);
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-1);
+  margin: calc(-1 * var(--ds-space-1));
+}
+.hx-tabs[data-look="lens"] > .hx-tab {
+  block-size: calc(var(--ds-tab-height) - var(--ds-space-1));
+  border-radius: 999px;
+}
+.hx-tabs[data-look="lens"] > .hx-tab:focus-visible { outline-offset: 2px; }
+/* At rest the lens shows the current label (its own copy), so the real one under
+   it steps aside once the lens has arrived; any other label shows again at once. */
+.hx-tabs[data-look="lens"][data-measured]:not(.hx-ind-copy) > .hx-tab[data-on] {
+  color: transparent;
+  transition: color 0s linear var(--tabs-move);
+}
+.hx-tabs[data-look="lens"][data-measured]:not(.hx-ind-copy) > .hx-tab[data-on] .hx-tab-count {
+  background: transparent;
+  color: transparent;
+  transition: color 0s linear var(--tabs-move), background-color 0s linear var(--tabs-move);
+}
+.hx-tabs[data-look="lens"] > .hx-ind {
+  inset-block: 0 auto;
+  left: var(--hx-ind-x);
+  right: var(--hx-ind-r);
+  inline-size: auto;
+  z-index: 2;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--glass-clear);
+  -webkit-backdrop-filter: blur(2px) saturate(var(--glass-sat));
+  backdrop-filter: blur(2px) saturate(var(--glass-sat));
+  box-shadow: var(--glass-edge), var(--glass-drop);
+  transform: translateY(var(--hx-ind-y));
+  pointer-events: none;
+  transition: left var(--tabs-move) var(--ease-expressive),
+    right var(--tabs-move) var(--ease-expressive),
+    transform var(--tabs-move) var(--ease-expressive),
+    block-size var(--tabs-move) var(--ease-expressive);
+}
+.hx-tabs[data-look="lens"][data-dir="fwd"] > .hx-ind { transition-delay: calc(var(--ds-motion-fast) / 2), 0s, 0s, 0s; }
+.hx-tabs[data-look="lens"][data-dir="back"] > .hx-ind { transition-delay: 0s, calc(var(--ds-motion-fast) / 2), 0s, 0s; }
+.hx-ind > .hx-lens {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+/* The held copy: counter-moved with the lens's leading edge, magnified around the
+   lens's centre. */
+.hx-lens > .hx-tabs.hx-ind-copy[data-look="lens"] {
+  position: absolute;
+  inset-block-start: calc(-1 * var(--hx-ind-y));
+  left: calc(-1 * var(--hx-ind-x));
+  inline-size: calc(var(--hx-ind-x) + var(--hx-ind-w) + var(--hx-ind-r));
+  max-inline-size: none;
+  margin: 0;
+  overflow: visible;
+  transform: scale(var(--lens-zoom));
+  transform-origin: calc(var(--hx-ind-x) + var(--hx-ind-w) / 2) calc(var(--hx-ind-y) + var(--hx-ind-h) / 2);
+  transition: left var(--tabs-move) var(--ease-expressive),
+    inset-block-start var(--tabs-move) var(--ease-expressive),
+    transform-origin var(--tabs-move) var(--ease-expressive);
+}
+.hx-tabs[data-look="lens"][data-dir="fwd"] > .hx-ind .hx-ind-copy { transition-delay: calc(var(--ds-motion-fast) / 2), 0s, 0s; }
+.hx-lens > .hx-ind-copy[data-look="lens"] > .hx-tab { color: var(--foreground); background: transparent; transition: none; }
+.hx-lens > .hx-ind-copy[data-look="lens"] > .hx-tab[data-on] svg { color: var(--primary-ink); }
+.hx-lens > .hx-ind-copy[data-look="lens"] > .hx-tab svg { transition: none; }
+.hx-lens > .hx-ind-copy[data-look="lens"] > .hx-tab .hx-tab-count { transition: none; }
+/* The ghost: a breath of glass under the mouse. */
+.hx-tabs[data-look="lens"] > .hx-ghost {
+  position: absolute;
+  z-index: 0;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: var(--hx-ghost-w);
+  block-size: var(--hx-ghost-h);
+  border-radius: 999px;
+  background: var(--glass-track);
+  box-shadow: inset 0 0 0 1px var(--ds-hairline);
+  opacity: 0;
+  transform: translate(var(--hx-ghost-x), var(--hx-ghost-y));
+  transition: opacity var(--ds-motion-fast) var(--ease-standard);
+  pointer-events: none;
+}
+.hx-tabs[data-look="lens"] > .hx-ghost[data-on] {
+  opacity: 1;
+  transition: opacity var(--ds-motion-fast) var(--ease-standard),
+    transform var(--ds-motion-popover) var(--ease-settle),
+    inline-size var(--ds-motion-popover) var(--ease-settle);
+}
+
+/* ============================================================================
+   C "Pane": the row is a floating glass bar; the current tab is a pane of smoked
+   glass that glides and settles with a small give.
+   LOCKED by the captain 2026-10-02 ("I chose option C pane. It looks amazing. but
+   make it less circular. Rounded edges but less round in itself."): the bar and
+   the key are rounded rectangles on the radius tokens (the bar 12, the key and the
+   tabs 8 inside its 4 px padding, so the corners run parallel), no capsules.
+   ========================================================================== */
+.hx-tabs[data-look="pane"] {
+  inline-size: max-content;
+  max-inline-size: 100%;
+  gap: 2px;
+  padding: var(--ds-space-1);
+  border-radius: var(--radius-xl);
+  background: var(--glass-milk);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  box-shadow: var(--glass-edge), var(--glass-drop);
+}
+.hx-tabs[data-look="pane"] > .hx-tab {
+  block-size: calc(var(--ds-tab-height) - 2 * var(--ds-space-1));
+  border-radius: var(--radius-lg);
+}
+.hx-tabs[data-look="pane"] > .hx-ind {
+  border-radius: var(--radius-lg);
+  background: var(--glass-smoke);
+  box-shadow: inset 0 1px 0 var(--glass-rim), inset 0 0 0 1px var(--ds-hairline),
+    inset 0 -1px 0 var(--glass-under);
+  transition: transform var(--tabs-move) var(--ease-overshoot),
+    inline-size var(--tabs-move) var(--ease-overshoot),
+    block-size var(--tabs-move) var(--ease-overshoot);
+}
+
+/* ============================================================================
+   The header's mode switches (UGC / Fan Accounts, My day / Team, By campaign /
+   By marketer) and the sub-campaign switcher, in the same glass. A campaign tab's
+   own toolbar keeps its quiet key.
+   ========================================================================== */
+:root[data-lab-tabs="frost"] .hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) {
+  background: var(--glass-track);
+  box-shadow: var(--glass-sunk);
+}
+:root[data-lab-tabs="frost"] .hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) > .pg-seg-thumb {
+  background: var(--glass-milk);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  box-shadow: var(--glass-edge), var(--glass-drop);
+}
+:root[data-lab-tabs="lens"] .hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) {
+  background: var(--glass-track);
+  box-shadow: var(--glass-sunk);
+}
+:root[data-lab-tabs="lens"] .hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) > .pg-seg-thumb {
+  background: var(--glass-clear);
+  -webkit-backdrop-filter: blur(2px) saturate(var(--glass-sat));
+  backdrop-filter: blur(2px) saturate(var(--glass-sat));
+  box-shadow: var(--glass-edge), var(--glass-drop);
+}
+/* Pane (locked): the mode switches keep the header's own rounded rectangles (track
+   8, key 6 inside its 3 px padding), in the same glass. */
+/* Fresh-load fix (CLICK-1020-28): the locked look holds on every page, with or without
+   the big tabs; it no longer waits for the tabs to stamp data-lab-tabs on the html. */
+.hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) {
+  background: var(--glass-milk);
+  box-shadow: var(--glass-edge), var(--glass-drop);
+}
+.hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) > .pg-seg-thumb {
+  background: var(--glass-smoke);
+  box-shadow: inset 0 1px 0 var(--glass-rim), inset 0 0 0 1px var(--ds-hairline),
+    inset 0 -1px 0 var(--glass-under);
+}
+
+/* ============================================================================
+   Finding 28 (captain, 2026-10-20; approved prototype data/cp-proto-liquid-glass-
+   switch, round 6): every in-tab mode switch is the glass switch.
+   1. Each Segmented is the glass bar wherever it sits (report item 2: one switch
+      look everywhere), except the Settings index, which is navigation. The pane
+      rule above stays for the header and the sub-campaign switcher.
+   2. The header's view pills (PageHeader / PageToolbar `views`) are separate round
+      glass pills with one round smoke key gliding from pill to pill; only the label
+      sits above the key, so the key passes over the pills between.
+   3. Words: an option with a meaning (lib/switch-hue.ts, data-hue) always reads in
+      its calm tone; the selected option is set heavier in its tone, or the calm
+      plain ink when it has none. No dots, no glyphs.
+   ========================================================================== */
+.pg-toggle.pg-seg:not(.proto-set-index-nav) {
+  background: var(--glass-milk);
+  box-shadow: var(--glass-edge), var(--glass-drop);
+}
+.pg-toggle.pg-seg:not(.proto-set-index-nav) > .pg-seg-thumb {
+  background: var(--glass-smoke);
+  box-shadow: inset 0 1px 0 var(--glass-rim), inset 0 0 0 1px var(--ds-hairline),
+    inset 0 -1px 0 var(--glass-under);
+}
+.pg-toggle.pg-seg:not(.proto-set-index-nav):not([data-seg-measured]) [data-seg-active] {
+  background: var(--glass-smoke);
+  box-shadow: none;
+}
+.pg-toggle.pg-seg:not(.proto-set-index-nav) .pg-seg-item {
+  color: var(--calm-c, var(--calm-rest));
+}
+.pg-toggle.pg-seg:not(.proto-set-index-nav) .pg-seg-item:focus-visible {
+  outline-color: var(--glass-ring, var(--ring));
+}
+@media (hover: hover) and (pointer: fine) {
+  .pg-toggle.pg-seg:not(.proto-set-index-nav) .pg-seg-item:not([data-seg-active]):hover {
+    color: var(--calm-c, var(--foreground));
+  }
+}
+
+/* The round pills: no shared track; each pill its own glass lozenge, 8 apart. The
+   button keeps the header's 44 px phone target (its transparent block border); the
+   lozenge is its inner face, so the glass and its drop shadow sit on the drawn pill.
+   The face is not positioned, so the key paints over it; only the words sit above. */
+.hx-pills.hx-gp { position: relative; }
+.hx-sys .hx-gp > button.pg-filter-pill[aria-pressed] {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  transition: color var(--ds-motion-popover) var(--ease-standard);
+}
+.hx-sys .hx-gp > .pg-filter-pill:not([data-seg-active]) { color: var(--calm-c, var(--calm-rest)); }
+.hx-gp > .pg-filter-pill:active { transform: none; }
+.hx-gp-l {
+  display: inline-flex;
+  align-self: stretch;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 999px;
+  /* Dark sets --glass-pill and --glass-key: the pills sit back, the key is lighter. */
+  background: var(--glass-pill, var(--glass-milk));
+  box-shadow: var(--glass-edge), var(--glass-drop);
+}
+.hx-gp-t {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hx-gp > .pg-seg-thumb {
+  border-radius: 999px;
+  background: var(--glass-key, var(--glass-smoke));
+  box-shadow: inset 0 1px 0 var(--glass-rim), inset 0 0 0 1px var(--ds-hairline),
+    inset 0 -1px 0 var(--glass-under);
+  transform: translate(var(--pg-seg-x), calc(var(--pg-seg-y) + var(--hx-slop, 0px)));
+  block-size: calc(var(--pg-seg-h) - 2 * var(--hx-slop, 0px));
+}
+.hx-gp:not([data-seg-measured]) > [data-seg-active] > .hx-gp-l { background: var(--glass-key, var(--glass-smoke)); }
+@media (hover: hover) and (pointer: fine) {
+  .hx-sys .hx-gp > button.pg-filter-pill:not([data-seg-active]):hover { color: var(--calm-c, var(--foreground)); }
+}
+.hx-gp .hx-pcount { opacity: 0.6; }
+.hx-gp [aria-pressed="true"] .hx-pcount { opacity: 0.75; }
+@container hx (max-width: 30rem) {
+  .hx-gp-l { padding-inline: 12px; }
+}
+
+/* Words in the calm colour code (lib/switch-hue.ts): which label means what, kept
+   once here. An option is matched by its text label (data-label; a box with a count
+   by its words before " · "), or names its hue (data-hue). */
+:is(.pg-seg-item, .hx-gp > .pg-filter-pill):is(
+  [data-hue="green"],
+  [data-label="Active"],
+  [data-label="Replied"],
+  [data-label="In network"],
+  [data-label="Network growth"],
+  [data-label="Has IG"],
+  [data-label="Has access"],
+  [data-label="Sign-ins"],
+  [data-label="Settled"],
+  [data-label="Released"],
+  [data-label="Check-ins"]
+) { --calm-c: var(--tone-green); }
+:is(.pg-seg-item, .hx-gp > .pg-filter-pill):is(
+  [data-hue="amber"],
+  [data-label="Paused"],
+  [data-label="Reached Out"],
+  [data-label="Not yet"],
+  [data-label="No IG"],
+  [data-label="Invited"],
+  [data-label="No access"],
+  [data-label="Accounts"],
+  [data-label="Quiet"],
+  [data-label="Sent"],
+  [data-label^="Sent · "]
+) { --calm-c: var(--tone-amber); }
+:is(.pg-seg-item, .hx-gp > .pg-filter-pill):is(
+  [data-hue="blue"],
+  [data-label="Completed"],
+  [data-label="Drafted"],
+  [data-label="For a campaign"],
+  [data-label="Access"],
+  [data-label="Open"],
+  [data-label="For me"],
+  [data-label^="For me · "]
+) { --calm-c: var(--tone-blue); }
+:is(.pg-seg-item, .hx-gp > .pg-filter-pill):is(
+  [data-hue="rose"],
+  [data-label="Deactivated"],
+  [data-label="Security"],
+  [data-label="Escalated"],
+  [data-label^="Escalated · "]
+) { --calm-c: var(--tone-rose); }
+:is(.pg-seg-item, .hx-gp > .pg-filter-pill):is(
+  [data-hue="plum"],
+  [data-label="Mirror"],
+  [data-label="Groups"]
+) { --calm-c: var(--tone-plum); }
+.pg-toggle.pg-seg:not(.proto-set-index-nav) .pg-seg-item[data-seg-active],
+.hx-sys .hx-gp > .pg-filter-pill[data-seg-active] {
+  color: var(--calm-c, var(--calm-ink));
+  font-weight: var(--ds-weight-heavy);
+}
+
+/* Phones: the screen is a touch screen, the glass sits over flat surfaces, so the
+   look stays and the live blur and the lens's bending go: scrolling never pays for
+   them. The magnification stays (a plain transform). */
+@media (pointer: coarse) {
+  .hx-tabs:is([data-look="frost"], [data-look="lens"], [data-look="pane"]),
+  .hx-tabs:is([data-look="frost"], [data-look="lens"], [data-look="pane"]) > .hx-ind,
+  .hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) > .pg-seg-thumb {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .hx-ind > .hx-lens { filter: none !important; }
+}
+
+/* Phone tiles (icon over label) in the capsule shapes: a calmer radius. */
+@container hx (max-width: 30rem) {
+  .hx-tabs[data-look="lens"][data-fit="stack"] > .hx-tab,
+  .hx-tabs[data-look="lens"][data-fit="stack"] > :is(.hx-ind, .hx-ghost) {
+    border-radius: var(--radius-xl);
+  }
+  .hx-tabs[data-look="lens"]:not(.hx-tabs-ruler):not(.hx-ind-copy) { inline-size: calc(100% + 8px); max-inline-size: calc(100% + 8px); }
+  .hx-tabs[data-look="frost"][data-fit="line"] > .hx-tab,
+  .hx-tabs:is([data-look="lens"], [data-look="pane"])[data-fit="line"] > .hx-tab { block-size: var(--ds-phone-control); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hx-lens > .hx-tabs.hx-ind-copy[data-look="lens"],
+  .hx-tabs[data-look="lens"] > .hx-tab,
+  .hx-tabs[data-look="lens"] > .hx-tab .hx-tab-count {
+    transition: none;
+  }
+}

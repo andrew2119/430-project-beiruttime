@@ -1,32 +1,31 @@
-/* CP F-33/F-35 and mobile §3: semantic tokens, hierarchy and separate paint/target geometry. */
-.l07 { max-inline-size: 1180px; margin-inline:auto; padding:48px 40px 64px; display:grid; gap:24px; container-type:inline-size; }
-.l07 h1 { font-size:clamp(32px,4vw,52px); line-height:1.2; margin-block:12px; text-wrap:balance; }
-.l07 h2 { font-size:26px; line-height:1.4; }
-.l07 h3 { font-size:20px; }
-.l07 header > p:last-child { max-inline-size:680px; color:var(--muted); }
-.l07-tabs { display:flex; gap:8px; overflow-x:auto; }
-.l07-tabs a { white-space:nowrap; }
-.l07-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; align-items:start; }
-.l07-stack { display:grid; gap:16px; min-inline-size:0; }
-.l07-form { display:grid; gap:16px; }
-.l07-form label { display:grid; gap:6px; font-size:13px; min-inline-size:0; }
-.l07-pair { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
-.l07 select { font:inherit; color:var(--foreground); background:var(--surface); padding:8px 12px; border:1px solid var(--control-border); min-block-size:44px; inline-size:100%; border-radius:var(--radius); }
-.l07 small,.l07-muted { color:var(--muted); font-size:12px; }
-.l07-notice { padding:14px 16px; background:var(--accent-soft); border-inline-start:3px solid var(--accent); font-size:13px; }
-.l07-fees { display:grid; gap:0; margin:12px 0; }
-.l07-fees div { display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding-block:10px; border-block-end:1px solid var(--border); }
-.l07-fees dd { margin:0; font-variant-numeric:tabular-nums; white-space:nowrap; }
-.l07-fees .l07-total { padding-block:18px; font-size:20px; color:var(--accent); border-block-end:2px solid var(--accent); }
-.l07-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-.l07-history { list-style:none; margin:0; padding:0; display:grid; gap:12px; }
-.l07-history li { min-inline-size:0; }
-.l07-reference { font-size:11px; overflow-wrap:anywhere; }
-.l07-error { border:1px solid var(--accent); padding:16px; display:grid; gap:8px; }
-.l07-error p { overflow-wrap:anywhere; }
-.l07-status { border:1px solid var(--border); padding:8px 12px; font-size:12px; display:inline-flex; gap:8px; align-items:center; }
-.l07 .card { min-inline-size:0; }
-.l07 summary { cursor:pointer; padding-block:12px; min-block-size:44px; }
-@container (max-width:44rem) { .l07-grid { grid-template-columns:minmax(0,1fr); } }
-@media(max-width:850px) { .l07 { padding:24px 12px 32px; gap:16px; } .l07 h1 { font-size:30px; } .l07 h2 { font-size:23px; } .l07 .card { padding:16px; } .l07-grid { gap:16px; } .l07-tabs { gap:4px; } }
-@media(max-width:360px) { .l07-pair { grid-template-columns:minmax(0,1fr); } .l07-fees .l07-total { font-size:17px; } }
+/* Creator Pipeline page frame, form and finance fact-row compositions. */
+.l07 { display:flex; flex-direction:column; gap:var(--ds-gap-content); container-type:inline-size; }
+.l07-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--ds-space-4); align-items:start; }
+.l07-stack { display:grid; align-content:start; gap:var(--ds-space-4); min-inline-size:0; }
+.l07-stack > .buyer-card-head { margin:0; }
+.l07 h3 { font-size:.8125rem; font-weight:var(--ds-weight-heavy); }
+.l07-form { display:grid; gap:var(--ds-space-4); min-inline-size:0; }
+.l07-form label { display:grid; gap:var(--ds-space-2); font-size:.75rem; font-weight:var(--ds-weight-strong); min-inline-size:0; }
+.l07-form :is(.ui-chonk,.ui-btn) { justify-self:start; }
+.l07-form .ui-select { inline-size:100%; }
+.l07-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--ds-space-3); }
+.l07 small,.l07-muted { color:var(--muted-foreground); font-size:.75rem; line-height:1.5; }
+.l07-fees { display:grid; gap:0; margin:0; font-size:.8125rem; }
+.l07-fees > div { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:var(--ds-space-1) var(--ds-space-4); padding-block:var(--ds-space-3); border-block-end:1px solid var(--border); }
+.l07-fees dt { color:var(--muted-foreground); }
+.l07-fees dd { margin:0; min-inline-size:0; overflow-wrap:anywhere; font-weight:var(--ds-weight-strong); }
+.l07-fees .l07-total { padding-block:var(--ds-space-4); font-size:1rem; font-weight:var(--ds-weight-heavy); }
+.l07-fees .l07-total dt { color:var(--foreground); }
+.l07-actions { display:flex; flex-wrap:wrap; gap:var(--ds-space-2); align-items:center; }
+.l07-history { list-style:none; margin:0; padding:0; display:grid; gap:var(--ds-space-3); min-inline-size:0; }
+.l07-history .pg-list-item { min-inline-size:0; }
+.l07-reference { color:var(--muted-foreground); font-size:.6875rem; overflow-wrap:anywhere; }
+.l07-error { padding:var(--ds-space-3) var(--ds-space-4); border-radius:var(--radius-xl); background:var(--card); box-shadow:var(--ds-shadow-border); display:grid; gap:var(--ds-space-2); font-size:.8125rem; }
+.l07-error p { overflow-wrap:anywhere; color:var(--destructive-ink); }
+.l07-status { display:flex; align-items:center; gap:var(--ds-space-2); font-size:.75rem; color:var(--muted-foreground); padding-block:var(--ds-space-2); border-block-end:1px solid var(--border); }
+.l07 .ui-card { min-inline-size:0; }
+/* HeaderTabs measures offsetLeft (physical), including in RTL. Keep the shared
+   Pane's measured indicator anchored to the same physical origin. Promote to kit. */
+@container(max-width:44rem) { .l07-grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:850px) { .l07-form .ui-input { font-size:1rem; } }
+@media(max-width:390px) { .l07-pair { grid-template-columns:minmax(0,1fr); } }

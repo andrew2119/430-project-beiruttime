@@ -5,7 +5,7 @@ import type { PrivateReview } from "@contracts/contracts-identity/businesses";
 import { useAccessContext } from "@/shell/access-context";
 import { businessRequest } from "./transport";
 import { DecisionHistory, type ReviewDetail } from "./history";
-import { Feedback, useCopy, Workspace } from "./components";
+import { BusinessEmpty, BusinessLoading, Feedback, useCopy, Workspace } from "./components";
 
 function History({ id }: { id: string }) {
   const t = useCopy(),
@@ -15,7 +15,7 @@ function History({ id }: { id: string }) {
     queryFn: () => businessRequest<ReviewDetail>(`/v1/private-reviews/${id}`),
     retry: false,
   });
-  if (query.isPending) return <p role="status">{t.loading}</p>;
+  if (query.isPending) return <BusinessLoading />;
   if (query.isError)
     return (
       <>
@@ -51,16 +51,14 @@ export default function MyReviewHistory() {
   return (
     <Workspace title={t.myReviewHistory} intro={t.reviewIntro}>
       {query.isPending ? (
-        <p role="status">{t.loading}</p>
+        <BusinessLoading />
       ) : query.isError ? (
         <>
           <Feedback error={query.error} />
           <Button onClick={() => query.refetch()}>{t.retry}</Button>
         </>
       ) : !query.data.items.length ? (
-        <Card>
-          <p>{t.noReviews}</p>
-        </Card>
+        <BusinessEmpty text={t.noReviews} />
       ) : (
         query.data.items.map((review) => (
           <History key={review.id} id={review.id} />

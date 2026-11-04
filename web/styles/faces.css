@@ -1,0 +1,98 @@
+/* ============================================================================
+   Calm faces (components/faces/calm-face.tsx): the designed 404, the segment
+   error boundary and the redirect interstitial. Extends the accepted
+   Campaigns empty-state vocabulary (pg-empty-*) so every "nothing here"
+   moment reads as one system. Tokens only; motion on the shared ladder;
+   frozen under prefers-reduced-motion (the global baseline in motion.css;
+   the block at the end resets end-state transforms). Imported from
+   app/globals.css into @layer components after campaigns.css.
+   ========================================================================== */
+.pg-face {
+  display: flex;
+  inline-size: 100%;
+  min-block-size: min(60vh, 32rem);
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.pg-face-card {
+  inline-size: 100%;
+  max-inline-size: 26rem;
+  padding: 2.5rem 2rem 2.25rem;
+  text-align: center;
+  /* Rests on the tray like the list header: a flat card with shell depth and
+     the gloss line (no gradients). */
+  background: var(--card);
+  box-shadow: var(--ds-shadow-shell), inset 0 1px 0 var(--ds-gloss-line),
+    inset 0 -1px 0 var(--ds-gloss-under);
+  animation: pg-face-in var(--ds-motion-overlay) var(--ease-settle) both;
+}
+.pg-face-copy {
+  max-inline-size: 22rem;
+  margin-inline: auto;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+.pg-face-copy code {
+  padding: 0.0625rem 0.375rem;
+  border-radius: var(--radius-sm);
+  background: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+}
+.pg-face-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  margin-block-start: 1.25rem;
+}
+.pg-face-primary {
+  text-decoration: none;
+  transition: transform var(--ds-motion-fast) var(--ease-settle);
+}
+.pg-face-primary:focus-visible,
+.pg-face-secondary:focus-visible {
+  outline: 0.125rem solid var(--ring);
+  outline-offset: 0.125rem;
+}
+.pg-face-secondary {
+  display: inline-flex;
+  min-block-size: 2.375rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding-inline: 1rem;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--ds-shadow-small);
+  cursor: pointer;
+  outline: none;
+  font-size: 0.8125rem;
+  font-weight: var(--ds-weight-strong);
+  transition: transform var(--ds-motion-fast) var(--ease-settle);
+}
+@media (hover: hover) and (pointer: fine) {
+  .pg-face-primary:hover,
+  .pg-face-secondary:hover { transform: translateY(-0.0625rem); }
+}
+.pg-face-primary:active,
+.pg-face-secondary:active { transform: scale(0.97); }
+
+@keyframes pg-face-in {
+  from { transform: translateY(0.375rem) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-face-card { animation: none; }
+  .pg-face-primary,
+  .pg-face-secondary { transition: none; }
+  .pg-face-primary:hover,
+  .pg-face-secondary:hover,
+  .pg-face-primary:active,
+  .pg-face-secondary:active { transform: none; }
+}

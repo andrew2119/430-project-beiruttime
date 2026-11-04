@@ -1,7 +1,6 @@
 'use client';
 import { ApiError } from '@/lib/api/client';
-import Link from 'next/link';
-import { BidiReference, Button } from '@beirut-time/ui';
+import { BidiReference, Button, ButtonLink, Skeleton } from '@beirut-time/ui';
 import { refreshSession, signInHref, useSessionState } from './session';
 import { useLocale } from '@/shell/locale-context';
 import en from './en.json';
@@ -17,9 +16,9 @@ export function ErrorNotice({ error }: { error: unknown }) {
 export function SessionPrompt({ next }: { next: string }) {
   const { t, locale } = useIdentityCopy();
   const state = useSessionState();
-  return <div className="identity-stack"><noscript><p className="identity-demo">{t.javascriptRequired}</p></noscript><p role={state === 'unavailable' ? 'alert' : 'status'}>{state === 'restoring' ? t.loading : state === 'unavailable' ? t.unavailable : t.signInRequired}</p>
+  return <div className="identity-stack"><noscript><p className="identity-demo">{t.javascriptRequired}</p></noscript>{state === 'restoring' ? <Skeleton label={t.loading}/> : <p role={state === 'unavailable' ? 'alert' : 'status'}>{state === 'unavailable' ? t.unavailable : t.signInRequired}</p>}
     {state === 'unavailable' && <Button onClick={()=>void refreshSession().catch(()=>null)}>{t.retry}</Button>}
-    {state !== 'restoring' && <Link className="button" href={signInHref(next,locale)}>{t.signin}</Link>}
+    {state !== 'restoring' && <ButtonLink href={signInHref(next,locale)}>{t.signin}</ButtonLink>}
   </div>;
 }
 export async function syntheticFile(value: FormDataEntryValue | null) {

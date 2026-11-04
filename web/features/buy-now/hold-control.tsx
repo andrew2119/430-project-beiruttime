@@ -1,6 +1,8 @@
 'use client';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {Button,Card,Input} from '@beirut-time/ui';
+import {ShieldAlert} from 'lucide-react';
+import {CardHead} from '@beirut-time/ui';
 import {useLocale} from '@/shell/locale-context';
 import {authenticatedRequest} from '@/features/identity/session';
 import {ApiError} from '@/lib/api/client';
@@ -27,5 +29,5 @@ export default function HoldControl({record,onRefresh}:{record:Order;onRefresh:(
     }catch(failure){if(alive.current){setError(failure);const unknown=!(failure instanceof ApiError)||failure.status>=500;setUncertain(unknown);if(!unknown)operation.current=null;if(failure instanceof ApiError&&failure.code==='stale_revision')onRefresh();}}
     finally{if(alive.current)setBusy(false);}
   }
-  return <Card><h2>{t.hold}</h2><p>{t.holdHelp}</p><form className="checkout-form" method="post" autoComplete="off" onSubmit={hold}><label>{t.reason}<Input name="reason" value={reason} maxLength={200} required disabled={busy||uncertain} onChange={event=>setReason(event.target.value)}/></label><Button disabled={busy}>{busy?t.loading:uncertain?t.retry:t.hold}</Button>{!!error&&<p role="alert">{errorText(error,t)}</p>}{uncertain&&<p role="status">{t.uncertain}</p>}{saved&&<p role="status">{t.payment_unknown}</p>}</form></Card>;
+  return <Card><CardHead title={t.hold} icon={ShieldAlert}/><p className="checkout-note">{t.holdHelp}</p><form className="checkout-form" method="post" autoComplete="off" onSubmit={hold}><label>{t.reason}<Input name="reason" value={reason} maxLength={200} required disabled={busy||uncertain} onChange={event=>setReason(event.target.value)}/></label><Button chonk size="sm" disabled={busy}>{busy?t.loading:uncertain?t.retry:t.hold}</Button>{!!error&&<p role="alert">{errorText(error,t)}</p>}{uncertain&&<p role="status">{t.uncertain}</p>}{saved&&<p role="status">{t.payment_unknown}</p>}</form></Card>;
 }

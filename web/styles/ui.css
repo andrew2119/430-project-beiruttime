@@ -1,0 +1,357 @@
+/* ============================================================================
+   styles/ui.css - the base recipes of the shared primitives (components/ui/*).
+   Recipes preserve each primitive's former inline utility string through
+   @apply, except for documented corrections such as the solid focus ring below,
+   and use :where() so they carry ZERO specificity. That fixes the cascade
+   order the shell relies on:
+     base recipe (:where(.ui-*), @layer components, imported first)
+       < any vocabulary class passed through className (.pg-*, department
+         classes; same layer, real specificity or later source)
+       < Tailwind utilities passed through className (@layer utilities).
+   Internal, non-parameterised parts of a primitive (avatar image, menu radio
+   indicator, chip pills) keep their utilities in the TSX because nothing can
+   pass a class to them.
+   ========================================================================== */
+
+@layer components {
+  /* Keyboard focus ring: 2px of the solid --ring token, the one place a recipe
+     departs from its former utility string. WCAG 2.2 non-text contrast asks at
+     least 3:1 against the surface under the ring; the former ring-ring/50
+     composited to between 2.1:1 and 2.8:1, while the solid token keeps at
+     least 4.3:1 on every surface in Classic, Light and Dark. Guards:
+     lib/theme-tokens.test.ts and tests/a11y/shared-focus-ring.spec.ts. */
+
+  /* ---- Input and its multi-line field (.ui-textarea) -------------------- */
+  /* The multi-line field is the Input's recipe, focus ring included; only its
+     box and height are its own. */
+  :where(.ui-input, .ui-textarea, .input) {
+    @apply flex h-9 w-full min-w-0 rounded-md bg-card px-3 py-1 text-sm text-foreground [box-shadow:var(--ds-shadow-border)] outline-none transition-[box-shadow] duration-150 placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-50;
+  }
+  :where(.ui-textarea) {
+    @apply block h-auto min-h-16 py-2;
+  }
+
+  /* ---- Label ---------------------------------------------------------- */
+  :where(.ui-label) {
+    @apply text-sm font-medium text-foreground select-none;
+  }
+
+  /* ---- Button (cva base, tones, sizes; chonk keeps the pg-chonk body) --- */
+  :where(.ui-btn, .button) {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium outline-none transition-[background-color,box-shadow,transform] duration-150 [transition-timing-function:var(--ease-standard)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] [&_svg]:size-4 [&_svg]:shrink-0;
+  }
+  :where(.ui-btn-default, .button:not(.button-secondary)) {
+    @apply bg-primary text-primary-foreground [box-shadow:var(--ds-shadow-small)] hover:brightness-110;
+  }
+  :where(.ui-btn-outline) {
+    @apply bg-card text-foreground [box-shadow:var(--ds-shadow-border)] hover:bg-accent;
+  }
+  :where(.ui-btn-ghost) {
+    @apply hover:bg-accent hover:text-accent-foreground;
+  }
+  :where(.ui-btn-destructive) {
+    @apply bg-destructive text-primary-foreground [box-shadow:var(--ds-shadow-small)] hover:brightness-110;
+  }
+  :where(.ui-btn-md, .button) {
+    @apply h-9 px-4 py-2;
+  }
+  :where(.ui-btn-sm) {
+    @apply h-8 rounded-md px-3 text-xs;
+  }
+  :where(.ui-btn-icon) {
+    @apply size-9;
+  }
+  /* The chonk path: focus ring + disabled recipe only; the body is .pg-chonk. */
+  :where(.ui-chonk) {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  /* ---- Skeleton (shimmer comes from .pg-skeleton in motion.css) --------- */
+  :where(.ui-skeleton) {
+    @apply rounded-md;
+  }
+
+  /* ---- Avatar --------------------------------------------------------- */
+  :where(.ui-avatar) {
+    @apply relative flex size-8 shrink-0 overflow-hidden rounded-full [box-shadow:var(--ds-shadow-border)];
+  }
+
+  /* ---- Image frame (ADR-0031) ------------------------------------------
+     The one loading contract behind Avatar, CoverArt and PostThumbnail: the
+     frame reserves its box (size comes from the caller's vocabulary class or
+     the fill parent), the designed placeholder paints immediately, the <img>
+     sits invisible on top until it is FULLY decoded, then the whole picture
+     is revealed. A picture that was ready when its box showed
+     (data-image-reveal="ready") replaces the placeholder at once; one whose
+     placeholder was showing ("late") fades in over the image-reveal step while
+     the placeholder fades under it (captain 2026-10-24; a row entering a list
+     fades its picture too, styles/motion.css).
+     States (data-image-state): placeholder | idle | loading | retrying |
+     loaded | error (retrying: a picture-host copy waits to ask again, keeping
+     the placeholder and its calm loading glyph).
+     Reduced motion: both fades are atomic (motion.css baseline + the explicit
+     none below, so no engine keeps a residual 1 ms transition). */
+  :where(.ui-image-frame) {
+    @apply relative block overflow-hidden;
+  }
+  :where(.ui-image-frame-fill) {
+    @apply absolute inset-0;
+  }
+  :where(.ui-image-frame-img) {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--ds-motion-image-reveal) var(--ease-out-soft);
+  }
+  :where(.ui-image-frame[data-image-state="loaded"]) .ui-image-frame-img {
+    opacity: 1;
+  }
+  :where(.ui-image-frame-placeholder) {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity var(--ds-motion-image-reveal) var(--ease-out-soft);
+  }
+  :where(.ui-image-frame[data-image-state="loaded"]) .ui-image-frame-placeholder {
+    opacity: 0;
+    pointer-events: none;
+  }
+  :where(.ui-image-frame[data-image-reveal="ready"]) .ui-image-frame-img,
+  :where(.ui-image-frame[data-image-reveal="ready"]) .ui-image-frame-placeholder {
+    transition: none;
+  }
+  /* Loading cue: the placeholder's glyph is calmer while a request is in
+     flight, and returns to full strength for the empty and error looks. */
+  :where(.ui-image-frame[data-image-state="loading"], .ui-image-frame[data-image-state="retrying"], .ui-image-frame[data-image-state="idle"]) .ui-image-frame-glyph {
+    opacity: 0.35;
+  }
+  :where(.ui-image-frame-glyph) {
+    transition: opacity var(--ds-motion-fast) var(--ease-standard);
+  }
+  /* Avatar initials (OD-17b): the brand tint is mixed over the page
+     background rather than left translucent, so the initials keep the same
+     WCAG contrast on every surface they sit on (a card in dark mode composited
+     the translucent tint too light: 4.08:1, measured by axe on the Discovery
+     profile panel). */
+  :where(.ui-avatar-initials) {
+    /* 6% tint: the 11 px initials glyph keeps at least 4.8:1 (light) and
+       5.0:1 (dark) against its own tint in every engine; 12% sat at 4.46 in
+       WebKit's oklab mix and failed the axe AA scan on Discovery and Scouting. */
+    background: color-mix(in oklab, var(--primary) 6%, var(--background));
+    color: var(--primary-ink);
+  }
+
+  /* ---- Checkbox (components/ui/checkbox.tsx) ----------------------------
+     The native input stays the accessible, clickable control (it covers the
+     drawn box invisibly, so labels, `for`, and keyboard behave natively); the
+     drawn box cross-fades its fill on the fast step and the check glyph
+     settles in, instead of the native snap. Phone hit areas come from the
+     shared label rule in styles/mobile.css. */
+  :where(.ui-check) {
+    @apply inline-flex cursor-pointer select-none items-center gap-2.5 text-sm text-foreground;
+  }
+  :where(.ui-check-box) {
+    position: relative;
+    display: inline-flex;
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    color: var(--primary-foreground);
+    box-shadow: var(--ds-shadow-border);
+    transition: background-color var(--ds-motion-fast) var(--ease-standard),
+      box-shadow var(--ds-motion-fast) var(--ease-standard);
+  }
+  :where(.ui-check-input) {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+  :where(.ui-check-glyph) {
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity var(--ds-motion-fast) var(--ease-standard),
+      transform var(--ds-motion-fast) var(--ease-settle);
+  }
+  :where(.ui-check-box:has(.ui-check-input:checked)) {
+    background: var(--primary);
+    box-shadow: var(--ds-shadow-small);
+  }
+  :where(.ui-check-box:has(.ui-check-input:checked)) .ui-check-glyph {
+    opacity: 1;
+    transform: none;
+  }
+  :where(.ui-check-box:has(.ui-check-input:focus-visible)) {
+    outline: 0.125rem solid var(--ring);
+    outline-offset: 0.125rem;
+  }
+  :where(.ui-check:has(.ui-check-input:disabled)) {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  /* ---- StatusBadge ---------------------------------------------------- */
+  :where(.ui-badge) {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* ---- Kbd ------------------------------------------------------------ */
+  :where(.ui-kbd) {
+    @apply inline-flex min-w-5 items-center justify-center rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-foreground [box-shadow:var(--ds-shadow-key)];
+  }
+
+  /* ---- ChipInput field ------------------------------------------------ */
+  :where(.ui-chip-input) {
+    @apply flex min-h-11 flex-wrap items-center gap-1.5 rounded-lg bg-card px-2.5 py-2 [box-shadow:var(--ds-shadow-border)] focus-within:ring-2 focus-within:ring-ring;
+  }
+  /* The wrapper's focus-within ring is the visible focus for the whole control. */
+  :where(.ui-chip-input) > input {
+    @apply outline-none;
+  }
+
+  /* ---- Dialog --------------------------------------------------------- */
+  :where(.ui-dialog) {
+    @apply fixed inset-0 z-50 m-auto h-fit w-full max-w-md rounded-xl bg-card p-6 text-card-foreground [box-shadow:var(--ds-shadow-modal)];
+    /* A dialog never grows past the viewport (the same 1.875rem breathing room as
+       .pg-modal-panel): on a short phone viewport the content scrolls inside the
+       dialog, so a focused control is always revealed and the locked document
+       never has to scroll. Surfaces that manage their own scroller (Finance,
+       Campaigns) override this through their vocabulary classes. */
+    max-block-size: calc(100dvh - 1.875rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  :where(.ui-dialog-title) {
+    @apply text-lg font-semibold;
+  }
+  :where(.ui-dialog-description) {
+    @apply mt-1.5 text-sm text-muted-foreground;
+  }
+
+  /* ---- Dropdown menu -------------------------------------------------- */
+  :where(.ui-menu) {
+    @apply z-50 min-w-[10rem] overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground [box-shadow:var(--ds-shadow-menu)];
+  }
+  :where(.ui-menu-item) {
+    @apply relative flex cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors duration-150 data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground [&_svg]:size-4 [&_svg]:text-muted-foreground;
+  }
+  :where(.ui-menu-radio-item) {
+    @apply relative flex cursor-default select-none items-center gap-2 rounded-md py-1.5 pl-7 pr-2 text-sm outline-none transition-colors duration-150 data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:text-muted-foreground;
+  }
+  :where(.ui-menu-separator) {
+    @apply -mx-1 my-1 h-px bg-border;
+  }
+  :where(.ui-menu-label) {
+    @apply px-2 py-1.5 text-xs font-medium text-muted-foreground;
+  }
+
+  /* ---- Popover -------------------------------------------------------- */
+  :where(.ui-popover) {
+    @apply z-50 w-80 rounded-xl bg-popover p-4 text-popover-foreground outline-none [box-shadow:var(--ds-shadow-menu)];
+  }
+
+  /* ---- Select (menu-backed single choice, components/ui/select.tsx) ----- */
+  :where(.ui-select) {
+    @apply inline-flex min-h-9 max-w-full items-center justify-between gap-2 rounded-xl border border-input bg-card px-3 text-left text-sm font-medium text-foreground outline-none [box-shadow:var(--ds-shadow-border)] hover:border-ring/50 focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring focus-visible:outline-offset-0 disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-ring;
+    transition:
+      border-color var(--ds-motion-fast) var(--ease-standard),
+      background-color var(--ds-motion-fast) var(--ease-standard),
+      box-shadow var(--ds-motion-fast) var(--ease-standard);
+  }
+  :where(.ui-select-sm) {
+    @apply min-h-8 rounded-lg px-2.5 text-xs;
+  }
+  :where(.ui-select-value) {
+    @apply min-w-0 flex-1 truncate;
+  }
+  :where(.ui-select-caret) {
+    @apply size-4 shrink-0 text-muted-foreground;
+    transition: transform var(--ds-motion-fast) var(--ease-standard);
+  }
+  :where(.ui-select[data-state="open"] .ui-select-caret) {
+    transform: rotate(180deg);
+  }
+  :where(.ui-select-menu) {
+    min-inline-size: var(--radix-dropdown-menu-trigger-width);
+    max-inline-size: min(24rem, 92vw);
+    max-block-size: min(20rem, 60dvh);
+    overflow-y: auto;
+  }
+
+  /* ---- StatTile ------------------------------------------------------- */
+  :where(.ui-stat-tile) {
+    @apply flex items-center gap-3 rounded-xl bg-card px-3.5 py-2.5 transition-[box-shadow,transform] duration-150 hover:-translate-y-px [box-shadow:var(--ds-shadow-small)];
+  }
+}
+
+@layer components {
+  /* CSS-owned fades let the unlayered reduced-motion contract override them. */
+  .pg-loading-overlay { will-change: opacity; }
+  .pg-loading-overlay[data-loader-phase="hidden"] {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .pg-loading-overlay[data-loader-phase="open"] {
+    animation: pg-overlayIn var(--ds-motion-popover) var(--ease-out-soft) both;
+  }
+  .pg-loading-overlay[data-loader-phase="closing"] {
+    pointer-events: none;
+    animation: pg-overlayOut var(--ds-motion-theme) var(--ease-standard) both;
+  }
+  .pg-loading-artifact { will-change: opacity; }
+  .pg-loading-artifact[data-loader-ready="false"] { opacity: 0; }
+  /* The artifact's entrance keeps running through the closing phase: a
+     destination that settles before the logo has fully faded in leaves via
+     the overlay's fade-out from wherever the entrance reached, instead of
+     snapping to full opacity. */
+  [data-loader-phase="open"] > .pg-loading-artifact[data-loader-ready="true"],
+  [data-loader-phase="closing"] > .pg-loading-artifact[data-loader-ready="true"] {
+    animation: pg-overlayIn var(--ds-motion-theme) var(--ease-out-soft) both;
+  }
+}
+
+@layer components {
+  /* ---- ScrollBox (components/ui/scroll-box.tsx) ------------------------- */
+  /* A list inside a box on a page keeps a fixed height and scrolls inside it (the
+     captain, 2026-10-18): each section sets --scroll-box-max to about seven of its
+     rows. Where more rows wait past an edge the box draws a flat hairline, as the
+     prototype draws its scroll edges (proto-add-creator, proto-collision): never a
+     fade. The inline gutter keeps the rows' own focus rings inside the box. */
+  :where(.ui-scroll-box) {
+    max-block-size: var(--scroll-box-max, 28rem);
+    margin-inline: -0.375rem;
+    padding-inline: 0.375rem;
+    overflow: auto;
+    border-block: 1px solid transparent;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    transition: border-color var(--ds-motion-fast) var(--ease-standard);
+  }
+  :where(.ui-scroll-box):is([data-edge="top"], [data-edge="both"]) { border-block-start-color: var(--ds-hairline); }
+  :where(.ui-scroll-box):is([data-edge="bottom"], [data-edge="both"]) { border-block-end-color: var(--ds-hairline); }
+  :where(.ui-scroll-box):focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  :where(.ui-scroll-box-list) { display: flow-root; }
+}
+
+@layer components {
+.proto-set-switch { flex:none; }
+.pg-view-switch { display:block; inline-size:2.25rem; block-size:1.25rem; flex:none; padding:.125rem; border-radius:var(--radius-2xl); background:var(--border); transition:background-color var(--ds-motion-popover) var(--ease-standard),box-shadow var(--ds-motion-fast) var(--ease-standard); }
+.pg-view-switch-active { background:var(--color-status-green); }
+.pg-view-switch-knob { display:block; inline-size:1rem; block-size:1rem; border-radius:var(--radius-2xl); background:var(--ds-ink-on-dark); box-shadow:var(--ds-shadow-small); transition:transform var(--ds-motion-popover) var(--ease-settle),inline-size var(--ds-motion-fast) var(--ease-standard); }
+.pg-view-switch-knob-active { transform:translateX(1rem); }
+}

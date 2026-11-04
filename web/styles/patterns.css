@@ -1,0 +1,28 @@
+@layer components {
+/* CP Home CardHead and compact Calm-card faces; kit promotion candidates.
+   Geometry follows the source recipes. Every paint/motion value is shared. */
+.buyer-card-head { display:flex; align-items:center; gap:var(--ds-space-3); min-block-size:2.25rem; margin-block-end:var(--ds-space-3); min-inline-size:0; }
+.buyer-card-titles { display:flex; min-inline-size:0; flex:1 1 auto; flex-direction:column; }
+.buyer-card-head h2 { display:flex; align-items:center; flex-wrap:wrap; gap:var(--ds-space-2); min-inline-size:0; color:var(--foreground); font-size:.9375rem; font-weight:var(--ds-weight-heavy); letter-spacing:-.01em; line-height:1.2; }
+.buyer-tone-icon { display:inline-grid; place-items:center; flex:none; inline-size:2rem; block-size:2rem; border-radius:var(--radius-lg); background:color-mix(in oklab,var(--primary-ink) 13%,var(--card)); color:var(--primary-ink); }
+[data-theme=dark] .buyer-tone-icon { background:color-mix(in oklab,var(--primary-ink) 22%,var(--card)); color:color-mix(in oklab,var(--primary-ink) 62%,var(--foreground)); }
+.buyer-tone-icon svg { inline-size:1rem; block-size:1rem; }
+.buyer-card-count { display:inline-grid; min-inline-size:1.375rem; block-size:1.25rem; place-items:center; padding-inline:.375rem; border-radius:var(--radius-2xl); background:var(--muted); color:var(--muted-foreground); font-size:.6875rem; font-weight:var(--ds-weight-heavy); letter-spacing:0; }
+.buyer-section-state { display:flex; min-inline-size:0; flex-direction:column; align-items:center; padding:var(--ds-space-6) var(--ds-space-4); border-radius:var(--radius-2xl); background:var(--card); box-shadow:var(--ds-shadow-border); text-align:center; animation:pg-contentIn var(--ds-motion-overlay) var(--ease-out-soft) backwards; }
+.buyer-state-icon { display:grid; place-items:center; inline-size:2.5rem; block-size:2.5rem; flex:none; margin-block-end:var(--ds-space-3); border-radius:var(--radius-xl); background:color-mix(in oklab,var(--primary) 10%,transparent); color:var(--primary-ink); }
+.buyer-state-icon svg { inline-size:1.25rem; block-size:1.25rem; }
+.buyer-section-state[data-kind=error] .buyer-state-icon { background:color-mix(in oklab,var(--color-status-orange) 12%,transparent); color:var(--color-status-orange); }
+[data-theme=dark] .buyer-section-state[data-kind=error] .buyer-state-icon { color:color-mix(in oklab,var(--color-status-orange) 62%,var(--foreground)); }
+.buyer-section-state[data-kind=locked] .buyer-state-icon { background:var(--muted); color:var(--muted-foreground); }
+.buyer-state-text { display:grid; justify-items:center; gap:var(--ds-space-1); min-inline-size:0; }
+.buyer-state-text h2 { color:var(--foreground); font-size:.8125rem; font-weight:var(--ds-weight-black); line-height:1.35; }
+.buyer-state-text p { max-inline-size:36ch; color:var(--muted-foreground); font-size:.75rem; line-height:1.5; }
+.buyer-state-actions { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:var(--ds-space-2); margin-block-start:var(--ds-space-3); }
+.buyer-loading { display:grid; gap:var(--ds-space-2); padding-block:var(--ds-space-3); }
+.buyer-loading > .ui-skeleton { block-size:2.25rem; }
+.buyer-notice { color:var(--muted-foreground); font-size:.75rem; line-height:1.5; }
+.buyer-notice .hx-notice-copy { display:block; }
+.buyer-notice p + p { margin-block-start:var(--ds-space-1); }
+@media(prefers-reduced-motion:reduce) { .buyer-section-state { animation:none; } }
+
+}

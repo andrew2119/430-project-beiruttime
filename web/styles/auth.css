@@ -1,0 +1,107 @@
+/* ============================================================================
+   styles/auth.css - the public surfaces: the auth card (login, invite,
+   password, verify, 2FA) and the centered canvas they sit on. The card is a
+   miniature of the shell tray (radius, ambient depth, top-edge gloss) so the
+   first screen a person sees already speaks the app's language. Inputs
+   inside the card take the pg-form-control recipe through a scoped rule
+   (the base primitive recipe has zero specificity, so utilities passed at
+   the call sites keep winning). Tokens only; imported from app/globals.css
+   into @layer components.
+   ========================================================================== */
+
+/* The canvas behind every public page (same ground as the shell). */
+.pg-public-canvas {
+  min-block-size: 100dvh;
+  background: var(--ds-canvas);
+  color: var(--foreground);
+}
+.pg-public-center {
+  display: flex;
+  min-block-size: 100dvh;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* The card is flat (no gradients outside the login, captain 2026-09-30);
+   shell depth and the gloss lines keep the lift. */
+.pg-auth-card {
+  position: relative;
+  inline-size: 100%;
+  max-inline-size: 24rem;
+  padding: 1.75rem 1.75rem 1.5rem;
+  border-radius: var(--ds-radius-tray);
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: var(--ds-shadow-shell), inset 0 1px 0 var(--ds-gloss-line),
+    inset 0 -1px 0 var(--ds-gloss-under);
+  isolation: isolate;
+  animation: pg-face-in var(--ds-motion-overlay) var(--ease-settle) both;
+}
+.pg-auth-head {
+  margin-block-end: 1.25rem;
+  text-align: center;
+}
+.pg-auth-mark {
+  display: grid;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  margin: 0 auto 0.75rem;
+  place-items: center;
+  border-radius: var(--ds-radius-chonk);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--ds-shadow-small), 0 2px 0 0 oklch(from var(--primary) calc(l - 0.1) c h);
+  font-size: 1.125rem;
+  font-weight: var(--ds-weight-black);
+}
+.pg-auth-title {
+  color: var(--foreground);
+  font-size: 1.25rem;
+  font-weight: var(--ds-weight-black);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.pg-auth-subtitle {
+  margin-block-start: 0.25rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+}
+/* Field recipe inside the card: the Campaigns form control, applied without
+   touching the seven forms (base recipe is :where(), so this wins; call-site
+   utilities such as pr-16 / font-mono / h-11 still win over this). */
+.pg-auth-card .ui-input {
+  min-block-size: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 0.0625rem solid var(--input);
+  border-radius: var(--radius-xl);
+  background: color-mix(in oklab, var(--muted) 88%, var(--card));
+  box-shadow: var(--ds-shadow-border);
+  transition: background-color var(--ds-motion-fast) var(--ease-standard),
+    border-color var(--ds-motion-fast) var(--ease-standard),
+    box-shadow var(--ds-motion-fast) var(--ease-standard);
+}
+.pg-auth-card .ui-input:focus-visible {
+  border-color: var(--ring);
+  background: var(--card);
+  box-shadow: var(--ds-shadow-small);
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
+}
+.pg-auth-card .ui-label {
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: var(--ds-weight-heavy);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.pg-auth-foot {
+  margin-block-start: 1.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-auth-card { animation: none; }
+}

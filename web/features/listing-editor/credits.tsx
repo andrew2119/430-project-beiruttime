@@ -2,17 +2,12 @@ import manifest from "../../../demo/images-manifest.json";
 import Image from "next/image";
 import { BidiReference } from "@beirut-time/ui";
 import { copy } from "./copy";
+import { PageHeader, PageLayout } from "@/shell/page-header";
 export default function Credits({ locale }: { locale: "en" | "ar" }) {
   const t = copy(locale);
   return (
-    <div className="le-page">
-      <header className="le-page-header">
-        <div>
-          <p className="le-eyebrow">WIKIMEDIA COMMONS</p>
-          <h1>{t.credits}</h1>
-          <p>{t.creditsIntro}</p>
-        </div>
-      </header>
+    <PageLayout className="le-page">
+      <PageHeader title={t.credits} count={t.creditsIntro} lead={<span className="le-eyebrow">WIKIMEDIA COMMONS</span>} />
       <div className="le-credits-grid">
         {manifest.assets.map((asset) => (
           <article className="le-credit" key={asset.id}>
@@ -48,6 +43,6 @@ export default function Credits({ locale }: { locale: "en" | "ar" }) {
           </article>
         ))}
       </div>
-    </div>
+    </PageLayout>
   );
 }

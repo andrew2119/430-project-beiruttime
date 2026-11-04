@@ -1,10 +1,13 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import Link from 'next/link';
+import { LayoutDashboard, ShieldCheck, Wrench } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useSession } from '@/features/identity/session';
+import { PageHeader, PageLayout, type HeaderAction } from '@/shell/page-header';
 import { useLocale } from '@/shell/locale-context';
 import { ApiError } from '@/lib/api/client';
-import { Button, Card } from '@beirut-time/ui';
+import { Button, ButtonLink, HeaderTabs, Skeleton, State } from '@beirut-time/ui';
 import en from './en.json';
 import ar from './ar.json';
 import { operationsRequest } from './api';
@@ -12,20 +15,27 @@ import { freshData } from './privacy';
 
 export function useCopy() { const locale=useLocale(); const dictionary:Record<string,string>=locale==='ar'?ar:en; return {locale,t:(key:string)=>dictionary[key]??dictionary.unknownState}; }
 
-export function FeatureFrame({title,intro,children}:{title:string;intro:string;children:React.ReactNode}) {
+export function FeatureFrame({title,intro,children,actions}:{title:string;intro:string;children:React.ReactNode;actions?:HeaderAction[]}) {
   const {locale,t}=useCopy();
-  return <div className="ops-page"><header className="ops-header"><p className="eyebrow">{t('eyebrow')}</p><h1>{t(title)}</h1><p>{t(intro)}</p><nav aria-label={t('eyebrow')}><Link href={`/${locale}/operations/dashboard`}>{t('dashboard')}</Link><Link href={`/${locale}/operations/moderation`}>{t('moderation')}</Link><Link href={`/${locale}/business-intake`}>{t('intake')}</Link></nav></header>{children}</div>;
+  const pathname=usePathname().replace(/^\/(en|ar)(?=\/|$)/,'');
+  const router=useRouter();
+  const roles=useSession()?.principal.roles??[];
+  const entries=[{id:'/operations/dashboard',key:'dashboard',roles:['operator'],icon:LayoutDashboard},{id:'/operations/moderation',key:'moderation',roles:['operator'],icon:ShieldCheck},{id:'/business-intake',key:'intake',roles:['brand','dealer'],icon:Wrench}];
+  const visibleEntries=entries.filter(item=>item.roles.some(role=>roles.includes(role))).map(item=>({...item,label:t(item.key),href:`/${locale}${item.id}`}));
+  const active=visibleEntries.find(item=>pathname===item.id||pathname.startsWith(item.id+'/'))?.id??pathname;
+  return <PageLayout className="ops-page"><PageHeader title={t(title)} count={t(intro)} actions={actions} lead={<p className="ops-muted">{t('eyebrow')}</p>}
+    nav={visibleEntries.length?<HeaderTabs nav label={t('eyebrow')} items={visibleEntries} value={active} onChange={id=>router.push(`/${locale}${id}`)}/>:undefined}/><div className="ops-content">{children}</div></PageLayout>;
 }
 
 export function ErrorNotice({error,retry}:{error:unknown;retry?:()=>void}) {
   const {t,locale}=useCopy();
-  if(error instanceof ApiError&&error.status===401)return <Card><h2>{t('signIn')}</h2><p>{t('signInBody')}</p><Link className="button" href={`/${locale}/account`}>{t('account')}</Link></Card>;
+  if(error instanceof ApiError&&error.status===401)return <State title={t('signIn')} body={t('signInBody')}><ButtonLink href={`/${locale}/account`}>{t('account')}</ButtonLink></State>;
   const code=error instanceof ApiError?error.code:'unavailable';
   const denied=error instanceof ApiError && error.status===403;
   const known=['independent_review_required','intake_exists','immutable_custody','custody_unconfirmed','custody_scope_mismatch','report_limit','decision_required','idempotency_conflict','invalid_evidence','evidence_limit','evidence_exists','assignment_required'];
   const correction=error instanceof ApiError&&[400,409,422,428,429].includes(error.status);
   const text=code==='stale_revision'?t('stale'):known.includes(code)?t(code):correction?t('invalid'):denied?t('deniedBody'):t('unavailableBody');
-  return <div className="ops-notice" role="alert"><strong>{t(denied?'denied':correction?'correctionNeeded':'unavailable')}</strong><p>{text}</p>{error instanceof ApiError&&error.requestId&&<bdi dir="ltr">{error.requestId}</bdi>}{retry&&<Button type="button" className="button-secondary" onClick={retry}>{t('retry')}</Button>}</div>;
+  return <div className="ops-notice" role="alert"><State kind="error" title={t(denied?'denied':correction?'correctionNeeded':'unavailable')} body={text}>{error instanceof ApiError&&error.requestId&&<bdi dir="ltr">{error.requestId}</bdi>}{retry&&<Button chonk type="button" variant="outline" onClick={retry}>{t('retry')}</Button>}</State></div>;
 }
 
 export function useResource<T>(accessFingerprint:string,service:'trust'|'communications'|'service-operations',path:string,enabled=true) {
@@ -69,9 +79,9 @@ export function useCommand() {
 
 export function LoadState({loading,error,empty,refresh}:{loading:boolean;error?:unknown;empty?:boolean;refresh:()=>void}) {
   const {t}=useCopy();
-  if(loading) return <Card aria-busy="true" role="status">{t('loading')}</Card>;
+  if(loading) return <div className="ops-loading" aria-busy="true" role="status" aria-label={t('loading')}><span className="sr-only">{t('loading')}</span>{[0,1,2].map(row=><Skeleton key={row} className="ops-row-skeleton"/>)}</div>;
   if(error) return <ErrorNotice error={error} retry={refresh}/>;
-  if(empty) return <Card><h2>{t('empty')}</h2><p>{t('emptyBody')}</p></Card>;
+  if(empty) return <State title={t('empty')} body={t('emptyBody')}/>;
   return null;
 }
 

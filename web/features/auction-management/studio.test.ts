@@ -6,11 +6,20 @@ import type { Session } from '@contracts/contracts-identity/accounts';
 import AuctionStudio from './studio';
 import en from './en.json';
 import ar from './ar.json';
-const state=vi.hoisted(()=>({locale:'en' as 'en'|'ar',session:null as Session|null,status:'signed-out'}));
+const state=vi.hoisted(()=>({locale:'en' as 'en'|'ar',session:null as Session|null,status:'signed-out',selectOptions:[] as string[]}));
+// CP Select lazily mounts its menu after engagement. Verify the same authorized
+// options supplied to that primitive rather than expecting closed-menu DOM.
+vi.mock('@beirut-time/ui',async importOriginal=>({
+  ...await importOriginal<typeof import('@beirut-time/ui')>(),
+  Select:({options,value}:{options:{value:string;label:string}[];value:string})=>{
+    state.selectOptions.push(...options.map(option=>option.value));
+    return createElement('button',{type:'button'},options.find(option=>option.value===value)?.label);
+  },
+}));
 vi.mock('@/features/identity/session',()=>({useSession:()=>state.session,useSessionState:()=>state.status,refreshSession:vi.fn(),authenticatedRequest:vi.fn(),signInHref:()=>'/en/account?next=%2Fseller%2Fauctions'}));
 vi.mock('@/shell/locale-context',()=>({useLocale:()=>state.locale}));
 vi.mock('@/shell/private-state',()=>({readNonSecretDraft:()=>null,saveNonSecretDraft:vi.fn()}));
-beforeEach(()=>{state.locale='en';state.status='signed-out';state.session=null;});
+beforeEach(()=>{state.locale='en';state.status='signed-out';state.session=null;state.selectOptions=[];});
 function render(){return renderToStaticMarkup(createElement(QueryClientProvider,{client:new QueryClient()},createElement(AuctionStudio)));}
 function signedIn(permissions:string[]=[]):Session {
   return {access_token:'test-only',token_type:'Bearer',expires_in:300,access_fingerprint:'test-owner',
@@ -41,5 +50,5 @@ it('offers only exact held organization publishing grants',()=>{
     {organization_id:'sample-business-publisher',roles:['business'],permissions:['identity.listings.publish']},
     {organization_id:'sample-business-reader',roles:['business'],permissions:['business.records.read']},
   ];
-  const html=render();expect(html).toContain('sample-business-publisher');expect(html).not.toContain('sample-business-reader');expect(html).not.toContain('<form');
+  const html=render();expect(state.selectOptions).toContain('sample-business-publisher');expect(state.selectOptions).not.toContain('sample-business-reader');expect(html).not.toContain('<form');
 });

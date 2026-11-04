@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '@beirut-time/ui';
+import { Button, Dialog, DialogTrigger, DialogContent, DialogTitle } from '@beirut-time/ui';
 import type { Photo } from '@contracts/contracts-catalog/discovery';
 import { useLocale } from '@/shell/locale-context';
 import en from './en.json';
@@ -30,13 +30,13 @@ export function PublicPhoto({photo,fallback,eager=false}:{photo:Photo|null;fallb
   </div>;
 }
 export function Gallery({photos,unavailable=false}:{photos:Photo[];unavailable?:boolean}) {
-  const locale=useLocale(),t=locale==='ar'?ar:en, [selected,setSelected]=useState(0),dialog=useRef<HTMLDialogElement>(null);
+  const locale=useLocale(),t=locale==='ar'?ar:en, [selected,setSelected]=useState(0), trigger=useRef<HTMLButtonElement>(null), zoom=useRef<HTMLDivElement>(null);
   const photo=photos[selected]??null;
   function step(delta:number){setSelected(value=>(value+delta+photos.length)%photos.length);}
-  return <section className="discovery-gallery" aria-label={t.photo}>
-    <button className="discovery-hero-photo" type="button" aria-label={photo?t.zoom:unavailable?t.photoUnavailable:t.noPhoto} disabled={!photo} onClick={()=>dialog.current?.showModal()}><PublicPhoto key={photo?.id} photo={photo} fallback={unavailable?t.photoUnavailable:t.noPhoto} eager/>{photo&&<span className="discovery-zoom-label">{t.zoom} ↗</span>}</button>
+  return <Dialog><section className="discovery-gallery" aria-label={t.photo}>
+    <DialogTrigger asChild><button ref={trigger} className="discovery-hero-photo" type="button" aria-label={photo?t.zoom:unavailable?t.photoUnavailable:t.noPhoto} disabled={!photo}><PublicPhoto key={photo?.id} photo={photo} fallback={unavailable?t.photoUnavailable:t.noPhoto} eager/>{photo&&<span className="discovery-zoom-label">{t.zoom} ↗</span>}</button></DialogTrigger>
     {photos.length>1&&<div className="discovery-thumbnails">{photos.map((item,index)=><button key={item.id} type="button" aria-label={`${t.photo} ${index+1}`} aria-pressed={selected===index} onClick={()=>setSelected(index)}><PublicPhoto photo={item} fallback={t.noPhoto}/></button>)}</div>}
     {photo?.credit&&<p className="discovery-help">{photo.credit}</p>}
-    <dialog ref={dialog} className="discovery-zoom" aria-label={t.zoom} onClick={event=>{if(event.target===dialog.current)dialog.current.close();}}><div className="discovery-zoom-controls"><Button className="button-secondary" onClick={()=>dialog.current?.close()}>{t.close}</Button>{photos.length>1&&<><Button className="button-secondary" onClick={()=>step(-1)}>{t.previousPhoto}</Button><Button className="button-secondary" onClick={()=>step(1)}>{t.nextPhoto}</Button></>}</div><div className="discovery-zoom-scroll"><PublicPhoto key={photo?.id} photo={photo} fallback={t.noPhoto} eager/></div></dialog>
-  </section>;
+    <DialogContent className="discovery-zoom" closeLabel={t.close} aria-describedby={undefined} onCloseAutoFocus={event=>{event.preventDefault();trigger.current?.focus({preventScroll:true});}} onOpenAutoFocus={()=>{requestAnimationFrame(()=>{const el=zoom.current;if(el)el.scrollTo({left:(el.scrollWidth-el.clientWidth)/2*(locale==='ar'?-1:1),top:(el.scrollHeight-el.clientHeight)/2});});}}><DialogTitle>{t.zoom}</DialogTitle><div className="discovery-zoom-controls">{photos.length>1&&<><Button variant="outline" size="sm" onClick={()=>step(-1)}>{t.previousPhoto}</Button><Button variant="outline" size="sm" onClick={()=>step(1)}>{t.nextPhoto}</Button></>}</div><div ref={zoom} className="discovery-zoom-scroll" tabIndex={0} role="region" aria-label={t.photo}><PublicPhoto key={photo?.id} photo={photo} fallback={t.noPhoto} eager/></div></DialogContent>
+  </section></Dialog>;
 }

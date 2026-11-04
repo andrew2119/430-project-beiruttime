@@ -1,0 +1,321 @@
+/* LAB PROTOTYPE ONLY (2026-10-03). Sticky page headers on every page. Imported last.
+
+   The captain: "the tabs that have a top header, that header should be sticky".
+   components/proto/sticky/sticky-header.tsx finds each page's header box, marks it
+   [data-sx-root] and measures it; this file does everything you see.
+
+   B "Condense" is LOCKED by the captain 2026-10-03 ("I like the condense option ...
+   their upper parts are getting faded in to the top and absorbed. That should not
+   happen.") and, round 3, tied to the scroll again ("There's this delay ... it's not
+   really in sync"):
+   - The card is pinned where it sits: it never moves, never slides under anything,
+     its top edge stays crisp.
+   - As the page scrolls, the card condenses by exactly as much as the page has
+     scrolled, frame by frame: progress --sx-p (0 open, 1 condensed) runs on the
+     tray's scroll timeline (script writes it in the same frame where a browser has no
+     scroll timeline). The secondary rows (back link, count line, filters and search,
+     the pills when the page has tabs, the status line, a notice) fold by height and
+     fade; the padding and gaps tighten; the title settles smaller. The title, its
+     actions and the tabs never fade. Scrolling up reverses it exactly.
+   - The card's open height stays reserved in the page (no reflow, no jump).
+   - A solid strip of the page's own paint runs from the window's top edge to the card
+     and on below it by the page's own gap, so nothing ever shows above or beside the
+     card; the page passes under that strip's straight bottom edge, which takes a very
+     soft shadow while something is under it. On a campaign page (header joined to the
+     body card) the strip under the card is the body card's own top padding.
+   - Inside the tray (which isolates its layers) the header sits at z 20: above the
+     page, below every pop-up, menu, sheet and the lab bar, which live outside it.
+   - Reduced motion: no in-between; the card sits open, or condensed once the page has
+     scrolled the whole way.
+
+   A "Whole card" and C "Controls only" stay below, unused (locked by the captain
+   2026-10-03), with C's scroll-linked motion and campaign-toolbar pinning. */
+
+/* The air above a pinned card: the page's own top gutter (24; phone 12), so a card
+   pinned at the top sits exactly where it sat before scrolling. */
+:root { --sx-gap: var(--ds-space-6); }
+@media (max-width: 850px) {
+  :root { --sx-gap: var(--ds-phone-gutter); }
+}
+
+/* ============================================================================
+   The pinned box (every behaviour)
+   ========================================================================== */
+[data-sx-root] {
+  position: sticky;
+  inset-block-start: calc(var(--sx-gap) + var(--sx-lift, 0px) - var(--sx-d, 0px));
+  z-index: 20;
+  /* Only the card and its own lines take clicks: the box's empty edges never
+     block the page sliding under them. */
+  pointer-events: none;
+}
+[data-sx-root] .hx-wrap { position: relative; }
+[data-sx-root] .hx-zone > *,
+[data-sx-root] .sx-band { pointer-events: auto; }
+[data-sx-root] .hx-zone > .hx-head { z-index: 1; }
+
+/* The page's own pinned pieces (a side index, a table's column heads, a notice) sit
+   under the pinned header instead of behind it. */
+.pg-tray[data-sx-on] :is(.proto-set-index, .pam-a-side, .pam-b-pane, .pap-b-left, .pmt-b-side, .kit-index) {
+  inset-block-start: calc(var(--sx-gap) + var(--sx-lift, 0px) + var(--sx-hs, 0px) + var(--sx-tb-h, 0px) + var(--ds-space-4));
+}
+.pg-tray[data-sx-on] .pg-post-refresh-banner {
+  inset-block-start: calc(var(--sx-gap) + var(--sx-lift, 0px) + var(--sx-hs, 0px) + var(--sx-tb-h, 0px));
+}
+/* Settings had its own small bar that rose once its header scrolled away; the pinned
+   header now does that job, so the two never show together. */
+.pg-tray[data-sx-on] .proto-set-float { display: none; }
+
+/* The solid strip behind a pinned card runs 48 past it on each side, wider than the
+   page's gutter (28; phone 12), so it ends beyond the tray. The tray hides that part
+   but could still be slid to it: a click or a focus move that brings its target into
+   view slid the whole page sideways (36 at 390 wide, 20 on desktop) with no way back.
+   The page's own box is as wide as the tray, so it cuts the strip where the tray
+   already did: the same paint, the same clicks, and nothing left to slide to. clip,
+   never hidden: the page's box must not become the scroller the card pins against. */
+.pg-tray > .pg-list-page:has([data-sx-root]) { overflow-x: clip; }
+
+.sx-band { display: none; }
+
+/* ============================================================================
+   B "Condense" (locked)
+   ========================================================================== */
+@property --sx-p {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@supports (animation-timeline: scroll()) {
+  .pg-tray { scroll-timeline: --sx-tray block; }
+  :is([data-sx-root="B"][data-sx-ready] .hx-wrap, .hx-wrap[data-sx-root="B"][data-sx-ready]) {
+    animation: sx-progress 1ms linear both;
+    animation-timeline: --sx-tray;
+    animation-range: 0px var(--sx-reach, 1px);
+  }
+}
+@keyframes sx-progress {
+  from { --sx-p: 0; }
+  to { --sx-p: 1; }
+}
+/* Measuring reads the open card (0) and the condensed card (1), whatever the scroll. */
+:is([data-sx-measuring] .hx-wrap, .hx-wrap[data-sx-measuring]) { animation: none !important; }
+:is([data-sx-measuring="0"] .hx-wrap, .hx-wrap[data-sx-measuring="0"]) { --sx-p: 0 !important; }
+:is([data-sx-measuring="1"] .hx-wrap, .hx-wrap[data-sx-measuring="1"]) { --sx-p: 1 !important; }
+
+/* The card's open height stays reserved in the page. */
+[data-sx-root="B"] { min-block-size: var(--sx-h, auto); }
+
+/* The solid strip: the page's paint from the window's top edge, behind the card, to
+   the page's own gap under it. It is the card's own layer, so it rides with it. */
+[data-sx-root="B"] .hx-zone { position: relative; }
+[data-sx-root="B"] .hx-zone::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-inline: -48px;
+  inset-block: calc(-1 * var(--sx-gap)) calc(-1 * var(--sx-below, 0px));
+  background: color-mix(in oklab, var(--card) 78%, var(--background));
+  pointer-events: auto;
+}
+/* At rest nothing is under the card, yet as the page's top layer it drew over the
+   first card below it: the strip hid that card's top ring and the card's own shadow
+   washed out its top (captain, 2026-10-18: "their top part is being absorbed"). At rest
+   the header stops just above the next block, clear of the 1 px ring every card draws
+   (--ds-shadow-border and the shadows built on it), and on a campaign page at the body
+   card's top padding. Once the page moves, every frame is as before. */
+[data-sx-root="B"][data-sx-ready][data-sx-rest] {
+  clip-path: inset(-100vmax -100vmax min(0px, 1px - var(--sx-below, 0px)) -100vmax);
+}
+.hx-detail-page > [data-sx-root="B"][data-sx-ready][data-sx-rest] {
+  clip-path: inset(-100vmax -100vmax min(0px, 2px - var(--sx-lip, 0px)) -100vmax);
+}
+/* A very soft shadow on that edge while the page is passing under it. */
+[data-sx-root="B"][data-sx-under] .hx-zone::before { box-shadow: var(--ds-shadow-menu); }
+/* A campaign page: the header is joined to the body card below it, so the strip under
+   the card is the body card's own top padding in the card's paint, ending on a clean
+   hairline while the tab's content passes under it. */
+.hx-detail-page > [data-sx-root="B"][data-sx-under] .hx-zone::before { box-shadow: none; }
+.hx-detail-page > [data-sx-root="B"] .hx-zone::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-inline: 0;
+  inset-block-start: 100%;
+  /* Short of the tab toolbar's buttons, whose raised faces stand 2px above their boxes
+     (captain, click-test 2026-10-20, finding 12: the strip cut their tops off). */
+  block-size: max(0px, var(--sx-lip, 0px) - 2px);
+  background: var(--card);
+  pointer-events: auto;
+}
+.hx-detail-page > [data-sx-root="B"][data-sx-under] .hx-zone::after { box-shadow: inset 0 -1px 0 var(--border); }
+.hx-detail-page > [data-sx-root="B"]:not([data-sx-under]) .hx-zone::after { pointer-events: none; } /* nothing is passing under the header yet: taps reach the tab's content */
+
+/* The fold, all on --sx-p (every value is its open value at 0 and its condensed value
+   at 1, in a straight line between, so the card's bottom edge keeps pace with the
+   page): the card's padding and gaps tighten to the slim bar's ... */
+[data-sx-root="B"][data-sx-ready] .hx-zone { gap: calc((1 - var(--sx-p)) * var(--ds-gap-row)); }
+[data-sx-root="B"][data-sx-ready] .hx-zone > .hx-head[data-opt="A"] {
+  padding-block-start: calc(var(--sx-pt0) + (var(--ds-space-3) - var(--hx-slop) - var(--sx-pt0)) * var(--sx-p));
+}
+[data-sx-root="B"][data-sx-ready] .hx-zone > .hx-head[data-opt="A"]:not([data-nav]) {
+  padding-block-end: calc(var(--sx-pb0) + (var(--ds-space-3) - var(--hx-slop) - var(--sx-pb0)) * var(--sx-p));
+}
+[data-sx-root="B"][data-sx-ready] .hx-head[data-opt="A"] > [data-sx-keep="views"] {
+  margin-block-start: calc(var(--sx-km) + (var(--ds-gap-row) - var(--hx-slop) - var(--sx-km)) * var(--sx-p));
+}
+[data-sx-root="B"][data-sx-ready] .hx-head[data-opt="A"] > [data-sx-keep="nav"] {
+  margin-block-start: calc(var(--sx-km) + (var(--ds-space-2) - var(--sx-km)) * var(--sx-p));
+}
+/* ... the title settles smaller (it never fades) and a campaign's cover to 32 (28 on
+   a phone) ... */
+[data-sx-root="B"][data-sx-ready] .hx-titleline {
+  transform-origin: 0 50%;
+  transform: scale(calc(1 - (1 - var(--sx-k, 1)) * var(--sx-p)));
+}
+[data-sx-root="B"][data-sx-ready] .hx-detail-cover {
+  inline-size: calc(var(--sx-m0) + (var(--sx-m1) - var(--sx-m0)) * var(--sx-p));
+  block-size: calc(var(--sx-m0) + (var(--sx-m1) - var(--sx-m0)) * var(--sx-p));
+}
+/* ... and the secondary rows fold by height (from their own measured height) and fade
+   a little ahead of it. */
+[data-sx-root="B"][data-sx-ready] .hx-zone [data-sx-fold] {
+  min-block-size: 0;
+  max-block-size: calc((1 - var(--sx-p)) * var(--sx-fh));
+  margin-block: calc((1 - var(--sx-p)) * var(--sx-fmt)) calc((1 - var(--sx-p)) * var(--sx-fmb));
+  opacity: clamp(0, 1 - 1.6 * var(--sx-p), 1);
+}
+/* Once anything has moved, a folding row is clipped to its height (sideways overflow,
+   a scrolling pill strip, stays as it is); fully folded, it is out of reach. */
+[data-sx-root="B"][data-sx-ready][data-sx-under] .hx-zone [data-sx-fold] {
+  overflow-x: visible;
+  overflow-y: clip;
+}
+[data-sx-root="B"][data-sx-c] .hx-zone [data-sx-fold] { visibility: hidden; }
+
+/* Reduced motion: no in-between (open, or condensed once scrolled the whole way). */
+@media (prefers-reduced-motion: reduce) {
+  :is([data-sx-root="B"][data-sx-ready] .hx-wrap, .hx-wrap[data-sx-root="B"][data-sx-ready]) {
+    animation-timing-function: steps(1, jump-end);
+  }
+}
+
+/* ============================================================================
+   A "Whole card" and C "Controls only": unused, locked by the captain 2026-10-03
+   ========================================================================== */
+/* The tray's paint over the gutter above the pinned card (and a little behind its top
+   corners). While a C card is still settling the strip sits hidden behind it. */
+:is([data-sx-root="A"], [data-sx-root="C"]) .sx-band {
+  position: absolute;
+  z-index: -1;
+  display: block;
+  inset-inline: -48px;
+  inset-block-start: calc(var(--sx-d, 0px) - var(--sx-gap));
+  block-size: calc(var(--sx-gap) + var(--radius-2xl));
+  background: color-mix(in oklab, var(--card) 78%, var(--background));
+}
+/* A: a status line or notice slides under the card; nothing of it ever shows above. */
+[data-sx-root="A"] .hx-zone:has(> .hx-head + *) { clip-path: inset(-1px -64px -64px -64px); }
+
+@supports (animation-timeline: scroll()) {
+  .pg-tray { scroll-timeline: --sx-tray block; }
+
+  /* A and C: the status line and notice move with the page (speed 1) from the moment
+     the card is pinned, until they sit wholly behind it. */
+  :is([data-sx-root="A"], [data-sx-root="C"]) .hx-zone > .hx-head ~ * {
+    animation: sx-slide 1ms linear both;
+    animation-timeline: --sx-tray;
+    animation-range: var(--sx-d, 0px) calc(var(--sx-d, 0px) + var(--sx-e, 0px));
+  }
+
+  /* C: the card's top edge holds still at the gutter while its body slides up under
+     it, keeping its rounded top corners. */
+  [data-sx-root="C"] .hx-zone {
+    animation: sx-clip 1ms linear forwards;
+    animation-timeline: --sx-tray;
+    animation-range: 1px var(--sx-d, 0px);
+  }
+
+  /* C: each row that leaves fades over its own stretch of the scroll. */
+  [data-sx-root="C"] [data-sx-fade] {
+    animation: sx-fade 1ms linear both;
+    animation-timeline: --sx-tray;
+    animation-range: var(--sx-f0, 0px) var(--sx-f1, 0px);
+  }
+}
+
+@keyframes sx-slide {
+  to { transform: translateY(calc(-1 * var(--sx-e, 0px))); }
+}
+@keyframes sx-clip {
+  from {
+    clip-path: inset(-1px -1px -64px -1px round calc(var(--radius-2xl) + 1px) calc(var(--radius-2xl) + 1px) 0 0);
+  }
+  to {
+    clip-path: inset(calc(var(--sx-d, 0px) - 1px) -1px -64px -1px round calc(var(--radius-2xl) + 1px) calc(var(--radius-2xl) + 1px) 0 0);
+  }
+}
+@keyframes sx-fade {
+  to { opacity: 0; visibility: hidden; }
+}
+
+/* C: a campaign tab's own toolbar pins right under the header's bar, with the body
+   card's top padding above it, on a strip of the card's own paint. */
+[data-sx-tb] {
+  position: sticky;
+  inset-block-start: calc(var(--sx-gap) + var(--sx-lift, 0px) + var(--sx-hs, 0px) + var(--sx-tb-pt, 0px));
+  z-index: 19;
+  pointer-events: none;
+}
+[data-sx-tb] .hx-wrap {
+  position: relative;
+  z-index: 1;
+}
+[data-sx-tb] .hx-toolbar,
+[data-sx-tb]:not(.hx-wrap) > :not(.hx-wrap),
+[data-sx-tb] .sx-band { pointer-events: auto; }
+[data-sx-tb] .hx-toolbar[data-embedded] .hx-toolbar-body {
+  position: relative;
+  z-index: 1;
+  background: var(--card);
+}
+[data-sx-tb] .sx-band {
+  position: absolute;
+  z-index: -1;
+  display: block;
+  inset-inline: calc(-1 * var(--sx-tb-px, 0px));
+  inset-block-start: calc(-1 * var(--sx-tb-pt, 0px));
+  block-size: calc(var(--sx-tb-pt, 0px) + var(--sx-tb-bh, 0px) + var(--ds-space-3));
+  background: var(--card);
+}
+@supports (animation-timeline: scroll()) {
+  [data-sx-tb] .hx-toolbar > :not(.hx-toolbar-body),
+  [data-sx-tb]:not(.hx-wrap) > :not(.hx-wrap) {
+    animation: sx-tb-slide 1ms linear both;
+    animation-timeline: --sx-tray;
+    animation-range: var(--sx-tb-at, 0px) calc(var(--sx-tb-at, 0px) + var(--sx-tb-e, 0px));
+  }
+  [data-sx-tb] .sx-band {
+    animation: sx-tb-edge 1ms linear both;
+    animation-timeline: --sx-tray;
+    animation-range: var(--sx-tb-at, 0px) calc(var(--sx-tb-at, 0px) + var(--ds-space-2));
+  }
+}
+@keyframes sx-tb-slide {
+  to { transform: translateY(calc(-1 * var(--sx-tb-e, 0px))); }
+}
+@keyframes sx-tb-edge {
+  from { box-shadow: inset 0 -1px 0 transparent; }
+  to { box-shadow: inset 0 -1px 0 var(--border); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @supports (animation-timeline: scroll()) {
+    [data-sx-root="C"] .hx-zone,
+    [data-sx-root="C"] [data-sx-fade] {
+      animation-range: calc(var(--sx-d, 0px) - 1px) var(--sx-d, 0px);
+    }
+    [data-sx-tb] .sx-band {
+      animation-range: var(--sx-tb-at, 0px) calc(var(--sx-tb-at, 0px) + 1px);
+    }
+  }
+}

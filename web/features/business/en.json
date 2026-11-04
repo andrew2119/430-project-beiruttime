@@ -21,6 +21,7 @@
   "directory": "Business directory",
   "contacts": "Verified contacts",
   "membership": "Authorized colleagues",
+  "noMembers": "No authorized colleagues are recorded for this business.",
   "operations": "Verification desk",
   "onboard": "Record official onboarding",
   "operatorOnly": "Only an authorized operator can issue business access. There is no public dealer or brand application.",

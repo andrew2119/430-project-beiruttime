@@ -1,232 +1,51 @@
-/* CP F-29/F-33: native form semantics over immutable shell primitives.
-   CP F-40/F-41: one content tree, container-driven density, 850px shell boundary. */
-.business-workspace {
-  max-inline-size: 1180px;
-  margin-inline: auto;
-  padding: 32px 28px 48px;
-  display: grid;
-  gap: 20px;
-  container-type: inline-size;
+/* Layout recipes from CP Settings / Approvals. All paint and motion belongs to
+   the shared kit; no feature palette, font family, radius or keyframe. */
+.business-workspace { container-type: inline-size; }
+.business-content { display: grid; gap: var(--ds-gap-content); min-inline-size: 0; animation: pg-contentIn var(--ds-motion-overlay) var(--ease-out-soft) both; }
+.business-eyebrow { color: var(--muted-foreground); font-size: var(--ds-control-text); font-weight: var(--ds-weight-strong); }
+.business-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,18rem),1fr)); gap: var(--ds-space-4); }
+.business-content .ui-card { min-inline-size: 0; display: grid; align-content: start; gap: var(--ds-space-3); }
+.business-content h2 { font-size: .9375rem; line-height: 1.4; font-weight: var(--ds-weight-strong); }
+.business-content h3 { font-size: var(--ds-control-text); font-weight: var(--ds-weight-strong); }
+.business-content p { line-height: 1.5; font-size: var(--ds-control-text); }
+.business-card ul { padding-inline-start: var(--ds-space-4); color: var(--muted-foreground); font-size: var(--ds-control-text); }
+.business-card small { color: var(--muted-foreground); overflow-wrap: anywhere; }
+.business-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: end; gap: var(--ds-space-4); margin-block-start: var(--ds-space-2); }
+.business-field { display: grid; gap: var(--ds-space-2); min-inline-size: 0; }
+.business-select-control { display: contents; }
+.business-field :is(.ui-input,.ui-select) { inline-size: 100%; min-inline-size: 0; }
+.business-form > :is(.ui-btn,.pg-chonk), .business-content .ui-badge { justify-self: start; }
+.business-checks { grid-column: 1/-1; display: flex; flex-wrap: wrap; gap: var(--ds-space-2) var(--ds-space-4); padding: var(--ds-space-3); border: 1px solid var(--border); border-radius: var(--radius-xl); }
+.business-checks legend { color: var(--muted-foreground); font-size: var(--ds-control-text); padding-inline: var(--ds-space-2); }
+.business-feedback { grid-column: 1/-1; overflow-wrap: anywhere; }
+.business-feedback[role="status"] { color: var(--green-ink); padding: var(--ds-space-3); border-radius: var(--radius-lg); background: var(--muted); font-size: var(--ds-control-text); }
+.business-feedback .pg-face { min-block-size: 0; }
+.business-feedback .pg-face-card { max-inline-size: 100%; }
+.business-feedback bdi { display: block; color: var(--muted-foreground); font-size: var(--ds-control-text); }
+.business-proof { border-block-start: 1px solid var(--border); padding-block-start: var(--ds-space-4); margin-block-start: var(--ds-space-2); display: grid; gap: var(--ds-space-3); }
+.business-queue { display: grid; list-style: none; margin: 0; padding: 0; }
+.business-queue li { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--ds-space-3); border-block-end: 1px solid var(--border); padding-block: var(--ds-space-3); }
+.business-queue li > div { min-inline-size: 0; }
+.business-queue li p { color: var(--muted-foreground); font-size: var(--ds-control-text); }
+.business-queue .ui-btn[aria-pressed="true"] { background: var(--accent); color: var(--primary-ink); }
+.business-content bdi { overflow-wrap: anywhere; }
+.business-loading { display: grid; gap: var(--ds-space-2); }
+.business-row-skeleton { block-size: 5rem; border-radius: var(--radius-xl); }
+/* CP Submissions timeline: fixed marker column and logical connectors. */
+.business-timeline { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.business-step { position: relative; display: grid; grid-template-columns: 1.5rem minmax(0,1fr); gap: var(--ds-space-3); padding-block-end: var(--ds-space-5); }
+.business-step:last-child { padding-block-end: 0; }
+.business-step:not(:last-child)::after { content: ""; position: absolute; inset-block: 1.75rem .25rem; inset-inline-start: calc(.75rem - 1px); inline-size: 2px; background: var(--border); }
+.business-step-dot { display: grid; inline-size: 1.5rem; block-size: 1.5rem; place-items: center; border-radius: var(--radius-2xl); background: var(--muted); box-shadow: var(--ds-shadow-border); color: var(--muted-foreground); }
+.business-step-body { display: grid; justify-items: start; min-inline-size: 0; gap: var(--ds-space-2); padding-block-start: var(--ds-space-1); font-size: var(--ds-control-text); }
+.business-step-body time { color: var(--muted-foreground); font-size: .6875rem; }
+/* CP Settings' five-tab phone recipe: whole labels in measured tiles rather
+   than five squeezed columns. The shared Pane keeps its two-axis indicator. */
+@container hx (max-width:30rem) {
+  .business-workspace .hx-tabs[data-fit="stack"][data-count="5"] { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-auto-flow: row; }
 }
-.business-heading {
-  max-inline-size: 780px;
-  padding-block: 16px;
-}
-.business-heading h1 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(30px, 4vw, 48px);
-  font-weight: 400;
-  line-height: 1.16;
-  margin-block: 12px 16px;
-}
-.business-heading p:not(.business-eyebrow) {
-  max-inline-size: 66ch;
-  line-height: 1.7;
-  color: var(--muted);
-}
-.business-eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  color: var(--accent);
-  font-weight: 700;
-}
-.business-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  border-block-end: 1px solid var(--border);
-  padding-block-end: 12px;
-}
-.business-tabs a {
-  padding: 12px 16px;
-  min-block-size: 44px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 13px;
-}
-.business-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  gap: 16px;
-}
-.business-card {
-  min-inline-size: 0;
-  display: grid;
-  gap: 12px;
-  align-content: start;
-}
-.business-card h2 {
-  font-size: 24px;
-  font-weight: 500;
-}
-.business-card li {
-  margin-inline-start: 20px;
-  color: var(--muted);
-  line-height: 1.8;
-}
-.business-card small {
-  overflow-wrap: anywhere;
-  color: var(--muted);
-}
-.business-badge {
-  font-size: 12px;
-  display: inline-flex;
-  inline-size: fit-content;
-  padding: 6px 10px;
-  background: var(--accent-soft);
-  color: var(--foreground);
-  border-radius: 4px;
-}
-.business-workspace .card > h2 {
-  margin-block-end: 12px;
-}
-.business-workspace .card > p {
-  line-height: 1.7;
-}
-.business-form {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-block-start: 20px;
-  align-items: end;
-}
-.business-field {
-  display: grid;
-  gap: 8px;
-  min-inline-size: 0;
-  font-size: 13px;
-}
-.business-field span {
-  line-height: 1.4;
-}
-.business-field select {
-  border: 1px solid var(--control-border);
-  background: var(--surface);
-  color: var(--foreground);
-  min-block-size: 44px;
-  padding: 8px 12px;
-  border-radius: var(--radius);
-  inline-size: 100%;
-}
-.business-field input {
-  min-inline-size: 0;
-}
-.business-checks {
-  grid-column: 1/-1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  border: 1px solid var(--border);
-  padding: 12px;
-}
-.business-checks legend {
-  font-size: 13px;
-  padding-inline: 8px;
-}
-.business-check,
-.business-checks label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-block-size: 44px;
-  font-size: 13px;
-}
-.business-checks input,
-.business-check input {
-  inline-size: 16px;
-  block-size: 16px;
-}
-.business-feedback {
-  grid-column: 1/-1;
-  padding: 16px;
-  border-inline-start: 3px solid var(--accent);
-  background: var(--accent-soft);
-  overflow-wrap: anywhere;
-  line-height: 1.5;
-}
-.business-feedback a {
-  text-decoration: underline;
-}
-.business-feedback bdi {
-  display: block;
-  font-size: 12px;
-}
-.business-proof {
-  border-block-start: 1px solid var(--border);
-  padding-block-start: 20px;
-  margin-block-start: 20px;
-  display: grid;
-  gap: 12px;
-}
-.business-queue {
-  display: grid;
-  gap: 12px;
-}
-.business-queue li {
-  display: flex;
-  gap: 16px;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  border-block-end: 1px solid var(--border);
-  padding-block: 12px;
-}
-.business-queue bdi {
-  overflow-wrap: anywhere;
-}
-.business-workspace ol {
-  padding-inline-start: 24px;
-  line-height: 1.7;
-}
-.business-workspace bdi {
-  overflow-wrap: anywhere;
-}
-[dir="rtl"] .business-eyebrow {
-  letter-spacing: normal;
-}
-@container (max-width:42rem) {
-  .business-form {
-    grid-template-columns: 1fr;
-  }
-  .business-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-  }
-  .business-tabs a {
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  .business-card h2 {
-    font-size: 22px;
-  }
-}
-@media (max-width: 850px) {
-  .business-workspace {
-    padding: 12px 12px 24px;
-    gap: 12px;
-  }
-  .business-heading {
-    padding: 16px 4px;
-  }
-  .business-heading h1 {
-    font-size: 30px;
-  }
-  .business-workspace .card {
-    padding: 16px;
-  }
-  .business-form {
-    gap: 12px;
-  }
-  .business-field input,
-  .business-field select {
-    font-size: 16px;
-  }
-  .business-workspace .button {
-    min-block-size: 44px;
-    max-inline-size: 100%;
-  }
-  .business-grid {
-    gap: 12px;
-  }
+@container (max-width:42rem) { .business-form { grid-template-columns: minmax(0,1fr); } }
+@media (max-width:850px) {
+  .business-content { gap: var(--ds-space-3); }
+  .business-form { gap: var(--ds-space-3); }
 }

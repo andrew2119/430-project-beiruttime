@@ -1,7 +1,9 @@
 'use client';
 import { useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, BidiReference, Card, Input } from '@beirut-time/ui';
+import { AnimatedList, Button, ButtonLink, BidiReference, Card, Input, State, StatusBadge } from '@beirut-time/ui';
+import { PageHeader, PageLayout } from '@/shell/page-header';
+import { Select, RowSkeleton } from '@beirut-time/ui';
 import { useLocale } from '@/shell/locale-context';
 import { useSession, useSessionState, refreshSession, authenticatedRequest, signInHref } from '@/features/identity/session';
 import { ApiError } from '@/lib/api/client';
@@ -23,10 +25,10 @@ function StudioScope({session,locale,sessionState}:{session:ReturnType<typeof us
   const permitted=session?.principal.organization_grants.filter(grant=>grant.permissions.includes('identity.listings.publish'))??[];
   const [choice,setChoice]=useState(()=>owner?readNonSecretDraft(owner,'auction-organization')??session?.principal.actor.organization_id??'':'');
   const organization=permitted.some(grant=>grant.organization_id===choice)?choice:'';
-  const control=permitted.length?<label className="auction-organization">{t.organization}<select dir="ltr" value={organization} onChange={event=>{
-    const next=event.target.value; setChoice(next);
+  const control=permitted.length?<label className="auction-organization">{t.organization}<Select aria-label={t.organization} value={organization} onValueChange={next=>{
+    setChoice(next);
     if(owner) { try { saveNonSecretDraft(owner,'auction-organization',next); } catch { /* Optional convenience only. */ } }
-  }}><option value="">{t.individual}</option>{permitted.map(grant=><option key={grant.organization_id} value={grant.organization_id}>{grant.organization_id}</option>)}</select></label>:null;
+  }} options={[{value:'',label:t.individual},...permitted.map(grant=>({value:grant.organization_id,label:grant.organization_id}))]}/></label>:null;
   return <AuctionStudioView key={organization||'individual'} session={session} locale={locale} organization={organization} organizationControl={control} sessionState={sessionState}/>;
 }
 function AuctionStudioView({session,locale,organization,organizationControl,sessionState}:{session:ReturnType<typeof useSession>;locale:'en'|'ar';organization:string;organizationControl:React.ReactNode;sessionState:ReturnType<typeof useSessionState>}) {
@@ -67,28 +69,28 @@ function AuctionStudioView({session,locale,organization,organizationControl,sess
     }
     finally { if(scope.active) setPending(false); }
   }
-  return <div className="auction-feature auction-studio" data-session-state={sessionState}><header className="auction-heading"><span className="eyebrow">{t.eyebrow}</span><h1>{t.title}</h1><p>{t.subtitle}</p></header>{organizationControl}
-    {!session?sessionState==='restoring'?<Card><p role="status">{t.restoringSession}</p></Card>:sessionState==='unavailable'?<Card><p role="alert">{t.unavailable}</p><Button onClick={()=>void refreshSession().catch(()=>{})}>{t.retry}</Button></Card>:<Card><p>{t.signedout}</p><a className="button" href={signInHref('/seller/auctions',locale)}>{t.signin}</a></Card>:!canManage?<Card><p>{t.denied}</p><a className="button" href={`/${locale}/seller/verification`}>{t.applySeller}</a></Card>:<div className="auction-studio-grid">
+  return <PageLayout className="auction-feature auction-studio"><div data-session-state={sessionState}><PageHeader title={t.title} count={t.subtitle} tools={organizationControl}/>
+    {!session?sessionState==='restoring'?<State kind="loading" title={t.title} body={t.restoringSession}/>:sessionState==='unavailable'?<State kind="error" title={t.title} body={t.unavailable}><Button onClick={()=>void refreshSession().catch(()=>{})}>{t.retry}</Button></State>:<State title={t.title} body={t.signedout}><ButtonLink href={signInHref('/seller/auctions',locale)}>{t.signin}</ButtonLink></State>:!canManage?<State title={t.title} body={t.denied}><ButtonLink href={`/${locale}/seller/verification`}>{t.applySeller}</ButtonLink></State>:<div className="auction-studio-grid">
       <Card><h2>{t.schedule}</h2><p className="muted">{t.createHelp}</p><form className="auction-form" onSubmit={submit}><fieldset className="auction-fields" disabled={pending||uncertain}>
         <label className="auction-span">{t.listing}<Input required value={draft.listing} onChange={e=>update('listing',e.target.value)} autoComplete="off" dir="ltr" pattern="[a-fA-F0-9-]{36}" /></label>
-        <label>{t.currency}<select value={draft.currency} onChange={e=>update('currency',e.target.value as Draft['currency'])}><option>USD</option><option>LBP</option></select></label>
+        <label>{t.currency}<Select aria-label={t.currency} value={draft.currency} disabled={pending||uncertain} onValueChange={value=>update('currency',value as Draft['currency'])} options={[{value:'USD',label:'USD'},{value:'LBP',label:'LBP'}]}/></label>
         <label>{t.opening}<Input required inputMode="decimal" value={draft.opening} onChange={e=>update('opening',e.target.value)} /></label>
         <label>{t.step}<Input required inputMode="decimal" value={draft.step} onChange={e=>update('step',e.target.value)} /></label>
-        {draft.bands.map((band,index)=><fieldset className="auction-span auction-fields" key={index}><legend>{t.band} {index+2}</legend><label>{t.bandFrom}<Input required inputMode="decimal" value={band.from} onChange={event=>update('bands',draft.bands.map((value,i)=>i===index?{...value,from:event.target.value}:value))}/></label><label>{t.step}<Input required inputMode="decimal" value={band.step} onChange={event=>update('bands',draft.bands.map((value,i)=>i===index?{...value,step:event.target.value}:value))}/></label><Button type="button" className="button-secondary" onClick={()=>update('bands',draft.bands.filter((_,i)=>i!==index))}>{t.removeBand} {index+2}</Button></fieldset>)}
-        <div className="auction-span"><Button type="button" className="button-secondary" disabled={draft.bands.length>=19} onClick={()=>update('bands',[...draft.bands,{from:'',step:''}])}>{t.addBand}</Button></div>
+        {draft.bands.map((band,index)=><fieldset className="auction-span auction-fields" key={index}><legend>{t.band} {index+2}</legend><label>{t.bandFrom}<Input required inputMode="decimal" value={band.from} onChange={event=>update('bands',draft.bands.map((value,i)=>i===index?{...value,from:event.target.value}:value))}/></label><label>{t.step}<Input required inputMode="decimal" value={band.step} onChange={event=>update('bands',draft.bands.map((value,i)=>i===index?{...value,step:event.target.value}:value))}/></label><Button type="button" variant="outline" onClick={()=>update('bands',draft.bands.filter((_,i)=>i!==index))}>{t.removeBand} {index+2}</Button></fieldset>)}
+        <div className="auction-span"><Button type="button" variant="outline" disabled={draft.bands.length>=19} onClick={()=>update('bands',[...draft.bands,{from:'',step:''}])}>{t.addBand}</Button></div>
         <label>{t.reserve}<Input inputMode="decimal" value={reserve} autoComplete="off" onChange={e=>{setReserve(e.target.value);attempt.current=null;}} /></label>
         <label>{t.starts}<Input required type="datetime-local" value={draft.starts} onChange={e=>update('starts',e.target.value)} dir="ltr" /></label>
         <label>{t.ends}<Input required type="datetime-local" value={draft.ends} onChange={e=>update('ends',e.target.value)} dir="ltr" /></label>
         </fieldset><div className="auction-span auction-submit"><Button disabled={pending}>{pending?t.pending:uncertain?t.retry:t.open}</Button></div>
       </form><p role="status" aria-live="polite">{message}</p>{outcome&&<p>{t.auctionId}: <BidiReference>{outcome.auction_id}</BidiReference></p>}</Card>
       <section className="auction-list" aria-busy={lots.isFetching}>
-        {lots.isError?<Card><p role="alert">{errorCopy(lots.error,t)}</p><Button onClick={()=>lots.refetch()}>{t.retry}</Button></Card>:lots.isPending?<Card><p role="status">{t.pending}</p></Card>:!lots.data?.items.length?<Card><h2>{t.empty}</h2><p>{t.emptyBody}</p></Card>:lots.data.items.map(lot=><AuctionSummary key={lot.id} lot={lot} locale={locale}/>)}
+        {lots.isError?<State kind="error" title={t.title} body={errorCopy(lots.error,t)}><Button onClick={()=>lots.refetch()}>{t.retry}</Button></State>:lots.isPending?<div role="status" aria-label={t.pending}><RowSkeleton media="cover"/><span className="sr-only">{t.pending}</span></div>:!lots.data?.items.length?<State title={t.empty} body={t.emptyBody}/>:<AnimatedList items={lots.data.items} getKey={lot=>lot.id}>{lot=><AuctionSummary lot={lot} locale={locale}/>}</AnimatedList>}
       </section></div>}
-  </div>;
+  </div></PageLayout>;
 }
 export function AuctionSummary({lot,locale}:{lot:Auction&{reserve_minor?:number|null};locale:'en'|'ar'}) {
   const t=locale==='ar'?ar:en;
-  return <Card className="auction-summary"><div className="auction-row"><span className={`auction-state ${lot.status}`}>{t[lot.status]}</span><BidiReference>{lot.rules_version}</BidiReference></div>
+  return <Card className="auction-summary"><div className="auction-row"><StatusBadge hue={lot.status==='live'?'green':lot.status==='scheduled'?'blue':'neutral'}>{t[lot.status]}</StatusBadge><BidiReference>{lot.rules_version}</BidiReference></div>
     <h2><a href={`/${locale}/watches/${lot.listing_id}`}>{displayMinor(lot.current_minor||lot.opening_minor,lot.currency,locale)}</a></h2>
     <dl><div><dt>{t.next}</dt><dd>{displayMinor(lot.next_minimum_minor,lot.currency,locale)}</dd></div><div><dt>{t.starts}</dt><dd><BidiReference>{lot.starts_at}</BidiReference></dd></div><div><dt>{t.ends}</dt><dd><BidiReference>{lot.ends_at}</BidiReference></dd></div><div><dt>{t.server}</dt><dd><BidiReference>{lot.server_time}</BidiReference></dd></div></dl>
     <p className="muted">{lot.reserve_minor?`${t.reserveSet}: ${displayMinor(lot.reserve_minor,lot.currency,locale)}`:lot.reserve_set?t.reserveSet:t.reserveNone} · {t.extension}</p><ul>{lot.increment_bands.map(b=><li key={b.from_minor}>{displayMinor(b.from_minor,lot.currency,locale)} + {displayMinor(b.step_minor,lot.currency,locale)}</li>)}</ul>

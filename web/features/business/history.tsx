@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { BidiReference, Button } from "@beirut-time/ui";
+import { BidiReference, Button, StatusBadge } from "@beirut-time/ui";
 import type { PrivateReview } from "@contracts/contracts-identity/businesses";
 import { businessRequest } from "./transport";
 import { Feedback, useAction, useCopy } from "./components";
@@ -31,15 +31,17 @@ export function DecisionHistory({
     [cursor, setCursor] = useState(before ?? null);
   return (
     <>
-      <ol>
+      <ol className="business-timeline">
         {history.map((item) => (
-          <li key={item.revision}>
-            <p>
-              {t[item.state]} · {item.reason}
-            </p>
-            <time dateTime={item.created_at}>
-              <BidiReference>{item.created_at}</BidiReference>
-            </time>
+          <li key={item.revision} className="business-step">
+            <span className="business-step-dot" aria-hidden="true">✓</span>
+            <div className="business-step-body">
+              <StatusBadge hue={item.state === "approved" ? "green" : item.state === "rejected" ? "pink" : "orange"}>{t[item.state]}</StatusBadge>
+              <p>{item.reason}</p>
+              <time dateTime={item.created_at}>
+                <BidiReference>{item.created_at}</BidiReference>
+              </time>
+            </div>
           </li>
         ))}
       </ol>

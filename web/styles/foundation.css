@@ -1,0 +1,101 @@
+/* Beirut Time adapters around Creator Pipeline's shared recipes. */
+@layer base {
+  html, body { margin: 0; min-block-size: 100%; }
+  body { font-size: 16px; line-height: 1.5; }
+  button, input, select, textarea { font: inherit; }
+  button, a { -webkit-tap-highlight-color: transparent; }
+  button:not(:disabled) { cursor: pointer; }
+  a { color: inherit; text-decoration: none; }
+  h1, h2, h3, p, figure { margin: 0; }
+  h1, h2, h3 { font-family: inherit; font-weight: var(--ds-weight-heavy); }
+  ::selection { background: var(--accent); color: var(--foreground); }
+}
+@layer components {
+  .pg-rail { display: flex; flex-direction: column; gap: 16px; padding: 12px; min-block-size: 0; overflow: hidden; }
+  .pg-brand { display: flex; align-items: center; gap: 8px; padding: 4px 6px 0; min-block-size: 32px; font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -.025em; }
+  .bt-brand-mark { inline-size: 43px; block-size: 32px; margin-block: -2px; flex: none; color: var(--color-rebellion-700); }
+  .pg-rail .bt-brand-mark { margin-inline: -8px -2px; }
+  [data-theme="dark"] .bt-brand-mark { color: var(--color-rebellion-400); }
+  .pg-nav-heading { padding: 0 8px 6px; font-size: 10px; line-height: 15px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-foreground); }
+  .pg-nav-group { display: flex; flex-direction: column; gap: 2px; }
+  .pg-nav-row { display: flex; inline-size: 100%; align-items: center; gap: 10px; border-radius: var(--radius-md); padding: 8px 10px; font-size: 14px; line-height: 20px; color: var(--muted-foreground); }
+  .pg-nav-row:hover { background: var(--accent); color: var(--foreground); }
+  .pg-nav-row[aria-current="page"] { background: var(--accent); color: var(--foreground); font-weight: 500; }
+  .pg-nav-label { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .eyebrow { color: var(--muted-foreground); font-size: 11px; font-weight: var(--ds-weight-heavy); letter-spacing: .05em; text-transform: uppercase; }
+  .notice { padding: 10px 16px; border-radius: var(--radius-xl); background: color-mix(in oklab,var(--primary) 9%,var(--card)); color: var(--foreground); box-shadow: var(--ds-shadow-border); font-size: 13px; }
+  .notice :is(.button,.ui-btn) { margin-block-start: 12px; }
+  .pg-sidebar-nav { display: flex; flex: 1; min-block-size: 0; flex-direction: column; gap: 16px; overflow-y: auto; }
+  .pg-sidebar-section { flex: none; }
+  .pg-list-page { container-type: inline-size; inline-size: 100%; min-inline-size: 0; padding: 24px 28px 28px; }
+  .pg-card { border-radius: var(--radius-2xl); background: var(--card); color: var(--card-foreground); box-shadow: var(--ds-shadow-border); transition: color var(--ds-motion-overlay) var(--ease-standard); }
+  .pg-list-page > .pg-list-page { padding: 0; }
+  .pg-profile-row { display: flex; align-items: center; gap: 8px; border-radius: var(--radius-md); padding: 6px 8px; }
+  .pg-profile-avatar { display: flex; align-items: center; justify-content: center; flex: none; inline-size: 28px; block-size: 28px; border-radius: 50%; background: color-mix(in oklab, var(--primary) 6%, var(--background)); color: var(--primary-ink); font-size: 10px; font-weight: 600; box-shadow: var(--ds-shadow-border); }
+  .pg-profile-avatar svg { inline-size: 20px; block-size: 20px; }
+  .pg-profile-copy { min-inline-size: 0; flex: 1; }
+  .pg-profile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 16px; font-weight: 500; }
+  .pg-profile-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--muted-foreground); }
+  .pg-profile-control { inline-size: 28px; block-size: 28px; flex: none; }
+  .pg-profile-link { display: flex; align-items: center; justify-content: flex-start; gap: 10px; padding: 6px 10px; border-radius: var(--radius-md); font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
+  .pg-profile-link.ui-btn { block-size: auto; min-block-size: 28px; scale: none; }
+  .pg-profile-link svg { inline-size: 16px; block-size: 16px; }
+  .proto-set-card.ui-card { padding: 0; }
+  .bt-settings-profile { display: flex; align-items: center; gap: 16px; }
+  .bt-settings-profile .pg-profile-avatar { inline-size: 64px; block-size: 64px; font-size: 20px; }
+  .bt-two-themes.proto-set-themes { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .pg-sidebar-foot { display: flex; flex-direction: column; gap: 4px; margin-block-start: auto; border-block-start: 1px solid var(--border); padding-block-start: 10px; }
+  .preferences { display: flex; align-items: center; gap: 8px; padding: 6px 8px; }
+  .locale-control { font-size: 12px; color: var(--muted-foreground); margin-inline-end: auto; }
+  .locale-control:hover { color: var(--foreground); }
+  .pg-mobile-topbar, .pg-mobile-dock { display: none; }
+  .main-content { min-block-size: 0; outline: none; scroll-padding-block-start: 24px; }
+  /* Beirut Time has no floating chat/companion. Reserve only actual toast room. */
+  .pg-tray { --dock-room: var(--toast-room, 0px); }
+  .pg-tray::after { block-size: var(--toast-room, 0px); }
+  .ui-card, .card { padding: var(--ds-pad-card-block) var(--ds-pad-card-inline); border-radius: var(--radius-2xl); background: var(--card); color: var(--card-foreground); box-shadow: var(--ds-shadow-border); }
+  /* Compatibility names at existing call sites; same CP outline/icon recipe. */
+  .button-secondary { background: var(--card); color: var(--foreground); box-shadow: var(--ds-shadow-border); }
+  .button-secondary:hover { background: var(--accent); }
+  .icon-button { inline-size: 36px; block-size: 36px; padding: 0; background: transparent; color: var(--foreground); box-shadow: none; }
+  .icon-button:hover { background: var(--accent); }
+  .skeleton { border-radius: var(--radius-md); background: var(--muted); animation: pg-skeleton-pulse var(--ds-motion-shimmer) var(--ease-standard) infinite; }
+  .skeleton-page { padding: 24px 28px; max-inline-size: 1240px; margin-inline: auto; }
+  .skeleton-title { inline-size: 45%; block-size: 28px; margin-block-end: 16px; }
+  .skeleton-body { inline-size: 100%; block-size: 56px; margin-block-end: 16px; }
+  .skeleton-card { block-size: 320px; }
+  .pg-face-card { border-radius: var(--radius-2xl); }
+  .ui-filter-link { border: 0; padding: 6px 8px; border-radius: var(--radius-md); color: var(--muted-foreground); background: transparent; font-size: 12px; }
+  .ui-filter-link:hover { color: var(--foreground); background: var(--muted); }
+  .ui-menu-radio-item { padding-inline: 28px 8px; }
+  .ui-menu-radio-indicator { position: absolute; inset-inline-start: 8px; display: flex; inline-size: 14px; block-size: 14px; align-items: center; justify-content: center; }
+  .ui-menu, .ui-popover { max-inline-size: calc(100vw - 24px); max-block-size: var(--radix-popper-available-height, calc(100dvh - 24px)); overflow-y: auto; }
+  .ui-dialog-close { position: absolute; inset-block-start: 16px; inset-inline-end: 16px; }
+  .pg-toggle-item:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  /* offsetLeft is a physical coordinate even in RTL. */
+  .pg-seg-thumb { inset-inline-start: auto; left: 0; }
+}
+@media (max-width:850px) {
+  .pg-shell > .pg-tray-frame { grid-row: 2; }
+  .pg-mobile-topbar .preferences { margin-inline-start: auto; padding: 0; gap: 4px; }
+  .pg-mobile-topbar .pg-brand { padding: 0; min-block-size: 44px; font-size: 16px; line-height: 24px; font-weight: var(--ds-weight-heavy); }
+  .pg-mobile-topbar .locale-control { display: grid; place-items: center; min-inline-size: 44px; min-block-size: 44px; }
+  .pg-mobile-topbar .ui-btn { min-inline-size: 44px; min-block-size: 44px; }
+  .pg-tray { --dock-room: var(--toast-room, 0px); }
+  .pg-mobile-drawer .pg-rail { box-shadow: none; }
+  .pg-rail .preferences :is(button, a) { min-block-size: 44px; min-inline-size: 44px; }
+  .pg-profile-control { min-inline-size: 44px; min-block-size: 44px; }
+  [data-keyboard-open] .pg-mobile-dock { display: none; }
+  .ui-check { min-block-size: 44px; }
+  .ui-check-box .ui-check-input { min-block-size: 0; min-inline-size: 0; inline-size: 100%; block-size: 100%; }
+  .ui-filter-line { display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-rows: 44px 44px; block-size: auto; gap: 4px 8px; }
+  .ui-filter-line-count { grid-column: 1; grid-row: 1; }
+  .ui-filter-clear { grid-column: 2; grid-row: 1; }
+  .ui-filter-chips { grid-column: 1/-1; grid-row: 2; }
+  .ui-filter-chip { block-size: var(--ds-phone-chip); }
+  .ui-filter-chip-x { min-inline-size: 44px; min-block-size: 44px; }
+  .skeleton-page { padding: var(--ds-phone-gutter); }
+}
+/* CP's toast outlet, without reserving an absent product-specific floating dock. */
+[data-sonner-toaster] { font-family: var(--font-active), sans-serif; }
+@media (max-width:850px) { [data-sonner-toaster][data-y-position="bottom"] { bottom: calc(76px + env(safe-area-inset-bottom)); } }

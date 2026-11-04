@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Card, BidiReference } from "@beirut-time/ui";
+import { Button, Card, BidiReference, StatusBadge } from "@beirut-time/ui";
 import { normalizeDigits } from "@beirut-time/i18n";
 import type {
   Contacts,
@@ -10,6 +10,7 @@ import type {
 import { useAccessContext } from "@/shell/access-context";
 import { businessRequest, command } from "./transport";
 import {
+  BusinessLoading,
   Feedback,
   Field,
   Select,
@@ -42,7 +43,7 @@ export default function ContactDetails() {
   return (
     <Workspace title={t.contacts} intro={t.contactIntro}>
       {query.isPending ? (
-        <p role="status">{t.loading}</p>
+        <BusinessLoading />
       ) : query.isError ? (
         <>
           <Feedback error={query.error} />
@@ -57,13 +58,13 @@ export default function ContactDetails() {
                 <p>
                   <BidiReference>{query.data[channel] ?? "—"}</BidiReference>
                 </p>
-                <p className="business-badge">
+                <StatusBadge hue={query.data[`${channel}_verified`] ? "green" : "orange"}>
                   {query.data[`${channel}_verified`]
                     ? t.verified
                     : t.unverified}
-                </p>
+                </StatusBadge>
                 {query.data[`${channel}_sample`] && (
-                  <p className="business-badge">{t.sampleVerification}</p>
+                  <StatusBadge hue="neutral">{t.sampleVerification}</StatusBadge>
                 )}
               </Card>
             ))}

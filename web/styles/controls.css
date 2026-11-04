@@ -1,0 +1,165 @@
+@layer components {
+.pg-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.25rem;
+  border-radius: var(--radius-xl);
+  background: var(--muted);
+  box-shadow: var(--ds-shadow-border);
+}
+.pg-toggle-item {
+  display: inline-flex;
+  min-block-size: 1.875rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  font-size: 0.75rem;
+  font-weight: var(--ds-weight-strong);
+  white-space: nowrap;
+  transition: color var(--ds-motion-fast) var(--ease-standard),
+    background-color var(--ds-motion-fast) var(--ease-standard),
+    box-shadow var(--ds-motion-fast) var(--ease-standard),
+    transform var(--ds-motion-fast) var(--ease-standard);
+}
+.pg-toggle-item-active {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--ds-shadow-small);
+}
+.pg-toggle-item-inactive { color: var(--foreground); }
+.pg-toggle-item:active { transform: scale(0.97); }
+.pg-toggle-compact {
+  padding: 0.1875rem;
+  border-radius: var(--radius-lg);
+}
+.pg-toggle-compact .pg-toggle-item {
+  min-block-size: 1.625rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-md);
+}
+/* Segmented (ui/segmented.tsx, ADR-0033): ONE shared thumb slides between
+   options on the popover step with the settle curve (the view-switch knob's
+   rung) instead of each option snapping its own fill. The group measures the
+   active option and hands its geometry over as custom properties; the thumb is
+   painted first so the positioned options above it keep their labels legible.
+   Until the first measurement lands, the active option paints its own fill. */
+.pg-seg-item { position: relative; }
+.pg-seg-thumb {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 0;
+  inline-size: var(--pg-seg-w);
+  block-size: var(--pg-seg-h);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--ds-shadow-small);
+  transform: translate(var(--pg-seg-x), var(--pg-seg-y));
+  transition: transform var(--ds-motion-popover) var(--ease-settle),
+    inline-size var(--ds-motion-popover) var(--ease-settle),
+    block-size var(--ds-motion-popover) var(--ease-settle);
+  pointer-events: none;
+}
+.pg-toggle-compact .pg-seg-thumb { border-radius: var(--radius-md); }
+.pg-seg-item-active { color: var(--foreground); }
+.pg-seg:not([data-seg-measured]) [data-seg-active] {
+  background: var(--card);
+  box-shadow: var(--ds-shadow-small);
+}
+.ui-filter-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  block-size: 2.25rem;
+  margin-block: 0.625rem 0.5rem;
+}
+.ui-filter-line-count {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+.ui-filter-chips {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.375rem;
+  min-inline-size: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ui-filter-chips::-webkit-scrollbar { display: none; }
+/* No fade mask: the chips line scrolls sideways and the next chip peeking
+   out says so. */
+.ui-filter-chips > .pg-list-item { flex: 0 0 auto; }
+.ui-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  block-size: 1.75rem;
+  padding-inline: 0.625rem 0.1875rem;
+  border-radius: var(--radius-2xl);
+  background: color-mix(in oklab, var(--primary) 9%, var(--card));
+  color: var(--primary-ink);
+  box-shadow: inset 0 0 0 0.0625rem color-mix(in oklab, var(--primary-ink) 24%, transparent);
+  font-size: 0.75rem;
+  font-weight: var(--ds-weight-strong);
+  white-space: nowrap;
+}
+.ui-filter-chip-x {
+  display: grid;
+  place-items: center;
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color var(--ds-motion-fast) var(--ease-standard);
+}
+.ui-filter-chip-x svg { inline-size: 0.8125rem; block-size: 0.8125rem; }
+.ui-filter-chip-x:hover { background: color-mix(in oklab, var(--primary) 16%, transparent); }
+.ui-filter-chip-x:focus-visible { outline: 0.125rem solid var(--ring); outline-offset: 0; }
+.ui-filter-clear {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  opacity: 0;
+  pointer-events: none;
+}
+.ui-filter-clear[data-show] { opacity: 1; pointer-events: auto; }
+}
+
+@layer components {
+.pg-empty-card {
+  padding: 2.5rem 1.5rem;
+  border: 0.0625rem dashed var(--border);
+  text-align: center;
+}
+.pg-empty-icon {
+  display: flex;
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.875rem;
+  border-radius: var(--radius-2xl);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+  color: var(--primary-ink);
+}
+.pg-empty-title {
+  margin-block-end: 0.375rem;
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  font-weight: var(--ds-weight-black);
+}
+}

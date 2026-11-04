@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import type { Locale } from '@beirut-time/i18n';
 import { LocaleContext } from './locale-context';
+import { DirectionProvider } from '@beirut-time/ui';
+import { InstallPromptProvider } from './install-prompt-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from '@/lib/api/client';
 // CP F-16: no private cache persistence. Identity must clear this cache on principal changes.
@@ -15,5 +17,5 @@ export function Providers({ children, locale }: { children: React.ReactNode; loc
     window.addEventListener('bt:access-change', purge);
     return () => window.removeEventListener('bt:access-change', purge);
   }, [client]);
-  return <LocaleContext value={locale}><QueryClientProvider client={client}>{children}</QueryClientProvider></LocaleContext>;
+  return <LocaleContext value={locale}><DirectionProvider dir={locale==='ar'?'rtl':'ltr'}><QueryClientProvider client={client}><InstallPromptProvider>{children}</InstallPromptProvider></QueryClientProvider></DirectionProvider></LocaleContext>;
 }
