@@ -1,0 +1,1 @@
+{"version":1,"lane":"L02","contracts":[{"namespace":"identity.businesses.v1","path":"packages/contracts-identity/businesses","fixtures":["packages/contracts-identity/businesses/fixtures/business.v1.json"]}]}

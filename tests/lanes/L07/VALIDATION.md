@@ -1,6 +1,6 @@
 # L07 validation
 
-Checked 4 November 2026 against merged foundation, Accounts and Auction source on main `6c97050`, plus published Catalog and Orders contracts.
+Checked 4 November 2026 against main `d34b74d`, including foundation, Accounts, Auction, Verification, Buy Now and Brand source, plus the published Catalog listing contract.
 
 ## Passed
 
@@ -18,6 +18,6 @@ Snapshots are balanced and immutable in PostgreSQL. Proposed/sample quote bases 
 
 ## Remaining integration gates
 
-Foundation, Accounts and Auction have been integrated by a conflict-free normal merge; all differences from main are L07-owned. No borrowed browser-source overlay remains. Connected browser checks used the real integrated production app with a dedicated IPv4 origin and exactly matching Identity/gateway allowlists. The actual reserved-order fee frame also needs L08 to expose its retained `quote_id` and L03 to publish a real demonstration listing reference. Until then, the API reports missing fee binding/unavailable dependencies honestly; it does not display a different quote as the reservation's fee basis. The exact Orders wrapper and binding behavior are covered by versioned transport fixtures.
+Foundation, Accounts, Auction, Verification, Buy Now and Brand source have been integrated by conflict-free normal merges; all differences from main are L07-owned. No borrowed browser-source overlay remains. Connected browser checks used the real integrated production app with a dedicated IPv4 origin and exactly matching Identity/gateway allowlists. The actual reserved-order fee frame also needs L08 to expose its retained `quote_id` and L03 to publish a real demonstration listing reference. Until then, the API reports missing fee binding/unavailable dependencies honestly; it does not display a different quote as the reservation's fee basis. The exact Orders wrapper and binding behavior are covered by versioned transport fixtures.
 
 Jira apply is verified: main feature BT-58, inbox feature BT-26 and all twelve L07 sub-tasks are In Progress. They move to In Review when the review request opens. Commit and publish scheduling remains enforced by the shared teammate ledger. No hosted validation workflow was added. Physical-device installation, keyboards and assistive technology are distinct from the browser-emulation evidence.

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "id": "L10.options-dial",
+  "dependencies": [
+    "fastapi",
+    "asyncpg",
+    "httpx",
+    "pydantic"
+  ],
+  "hooks": {
+    "catalog.options-dial.v1": "schema.py:validate"
+  }
+}

@@ -1,0 +1,22 @@
+services:
+  orders:
+    image: beirut-time/orders:local
+    build:
+      context: .
+      dockerfile: services/orders/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/orders
+    environment:
+      BT_IDENTITY_URL: http://identity:8000
+      BT_PRICING_URL: http://pricing:8000
+      BT_CATALOG_URL: http://catalog:8000
+      BT_COMMUNICATIONS_URL: http://communications:8000
+      BT_SERVICE_AUTH_PUBLIC_KEY: ${BT_SERVICE_AUTH_PUBLIC_KEY:-}
+      BT_SERVICE_AUTH_PRIVATE_KEY: ${BT_SERVICE_AUTH_PRIVATE_KEY:-}
+  orders-migrate:
+    image: beirut-time/orders:local
+    build:
+      context: .
+      dockerfile: services/orders/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/orders

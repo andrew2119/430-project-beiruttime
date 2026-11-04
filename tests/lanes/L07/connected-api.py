@@ -1,11 +1,12 @@
 """Real API negative proofs against connected-proof.py's disposable services."""
 import json
+import os
 import time
 import urllib.error
 import urllib.request
 from uuid import uuid4
 
-ORIGIN = 'http://localhost:3077'
+ORIGIN = os.environ.get('BT_BROWSER_ORIGIN', 'http://127.0.0.1:3177')
 BODY = {'subject_id': '00000000-0000-4000-8000-000000005000', 'subject_revision': 1,
         'purpose': 'purchase', 'currency': 'USD', 'price_minor': 500000, 'schedule_id': 'sample-v1'}
 
@@ -16,7 +17,7 @@ def request(port, path, token=None, body=None, key=None):
         headers['Authorization'] = 'Bearer ' + token
     if key:
         headers['Idempotency-Key'] = key
-    req = urllib.request.Request(f'http://localhost:{port}{path}', json.dumps(body).encode() if body is not None else None, headers)
+    req = urllib.request.Request(f'http://127.0.0.1:{port}{path}', json.dumps(body).encode() if body is not None else None, headers)
     try:
         with urllib.request.urlopen(req, timeout=5) as response:
             return response.status, json.load(response)
