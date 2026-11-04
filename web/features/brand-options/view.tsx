@@ -1,12 +1,13 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BidiReference, Button, Input } from '@beirut-time/ui';
 import type { Configuration, Kind, Option, SelectionWrite } from '@contracts/contracts-catalog/options';
 import { ApiError } from '@/lib/api/client';
 import { useLocale } from '@/shell/locale-context';
-import { useSession, refreshSession, signInHref } from '@/features/identity/session';
+import { useSession, useSessionState, refreshSession, signInHref } from '@/features/identity/session';
 import { hasRoute } from '@/registry-loader';
 import { optionsApi } from './api';
 import { matchesAcknowledgedSelection } from './model';
@@ -33,53 +34,40 @@ type InitialState = {initialBrand?:string;initialConfiguration?:string;initialBa
 export default function BrandOptions(initial: InitialState) {
   const session = useSession();
   const fingerprint=session?.access_fingerprint??null;
-  const [identityError,setIdentityError]=useState<unknown>(null),[checking,setChecking]=useState(true),[attempt,setAttempt]=useState(0);
-  useEffect(()=>{
-    let active=true;
-    if(session){setChecking(false);setIdentityError(null);return;}
-    setChecking(true);setIdentityError(null);
-    // Joins the SDK's one restoration flight; no token is copied into a query or persistence.
-    void refreshSession().then(()=>{if(active)setChecking(false);}).catch(error=>{
-      if(active){setIdentityError(error);setChecking(false);}
-    });
-    return()=>{active=false;};
-  },[fingerprint,attempt]);
+  const sessionState=useSessionState();
+  // The SDK owns restoration and retry status; do not mirror its external store in local state.
   // CP F-16: remount all local private state at the same synchronous identity boundary as query state.
-  return <Configurator key={fingerprint ?? 'public'} fingerprint={fingerprint} identityPending={!session&&checking} identityError={session?null:identityError} retryIdentity={()=>setAttempt(prior=>prior+1)} {...initial} />;
+  return <Configurator key={fingerprint ?? 'public'} fingerprint={fingerprint}
+    identityPending={!session&&sessionState==='restoring'} identityError={!session&&sessionState==='unavailable'}
+    retryIdentity={()=>void refreshSession().catch(()=>{/* SDK publishes unavailable for explicit retry. */})} {...initial} />;
 }
 
-type IdentityState = {fingerprint:string|null;identityPending:boolean;identityError:unknown;retryIdentity:()=>void};
+type IdentityState = {fingerprint:string|null;identityPending:boolean;identityError:boolean;retryIdentity:()=>void};
 function Configurator({fingerprint,identityPending,identityError,retryIdentity,initialBrand='',initialConfiguration='',initialBase='',initialCaliber=''}: InitialState & IdentityState) {
   const locale = useLocale(), t = locale === 'ar' ? ar : en, queryClient = useQueryClient();
-  const [brand,setBrand] = useState(initialBrand), [base,setBase] = useState(initialBase), [caliber,setCaliber] = useState(initialCaliber);
+  const [draftBrand,setBrand] = useState(initialBrand), [draftBase,setBase] = useState(initialBase), [draftCaliber,setCaliber] = useState(initialCaliber);
   const [kind,setKind] = useState<Kind>('color'), [chosen,setChosen] = useState('');
   const [configurationId,setConfigurationId] = useState(initialConfiguration);
-  const [ack,setAck] = useState<Configuration|null>(null), [pending,setPending] = useState(false);
+  const [pending,setPending] = useState(false);
   const [failure,setFailure] = useState<unknown>(null), [message,setMessage] = useState('');
-  const [references,setReferences] = useState<string[]>([]);
+  const [operation,setOperation] = useState<{signature:string;key:string;kind:Kind;body:SelectionWrite}|null>(null);
   const alive = useRef(true);
   const inFlight = useRef(false);
-  const operation = useRef<{signature:string;key:string;kind:Kind;body:SelectionWrite}|null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const uploadOperation = useRef<{signature:string;key:string}|null>(null);
   useLayoutEffect(() => fencePrivateState(alive,window), []);
+  const configurationQuery = useQuery({queryKey:['brand-options','configuration',fingerprint,configurationId],queryFn:({signal})=>optionsApi.configuration(configurationId,signal),enabled:!!fingerprint&&!!configurationId&&!pending});
+  // One canonical snapshot drives bindings, references and summary, including after uncertain writes.
+  const ack = fingerprint ? configurationQuery.data??null : null;
+  const brand=ack?.brand_id??draftBrand,base=ack?.base_model??draftBase,caliber=ack?.caliber??draftCaliber;
+  const references=ack?.reference_ids??[];
+  const reconciled=!!ack&&!!operation&&failure instanceof ApiError&&failure.status>=500&&matchesAcknowledgedSelection(ack,operation.kind,operation.body);
   const brandQuery = useInfiniteQuery({queryKey:['brand-options','brands'],initialPageParam:null as string|null,
     queryFn:({signal,pageParam})=>optionsApi.brands(signal,pageParam),getNextPageParam:last=>last.next_after??undefined});
   const listedBrands=brandQuery.data?.pages.flatMap(page=>page.items)??[];
   const selectedBrand=listedBrands.some(item=>item.organization_id===brand)?null:brand;
   const catalogQuery = useQuery({queryKey:['brand-options','catalog',brand],queryFn:({signal})=>optionsApi.catalog(brand,signal),enabled:!!brand});
   const savedQuery = useQuery({queryKey:['brand-options','saved',fingerprint],queryFn:({signal})=>optionsApi.configurations(signal),enabled:!!fingerprint});
-  const configurationQuery = useQuery({queryKey:['brand-options','configuration',fingerprint,configurationId],queryFn:({signal})=>optionsApi.configuration(configurationId,signal),enabled:!!fingerprint&&!!configurationId&&!pending});
-  useEffect(() => {
-    const config = configurationQuery.data;
-    if (!config) return;
-    setAck(config); setBrand(config.brand_id); setBase(config.base_model); setCaliber(config.caliber);
-    setReferences(config.reference_ids);
-    const intent=operation.current;
-    if(intent&&failure instanceof ApiError&&failure.status>=500&&matchesAcknowledgedSelection(config,intent.kind,intent.body)) {
-      operation.current=null;setFailure(null);setMessage(t.saved);
-    }
-  }, [configurationQuery.data, failure, t.saved]);
   const items = catalogQuery.data?.items ?? [];
   const bases = [...new Set(items.flatMap(o=>o.base_models))];
   const calibers = [...new Set(items.filter(o=>o.base_models.includes(base)).flatMap(o=>o.calibers))];
@@ -100,7 +88,8 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
     window.history.replaceState(window.history.state,'',url);
   }
   function startNew() {
-    setConfigurationId('');setAck(null);setChosen('');setReferences([]);setMessage('');setFailure(null);operation.current=null;
+    setBrand(brand);setBase(base);setCaliber(caliber);
+    setConfigurationId('');setChosen('');setMessage('');setFailure(null);setOperation(null);
     updateUrl('',brand);
   }
   async function save() {
@@ -110,16 +99,23 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
     const body = {brand_id:brand,base_model:base,caliber,component:selected.component,option_id:selected.id,
       option_revision:selected.revision,expected_revision:ack?.revision??0,reference_ids:kind==='dial'?references:[]};
     const signature = JSON.stringify({id,kind,body});
-    if (operation.current?.signature !== signature) operation.current={signature,key:crypto.randomUUID(),kind,body};
+    const intent=operation?.signature===signature?operation:{signature,key:crypto.randomUUID(),kind,body};
+    setOperation(intent);
     // Keep the resource and operation IDs on timeout: a retry reconciles the original operation.
     setConfigurationId(id);updateUrl(id,brand);
     try {
-      const result = await optionsApi.save(id,kind,body,operation.current.key);
+      const result = await optionsApi.save(id,kind,body,intent.key);
       if (!alive.current) return;
-      setAck(result);setMessage(t.saved);operation.current=null;
+      setMessage(t.saved);setOperation(null);
       queryClient.setQueryData(['brand-options','configuration',fingerprint,id],result);
       void queryClient.invalidateQueries({queryKey:['brand-options','saved',fingerprint]});
-    } catch(error) { if(alive.current) setFailure(error); }
+    } catch(error) {
+      if(alive.current) {
+        setFailure(error);
+        // An uncertain write invalidates the canonical read in the event that caused it.
+        if(error instanceof ApiError&&error.status>=500) void queryClient.invalidateQueries({queryKey:['brand-options','configuration',fingerprint,id]});
+      }
+    }
     finally { inFlight.current=false;if(alive.current)setPending(false); }
   }
   async function upload(file:File|undefined) {
@@ -133,13 +129,13 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
       if(uploadOperation.current?.signature!==signature)uploadOperation.current={signature,key:crypto.randomUUID()};
       const result=await optionsApi.upload(ack.id,file,uploadOperation.current.key);
       if(alive.current) {
-        setReferences(prior=>[...new Set([...prior,result.id])].slice(0,3));setMessage(t.referenceSaved);uploadOperation.current=null;
+        setMessage(t.referenceSaved);uploadOperation.current=null;
         queryClient.setQueryData<Configuration>(['brand-options','configuration',fingerprint,ack.id],prior=>prior?{...prior,reference_ids:[...new Set([...prior.reference_ids,result.id])]}:prior);
       }
     } catch(error) { if(alive.current)setFailure(error); }
     finally {inFlight.current=false;if(alive.current)setPending(false);if(fileInput.current)fileInput.current.value='';}
   }
-  const activeError = failure ?? configurationQuery.error ?? savedQuery.error;
+  const activeError = (reconciled?null:failure) ?? configurationQuery.error ?? savedQuery.error;
   const returnQuery=new URLSearchParams();
   if(brand)returnQuery.set('brand',brand);
   if(base)returnQuery.set('base',base);
@@ -180,34 +176,38 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
         {!fingerprint&&!identityPending&&!identityError&&<div className="bo-signin"><Link className="button" href={signInHref('/customize'+(returnQuery.size?'?'+returnQuery:''),locale)}>{t.signIn}</Link><p>{t.signInBody}</p></div>}
         <div className="bo-actions"><Button disabled={!selected?.available||!fingerprint||busy} onClick={()=>void save()}>{busy?t.saving:t.save}<span aria-hidden="true">↗</span></Button>
           {(ack||configurationId)&&<Button className="button-secondary" disabled={busy} onClick={startNew}>{t.new}</Button>}</div>
-        <div aria-live="polite" role="status" className="bo-feedback">{busy?t.pending:message}</div>
+        <div aria-live="polite" role="status" className="bo-feedback">{busy?t.pending:reconciled?t.saved:message}</div>
         {activeError&&<div role="alert" className="notice"><p>{errorCopy(activeError,t)}</p>{activeError instanceof ApiError&&activeError.requestId&&<BidiReference>{activeError.requestId}</BidiReference>}
           <Button className="button-secondary" disabled={busy} onClick={()=>{setFailure(null);void catalogQuery.refetch();void savedQuery.refetch();if(configurationId)void configurationQuery.refetch();}}>{t.refresh}</Button></div>}
       </div>
       <aside className="bo-summary" aria-label={t.summary}>
         <figure className="bo-illustration"><svg viewBox="0 0 320 340" role="img" aria-label={t.watchFace}><rect x="132" y="4" width="56" height="330" rx="14" fill={palette.strap} stroke="var(--accent)"/><circle cx="160" cy="170" r="112" fill={palette.case} stroke={palette.bezel} strokeWidth="3"/><circle cx="160" cy="170" r="97" fill={palette.dial}/>{Array.from({length:12},(_,i)=><path key={i} d="M160 83v10" transform={`rotate(${i*30} 160 170)`} stroke={palette.markers} strokeWidth="2"/>)}<path d="M160 109v61l43 29" stroke={palette.hands} strokeWidth="4" fill="none"/><circle cx="160" cy="170" r="5" fill={palette.hands}/></svg><figcaption>{t.illustration}</figcaption></figure>
         <section><p className="eyebrow">{t.notApproved}</p><h2>{t.summary}</h2>{ack?<><p>{t.savedRevision} <BidiReference>{ack.revision}</BidiReference></p><dl className="bo-saved">{ack.selections.map(s=><div key={`${s.kind}-${s.component}`}><dt>{t[s.kind]} · {t[s.component]}</dt><dd>{s.definition.label[locale]} <small>{t.revision} <BidiReference>{s.option_revision}</BidiReference></small>{!s.current&&<p className="notice">{t.needsReview}</p>}</dd></div>)}</dl>{hasRoute('/custom-requests')&&<Link className="button button-secondary" href={`/${locale}/custom-requests?configuration=${ack.id}&revision=${ack.revision}`}>{t.next}</Link>}</>:<p>{t.summaryEmpty}</p>}</section>
-        {!!savedQuery.data?.items.length&&<label className="bo-resume">{t.resume}<select dir="ltr" name="saved_configuration" value={configurationId} disabled={busy} onChange={e=>{setAck(null);setConfigurationId(e.target.value);setChosen('');setFailure(null);updateUrl(e.target.value,'');}}><option value="">—</option>{savedQuery.data.items.map(c=><option key={c.id} value={c.id}>{c.base_model} · {c.id.slice(0,8)} · {c.revision}</option>)}</select></label>}
+        {!!savedQuery.data?.items.length&&<label className="bo-resume">{t.resume}<select dir="ltr" name="saved_configuration" value={configurationId} disabled={busy} onChange={e=>{setBrand(brand);setBase(base);setCaliber(caliber);setConfigurationId(e.target.value);setChosen('');setFailure(null);setOperation(null);updateUrl(e.target.value,'');}}><option value="">—</option>{savedQuery.data.items.map(c=><option key={c.id} value={c.id}>{c.base_model} · {c.id.slice(0,8)} · {c.revision}</option>)}</select></label>}
       </aside>
     </div>
   </div>;
 }
 
 function PrivateReference({configurationId,referenceId,label,failureLabel,retryLabel}: {configurationId:string;referenceId:string;label:string;failureLabel:string;retryLabel:string}) {
-  const token=useSession()?.access_token;
-  const [url,setUrl]=useState(''),[failed,setFailed]=useState(false),[attempt,setAttempt]=useState(0);
+  const session=useSession(),token=session?.access_token;
+  const [attempt,setAttempt]=useState(0);
+  const requestKey=JSON.stringify([session?.access_fingerprint,configurationId,referenceId,attempt]);
+  const [result,setResult]=useState<{key:string;url:string;failed:boolean}|null>(null);
+  const current=token&&result?.key===requestKey?result:null;
   useEffect(()=>{
     if(!token)return;
     const abort=new AbortController(),alive={current:true};
-    const close=fencePrivateState(alive,window,()=>abort.abort());setFailed(false);setUrl('');
+    const close=fencePrivateState(alive,window,()=>abort.abort());
     void optionsApi.reference(configurationId,referenceId,token,abort.signal)
       .then(blob=>readPrivatePng(blob,abort.signal))
-      .then(value=>{if(!abort.signal.aborted)setUrl(value);})
-      .catch(()=>{if(!abort.signal.aborted)setFailed(true);});
+      .then(url=>{if(!abort.signal.aborted)setResult({key:requestKey,url,failed:false});})
+      .catch(()=>{if(!abort.signal.aborted)setResult({key:requestKey,url:'',failed:true});});
     return close;
-  },[configurationId,referenceId,token,attempt]);
-  if(failed)return <div><p role="status">{failureLabel}</p><Button className="button-secondary" onClick={()=>setAttempt(prior=>prior+1)}>{retryLabel}</Button></div>;
-  return url?<img src={url} alt={label} width={120} height={120} onError={()=>setFailed(true)}/>:<span className="skeleton" role="status" aria-label={label}/>;
+  },[configurationId,referenceId,token,requestKey]);
+  if(current?.failed)return <div><p role="status">{failureLabel}</p><Button className="button-secondary" onClick={()=>setAttempt(prior=>prior+1)}>{retryLabel}</Button></div>;
+  // Memory-only private data must never enter the public image optimizer.
+  return current?.url?<Image unoptimized src={current.url} alt={label} width={120} height={120} onError={()=>setResult({key:requestKey,url:'',failed:true})}/>:<span className="skeleton" role="status" aria-label={label}/>;
 }
 
 function OptionDetails({option,locale,t}: {option:Option;locale:'en'|'ar';t:Copy}) {
