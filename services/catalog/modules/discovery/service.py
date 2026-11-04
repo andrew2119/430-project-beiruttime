@@ -26,7 +26,7 @@ class Resolved:
     @property
     def state(self):
         if not self.authority_known:return 'unavailable'
-        if self.business and(self.business.state!='active'or not self.business.platform_onboarded or not self.business.authenticated_business):return 'unavailable'
+        if self.business and(self.business.state!='active'or not self.business.platform_onboarded or not self.business.authenticated_business or 'sales'not in self.business.capabilities):return 'unavailable'
         if self.availability.status=='reserved':return 'reserved'
         if self.source.facts.sale_mode=='auction':
             if self.timing is None:return 'not_started'
@@ -143,6 +143,18 @@ async def raw_detail(pool, identifier):
     try:
         async with pool.acquire(timeout=.2)as conn:return await repository.detail(conn,identifier)
     except(TimeoutError,OSError,*repository.UNAVAILABLE_SOURCE):raise unavailable()from None
+
+
+async def canonical(pool, reads, identifier):
+    source=await raw_detail(pool,identifier)
+    if source.organization_id is not None:
+        try:
+            async with asyncio.timeout(.5):business=await reads.business(source)
+        except TimeoutError:raise unavailable()from None
+        if business is None:raise unavailable()
+        if business.state!='active'or not business.platform_onboarded or not business.authenticated_business or 'sales'not in business.capabilities:
+            raise PublicError('listing_ineligible','This business cannot currently offer this listing.',status=403)
+    return source
 
 
 async def view(pool, reads, identifier):

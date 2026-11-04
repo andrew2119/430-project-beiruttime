@@ -1,0 +1,360 @@
+{
+  "kind": "contract-fixture-not-final-connected-demo",
+  "matrix": [
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Find your next chapter.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 624.375,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Find your next chapter.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 624.375,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "ابحث عن ساعتك القادمة.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 624.375,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "ابحث عن ساعتك القادمة.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 624.375,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Find your next chapter.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 348,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Find your next chapter.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "en",
+      "dir": "ltr",
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 348,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "ابحث عن ساعتك القادمة.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 348,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "ابحث عن ساعتك القادمة.",
+      "cards": 12,
+      "images": true,
+      "page": "watches",
+      "viewport": [
+        390,
+        844
+      ]
+    },
+    {
+      "lang": "ar",
+      "dir": "rtl",
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "clipped": [],
+      "heading": "Rolex Oyster Perpetual 36",
+      "cards": 0,
+      "images": true,
+      "live": "connected",
+      "photoTarget": 348,
+      "page": "watches/00000000-0000-4000-8000-000000000001",
+      "viewport": [
+        390,
+        844
+      ]
+    }
+  ],
+  "canonicalEndingFeed": true,
+  "disclosureStates": [
+    {
+      "locale": "en",
+      "id": "00000000-0000-4000-8000-000000000002"
+    },
+    {
+      "locale": "en",
+      "id": "00000000-0000-4000-8000-000000000003"
+    },
+    {
+      "locale": "en",
+      "id": "00000000-0000-4000-8000-000000000004"
+    },
+    {
+      "locale": "ar",
+      "id": "00000000-0000-4000-8000-000000000002"
+    },
+    {
+      "locale": "ar",
+      "id": "00000000-0000-4000-8000-000000000003"
+    },
+    {
+      "locale": "ar",
+      "id": "00000000-0000-4000-8000-000000000004"
+    }
+  ],
+  "edgeViewports": [
+    {
+      "width": 320,
+      "clipped": []
+    },
+    {
+      "width": 850,
+      "clipped": []
+    },
+    {
+      "width": 851,
+      "clipped": []
+    }
+  ],
+  "twoViewerFixture": {
+    "bt-l04": {
+      "sequence": 2,
+      "observedAt": 1793778617654.3,
+      "history": 2,
+      "latencyMs": 657
+    },
+    "bt-l04-viewer": {
+      "sequence": 2,
+      "observedAt": 1793778617296.7,
+      "history": 2,
+      "latencyMs": 300
+    }
+  },
+  "clock": {
+    "before": "01:59:03",
+    "after": "01:59:01",
+    "clientDateNow": 1
+  },
+  "gapAndReconnect": true,
+  "mediaFailure": {
+    "requests": 11,
+    "honestUnavailable": true,
+    "recovered": true
+  },
+  "currentAuthorityAndNullPrice": true
+}

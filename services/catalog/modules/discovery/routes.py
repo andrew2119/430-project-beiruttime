@@ -39,11 +39,11 @@ async def watch_auction(identifier:Identifier,request:Request):
     # Recheck public Catalog visibility, not an expensive/private detail composition.
     source=await service.raw_detail(request.app.state.pool,identifier)
     if source.facts.sale_mode!='auction':return AuctionRead(state='not_started')
-    return await read_auction(getattr(request.app.state,'discovery_auction',None),identifier,request.state.request_id)
+    return await read_auction(getattr(request.app.state,'discovery_auction',None),str(source.id),request.state.request_id)
 
 
 @canonical_router.get('/v1/listings/{identifier}',response_model=PublicListing)
 async def canonical_listing(identifier:Identifier,request:Request):
     # This is publication/fact proof, NEVER current Orders availability or an
     # independent watch-authentication pass. Commands recheck their own authority.
-    return await service.raw_detail(request.app.state.pool,identifier)
+    return await service.canonical(request.app.state.pool,from_app(request.app,request.state.request_id),identifier)

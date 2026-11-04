@@ -96,6 +96,16 @@ def test_public_models_reject_private_fields_and_false_business_inspection():
         with pytest.raises(ValidationError):models.Photo(id='photo',url=url,alt='Photo')
 
 
+def test_timing_before_equal_after_and_no_fabricated_extension():
+    start=datetime(2026,11,4,12,tzinfo=timezone.utc);end=start+timedelta(hours=1)
+    base={'auction_id':reference('5'),'listing_id':listing_id(),'starts_at':start,'scheduled_ends_at':end,'current_ends_at':end,'revision':1,'rules_version':'ordinary.v1','extension_policy':'none.v1'}
+    for instant,status in ((start-timedelta(microseconds=1),'scheduled'),(start,'live'),(end-timedelta(microseconds=1),'live'),(end,'ended'),(end+timedelta(microseconds=1),'ended')):
+        assert dependencies.Timing(**base,server_time=instant,status=status).status==status
+    with pytest.raises(ValidationError):dependencies.Timing(**base,server_time=end,status='live')
+    extended={**base,'current_ends_at':end+timedelta(seconds=30)}
+    with pytest.raises(ValidationError):dependencies.Timing(**extended,server_time=start,status='live')
+
+
 @pytest.mark.asyncio
 async def test_conjunctive_arabic_filters_current_availability_and_keysets(database_url,database_owner_url):
     async with environment(database_url,database_owner_url,17)as(owner,pool,state,reads):
@@ -180,9 +190,17 @@ async def test_business_assurance_is_current_and_not_an_independent_pass(databas
         detail=await service.view(pool,reads,listing_id())
         assert detail.assurance.kind=='official_business'and detail.assurance.status=='onboarded'
         assert detail.seller.completed_sales is None
+        assert(await service.canonical(pool,reads,listing_id())).seller_type=='dealer'
+        state.business_capabilities[reference('3')]=['servicing']
+        assert(await service.view(pool,reads,listing_id())).sale_state=='unavailable'
+        with pytest.raises(PublicError)as error:await service.canonical(pool,reads,listing_id())
+        assert error.value.status==403
+        state.business_capabilities.clear()
         state.revoked_businesses.add(reference('3'))
         detail=await service.view(pool,reads,listing_id())
         assert detail.assurance.status=='unavailable'and detail.sale_state=='unavailable'
+        with pytest.raises(PublicError)as error:await service.canonical(pool,reads,listing_id())
+        assert error.value.status==403
         assert not(await service.find(pool,reads,repository.Filters())).items
         state.revoked_businesses.clear();state.identity_unavailable=True
         with pytest.raises(PublicError):await service.find(pool,reads,repository.Filters())
@@ -220,6 +238,21 @@ async def test_http_canonical_scope_errors_and_no_public_commands(database_url,d
                 assert(await client.get('/v1/discovery/watches/'+listing_id()+'/auction')).status_code==404
             finally:
                 await owner.close();await asyncio.gather(*(value.aclose()for value in clients.values()))
+
+
+@pytest.mark.asyncio
+async def test_canonical_uuid_reference_normalizes_before_auction_lookup(database_url,database_owner_url):
+    row=source_row();identifier='abcdef00-0000-4000-8000-000000000001'
+    row['id']=identifier;row['registration']['listing_id']=identifier
+    async with environment(database_url,database_owner_url,rows=[row])as(owner,pool,state,reads):
+        app=create_app(Settings(database_url=database_url))
+        async with app.router.lifespan_context(app):
+            while not hasattr(app.state,'discovery_media'):await asyncio.sleep(0)
+            app.state.discovery_auction=reads.auction
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test')as client:
+                response=await client.get('/v1/discovery/watches/'+identifier.upper()+'/auction')
+                assert response.status_code==200 and response.json()['state']=='available'
+                assert response.json()['snapshot']['listing_id']==identifier
 
 
 @pytest.mark.asyncio

@@ -12,7 +12,7 @@ class State:
         self.auctions={}
         self.histories={}
         self.orders_unavailable=False;self.auction_unavailable=False;self.identity_unavailable=False;self.credits_unavailable=False
-        self.order_states={};self.revoked_businesses=set()
+        self.order_states={};self.revoked_businesses=set();self.business_capabilities={}
         for index,row in enumerate(rows):
             if row['facts']['sale_mode']!='auction':continue
             value=copy.deepcopy(snapshot)
@@ -42,7 +42,7 @@ class State:
         row=next((row for row in self.rows.values()if row['organization_id']==identifier),None)
         if row is None:return httpx.Response(404)
         active=identifier not in self.revoked_businesses
-        return httpx.Response(200,json={'id':identifier,'public_name':row['seller_label'],'kind':row['seller_type'],'capabilities':['sales'],'state':'active'if active else'revoked','revision':1,'sample':True,'platform_onboarded':active,'authenticated_business':active,'independent_watch_authentication_required':False})
+        return httpx.Response(200,json={'id':identifier,'public_name':row['seller_label'],'kind':row['seller_type'],'capabilities':self.business_capabilities.get(identifier,['sales']),'state':'active'if active else'revoked','revision':1,'sample':True,'platform_onboarded':active,'authenticated_business':active,'independent_watch_authentication_required':False})
 
     def media(self, request):
         if self.credits_unavailable:return httpx.Response(503)
@@ -83,4 +83,4 @@ class State:
         return httpx.Response(404)
 
     def clients(self):
-        return {name:DependencyClient(name,'http://'+name,timeout=.3,concurrency=16,transport=httpx.MockTransport(getattr(self,name)))for name in ('auction','orders','identity','media')}
+        return {name:DependencyClient(name,'http://'+name,timeout=.3,concurrency=16,cooldown=1,transport=httpx.MockTransport(getattr(self,name)))for name in ('auction','orders','identity','media')}

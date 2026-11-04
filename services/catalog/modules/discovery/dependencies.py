@@ -1,7 +1,7 @@
 """Bounded public contract reads; publication is never an availability claim."""
 from typing import Literal
 from uuid import UUID
-from pydantic import AwareDatetime, Field, StrictBool, StrictInt
+from pydantic import AwareDatetime, Field, StrictBool, StrictInt, model_validator
 from bt_bulkheads import Unavailable
 from .models import PublicModel
 
@@ -36,6 +36,15 @@ class Timing(PublicModel):
     revision: StrictInt = Field(ge=1)
     rules_version: str = Field(min_length=1,max_length=100)
     extension_policy: str = Field(min_length=1,max_length=100)
+
+    @model_validator(mode='after')
+    def canonical_clock(self):
+        expected='scheduled'if self.server_time<self.starts_at else'ended'if self.server_time>=self.current_ends_at else'live'
+        if self.current_ends_at<=self.starts_at or self.scheduled_ends_at<=self.starts_at or self.current_ends_at<self.scheduled_ends_at or self.status!=expected:
+            raise ValueError('Inconsistent canonical timing')
+        if self.extension_policy=='none.v1'and self.current_ends_at!=self.scheduled_ends_at:
+            raise ValueError('Ordinary auctions cannot invent an extension')
+        return self
 
 class TimingPage(PublicModel):
     version: Literal[1]
@@ -92,7 +101,7 @@ class Reads:
         if not ids:return {},set()
         if len(ids)>100:raise ValueError('Timing candidate budget exceeded')
         page=await request_model(self.auction,'/v1/auction-timing',TimingPage,params={'listing_ids':','.join(map(str,ids)),'status':'all','limit':100},request_id=self.request_id)
-        if page is None or page.next_cursor is not None:return None,None
+        if page is None or page.next_cursor is not None or any(item.server_time!=page.server_time for item in page.items):return None,None
         requested=set(ids);found={}
         for item in page.items:
             if item.listing_id not in requested or item.listing_id in found:return None,None
@@ -105,7 +114,7 @@ class Reads:
         params={'status':'active','limit':limit}
         if cursor:params['cursor']=str(cursor)
         page=await request_model(self.auction,'/v1/auction-timing',TimingPage,params=params,request_id=self.request_id)
-        if page is None:return None
+        if page is None or page.missing_listing_ids or any(item.server_time!=page.server_time for item in page.items):return None
         positions=[(item.current_ends_at,str(item.auction_id))for item in page.items]
         if positions!=sorted(positions) or len({item.auction_id for item in page.items})!=len(page.items) or any(item.status=='ended' for item in page.items):return None
         return page
