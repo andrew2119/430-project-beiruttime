@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "id": "L04.discovery",
+  "dependencies": ["fastapi", "pydantic", "asyncpg", "httpx"],
+  "routes": ["routes.py:router", "routes.py:canonical_router"],
+  "migrations": ["migrations/L04_0001_search.sql", "migrations/L04_0002_bilingual_aliases.sql"],
+  "workers": ["upstream.py:lifecycle"]
+}
