@@ -174,11 +174,18 @@ async def test_inbox_bridge_retries_and_fences_delivery(api, monkeypatch):
         assert len(requests) == 3
         assert requests[0].url.path == '/internal/v1/notices'
         body = json.loads(requests[0].content)
-        assert set(body) == {'occurrence_id', 'recipient_id', 'kind', 'resource_id',
-            'resource_revision', 'resource_owner_id', 'event_time', 'required', 'sample'}
-        assert body['occurrence_id'].startswith('bid-notice:')
-        assert body['resource_owner_id'] == body['recipient_id'] and body['required'] is True
+        assert set(body) == {'id','recipient_id','kind','resource_type','resource_id',
+            'href','created_at','resource_revision','data'}
+        assert body['resource_type']=='auction' and body['href'].startswith('/watches/')
+        assert set(body['data'])=={'current_minor','currency','ends_at','sequence'}
         assert body['resource_revision'] is None
+        # Validate against the actual merged Inbox provider model, not a permissive
+        # transport acknowledgement that could hide a 422 in a connected run.
+        import sys
+        provider=next(m for m in app.state.modules if m.id=='L07.inbox')
+        bridge=provider.load('bridge.py:bridge')
+        model=sys.modules[bridge.__module__].BridgeNotice
+        model.model_validate(body)
         assert b'private_maximum' not in requests[0].content
         assert json.loads(requests[0].content) == json.loads(requests[-1].content)
     finally:
