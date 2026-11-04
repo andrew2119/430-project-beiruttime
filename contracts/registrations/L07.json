@@ -1,0 +1,1 @@
+{"version":1,"lane":"L07","contracts":[{"namespace":"pricing.quotes.v1","path":"packages/contracts-pricing/quotes","fixtures":["packages/contracts-pricing/quotes/fixtures/sample-quote.v1.json"]},{"namespace":"communications.inbox.v1","path":"packages/contracts-comms/inbox","fixtures":[]}]}
