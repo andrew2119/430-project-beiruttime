@@ -77,7 +77,7 @@ async def test_file_count_budget_and_failed_upload_no_orphan(api):
 
 async def test_invalid_quote_does_not_freeze_draft(api):
     row, _ = await ready(api)
-    api.quotes["value"]["listing_revision"] = 999
+    api.quotes["value"]["subject_revision"] = 999
     response = await publish(api, row)
     assert response.status_code == 409 and not api.calls
     response = await api.client.get(f"/v1/seller/listings/{row['id']}", headers=headers())
@@ -91,7 +91,7 @@ async def test_ambiguous_register_reuses_frozen_snapshot_and_operation(api):
     api.fail["orders"] = False
     # The previously accepted quote can expire while an ambiguous registration is
     # being reconciled. Its frozen price/rules remain bound to the same intent.
-    api.quotes["value"]["status"] = "expired"
+    api.quotes["value"]["expires_at"] = "2000-01-01T00:00:00Z"
     assert (await publish(api, row)).status_code == 200
     assert len(api.calls) == 1
 
@@ -137,7 +137,7 @@ async def test_identity_token_and_record_headers_cannot_grant_ownership(api):
     assert response.status_code == 403
     assert (
         await api.client.get(f"/v1/seller/listings/{row['id']}", headers={"Authorization": "Bearer forged"})
-    ).status_code == 403
+    ).status_code == 401
 
 
 async def test_cancelled_decode_retains_its_native_thread_budget(monkeypatch):

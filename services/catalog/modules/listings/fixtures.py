@@ -120,11 +120,13 @@ async def seed(settings):
                 response = await pricing_client.request(
                     "POST",
                     "/v1/quotes",
-                    params=selected,
                     headers={**headers, "Idempotency-Key": item["id"] + ":quote"},
                     json={
-                        "listing_id": row["id"],
-                        "listing_revision": row["revision"],
+                        "subject_id": row["id"],
+                        "subject_revision": row["revision"],
+                        "purpose": "business_quote",
+                        "source": "sample",
+                        "schedule_id": "sample-v1",
                         "price_minor": value["price_minor"],
                         "currency": "USD",
                     },
@@ -136,7 +138,7 @@ async def seed(settings):
             result = await command(
                 "POST",
                 f"/v1/seller/listings/{row['id']}/publish",
-                {"fee_quote_id": quote["id"], "rules_version": quote["rules_version"]},
+                {"fee_quote_id": quote["id"], "rules_version": quote["schedule_id"]},
                 item["id"] + ":publish",
                 row["revision"],
             )

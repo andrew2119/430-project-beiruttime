@@ -5,7 +5,7 @@ import { ButtonLink, Skeleton, BidiReference } from "@beirut-time/ui";
 import { useLocale } from "@/shell/locale-context";
 import { useAccessContext } from "@/shell/access-context";
 import { slotsFor } from "@/registry-loader";
-import { listingApi, scopedHref } from "./api";
+import { listingApiFor, scopedHref } from "./api";
 import { copy } from "./copy";
 import { Failure, ListingCards, SlotBoundary } from "./components";
 
@@ -29,17 +29,23 @@ function Workspace({
 }) {
   const locale = useLocale(),
     t = copy(locale);
+  const listingApi = useMemo(
+    () => listingApiFor(fingerprint, organization),
+    [fingerprint, organization],
+  );
   const own = useQuery({
     queryKey: ["seller-listings", fingerprint, organization],
     queryFn: () => listingApi.list(),
-    retry: false,refetchInterval:15000,
+    retry: false,
+    refetchInterval: 15000,
   });
   const workspace = useQuery({
     queryKey: ["seller-workspace", fingerprint, organization],
     queryFn: () => listingApi.workspace(),
-    retry: false,refetchInterval:10000,
+    retry: false,
+    refetchInterval: 10000,
   });
-  const data = workspace.isError?undefined:workspace.data;
+  const data = workspace.isError ? undefined : workspace.data;
   return (
     <div className="le-page">
       <header className="le-page-header">

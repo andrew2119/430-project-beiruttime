@@ -107,13 +107,9 @@ async def upload(listing_id: UUID, request: Request):
     credit = None
     demo_asset = request.query_params.get("demo_asset", request.headers.get("X-Demo-Asset"))
     if demo_asset:
-        if (
-            kind != "public_photo"
-            or not row["is_demo"]
-            or os.getenv("BT_ENVIRONMENT") != "demo"
-            or "catalog.demo.import" not in person.permissions
-        ):
+        if kind != "public_photo" or not row["is_demo"] or os.getenv("BT_ENVIRONMENT") != "demo":
             raise PublicError("demo_asset_denied", "Demonstration asset binding is not permitted.", status=403)
+        seller_scope(person, "identity.listings.publish")
         manifest_path = Path(os.getenv("BT_DEMO_MANIFEST", "/app/demo/images-manifest.json"))
         manifest = json.loads(manifest_path.read_text())
         credit = next((a for a in manifest["assets"] if a["id"] == demo_asset), None)

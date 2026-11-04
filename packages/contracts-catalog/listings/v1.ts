@@ -56,13 +56,16 @@ export type Page = {
 };
 export type FeeQuote = {
   id: string;
-  listing_id: string;
-  listing_revision: number;
-  rules_version: string;
-  status: string;
+  owner_id: string;
+  subject_id: string;
+  subject_revision: number;
+  schedule_id: "sample-v1";
+  purpose: "business_quote";
+  source: "sample";
+  sample: true;
   seller_commission_minor: number;
   buyer_fee_minor: number;
-  is_demo_policy: boolean;
+  expires_at: string;
 };
 export type Section<T> =
   | { status: "available"; data: T }

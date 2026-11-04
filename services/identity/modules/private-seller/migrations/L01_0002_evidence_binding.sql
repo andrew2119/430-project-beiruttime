@@ -1,0 +1,3 @@
+ALTER TABLE identity_private_applications ADD CONSTRAINT identity_private_case_subject UNIQUE(id,subject_id);
+ALTER TABLE identity_private_evidence ADD CONSTRAINT identity_private_evidence_subject
+ FOREIGN KEY(application_id,subject_id) REFERENCES identity_private_applications(id,subject_id);

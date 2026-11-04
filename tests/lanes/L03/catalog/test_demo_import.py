@@ -5,7 +5,7 @@ from uuid import uuid4
 import httpx
 import pytest
 from bt_runtime.modules import discover
-from .test_listing_lifecycle import image, headers, draft
+from .test_listing_lifecycle import image, headers, draft, quote_snapshot
 
 pytestmark = pytest.mark.asyncio
 
@@ -47,8 +47,6 @@ async def test_demo_import_uses_publication_twice_without_duplicate_stock(api, t
         for i in range(1, 7)
     ]
     (root / "listings.json").write_text(json.dumps({"listings": items}))
-    for token in ("seller", "dealer"):
-        api.tokens[token]["permissions"].append("catalog.demo.import")
     for name, value in {
         "BT_ENVIRONMENT": "demo",
         "BT_DEMO_IMPORT_ACK": "illustrative-stock-only",
@@ -67,13 +65,13 @@ async def test_demo_import_uses_publication_twice_without_duplicate_stock(api, t
     async def transport(request):
         if request.url.host == "pricing-demo":
             body = json.loads(request.content)
-            value = {
-                "id": str(uuid4()),
-                "status": "valid",
-                "listing_id": body["listing_id"],
-                "listing_revision": body["listing_revision"],
-                "rules_version": "demo-v1",
-            }
+            assert "organization_id" not in request.url.params
+            assert body["purpose"] == "business_quote" and body["source"] == "sample"
+            assert body["schedule_id"] == "sample-v1"
+            token = request.headers["Authorization"][7:]
+            value = quote_snapshot(
+                api, {"id": body["subject_id"], "revision": body["subject_revision"]}, token, uuid4()
+            )
             api.quotes["value"] = value
             return httpx.Response(200, json=value)
         return await asgi.handle_async_request(request)

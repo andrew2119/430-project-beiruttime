@@ -49,6 +49,8 @@ async def workspace(request: Request):
         )
         if isinstance(response, Unavailable):
             person = response
+        elif response.status_code == 401:
+            raise PublicError("unauthorized", "Sign in to continue.", status=401)
         elif response.status_code != 200:
             raise PublicError("forbidden", "Access denied.", status=403)
         else:

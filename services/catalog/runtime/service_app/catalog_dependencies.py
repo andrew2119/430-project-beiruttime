@@ -48,6 +48,8 @@ async def principal(request):
         if isinstance(response, Unavailable):
             result = response
         else:
+            if response.status_code == 401:
+                raise PublicError("unauthorized", "Sign in to continue.", status=401)
             if response.status_code != 200:
                 raise AccessDenied("Current organization could not be established")
             result = CurrentPrincipal.model_validate(response.json())
@@ -118,7 +120,9 @@ async def service_request(request, dependency, method, path, **kwargs):
 
 
 async def upstream(request, dependency, method, path, **kwargs):
-    if request.query_params.get("organization_id"):
+    # Pricing quotes belong to the acting human's personal context, even when
+    # that human is preparing an authorized organization's listing.
+    if dependency != "pricing" and request.query_params.get("organization_id"):
         kwargs.setdefault("params", {"organization_id": request.query_params["organization_id"]})
     result = await clients(request.app)[dependency].request(
         method,
@@ -136,7 +140,9 @@ async def upstream(request, dependency, method, path, **kwargs):
             "A required service is temporarily unavailable. Retry this operation.",
             status=503,
         )
-    if result.status_code in (401, 403):
+    if result.status_code == 401:
+        raise PublicError("unauthorized", "Sign in to continue.", status=401)
+    if result.status_code == 403:
         raise AccessDenied("Upstream denied current scope")
     if result.status_code >= 400:
         raise PublicError(f"{dependency}_denied", "A required prerequisite was not accepted.", status=409)

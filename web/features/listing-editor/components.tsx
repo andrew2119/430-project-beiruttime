@@ -3,11 +3,11 @@ import { Component, type ReactNode, useEffect, useState } from "react";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useLocale } from "@/shell/locale-context";
-import { signInHref,useSession } from "@/features/identity/session";
+import { signInHref, useSession } from "@/features/identity/session";
 import { ApiError } from "@/lib/api/client";
 import { Button, ButtonLink, BidiReference } from "@beirut-time/ui";
 import type { Listing } from "@contracts/contracts-catalog/listings/v1";
-import { listingApi, scopedHref } from "./api";
+import { listingApiFor, scopedHref } from "./api";
 import { copy, type Copy } from "./copy";
 import { correctionFields } from "./validation";
 
@@ -93,20 +93,35 @@ export function OwnerPhoto({
   const [url, setUrl] = useState<string | null>(null),
     [failed, setFailed] = useState(false),
     [attempt, setAttempt] = useState(0);
-  const t = copy(useLocale()),session=useSession();
+  const t = copy(useLocale()),
+    session = useSession();
   useEffect(() => {
-    let alive = true,reader:FileReader|undefined;
-    listingApi.file(listingId,assetId,session).then(blob=>{
-      if(!alive)return;
-      // The shell intentionally allows data previews, not blob image sources.
-      // Keep this watch-only preview in component memory and fence late readers.
-      reader=new FileReader();
-      reader.onload=()=>{const value=reader?.result;if(alive&&typeof value==='string')setUrl(value);};
-      reader.onerror=()=>{if(alive)setFailed(true);};
-      reader.readAsDataURL(blob);
-    }).catch(()=>{if(alive)setFailed(true);});
-    return ()=>{alive=false;if(reader?.readyState===FileReader.LOADING)reader.abort();};
-  }, [listingId, assetId, attempt,session]);
+    let alive = true,
+      reader: FileReader | undefined;
+    listingApiFor(session?.access_fingerprint ?? null)
+      .file(listingId, assetId, session)
+      .then((blob) => {
+        if (!alive) return;
+        // The shell intentionally allows data previews, not blob image sources.
+        // Keep this watch-only preview in component memory and fence late readers.
+        reader = new FileReader();
+        reader.onload = () => {
+          const value = reader?.result;
+          if (alive && typeof value === "string") setUrl(value);
+        };
+        reader.onerror = () => {
+          if (alive) setFailed(true);
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(() => {
+        if (alive) setFailed(true);
+      });
+    return () => {
+      alive = false;
+      if (reader?.readyState === FileReader.LOADING) reader.abort();
+    };
+  }, [listingId, assetId, attempt, session]);
   return (
     <div className="le-photo-frame">
       <span aria-hidden="true">◇</span>

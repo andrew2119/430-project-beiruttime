@@ -7,6 +7,7 @@ from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_runtime.app.db import unit_of_work
 from .dependencies import principal, seller_scope, assert_owner, upstream, service_request
 from .repository import dto, unpack, command_key, revision, check_revision, replay, remember, emit
+from .quotes import publication_quote
 
 router = APIRouter()
 
@@ -15,8 +16,10 @@ router = APIRouter()
 async def create(body: CreateDraft, request: Request):
     person = await principal(request)
     kind = seller_scope(person)
-    if body.demo_key and (os.getenv("BT_ENVIRONMENT") != "demo" or "catalog.demo.import" not in person.permissions):
-        raise AccessDenied("Demo import is not enabled for this actor/environment")
+    if body.demo_key:
+        if os.getenv("BT_ENVIRONMENT") != "demo":
+            raise AccessDenied("Demo import is not enabled for this environment")
+        seller_scope(person, "identity.listings.publish")
     label = ("Demonstration " if body.demo_key else "") + "private seller"
     if person.actor.organization_id:
         business = await upstream(request, "identity", "GET", f"/v1/businesses/{person.actor.organization_id}")
@@ -165,14 +168,6 @@ async def publish(listing_id: UUID, body: Publish, request: Request):
                 details={"fields": missing},
             )
         quote = await upstream(request, "pricing", "GET", f"/v1/quotes/{body.fee_quote_id}")
-    if (
-        quote.get("id") != str(body.fee_quote_id)
-        or quote.get("listing_id") != str(listing_id)
-        or quote.get("listing_revision") != expected
-        or quote.get("rules_version") != body.rules_version
-        or quote.get("status") != "valid"
-    ):
-        raise PublicError("fee_quote_mismatch", "Review a current quote for this listing revision.", status=409)
     # Freeze first, release SQL locks before remote work. Retrying resumes the SAME
     # Orders registration identity; ambiguous upstream results can never free a fence.
     async with unit_of_work(request.app.state.pool, lock_key=f"listing:{listing_id}") as tx:
@@ -187,6 +182,15 @@ async def publish(listing_id: UUID, body: Publish, request: Request):
                 raise PublicError("publication_in_progress", "Resume the original publication request.", status=409)
             if row["status"] == "published":
                 return dto(row)
+            # A durable prepared decision keeps its original accepted terms when
+            # an ambiguous Orders result is retried, without extending a quote.
+            quote = publication_quote(
+                unpack(row["fee_snapshot"]),
+                body=body,
+                row=row,
+                owner_id=operation["actor_id"],
+                accepted_at=operation["created_at"],
+            )
         else:
             check_revision(row, expected)
             facts = WatchFacts.model_validate(unpack(row["facts"]))
@@ -200,6 +204,13 @@ async def publish(listing_id: UUID, body: Publish, request: Request):
                 )
             if row["status"] != "draft":
                 raise PublicError("listing_frozen", "Listing cannot be published.", status=409)
+            quote = publication_quote(
+                quote,
+                body=body,
+                row=row,
+                owner_id=person.actor.subject_id,
+                accepted_at=await tx.fetchval("SELECT clock_timestamp()"),
+            )
             operation = await tx.fetchrow(
                 """INSERT INTO catalog_publications(id,listing_id,actor_id,base_revision,request)
                 VALUES($1,$2,$3,$4,$5::jsonb) RETURNING *""",
@@ -228,6 +239,7 @@ async def publish(listing_id: UUID, body: Publish, request: Request):
             "listing_id": str(listing_id),
             "listing_revision": expected + 1,
             "sale_mode": sale_mode,
+            "is_demo": row["is_demo"],
             "seller_id": str(row["owner_subject_id"]),
             "organization_id": str(row["organization_id"]) if row["organization_id"] else None,
         },

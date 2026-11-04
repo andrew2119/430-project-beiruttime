@@ -11,14 +11,14 @@ from bt_events import EventEnvelope, enqueue
 
 
 @pytest.mark.asyncio
-async def test_event_ingress_requires_service_purpose_audience_and_producer(database_url,tmp_path):
+async def test_event_ingress_requires_service_purpose_audience_and_producer(database_url, tmp_path):
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     public = (
         key.public_key()
         .public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
         .decode()
     )
-    settings = Settings(database_url=database_url, service_auth_public_key=public,modules_path=tmp_path)
+    settings = Settings(database_url=database_url, service_auth_public_key=public, modules_path=tmp_path)
     app = create_app(settings)
     calls = []
 

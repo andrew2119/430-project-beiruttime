@@ -39,6 +39,14 @@ export default {
   ],
   dictionaries: { en, ar },
   gateway: [
+    // Listing fee review consumes Pricing's owner-private versioned API.
+    // Pricing, not this registration or the browser, validates quote authority.
+    {
+      service: "pricing",
+      path: "/v1/quotes",
+      methods: ["POST"],
+      roles: [...sellers],
+    },
     {
       service: "catalog",
       path: "/v1/seller/listings",

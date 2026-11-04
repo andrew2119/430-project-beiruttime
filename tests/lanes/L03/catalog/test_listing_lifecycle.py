@@ -4,6 +4,7 @@ import asyncio
 import io
 import json
 from pathlib import Path
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 from types import SimpleNamespace
 import asyncpg
@@ -104,6 +105,8 @@ async def api(database_url, monkeypatch):
             name = request.headers.get("Authorization", "")[7:]
             return httpx.Response(200, json=tokens[name]) if name in tokens else httpx.Response(401)
         if dependency == "pricing":
+            assert "organization_id" not in request.url.params
+            quotes["read_count"] = quotes.get("read_count", 0) + 1
             return httpx.Response(200, json=quotes.get("value", {}))
         if dependency == "orders":
             if request.method == "GET" and request.url.path == "/v1/orders":
@@ -135,6 +138,7 @@ async def api(database_url, monkeypatch):
                 "organization_id",
                 "listing_revision",
                 "sale_mode",
+                "is_demo",
             }
             assert value["sale_mode"] in ("fixed", "auction", "seller_base")
             calls.append((request.headers.get("Idempotency-Key"), value))
@@ -229,26 +233,57 @@ async def photo(api, row, token="seller", kind="public_photo"):
     return answer.json()
 
 
+def quote_snapshot(api, row, token="seller", quote_id=None):
+    now = datetime.now(timezone.utc)
+    return {
+        "id": str(quote_id or api.quote_id),
+        "owner_id": api.tokens[token]["actor"]["subject_id"],
+        "revision": 1,
+        "subject_id": row["id"],
+        "subject_revision": row["revision"],
+        "purpose": "business_quote",
+        "source": "sample",
+        "source_verified": False,
+        "schedule_id": "sample-v1",
+        "currency": "USD",
+        "price_minor": 18000,
+        "minor_unit_exponent": 2,
+        "buyer_fee_minor": 540,
+        "seller_commission_minor": 900,
+        "seller_net_minor": 17100,
+        "shipping_minor": 0,
+        "tax_minor": 0,
+        "payable_minor": 18540,
+        "sample": True,
+        "rounding": "half_up",
+        "fx": None,
+        "commission_basis": "price_excluding_buyer_fee_shipping_tax",
+        "policy": {
+            "buyer_fee_bps": 300,
+            "seller_commission_bps": 500,
+            "shipping": "sample_zero",
+            "tax": "sample_zero",
+            "fx": "not_applied",
+            "currency_exponents": {"USD": 2, "LBP": 2},
+        },
+        "created_at": (now - timedelta(seconds=1)).isoformat(),
+        "expires_at": (now + timedelta(minutes=15)).isoformat(),
+        "reviewed_at": None,
+    }
+
+
 async def ready(api):
     row = await draft(api)
     uploaded = await photo(api, row)
     row = uploaded["listing"]
-    api.quotes["value"] = {
-        "id": str(api.quote_id),
-        "status": "valid",
-        "listing_id": row["id"],
-        "listing_revision": row["revision"],
-        "rules_version": "demo-v1",
-        "seller_commission_minor": 900,
-        "is_demo_policy": True,
-    }
+    api.quotes["value"] = quote_snapshot(api, row)
     return row, uploaded["asset_id"]
 
 
 async def publish(api, row, key=None, token="seller"):
     return await api.client.post(
         f"/v1/seller/listings/{row['id']}/publish",
-        json={"fee_quote_id": str(api.quote_id), "rules_version": "demo-v1"},
+        json={"fee_quote_id": str(api.quote_id), "rules_version": "sample-v1"},
         headers=headers(token, row["revision"], key),
     )
 

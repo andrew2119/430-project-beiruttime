@@ -62,6 +62,8 @@ async def workspace():
         if request.url.host in state["fail"]:
             return httpx.Response(503)
         if request.url.host == "identity":
+            if request.headers.get("Authorization") != "Bearer signed-in":
+                return httpx.Response(401)
             return httpx.Response(
                 200,
                 json={
@@ -140,6 +142,12 @@ async def test_identity_outage_is_fail_closed(workspace):
         await workspace.client.get("/v1/seller/workspace", headers={"Authorization": "Bearer signed-in"})
     ).status_code == 503
     assert (await workspace.client.get("/v1/seller/workspace")).status_code == 401
+
+
+async def test_expired_token_remains_refreshable_in_selected_organization(workspace):
+    for path in ("/v1/seller/workspace", f"/v1/seller/workspace?organization_id={workspace.org}"):
+        answer = await workspace.client.get(path, headers={"Authorization": "Bearer expired"})
+        assert answer.status_code == 401
 
 
 async def test_business_grants_do_not_union_between_organizations(workspace):

@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {ApiError} from '@/lib/api/client';
+import { ApiError } from "@/lib/api/client";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "@/features/identity/session";
 import {
@@ -20,7 +20,7 @@ import type {
   Modification,
   FeeQuote,
 } from "@contracts/contracts-catalog/listings/v1";
-import { listingApi, scopedHref } from "./api";
+import { listingApiFor, scopedHref } from "./api";
 import { copy } from "./copy";
 import { Failure, OwnerPhoto, Status } from "./components";
 import { parseMinor } from "./money";
@@ -48,6 +48,10 @@ function DraftLoader({
 }) {
   const locale = useLocale(),
     t = copy(locale);
+  const listingApi = useMemo(
+    () => listingApiFor(fingerprint, organization),
+    [fingerprint, organization],
+  );
   const query = useQuery({
     queryKey: ["listing-editor", fingerprint, organization, id],
     queryFn: () => listingApi.read(id),
@@ -96,6 +100,10 @@ function DraftEditor({
     locale = useLocale(),
     t = copy(locale);
   const session = useSession();
+  const listingApi = useMemo(
+    () => listingApiFor(fingerprint, organization),
+    [fingerprint, organization],
+  );
   const alive = useRef(true);
   useEffect(() => {
     alive.current = true;
@@ -120,8 +128,8 @@ function DraftEditor({
       initial.fee_snapshot as FeeQuote | null,
     );
   const publicationKey = useRef(crypto.randomUUID());
-  const pendingSave=useRef<{signature:string;key:string}|null>(null);
-  const pendingUpload=useRef<{signature:string;key:string}|null>(null);
+  const pendingSave = useRef<{ signature: string; key: string } | null>(null);
+  const pendingUpload = useRef<{ signature: string; key: string } | null>(null);
   const media = useQuery({
     queryKey: ["listing-media", fingerprint, organization, id, row.revision],
     queryFn: () => listingApi.media(id),
@@ -149,14 +157,21 @@ function DraftEditor({
     }
   }
   async function persist() {
-    const signature=JSON.stringify([current.revision,form]);
-    if(pendingSave.current?.signature!==signature)pendingSave.current={signature,key:crypto.randomUUID()};
+    const signature = JSON.stringify([current.revision, form]);
+    if (pendingSave.current?.signature !== signature)
+      pendingSave.current = { signature, key: crypto.randomUUID() };
     const saved = await listingApi.save(current, form, pendingSave.current.key);
-    pendingSave.current=null;
-    setRow(saved);setFacts(saved.facts);setDirty(false);setQuote(null);setNotice(t.saved);
+    pendingSave.current = null;
+    setRow(saved);
+    setFacts(saved.facts);
+    setDirty(false);
+    setQuote(null);
+    setNotice(t.saved);
     return saved;
   }
-  async function save(){await persist();}
+  async function save() {
+    await persist();
+  }
   function modify(index: number, name: keyof Modification, value: string) {
     field(
       "modifications",
@@ -171,15 +186,28 @@ function DraftEditor({
   ) {
     if (!file) return;
     await run(async () => {
-      if(file.size>8_000_000)throw new ApiError(413,'media_bytes_limit','');
+      if (file.size > 8_000_000)
+        throw new ApiError(413, "media_bytes_limit", "");
       let saved = current;
-      if (dirty) saved=await persist();
-      const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()))).map(byte=>byte.toString(16).padStart(2,'0')).join('');
-      if(!alive.current)return;
-      const signature=JSON.stringify([saved.id,saved.revision,kind,hash]);
-      if(pendingUpload.current?.signature!==signature)pendingUpload.current={signature,key:crypto.randomUUID()};
-      const result = await listingApi.upload(saved,file,kind,pendingUpload.current.key);
-      pendingUpload.current=null;
+      if (dirty) saved = await persist();
+      const hash = Array.from(
+        new Uint8Array(
+          await crypto.subtle.digest("SHA-256", await file.arrayBuffer()),
+        ),
+      )
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
+      if (!alive.current) return;
+      const signature = JSON.stringify([saved.id, saved.revision, kind, hash]);
+      if (pendingUpload.current?.signature !== signature)
+        pendingUpload.current = { signature, key: crypto.randomUUID() };
+      const result = await listingApi.upload(
+        saved,
+        file,
+        kind,
+        pendingUpload.current.key,
+      );
+      pendingUpload.current = null;
       setRow(result.listing);
       setFacts(result.listing.facts);
       setQuote(null);
@@ -704,7 +732,11 @@ function DraftEditor({
                           className="button-secondary"
                           onClick={() =>
                             void run(async () => {
-                              const blob = await listingApi.file(id, asset.id,session);
+                              const blob = await listingApi.file(
+                                id,
+                                asset.id,
+                                session,
+                              );
                               if (!alive.current) return;
                               const url = URL.createObjectURL(blob),
                                 a = document.createElement("a");
@@ -795,7 +827,7 @@ function DraftEditor({
                     </BidiReference>
                   </p>
                   <small>
-                    <BidiReference>{quote.rules_version}</BidiReference>
+                    <BidiReference>{quote.schedule_id}</BidiReference>
                   </small>
                 </div>
               )}

@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, ButtonLink, Skeleton } from "@beirut-time/ui";
 import { useLocale } from "@/shell/locale-context";
 import { useAccessContext } from "@/shell/access-context";
-import { listingApi, scopedHref } from "./api";
+import { listingApiFor, scopedHref } from "./api";
 import { copy } from "./copy";
 import { Failure, ListingCards } from "./components";
 
@@ -30,10 +30,20 @@ function ListingIndex({
   const locale = useLocale(),
     t = copy(locale),
     router = useRouter();
+  const listingApi = useMemo(
+    () => listingApiFor(fingerprint, organization),
+    [fingerprint, organization],
+  );
   const [busy, setBusy] = useState(false),
     [failure, setFailure] = useState<unknown>(null);
-  const createKey = useRef(crypto.randomUUID()),alive=useRef(true);
-  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+  const createKey = useRef(crypto.randomUUID()),
+    alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
   const query = useInfiniteQuery({
     queryKey: ["listing-editor", fingerprint, organization],
     initialPageParam: undefined as string | undefined,
@@ -47,7 +57,7 @@ function ListingIndex({
     setFailure(null);
     try {
       const row = await listingApi.create(createKey.current);
-      if(!alive.current)return;
+      if (!alive.current) return;
       router.push(
         scopedHref(`/${locale}/seller/listings/${row.id}`, organization),
       );
