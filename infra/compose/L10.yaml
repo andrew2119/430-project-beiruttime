@@ -1,0 +1,9 @@
+# Options join L03's sole Catalog runtime via module discovery.
+# No separate authoritative process or fixture provider is started here.
+services:
+  catalog:
+    environment:
+      IDENTITY_API_URL: http://identity:8000
+      SERVICE_OPERATIONS_API_URL: http://service-operations:8000
+      COMMUNICATIONS_API_URL: http://communications:8000
+      BT_OPTIONS_EVENT_TOKEN: ${BT_OPTIONS_EVENT_TOKEN:-}
