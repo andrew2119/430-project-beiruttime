@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "id": "L06.proxy",
+  "dependencies": ["fastapi", "pydantic"],
+  "routes": ["routes.py:router"],
+  "migrations": [],
+  "hooks": {"auction.proxy.v1": "proxy.py:calculate"}
+}

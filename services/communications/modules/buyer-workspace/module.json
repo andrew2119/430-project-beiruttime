@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "id": "L06.buyer-workspace",
+  "dependencies": ["fastapi", "httpx", "pydantic"],
+  "routes": ["routes.py:router"],
+  "migrations": [],
+  "workers": ["routes.py:close_clients"]
+}
