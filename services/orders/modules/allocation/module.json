@@ -1,0 +1,1 @@
+{"version":1,"id":"L08.allocation","dependencies":["fastapi","asyncpg","httpx","PyJWT"],"routes":["routes.py:router"],"migrations":["migrations/L08_0001_allocation.sql","migrations/L08_0002_demo_labels.sql"],"workers":["workers.py:run"],"fixtures":{}}
