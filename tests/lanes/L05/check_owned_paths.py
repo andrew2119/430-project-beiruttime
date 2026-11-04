@@ -27,7 +27,8 @@ def owned(path):
 
 
 committed = changed('origin/main...HEAD')
-staged = changed('--cached')
+# Compare the staged tree to main, so a pending normal main merge does not misclassify its inherited files.
+staged = changed('--cached', 'origin/main')
 foreign = sorted({path for path in committed + staged if not owned(path)})
 if foreign:
     raise SystemExit('Foreign paths in lane diff: ' + ', '.join(foreign))

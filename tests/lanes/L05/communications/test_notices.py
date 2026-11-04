@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import time
@@ -172,7 +173,14 @@ async def test_inbox_bridge_retries_and_fences_delivery(api, monkeypatch):
         assert delivered == 2
         assert len(requests) == 3
         assert requests[0].url.path == '/internal/v1/notices'
+        body = json.loads(requests[0].content)
+        assert set(body) == {'occurrence_id', 'recipient_id', 'kind', 'resource_id',
+            'resource_revision', 'resource_owner_id', 'event_time', 'required', 'sample'}
+        assert body['occurrence_id'].startswith('bid-notice:')
+        assert body['resource_owner_id'] == body['recipient_id'] and body['required'] is True
+        assert body['resource_revision'] is None
         assert b'private_maximum' not in requests[0].content
+        assert json.loads(requests[0].content) == json.loads(requests[-1].content)
     finally:
         stop.set()
         await task

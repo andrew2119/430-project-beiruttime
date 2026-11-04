@@ -26,7 +26,8 @@ The published L06 proxy module is copied uncommitted into its owning subtree for
 - Canonical Identity listing-publish permission and exact current organization re-selection; no cross-business permission mixing or business-member personal self-bids. Orders service-token fencing and source-bound reconciliation after a lost remote response.
 - Authenticated service-purpose event ingress, exact event schema, one required outbid notice per recipient/event, unchanged-leader suppression, current-state reread for historical notices and honest unavailable recovery.
 - Actual SQL outbox delivery over authenticated HTTP into a second domain database, owner-private outbid retrieval, canonical Auction reread, event replay deduplication and destination lease isolation.
-- Durable retry of Inbox delivery independent of optional channel preferences (the final L07 writer contract remains to be integrated).
+- Durable retry of the published communications.inbox.v1 reference payload, independent of optional channel preferences; the running Inbox storage integration remains to be exercised.
+- Actual Pricing quotes v1 owner/Auction/revision/amount/currency binding, retained explicit review, expiry after slow prerequisites, malformed balances and distinct purchase-purpose denial. Current verified email/phone flags qualify; pending contacts never do.
 - EN/AR money normalization, safe uncertain reconciliation, no optimistic acknowledgement, cancellation and complete bilingual dictionary keys.
 
 ## Connected browser checklist
@@ -41,6 +42,10 @@ After applying both foundation locale-proxy files, production GET/HEAD `/en/sell
 
 `python3 tests/lanes/L05/check_owned_paths.py` checks the staged and committed diff against the exact lane ownership set; authorized untracked provider/foundation handoffs are deliberately not treated as committed changes.
 
-The copied Identity provider currently allowlists `/seller/verification` but not `/seller/auctions`, so its sign-in return link falls back to `/account`; this owning-provider integration correction is pending, not hidden by a local provider edit.
+The current published Identity provider includes `/seller/auctions` in its return allowlist. Its complete web routes and registration are copied uncommitted for integration. The Auction UI distinguishes restoring, signed-out and unavailable session states and passes explicit owner fingerprints to private calls; provider files are never included in this lane's commits.
+
+Post-foundation validation: 93 Auction/runtime tests, 12 Communications tests, 61 feature tests and 66 foundation web tests pass, as do feature TypeScript/lint and the production web build. Seller controls cover up to twenty ascending increment bands with exact localized money. The component tests use explicit session fixtures and do not claim real seller authority.
+
+The refreshed eight-case screenshot matrix waits for session restoration to settle and records `session: unavailable`: the current live Identity refuses the lane origin `http://localhost:3105` with 403. The real chrome-devtools-axi check also confirms explicit retry does not reveal a form or invent a sign-out. The Catalog and Communications live runtimes and exact Catalog publication HTTP DTO remain prerequisites for the connected seller-to-outbid acceptance demo. All lane-owned proof browsers, servers and containers are stopped afterward.
 
 No paid order, closed winner, inspection pass, payout or winning bid is seeded by this lane.

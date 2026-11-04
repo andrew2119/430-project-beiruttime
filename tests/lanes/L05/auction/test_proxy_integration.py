@@ -22,7 +22,7 @@ async def maximum(api, auction, actor=BUYER, amount=450000, revision=1, key=None
     client, _, upstream = api
     return await client.post(f'/test/maximum/{auction}', headers=headers(actor, key), json={
         'amount_minor': amount, 'expected_revision': revision,
-        'fee_quote_id': upstream.quote(auction, actor, amount, auction_revision=revision)})
+        'fee_quote_id': upstream.quote(auction, actor, amount, subject_revision=revision)})
 
 
 async def test_real_proxy_responds_inside_one_durable_bid_transaction(api):

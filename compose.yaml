@@ -1,0 +1,18 @@
+name: beirut-time
+# The launcher selects existing lane-owned fragments; absent lanes use an owned empty fallback.
+# Merge inside one include so a lane replaces its domain's fallback, never adds another authority.
+include:
+  - path:
+      - infra/compose/L00.yaml
+      - ${BT_COMPOSE_L01:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L02:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L03:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L04:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L05:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L06:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L07:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L08:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L09:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L10:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L11:-infra/foundation/empty.yaml}
+    project_directory: .

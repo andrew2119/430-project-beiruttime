@@ -223,6 +223,8 @@ class AuctionEngine:
                     else outcome['next_minimum_minor'])
                 if command.amount_minor < minimum:
                     raise PublicError('bid_too_low', 'Use at least the current minimum bid.', status=409)
+                if kind == 'manual' and command.amount_minor + step_at(decoded(lot['increment_bands']), command.amount_minor) > MAX_MINOR:
+                    raise PublicError('bid_amount_limit', 'The next increment exceeds the supported monetary range.', status=409)
                 listing = await self.dependencies.listing(request, lot['listing_id'])
                 self.published(listing, lot['listing_id'])
                 if (UUID(listing['seller_id']) != lot['seller_id']

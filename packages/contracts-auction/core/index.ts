@@ -16,11 +16,7 @@ export type AuctionOutcome = {
   revision?:number;accepted_sequence?:number;current_minor?:number;next_minimum_minor?:number;
   server_time?:string;auction?:AuctionSnapshot;
 };
-export type MyBidSummary = AuctionSnapshot & {
-  auction_id:string;buyer_id:string;current_price_minor:number;my_status:'leading'|'outbid';
-  next_action:'auction_ended'|'review_bid';
-};
-export type MyBidPage = {items:MyBidSummary[];next_cursor:string|null};
+export type {AuctionMyBidV1 as MyBidSummary,AuctionMyBidsV1 as MyBidPage} from './my-bids';
 export type PublicBid = { sequence:number;bidder:string;amount_minor:number;automatic:boolean;received_at:string };
 export type BidHistory = {items:PublicBid[];has_more:boolean;next_sequence:number;snapshot:AuctionSnapshot};
 // Service-private event only. Never use this shape as a public history DTO.

@@ -8,6 +8,7 @@ from service_app.engine import AuctionEngine, time_denial
 from service_app.main import create_app
 from bt_runtime.app.settings import Settings
 from pathlib import Path
+import json
 from test_admission import bid, BUYER, OTHER, SELLER, headers, open_auction, rules
 
 
@@ -132,7 +133,10 @@ async def test_my_bids_is_owner_scoped_and_has_truthful_live_status(api):
     await bid(api,auction,OTHER,410000,2)
     mine = (await client.get('/v1/my-bids',headers=headers(BUYER))).json()
     assert mine['next_cursor'] is None and len(mine['items']) == 1
+    fixture = json.loads(Path('/opt/domain-contracts/bt_contracts/auction/core/fixtures/my-bids.v1.json').read_text())
+    assert set(mine) == set(fixture)
     row = mine['items'][0]
+    assert set(row) == set(fixture['items'][0])
     assert row['buyer_id'] == str(BUYER) and row['auction_id'] == auction
     assert row['my_status'] == 'outbid' and row['status'] == 'live'
     assert row['current_price_minor'] == 410000 and 'maxima' not in row

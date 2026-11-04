@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from bt_bulkheads import DependencyClient, Unavailable
 from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_runtime.principal import CurrentPrincipal, current_principal
+from .fee_quote import BidFeeSnapshot
 
 
 class Dependencies:
@@ -105,24 +106,28 @@ class Dependencies:
 
     async def fee(self, request, command, lot, principal, now):
         quote = await self.json('pricing', 'GET', f'/v1/quotes/{command.fee_quote_id}', request)
-        from datetime import datetime
         try:
-            valid = (UUID(quote['subject_id']) == principal.actor.subject_id
-                and UUID(quote['auction_id']) == lot['id']
-                and UUID(quote['listing_id']) == lot['listing_id']
-                and quote['amount_minor'] == command.amount_minor and quote['currency'] == lot['currency']
-                and quote['rules_version'] == lot['rules_version']
-                and quote['auction_revision'] == lot['revision']
-                and datetime.fromisoformat(quote['expires_at'].replace('Z', '+00:00')) > now)
-        except (KeyError, ValueError, TypeError):
-            valid = False
+            snapshot = BidFeeSnapshot.model_validate(quote)
+        except ValidationError:
+            raise PublicError('pricing_unavailable', 'The fee preview cannot currently be verified.', status=503) from None
+        valid = (snapshot.id == command.fee_quote_id and snapshot.owner_id == principal.actor.subject_id
+            and snapshot.purpose == 'bid' and snapshot.subject_id == lot['id']
+            and snapshot.subject_revision == lot['revision'] and snapshot.price_minor == command.amount_minor
+            and snapshot.currency == lot['currency'] and snapshot.expires_at > now
+            and snapshot.sample is True and snapshot.source == 'sample' and snapshot.source_verified is False)
         if not valid:
             raise PublicError('fee_preview_required', 'Review a current fee preview for this amount.', status=409)
-        return datetime.fromisoformat(quote['expires_at'].replace('Z', '+00:00'))
+        if snapshot.reviewed_at is None:
+            raise PublicError('fee_review_required', 'Confirm the retained fee preview before bidding.', status=409)
+        # Auction ID/revision binds its immutable listing and economic settings; Pricing's schedule is distinct.
+        return snapshot.expires_at
 
     async def contact(self, request):
-        result = await self.json('identity', 'GET', '/v1/contacts/status', request)
-        if result.get('verified') is not True:
+        result = await self.json('identity', 'GET', '/v1/contacts', request)
+        # Identity contacts v1: only current verification flags qualify, never pending metadata/recipients.
+        if type(result.get('email_verified')) is not bool or type(result.get('phone_verified')) is not bool:
+            raise PublicError('identity_unavailable', 'Current contact verification is unavailable.', status=503)
+        if not (result['email_verified'] or result['phone_verified']):
             raise PublicError('verified_contact_required', 'Verify a current contact before this bid.', status=409)
 
     async def close(self):

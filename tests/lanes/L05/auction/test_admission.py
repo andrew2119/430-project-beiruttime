@@ -34,6 +34,7 @@ class Upstreams:
         self.quotes = {}
         self.outage = None
         self.contact = True
+        self.contact_payload = None
         self.published = True
         self.listing_id, self.watch_id = LISTING, WATCH
         self.listing_organization_id = None
@@ -60,7 +61,9 @@ class Upstreams:
                     actor = actor.model_copy(deep=True)
                     actor.actor.organization_id = UUID(selected)
                 return httpx.Response(200, json=actor.model_dump(mode='json')) if actor else httpx.Response(403)
-            return httpx.Response(200, json={'verified': self.contact})
+            assert path == '/v1/contacts'
+            return httpx.Response(200, json=self.contact_payload if self.contact_payload is not None else
+                {'revision': 1, 'email_verified': self.contact, 'phone_verified': False, 'pending_challenge': None})
         if name == 'catalog':
             return httpx.Response(200, json={'id': str(self.listing_id), 'watch_id': str(self.watch_id), 'seller_id': str(self.listing_seller_id),
                 'seller_organization_id': str(self.listing_organization_id) if self.listing_organization_id else None, 'status': 'published' if self.published else 'hidden'})
@@ -98,9 +101,16 @@ class Upstreams:
 
     def quote(self, auction, actor, amount, **overrides):
         key = uuid4()
-        self.quotes[str(key)] = {'subject_id': str(actor), 'auction_id': str(auction), 'listing_id': str(self.listing_id),
-            'amount_minor': amount, 'currency': 'USD', 'rules_version': 'ordinary.v1', 'auction_revision': 1,
-            'expires_at': (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(), **overrides}
+        now = datetime.now(timezone.utc)
+        fee = (amount * 300 + 5000) // 10000
+        self.quotes[str(key)] = {'id': str(key), 'owner_id': str(actor), 'subject_id': str(auction),
+            'subject_revision': 1, 'revision': 1, 'purpose': 'bid', 'currency': 'USD', 'price_minor': amount,
+            'buyer_fee_minor': fee, 'shipping_minor': 0, 'tax_minor': 0, 'payable_minor': amount + fee,
+            'schedule_id': 'sample-v1', 'source': 'sample', 'source_verified': False, 'sample': True,
+            'minor_unit_exponent': 2, 'rounding': 'half_up',
+            'created_at': (now - timedelta(seconds=2)).isoformat(),
+            'reviewed_at': (now - timedelta(seconds=1)).isoformat(),
+            'expires_at': (now + timedelta(hours=1)).isoformat(), **overrides}
         return str(key)
 
 
@@ -138,7 +148,7 @@ async def bid(api, auction, actor=BUYER, amount=400000, revision=1, key=None, **
     client, _, upstream = api
     return await client.post(f'/v1/auctions/{auction}/bids', headers=headers(actor, key), json={
         'amount_minor': amount, 'expected_revision': revision,
-        'fee_quote_id': upstream.quote(auction, actor, amount, auction_revision=revision, **quote_overrides)})
+        'fee_quote_id': upstream.quote(auction, actor, amount, **{'subject_revision': revision, **quote_overrides})})
 
 
 async def test_create_is_unique_and_public_projection_is_private(api):
@@ -234,6 +244,82 @@ async def test_denied_bids_do_not_write_history(api, reason):
     async with app.state.pool.acquire() as tx:
         assert await tx.fetchval('SELECT count(*) FROM auction_bids') == 0
         assert await tx.fetchval("SELECT count(*) FROM auction_operations WHERE outcome->>'status'='denied'") == 1
+
+
+@pytest.mark.parametrize(('overrides', 'code'), [
+    ({'reviewed_at': None}, 'fee_review_required'),
+    ({'owner_id': str(OTHER)}, 'fee_preview_required'),
+    ({'purpose': 'purchase'}, 'fee_preview_required'),
+    ({'subject_revision': 2}, 'fee_preview_required'),
+    ({'currency': 'LBP'}, 'fee_preview_required'),
+    ({'source': 'listing'}, 'fee_preview_required'),
+    ({'sample': False}, 'fee_preview_required'),
+])
+async def test_retained_pricing_snapshot_must_bind_reviewed_bid(api, overrides, code):
+    _, app, _ = api
+    auction = await open_auction(api)
+    response = await bid(api, auction, **overrides)
+    assert response.status_code == 200, response.text
+    assert response.json()['status'] == 'denied' and response.json()['code'] == code
+    async with app.state.pool.acquire() as tx:
+        assert await tx.fetchval('SELECT count(*) FROM auction_bids') == 0
+        assert await tx.fetchval('SELECT count(*) FROM auction_operations WHERE subject_id=$1', BUYER) == 1
+
+
+async def test_malformed_pricing_snapshot_is_unavailable_not_acknowledged(api):
+    _, app, _ = api
+    auction = await open_auction(api)
+    response = await bid(api, auction, payable_minor=1)
+    assert response.status_code == 503
+    async with app.state.pool.acquire() as tx:
+        assert await tx.fetchval('SELECT count(*) FROM auction_bids') == 0
+        assert await tx.fetchval('SELECT count(*) FROM auction_operations WHERE subject_id=$1', BUYER) == 0
+
+
+async def test_expired_retained_quote_is_not_bid_authority(api):
+    auction = await open_auction(api)
+    now = datetime.now(timezone.utc)
+    result = await bid(api, auction, created_at=(now - timedelta(hours=2)).isoformat(),
+        reviewed_at=(now - timedelta(hours=1)).isoformat(),
+        expires_at=(now - timedelta(seconds=1)).isoformat())
+    assert result.json()['code'] == 'fee_preview_required'
+
+
+async def test_quote_expiry_rechecked_after_current_contact_call(api, monkeypatch):
+    _, app, _ = api
+    auction = await open_auction(api)
+    async def slow_contact(request):
+        await asyncio.sleep(.3)
+    monkeypatch.setattr(app.state.auction.dependencies, 'contact', slow_contact)
+    result = await bid(api, auction, amount=1000000,
+        expires_at=(datetime.now(timezone.utc) + timedelta(seconds=.2)).isoformat())
+    assert result.json()['code'] == 'fee_preview_required'
+
+
+@pytest.mark.parametrize('channel', ['email', 'phone'])
+async def test_current_verified_contact_flags_qualify_high_value_bid(api, channel):
+    _, _, upstream = api
+    auction = await open_auction(api)
+    upstream.contact_payload = {'email_verified': channel == 'email', 'phone_verified': channel == 'phone'}
+    assert (await bid(api, auction, amount=1000000)).json()['status'] == 'succeeded'
+
+
+async def test_pending_contact_never_qualifies_and_recipients_are_not_stored(api):
+    _, app, upstream = api
+    auction = await open_auction(api)
+    upstream.contact_payload = {'email_verified': False, 'phone_verified': False,
+        'email': 'sample-pending@example.test', 'pending_challenge': {'state': 'pending'}}
+    assert (await bid(api, auction, amount=1000000)).json()['code'] == 'verified_contact_required'
+    async with app.state.pool.acquire() as tx:
+        assert 'example.test' not in str(await tx.fetch('SELECT outcome FROM auction_operations'))
+        assert 'example.test' not in str(await tx.fetch('SELECT envelope FROM outbox'))
+
+
+async def test_malformed_contact_read_is_unavailable_not_a_refusal(api):
+    _, _, upstream = api
+    auction = await open_auction(api)
+    upstream.contact_payload = {'verified': True, 'email_verified': 'true', 'phone_verified': False}
+    assert (await bid(api, auction, amount=1000000)).status_code == 503
 
 
 async def test_dependency_outage_is_not_false_acknowledgement(api):

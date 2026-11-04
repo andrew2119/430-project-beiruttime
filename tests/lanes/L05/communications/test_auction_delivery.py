@@ -11,9 +11,9 @@ from test_admission import BUYER, OTHER, Upstreams, bid, headers, open_auction
 from test_notices import auth
 
 
-async def test_committed_bid_outbox_reaches_prior_bidders_owner_private_notice_api(notice_api, monkeypatch):
+async def test_committed_bid_outbox_reaches_prior_bidders_owner_private_notice_api(notice_api, monkeypatch, request, tmp_path):
     notices, communications, private = notice_api
-    database = testing.database_access.__wrapped__()
+    database = testing.database_access.__wrapped__(request, tmp_path)
     with monkeypatch.context() as scoped:
         scoped.setenv('BT_MODULES_PATH', '/app/auction-modules')
         access = await database.__anext__()
