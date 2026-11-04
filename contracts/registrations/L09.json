@@ -1,0 +1,1 @@
+{"version":1,"lane":"L09","contracts":[{"namespace":"trust.moderation.v1","path":"packages/contracts-trust/moderation","fixtures":[]},{"namespace":"service.intake.v1","path":"packages/contracts-service/intake","fixtures":[]}]}

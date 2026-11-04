@@ -1,0 +1,31 @@
+services:
+  trust:
+    image: beirut-time/trust:local
+    build:
+      context: .
+      dockerfile: services/trust/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/trust
+    environment:
+      BT_IDENTITY_URL: http://identity:8000
+      BT_CATALOG_URL: http://catalog:8000
+      BT_COMMUNICATIONS_URL: http://communications:8000
+      BT_TRUST_SERVICE_PRIVATE_KEY: ${BT_TRUST_SERVICE_PRIVATE_KEY:-}
+  trust-migrate:
+    image: beirut-time/trust:local
+    build:
+      context: .
+      dockerfile: services/trust/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/trust
+  communications:
+    environment:
+      BT_IDENTITY_URL: http://identity:8000
+      BT_TRUST_URL: http://trust:8000
+  service-operations:
+    environment:
+      BT_IDENTITY_URL: http://identity:8000
+      BT_ORDERS_URL: http://orders:8000
+      BT_SERVICE_OPERATIONS_URL: http://service-operations:8000
+      BT_COMMUNICATIONS_URL: http://communications:8000
+      BT_INTAKE_SERVICE_PRIVATE_KEY: ${BT_INTAKE_SERVICE_PRIVATE_KEY:-}
