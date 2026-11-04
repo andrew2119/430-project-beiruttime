@@ -2,6 +2,8 @@
 
 L05's bid-notices module owns `/internal/v1/events` for `auction.bid-accepted.v1`. Inbox registers its own authenticated **`/internal/v1/inbox/events`** using the foundation receiver/security implementation under a distinct route. Pricing's destination adapter sends its durable events there. No central event hook or competing receiver is required; modules still join the one Communications runtime/database.
 
+The receiver is generic over the contracts-core EventEnvelope but accepts only owner-registered exact `(producer,event type)` pairs from `events.py:handlers()`. New producers must supply their exact event names, bounded payload schema and deterministic fixture for registration; unknown types are refused, not silently acknowledged. A committed `{accepted:true}` means registered receiver work was durable, not that a person was notified. Duplicate envelope IDs return `{accepted:false}` without repeating effects. Authentication/policy/schema failures are 401/403/422; configuration and transient failures are retryable 503/500 with no committed receipt. The full shared ingress note is published separately as `communications-events`.
+
 Inbox V1 input follows `models.py:NoticeInput`. Event ID deduplicates transport; `(recipient,source,occurrence_id)` deduplicates the historical occurrence. Required outbid/payment/case categories ignore optional preferences. No arbitrary HTML or URL is accepted. Current delivery includes `pricing.quote-created.v1` and `pricing.quote-reviewed.v1`; additional typed notice categories remain versioned provider integration points, not fabricated startup activity.
 
 ## L05 bridge
