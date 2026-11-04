@@ -1,0 +1,1 @@
+{"version":1,"id":"L01.accounts","dependencies":["fastapi","asyncpg","PyJWT","cryptography"],"routes":["routes.py:router"],"migrations":["migrations/L01_0001_accounts.sql","migrations/L01_0002_reauthentication.sql"]}
