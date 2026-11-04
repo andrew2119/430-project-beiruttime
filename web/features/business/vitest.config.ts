@@ -3,5 +3,5 @@ import { fileURLToPath } from "node:url";
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("../../", import.meta.url)) } },
   esbuild: { jsx: "automatic" },
-  test: { include: ["features/business/**/*.test.tsx"], maxWorkers: 2 },
+  test: { include: ["features/business/**/*.test.tsx", "features/moderation/**/*.test.tsx"], maxWorkers: 2 },
 });

@@ -1,6 +1,7 @@
 import {notFound} from 'next/navigation';
 import {ButtonLink} from '@beirut-time/ui';
 import {AccountLayout} from '@/shell/layouts';
+import {PageLayout,PageHeader} from '@/shell/page-header';
 import {getLocale} from '@/shell/locale';
 import ProxyBidSlot from '@/features/proxy-bid/proxy-bid';
 import en from '@/features/proxy-bid/en.json';
@@ -10,9 +11,9 @@ export default async function BuyerAuctionPage({params}:{params:Promise<{listing
   const {listingId}=await params;
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(listingId)) notFound();
   const locale=await getLocale(),t=locale==='ar'?ar:en;
-  return <AccountLayout><div className="buyer-workspace">
-    <header className="buyer-heading"><p className="eyebrow">{t.eyebrow}</p><h1>{t.auctionBidding}</h1><p>{t.privacy}</p></header>
-    <ButtonLink className="button-secondary" href={`/${locale}/buyer`}>{t.backToBuying}</ButtonLink>
+  return <AccountLayout><PageLayout className="buyer-workspace">
+    <PageHeader title={t.auctionBidding} count={t.privacy} tag={<span className="hx-tag">{t.eyebrow}</span>}
+      lead={<ButtonLink size="sm" variant="ghost" href={`/${locale}/buyer`}>{t.backToBuying}</ButtonLink>}/>
     <ProxyBidSlot locale={locale} resourceId={listingId}/>
-  </div></AccountLayout>;
+  </PageLayout></AccountLayout>;
 }

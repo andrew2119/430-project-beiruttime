@@ -1,11 +1,13 @@
 "use client";
 import { Component, type ReactNode, useEffect, useState } from "react";
-import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useLocale } from "@/shell/locale-context";
 import { signInHref, useSession } from "@/features/identity/session";
 import { ApiError } from "@/lib/api/client";
-import { Button, ButtonLink, BidiReference } from "@beirut-time/ui";
+import { AnimatedList, Button, ButtonLink, BidiReference, ImageFrame, State, StatusBadge } from "@beirut-time/ui";
+import { Watch, Wallet } from "lucide-react";
+import Link from "next/link";
+import { coverPressLook } from '@/lib/press-look';
 import type { Listing } from "@contracts/contracts-catalog/listings/v1";
 import { listingApiFor, scopedHref } from "./api";
 import { copy, type Copy } from "./copy";
@@ -43,8 +45,8 @@ export function Failure({
     error instanceof ApiError ? error.details.fields : null,
   );
   return (
-    <div className="le-notice" role="alert">
-      <p>{message}</p>
+    <div role="alert">
+      <State kind="error" title={denied ? t.signIn : t.error} body={message}>
       {fields.length > 0 && (
         <ul className="le-field-errors">
           {fields.map((field) => (
@@ -69,16 +71,15 @@ export function Failure({
           <BidiReference>{error.requestId}</BidiReference>
         </small>
       )}
+      </State>
     </div>
   );
 }
 export function Status({ row, t }: { row: Listing; t: Copy }) {
   return (
-    <span
-      className={`le-status le-status-${row.is_hidden ? "hidden" : row.status}`}
-    >
+    <StatusBadge hue={row.is_hidden ? "neutral" : row.status === "published" ? "green" : row.status === "publication_pending" ? "orange" : "neutral"}>
       {row.is_hidden ? t.hidden : t[row.status]}
-    </span>
+    </StatusBadge>
   );
 }
 export function OwnerPhoto({
@@ -124,10 +125,10 @@ export function OwnerPhoto({
   }, [listingId, assetId, attempt, session]);
   return (
     <div className="le-photo-frame">
-      <span aria-hidden="true">◇</span>
+      <Watch aria-hidden="true" />
       {failed && (
         <Button
-          className="le-photo-retry button-secondary"
+          variant="outline" className="le-photo-retry"
           onClick={() => {
             setFailed(false);
             setAttempt(attempt + 1);
@@ -137,23 +138,7 @@ export function OwnerPhoto({
         </Button>
       )}
       {url && (
-        <Image
-          src={url}
-          alt={alt}
-          fill
-          unoptimized
-          sizes="(max-width:850px) 90vw, 400px"
-          className="le-owner-image"
-          onLoad={(e) => {
-            const image = e.currentTarget;
-            void image
-              .decode()
-              .then(() => {
-                image.dataset.ready = "true";
-              })
-              .catch(() => {});
-          }}
-        />
+        <ImageFrame src={url} alt={alt} className="ui-image-frame-fill" placeholder={<Watch aria-hidden="true" />} />
       )}
     </div>
   );
@@ -170,56 +155,21 @@ export function ListingCards({
   organization?: string | null;
 }) {
   return (
-    <div className="le-listing-grid">
-      {rows.map((row) => (
-        <article className="le-watch-card" key={row.id}>
-          {row.cover_id ? (
-            <OwnerPhoto
-              key={row.cover_id}
-              listingId={row.id}
-              assetId={row.cover_id}
-              alt={`${row.facts.brand} ${row.facts.model}`}
-            />
-          ) : (
-            <div className="le-photo-frame le-photo-empty" aria-hidden="true">
-              ◇
-            </div>
-          )}
-          <div className="le-watch-content">
-            <div className="le-inline">
-              <Status row={row} t={t} />
-              {row.is_demo && <small>{t.demo}</small>}
-            </div>
-            <h2>
-              {row.facts.brand || "—"} <span>{row.facts.model}</span>
-            </h2>
-            <p>
-              <BidiReference>{row.facts.reference || "—"}</BidiReference> ·{" "}
-              {row.facts.location || "—"}
-            </p>
-            <div className="le-inline le-between">
-              <span>
-                {row.facts.price_minor
-                  ? new Intl.NumberFormat(locale === "ar" ? "ar-LB" : "en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    }).format(row.facts.price_minor / 100)
-                  : "—"}
-              </span>
-              <ButtonLink
-                href={scopedHref(
-                  `/${locale}/seller/listings/${row.id}`,
-                  organization,
-                )}
-              >
-                {row.status === "published" ? t.review : t.next}{" "}
-                <span aria-hidden="true">↗</span>
-              </ButtonLink>
-            </div>
-          </div>
-        </article>
-      ))}
-    </div>
+    <AnimatedList items={rows} getKey={row => row.id} className="le-listing-rows">
+      {row => <article className="le-watch-row pg-row">
+        <Link className="le-row-open" href={scopedHref(`/${locale}/seller/listings/${row.id}`, organization)} aria-label={`${row.status === "published" ? t.review : t.next} — ${row.facts.brand} ${row.facts.model}`} {...coverPressLook} />
+        <div className="le-row-chevron-spacer" aria-hidden="true" />
+        <div className="le-row-cover">
+          {row.cover_id ? <OwnerPhoto key={row.cover_id} listingId={row.id} assetId={row.cover_id} alt={`${row.facts.brand} ${row.facts.model}`} /> : <Watch aria-hidden="true" />}
+        </div>
+        <div className="le-row-info">
+          <h2>{row.facts.brand || "—"} {row.facts.model}</h2>
+          <p><BidiReference>{row.facts.reference || "—"}</BidiReference> · {row.facts.location || "—"}{row.is_demo && <> · {t.demo}</>}</p>
+        </div>
+        <div className="le-row-price"><span className="le-wallet"><Wallet aria-hidden="true" /></span><BidiReference>{row.facts.price_minor ? new Intl.NumberFormat(locale === "ar" ? "ar-LB" : "en-US", {style:"currency",currency:"USD"}).format(row.facts.price_minor / 100) : "—"}</BidiReference></div>
+        <div className="le-row-status"><Status row={row} t={t} /></div>
+      </article>}
+    </AnimatedList>
   );
 }
 
@@ -236,7 +186,7 @@ export class SlotBoundary extends Component<
       <div className="le-notice" role="status">
         <p>{this.props.unavailable}</p>
         <Button
-          className="button-secondary"
+          variant="outline"
           onClick={() => window.location.reload()}
         >
           {this.props.retry}

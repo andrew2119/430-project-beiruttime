@@ -1,0 +1,511 @@
+/* ============================================================================
+   styles/shell.css - the application shell (canvas, rail, tray), the chonk
+   pressable button, and the navigation icon states. Consumed by
+   app/(app)/layout.tsx, nav-sidebar.tsx, nav/route-icon.tsx, dept-cards.tsx
+   and ui/button.tsx. Keyframes stay top level; every rule sits in
+   @layer components.
+   ========================================================================== */
+
+/* ---- Navigation icon states (components/nav/icon-motion.ts) -----------
+   One expressive motion per route glyph, played once on hover and on
+   arrival (the item becoming current), looped softly while a navigation is
+   pending or the department loader is up. Transform/opacity only (the v0
+   motion law); the global reduced-motion baseline in motion.css freezes
+   every one of them and the block at the end of this file resets the
+   end states. */
+@keyframes pg-icon-wave {
+  0% { transform: rotate(0); }
+  25% { transform: rotate(-9deg) translateY(-1px); }
+  55% { transform: rotate(8deg) translateY(-1px); }
+  80% { transform: rotate(-4deg); }
+  100% { transform: rotate(0); }
+}
+@keyframes pg-icon-announce {
+  0% { transform: rotate(0) scale(1); }
+  30% { transform: rotate(-12deg) scale(1.1); }
+  60% { transform: rotate(7deg) scale(1.06); }
+  100% { transform: rotate(0) scale(1); }
+}
+@keyframes pg-icon-shuffle {
+  0% { transform: translateY(0); }
+  30% { transform: translateY(-2.5px); }
+  60% { transform: translateY(1.5px); }
+  100% { transform: translateY(0); }
+}
+@keyframes pg-icon-spin {
+  from { transform: rotate(0); }
+  to { transform: rotate(360deg); }
+}
+@keyframes pg-icon-open {
+  0% { transform: perspective(60px) rotateX(0); }
+  40% { transform: perspective(60px) rotateX(-28deg) translateY(-1px); }
+  100% { transform: perspective(60px) rotateX(0); }
+}
+@keyframes pg-icon-drop {
+  0% { transform: translateY(-3px); opacity: 0.85; }
+  55% { transform: translateY(1.5px); opacity: 1; }
+  80% { transform: translateY(-0.5px); }
+  100% { transform: translateY(0); }
+}
+@keyframes pg-icon-rev {
+  0% { transform: rotate(0); }
+  35% { transform: rotate(-16deg); }
+  65% { transform: rotate(18deg); }
+  100% { transform: rotate(0); }
+}
+@keyframes pg-icon-stamp {
+  0% { transform: scale(1) rotate(0); }
+  40% { transform: scale(1.22) rotate(-8deg); }
+  70% { transform: scale(0.96) rotate(3deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes pg-icon-bounce {
+  0% { transform: translateY(0) rotate(0); }
+  35% { transform: translateY(-3px) rotate(-8deg); }
+  65% { transform: translateY(0) rotate(6deg); }
+  100% { transform: translateY(0) rotate(0); }
+}
+@keyframes pg-icon-settle {
+  0% { transform: scaleY(1); }
+  35% { transform: scaleY(0.86) translateY(1px); }
+  70% { transform: scaleY(1.06) translateY(-1px); }
+  100% { transform: scaleY(1) translateY(0); }
+}
+@keyframes pg-icon-pulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+@keyframes pg-icon-breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.72; }
+}
+
+@layer components {
+  .pg-shell {
+    display: grid;
+    grid-template-columns: 14rem minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px;
+    height: 100dvh;
+    background: var(--ds-canvas);
+    overflow: hidden;
+  }
+  /* ADR-0035: the document's first frame for every authed route, server-rendered
+     before any script: the same grid, rail and tray the real shell paints, so a
+     hard refresh or a first visit never shows a blank screen or a smaller
+     placeholder that the shell then replaces. Hidden the moment the real shell
+     exists (same commit), never animated out. */
+  .pg-boot-frame {
+    display: grid;
+    grid-template-columns: 14rem minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px;
+    height: 100dvh;
+    background: var(--ds-canvas);
+    overflow: hidden;
+  }
+  body:has(.pg-shell) .pg-boot-frame { display: none; }
+  .pg-boot-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 12px;
+    border-radius: var(--ds-radius-rail);
+    background: color-mix(in oklab, var(--card) 94%, transparent);
+    box-shadow: var(--ds-shadow-shell);
+  }
+  .pg-boot-tray {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px;
+    border-radius: var(--ds-radius-tray);
+    background: color-mix(in oklab, var(--card) 78%, var(--background));
+    box-shadow: var(--ds-shadow-shell);
+  }
+  .pg-boot-brand { block-size: 28px; inline-size: 7.5rem; border-radius: var(--radius-md); margin-block-end: 8px; }
+  .pg-boot-row { block-size: 32px; inline-size: 100%; border-radius: var(--radius-md); }
+  .pg-boot-title { block-size: 28px; inline-size: 38%; max-inline-size: 22rem; border-radius: var(--radius-md); margin-block-end: 6px; }
+  .pg-boot-bar { block-size: 56px; inline-size: 100%; border-radius: var(--radius-lg); }
+
+  .pg-rail {
+    position: relative;
+    border-radius: var(--ds-radius-rail);
+    background: color-mix(in oklab, var(--card) 94%, transparent);
+    box-shadow: var(--ds-shadow-shell), inset 0 1px 0 var(--ds-gloss-line),
+      inset 0 -1px 0 var(--ds-gloss-under);
+    isolation: isolate;
+    overflow-y: auto;
+  }
+  /* No gradients (captain 2026-09-30): the rail has no top sheen; the flat top
+     gloss line in its box-shadow above keeps the lit edge. */
+  .pg-rail > * {
+    position: relative;
+    z-index: 1;
+  }
+  .pg-tray {
+    position: relative;
+    block-size: 100%;
+    border-radius: var(--ds-radius-tray);
+    /* No gradients (captain 2026-09-30): the tray has no top sheen, and its
+       flat recessed fill paints on the frame below. A scroller with a single
+       opaque fill is composited by Chromium without its rounded clip after an
+       in-app navigation (a dark square showed in the tray's top-left corner);
+       a fill on the non-scrolling frame has no such path. The lit top edge is
+       the frame's flat gloss line. */
+    background: transparent;
+    box-shadow: var(--ds-shadow-shell);
+    isolation: isolate;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  /* The tray's WINDOW FRAME: the edge gloss lives on an overlay that paints
+     ABOVE the scrolled content (pointer-events: none), so the page inside can
+     never overlap the shell square's edge while scrolling. */
+  .pg-tray-frame {
+    position: relative;
+    min-block-size: 0;
+    isolation: isolate;
+    /* The tray's flat fill (see .pg-tray above). */
+    border-radius: var(--ds-radius-tray);
+    background: color-mix(in oklab, var(--card) 78%, var(--background));
+  }
+  .pg-tray-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: var(--ds-radius-tray);
+    pointer-events: none;
+    box-shadow: inset 0 1px 0 var(--ds-gloss-line),
+      inset 0 -1px 0 var(--ds-gloss-under);
+  }
+  /* The dock's room: the bottom-right dock (the bell, the companion's spot and
+     the chat button, styles/proto.css .proto-dock) floats over the tray's foot,
+     so every page keeps the dock's reach and a step as room below its end, and a
+     control brought into view (focus, find) stops above the dock, so the dock
+     never covers one (staging update 22, 2026-10-18). The approved lab keeps the
+     same room page by page (lab 48721958: proto-home.css, proto-inbox.css); here
+     the shell keeps it once for every page. On a desktop the dock's top stands
+     12.25rem above the screen's foot (1.5, the chat 3.25, 0.625, the companion
+     3.5, 0.625, the bell 2.75) and the tray ends 16px above it (the shell's
+     padding); a phone's reach is in mobile.css. On a short screen (a phone held
+     sideways) the stop takes at most a quarter of the tray's height, so a control
+     brought into view keeps room below the pinned page header. */
+  .pg-tray {
+    --dock-room: calc(12.25rem - 16px + var(--ds-space-2));
+    scroll-padding-block-end: min(var(--dock-room), 25%);
+  }
+  /* Below the page's end the shell keeps only the room the end needs (the dock's
+     measure, components/shell/dock-room.tsx, writes --end-room): none when nothing
+     at the end sits under the dock or a resting toast, so pages end flush (captain,
+     click-test 2026-10-20). Until measured, the dock's whole reach. */
+  .pg-tray::after {
+    content: "";
+    display: block;
+    block-size: var(--end-room, var(--dock-room));
+  }
+
+  /* Pressable two-layer button */
+  .pg-chonk {
+    --chonk-surface: var(--card);
+    --chonk-base: var(--border);
+    position: relative;
+    z-index: 0;
+    isolation: isolate;
+    display: inline-flex;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--ds-radius-chonk);
+    background: transparent;
+    color: var(--foreground);
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pg-chonk::before {
+    content: "";
+    position: absolute;
+    z-index: -2;
+    inset: 0;
+    top: 2px;
+    height: calc(100% - 2px);
+    border-radius: inherit;
+    background: var(--chonk-base);
+    box-shadow: 0 2px 0 0 var(--chonk-base);
+    transform: translateY(-2px);
+  }
+  .pg-chonk::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border: 1px solid var(--chonk-base);
+    border-radius: inherit;
+    background: var(--chonk-surface);
+    transform: translateY(-2px);
+    transition: transform var(--ds-motion-press) var(--ease-standard);
+  }
+  .pg-chonk > span {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: var(--ds-weight-strong);
+    letter-spacing: -.006em;
+    transform: translateY(-2px);
+    transition: transform var(--ds-motion-press) var(--ease-standard);
+  }
+  .pg-chonk:hover::after,
+  .pg-chonk:hover > span { transform: translateY(-3px); }
+  .pg-chonk:active::after,
+  .pg-chonk:active > span { transform: translateY(0); }
+  .pg-chonk-primary {
+    --chonk-surface: var(--primary);
+    --chonk-base: oklch(from var(--primary) calc(l - 0.10) c h);
+    color: var(--primary-foreground);
+  }
+  .pg-chonk-neutral {
+    --chonk-surface: var(--card);
+    --chonk-base: var(--border);
+    color: var(--foreground);
+  }
+  .pg-chonk-destructive {
+    --chonk-surface: var(--destructive);
+    --chonk-base: oklch(from var(--destructive) calc(l - 0.10) c h);
+    color: var(--primary-foreground);
+  }
+  .pg-chonk-sm { height: 32px; padding-inline: 12px; border-radius: var(--ds-radius-chonk-sm); }
+  .pg-chonk-sm > span { font-size: 12px; }
+  .pg-chonk svg { width: 16px; height: 16px; }
+  .pg-chonk:disabled { pointer-events: none; opacity: .5; }
+
+  /* ---- Navigation icon slot ---------------------------------------------
+     A fixed 1.25rem slot (so no state can shift the label), the 1rem glyph
+     inside it, and a soft primary halo that fades in behind the current
+     item's glyph. */
+  .pg-nav-icon {
+    position: relative;
+    display: inline-grid;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    flex: 0 0 auto;
+    place-items: center;
+  }
+  .pg-nav-icon::before {
+    content: "";
+    position: absolute;
+    inset: -0.25rem;
+    border-radius: 50%;
+    /* A flat soft tint disc (no gradients): half the old glow's strength so
+       the hard edge stays calm. */
+    background: color-mix(in oklab, var(--primary) 11%, transparent);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity var(--ds-motion-overlay) var(--ease-standard),
+      transform var(--ds-motion-overlay) var(--ease-settle);
+    pointer-events: none;
+  }
+  .pg-nav-icon-glyph {
+    position: relative;
+    inline-size: 1rem;
+    block-size: 1rem;
+    flex: 0 0 auto;
+    color: var(--primary-ink);
+    transform-origin: center;
+  }
+  .pg-nav-icon[data-motion="announce"] .pg-nav-icon-glyph { transform-origin: 20% 80%; }
+  .pg-nav-icon[data-motion="wave"] { --_icon-motion: pg-icon-wave; }
+  .pg-nav-icon[data-motion="announce"] { --_icon-motion: pg-icon-announce; }
+  .pg-nav-icon[data-motion="shuffle"] { --_icon-motion: pg-icon-shuffle; }
+  .pg-nav-icon[data-motion="spin"] { --_icon-motion: pg-icon-spin; }
+  .pg-nav-icon[data-motion="open"] { --_icon-motion: pg-icon-open; }
+  .pg-nav-icon[data-motion="drop"] { --_icon-motion: pg-icon-drop; }
+  .pg-nav-icon[data-motion="rev"] { --_icon-motion: pg-icon-rev; }
+  .pg-nav-icon[data-motion="stamp"] { --_icon-motion: pg-icon-stamp; }
+  .pg-nav-icon[data-motion="bounce"] { --_icon-motion: pg-icon-bounce; }
+  .pg-nav-icon[data-motion="settle"] { --_icon-motion: pg-icon-settle; }
+  .pg-nav-icon[data-motion="pulse"] { --_icon-motion: pg-icon-pulse; }
+
+  /* Arrival: the halo settles in and the glyph plays its motion once. */
+  .pg-nav-icon[data-active]::before { opacity: 1; transform: scale(1); }
+  /* No fill mode on purpose: every motion starts and ends at identity, and a
+     filled (finished) animation keeps the glyph composited, which shifts the
+     tray's blended tones by a hair. */
+  .pg-nav-icon[data-active] .pg-nav-icon-glyph {
+    animation: var(--_icon-motion) var(--ds-motion-expressive) var(--ease-settle) 1;
+  }
+  /* Pending navigation / department loading: a soft loop until it lands
+     (the compass keeps turning instead). */
+  .pg-nav-icon[data-pending] .pg-nav-icon-glyph,
+  .pg-nav-icon[data-busy] .pg-nav-icon-glyph {
+    animation: pg-icon-breathe calc(var(--ds-motion-expressive) * 2) var(--ease-standard) infinite;
+  }
+  .pg-nav-icon[data-motion="spin"][data-pending] .pg-nav-icon-glyph,
+  .pg-nav-icon[data-motion="spin"][data-busy] .pg-nav-icon-glyph {
+    animation: pg-icon-spin calc(var(--ds-motion-expressive) * 2) linear infinite;
+  }
+  /* Hover: replay the motion (hover-capable pointers only, mockup law). */
+  @media (hover: hover) and (pointer: fine) {
+    .pg-nav-item:hover .pg-nav-icon:not([data-active]):not([data-pending]) .pg-nav-icon-glyph,
+    .pg-dept-card:hover .pg-nav-icon:not([data-pending]) .pg-nav-icon-glyph {
+      animation: var(--_icon-motion) var(--ds-motion-expressive) var(--ease-settle) 1;
+    }
+    .pg-nav-item:hover .pg-nav-icon::before { opacity: 0.6; transform: scale(0.9); }
+    .pg-nav-item:hover .pg-nav-icon[data-active]::before { opacity: 1; transform: scale(1); }
+  }
+
+  /* ---- Home: the department doors ----------------------------------------
+     Sits on the shared list-page frame. Cards are the sidebar's
+     department rows at card scale: icon slot with the shared motion, label,
+     one-line description, and an arrow that slides in on hover. */
+  .pg-home-page {
+    max-inline-size: 64rem;
+    margin-inline: auto;
+  }
+  .pg-home-notice {
+    margin-block-end: 1rem;
+    padding: 0.625rem 1rem;
+    border-radius: var(--radius-xl);
+    background: color-mix(in oklab, var(--muted) 88%, var(--card));
+    color: var(--foreground);
+    box-shadow: var(--ds-shadow-border);
+    font-size: 0.8125rem;
+  }
+  .pg-dept-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .pg-dept-link {
+    display: block;
+    border-radius: var(--radius-2xl);
+    outline: none;
+    text-decoration: none;
+    color: inherit;
+  }
+  .pg-dept-link:focus-visible {
+    outline: 0.125rem solid var(--ring);
+    outline-offset: 0.125rem;
+  }
+  .pg-dept-card {
+    position: relative;
+    display: flex;
+    min-block-size: 6.75rem;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.375rem;
+    box-shadow: var(--ds-shadow-medium);
+    transition: transform var(--ds-motion-fast) var(--ease-settle),
+      box-shadow var(--ds-motion-fast) var(--ease-standard),
+      color var(--ds-motion-overlay) var(--ease-standard);
+    will-change: transform;
+  }
+  .pg-dept-card-skeleton { min-block-size: 6.75rem; }
+  .pg-dept-card-icon {
+    display: grid;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: var(--radius-xl);
+    background: color-mix(in oklab, var(--primary) 9%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 14%, transparent);
+  }
+  .pg-dept-card-icon .pg-nav-icon { inline-size: 1.5rem; block-size: 1.5rem; }
+  .pg-dept-card-icon .pg-nav-icon-glyph { inline-size: 1.25rem; block-size: 1.25rem; }
+  .pg-dept-card-copy {
+    display: flex;
+    min-inline-size: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .pg-dept-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--foreground);
+    font-size: 0.9375rem;
+    font-weight: var(--ds-weight-heavy);
+    letter-spacing: -0.012em;
+  }
+  .pg-dept-card-soon {
+    padding: 0.0625rem 0.4375rem;
+    border-radius: var(--radius-2xl);
+    background: var(--muted);
+    color: var(--muted-foreground);
+    font-size: 0.625rem;
+    font-weight: var(--ds-weight-strong);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .pg-dept-card-desc {
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+  .pg-dept-card-go {
+    display: grid;
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: var(--radius-md);
+    color: var(--muted-foreground);
+    opacity: 0.55;
+    transform: translateX(-0.25rem);
+    transition: opacity var(--ds-motion-fast) var(--ease-standard),
+      transform var(--ds-motion-fast) var(--ease-settle),
+      color var(--ds-motion-fast) var(--ease-standard);
+  }
+  .pg-dept-card-pending { opacity: 0.6; }
+  .pg-dept-link:active .pg-dept-card { transform: translateY(0) scale(0.995); }
+  @media (hover: hover) and (pointer: fine) {
+    .pg-dept-link:hover .pg-dept-card {
+      transform: translateY(-0.125rem);
+      box-shadow: var(--ds-shadow-modal);
+    }
+    .pg-dept-link:hover .pg-dept-card-go {
+      opacity: 1;
+      color: var(--primary-ink);
+      transform: translateX(0);
+    }
+  }
+
+  /* Offline notice (components/pwa/connectivity-banner.tsx): a calm status strip
+     pinned to the top of the tray while the browser reports no connection. Token
+     surfaces only, no motion, so reduced-motion needs nothing extra. */
+  .pg-offline-banner {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 12px 0;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid color-mix(in oklab, var(--primary) 35%, transparent);
+    background: color-mix(in oklab, var(--primary) 10%, var(--card));
+    color: var(--foreground);
+    font-size: 13px;
+    font-weight: var(--ds-weight-strong);
+    box-shadow: var(--ds-shadow-small);
+  }
+
+  /* Older engines without relative colour syntax (oklch(from …)) still get a
+     plinth: approximate the -0.10 L step with an oklab mix toward black. */
+  @supports not (color: oklch(from red calc(l - 0.1) c h)) {
+    .pg-chonk-primary { --chonk-base: color-mix(in oklab, var(--primary) 82%, black); }
+    .pg-chonk-destructive { --chonk-base: color-mix(in oklab, var(--destructive) 82%, black); }
+  }
+}

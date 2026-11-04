@@ -1,0 +1,118 @@
+/* ============================================================================
+   styles/base.css - document-level base styles: body, the theme cross-fade
+   pacing, and the shared focus-visible recipe. Lives in @layer base so both
+   the component vocabulary and Tailwind utilities win over it.
+   ========================================================================== */
+
+@layer base {
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-active), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color var(--ds-motion-overlay) var(--ease-standard),
+      color var(--ds-motion-overlay) var(--ease-standard);
+  }
+
+  /* Theme switch: soft cross-fade via the View Transitions API. The provider
+     gates on support + prefers-reduced-motion; this only paces the snapshots. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--ds-motion-theme);
+    animation-timing-function: var(--ease-standard);
+  }
+
+  /* The ONE focus-visible recipe (VARIATION-4 hard reference :139, at the
+     accepted p3 offset). Sites that carry outline-none + focus-visible:ring-*
+     or a pg-* focus rule override it; everything else inherits it. */
+  :focus-visible {
+    outline: 0.125rem solid var(--ring);
+    outline-offset: 0.125rem;
+  }
+}
+
+/* Primary ink (captain decision 2026-09-18, tokens.css): `text-primary` paints
+   with --primary-ink, the readable step of the primary ramp. It equals
+   --primary in Classic and Light and is rebellion-400 in Dark, where the
+   rebellion-700 fill would read at 2:1 on the ground. Same layer as Tailwind's
+   utility, and :where() keeps the specificity identical, so state variants at
+   a call site keep winning exactly as before. The app uses only the bare and
+   hover forms; lib/theme-tokens.test.ts refuses any other variant so a new
+   one cannot silently paint with the fill color.
+   Destructive ink (2026-10-04, tokens.css): `text-destructive` paints with
+   --destructive-ink by the same recipe. It equals --destructive in Classic and
+   Light and is rebellion-400 in Dark, where the destructive fill color reads
+   at 3.5:1 as text on a card. The app uses the bare, hover, focus and
+   `[&_svg]` forms; the same test refuses any other. */
+@layer utilities {
+  :where(html) .text-primary { color: var(--primary-ink); }
+  :where(html) .text-destructive { color: var(--destructive-ink); }
+  :where(html) .focus\:text-destructive:focus { color: var(--destructive-ink); }
+  :where(html) .\[\&_svg\]\:text-destructive svg { color: var(--destructive-ink); }
+  @media (hover: hover) {
+    :where(html) .hover\:text-primary:hover { color: var(--primary-ink); }
+    :where(html) .hover\:text-destructive:hover { color: var(--destructive-ink); }
+  }
+}
+
+.pg-skip-link {
+  position: fixed;
+  inset-inline-start: 1rem;
+  top: 1rem;
+  transform: translateY(-200%);
+  padding: 0.75rem 1rem;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  z-index: var(--z-skip-link);
+}
+.pg-skip-link:focus { transform: translateY(0); }
+
+/* Toast text in the Classic and Light looks (the captain's readability rule,
+ * 2026-10-10). The toast library paints its four coloured kinds from its own
+ * light palette in both looks, and at 13 px each read under 4.5:1 on the kind's
+ * own wash: success 4.26, info 4.35, warning 3.08, error 4.35 (measured, the
+ * same in both). Each takes the smallest whole step toward its look's normal
+ * text colour that reads 4.5:1: Light 96%, 97%, 77%, 97%; Classic, whose text
+ * colour is lighter, 93%, 95%, 66%, 96%. Dark already reads 6.56 or better and
+ * is left alone. The library injects its stylesheet unlayered, so this floor is
+ * unlayered too and outranks it by the look's attribute, with no important
+ * flag.
+ */
+[data-theme="light"] [data-rich-colors="true"][data-sonner-toast][data-type="success"] {
+  color: color-mix(in oklab, var(--success-text) 96%, var(--foreground));
+}
+[data-theme="light"] [data-rich-colors="true"][data-sonner-toast][data-type="info"] {
+  color: color-mix(in oklab, var(--info-text) 97%, var(--foreground));
+}
+[data-theme="light"] [data-rich-colors="true"][data-sonner-toast][data-type="warning"] {
+  color: color-mix(in oklab, var(--warning-text) 77%, var(--foreground));
+}
+[data-theme="light"] [data-rich-colors="true"][data-sonner-toast][data-type="error"] {
+  color: color-mix(in oklab, var(--error-text) 97%, var(--foreground));
+}
+[data-theme="classic"] [data-rich-colors="true"][data-sonner-toast][data-type="success"] {
+  color: color-mix(in oklab, var(--success-text) 93%, var(--foreground));
+}
+[data-theme="classic"] [data-rich-colors="true"][data-sonner-toast][data-type="info"] {
+  color: color-mix(in oklab, var(--info-text) 95%, var(--foreground));
+}
+[data-theme="classic"] [data-rich-colors="true"][data-sonner-toast][data-type="warning"] {
+  color: color-mix(in oklab, var(--warning-text) 66%, var(--foreground));
+}
+[data-theme="classic"] [data-rich-colors="true"][data-sonner-toast][data-type="error"] {
+  color: color-mix(in oklab, var(--error-text) 96%, var(--foreground));
+}
+
+/* Incident 2026-09-06: sub-16px inputs trigger iOS focus zoom.
+ * This floor is unlayered so department utilities cannot reduce it.
+ * Desktop typography stays with the accepted vocabulary.
+ */
+@media (max-width: 48rem) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(1rem, 16px);
+  }
+}

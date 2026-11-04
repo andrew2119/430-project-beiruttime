@@ -1,0 +1,71 @@
+/* Creator Pipeline phone menu and drawer motion, with Beirut Time branding. */
+/* The phone top bar: the mark before the wordmark, the same gap as the sidebar's. */
+.psb-top-brand { gap: 0.5rem; color: var(--foreground); text-decoration: none; }
+
+/* ----------------------------------------------------- the phone tab bar ---- */
+@media (max-width: 850px) {
+  /* Menu: the same tab as its neighbours (styles/mobile.css draws the links). That
+     sheet is unlayered, so it only reaches the links; the button copies their recipe. */
+  .pg-mobile-dock .psb-dock-menu {
+    display: flex;
+    flex: 1 1 0;
+    min-inline-size: 0;
+    min-block-size: 48px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--muted-foreground);
+    font: inherit;
+    font-size: 11px;
+    font-weight: var(--ds-weight-strong);
+    line-height: 1.25;
+    text-align: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pg-mobile-dock .psb-dock-menu svg { inline-size: 20px; block-size: 20px; flex-shrink: 0; }
+  /* Current (the page is not one of the tabs, or the drawer is open): the links' own
+     current state. */
+  .pg-mobile-dock .psb-dock-menu[data-current] {
+    background: var(--accent);
+    color: var(--foreground);
+    box-shadow: inset 0 -2px var(--primary-ink);
+  }
+  /* Five tabs beside the chat button's room leave 55 px each on a 390 px phone, and
+     "Campaigns" (60 px) and "Draft Board" (63 px) would lose letters. Every label stays
+     whole on one line: a tab never shrinks below its label, and the short ones (Home,
+     Inbox, Menu) share the rest equally. mobile.css (unlayered) sets the links'
+     min-inline-size to 0, hence the mark on the override. Narrower phones end a label
+     in an ellipsis rather than push a tab under the chat button. */
+  .pg-mobile-dock > :is(a, .psb-dock-menu) { min-inline-size: max-content !important; }
+  .pg-mobile-dock :is(a, .psb-dock-menu) > span {
+    max-inline-size: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* The round chat button (the lab's dock: 52 px wide, 28 px from the screen's right
+     edge) sits over the bar's right end, so the tabs stop 8 px short of it:
+     28 + 52 + 8 - 8 px shell padding - 4 px bar padding - 4 px bar gap = 72 px. */
+  .psb-dock-room { flex: 0 0 72px; }
+  @media (max-width: 380px) {
+    .pg-mobile-dock > :is(a, .psb-dock-menu) { min-inline-size: 0 !important; }
+  }
+
+  /* The drawer slides in from the left edge and back out; the scrim fades. */
+  .psb-drawer[data-state="open"] { animation: psb-drawer-in var(--ds-motion-overlay) var(--ease-settle) both; }
+  .psb-drawer[data-state="closed"] { animation: psb-drawer-out var(--ds-motion-popover) var(--ease-in-hard) both; }
+  div:has(+ .psb-drawer)[data-state="open"] { animation: psb-scrim-in var(--ds-motion-overlay) var(--ease-standard) both; }
+  /* The scrim's fade-out must end before the panel leaves (it is found through the
+     panel beside it); the press token is the one shorter than the panel's exit. */
+  div:has(+ .psb-drawer)[data-state="closed"] { animation: psb-scrim-out var(--ds-motion-press) var(--ease-standard) both; }
+}
+@keyframes psb-drawer-in { from { opacity: 0.6; transform: translateX(calc(-100% - 12px)); } to { opacity: 1; transform: none; } }
+@keyframes psb-drawer-out { from { opacity: 1; transform: none; } to { opacity: 0.6; transform: translateX(calc(-100% - 12px)); } }
+@keyframes psb-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes psb-scrim-out { from { opacity: 1; } to { opacity: 0; } }

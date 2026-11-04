@@ -1,7 +1,11 @@
 "use client";
-import Link from "next/link";
+import { Building2, History, Mail, ShieldCheck, Users } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
-import { Button, Input } from "@beirut-time/ui";
+import { Button, ButtonLink, HeaderTabs, Input, Label, Skeleton, State } from "@beirut-time/ui";
+import { usePathname, useRouter } from "next/navigation";
+import { PageHeader, PageLayout } from "@/shell/page-header";
+import { FormSelect } from "./form-select";
+import { useSession } from "@/features/identity/session";
 import { useLocale } from "@/shell/locale-context";
 import { ApiError } from "@/lib/api/client";
 import en from "./en.json";
@@ -32,24 +36,22 @@ export function Workspace({
 }) {
   const t = useCopy(),
     locale = useLocale();
+  const pathname = usePathname().replace(/^\/(en|ar)(?=\/|$)/, "");
+  const router = useRouter();
+  const session = useSession();
+  const entries = [
+    { id: "/business", label: t.directory, icon: Building2, visible: true },
+    { id: "/business/contacts", label: t.contacts, icon: Mail, visible: !!session },
+    { id: "/business/review-history", label: t.myReviewHistory, icon: History, visible: !!session },
+    { id: "/business/membership", label: t.membership, icon: Users, visible: !!session },
+    { id: "/operations/verification", label: t.operations, icon: ShieldCheck, visible: session?.principal.roles.includes("operator") },
+  ].filter(item => item.visible).map(item => ({ ...item, href: `/${locale}${item.id}` }));
   return (
-    <div className="business-workspace">
-      <header className="business-heading">
-        <p className="business-eyebrow">{t.eyebrow}</p>
-        <h1>{title}</h1>
-        <p>{intro}</p>
-      </header>
-      <nav className="business-tabs" aria-label={t.private}>
-        <Link href={`/${locale}/business`}>{t.directory}</Link>
-        <Link href={`/${locale}/business/contacts`}>{t.contacts}</Link>
-        <Link href={`/${locale}/business/review-history`}>
-          {t.myReviewHistory}
-        </Link>
-        <Link href={`/${locale}/business/membership`}>{t.membership}</Link>
-        <Link href={`/${locale}/operations/verification`}>{t.operations}</Link>
-      </nav>
-      {children}
-    </div>
+    <PageLayout className="business-workspace">
+      <PageHeader title={title} count={intro} lead={<p className="business-eyebrow">{t.eyebrow}</p>}
+        nav={<HeaderTabs nav label={t.private} items={entries} value={pathname} onChange={id => router.push(`/${locale}${id}`)} />} />
+      <div className="business-content">{children}</div>
+    </PageLayout>
   );
 }
 export function Field({
@@ -73,7 +75,7 @@ export function Field({
 }) {
   const id = useId();
   return (
-    <label className="business-field" htmlFor={id}>
+    <Label className="business-field" htmlFor={id}>
       <span>{label}</span>
       <Input
         id={id}
@@ -86,7 +88,7 @@ export function Field({
         inputMode={inputMode}
         autoComplete={type === "password" ? "off" : undefined}
       />
-    </label>
+    </Label>
   );
 }
 export function Select({
@@ -102,16 +104,16 @@ export function Select({
 }) {
   const id = useId();
   return (
-    <label className="business-field" htmlFor={id}>
+    <Label className="business-field" htmlFor={id}>
       <span>{label}</span>
-      <select id={id} name={name} defaultValue={defaultValue}>
+      <FormSelect id={id} name={name} defaultValue={defaultValue}>
         {options.map((item) => (
           <option key={item.value} value={item.value}>
             {item.label}
           </option>
         ))}
-      </select>
-    </label>
+      </FormSelect>
+    </Label>
   );
 }
 export function Feedback({
@@ -152,11 +154,12 @@ export function Feedback({
                             : t.unavailable;
     return (
       <div className="business-feedback" role="alert">
-        <p>{message}</p>
+        <State kind="error" title={t.retry} body={message}>
         {api?.status === 401 && api.code !== "invalid_credentials" && (
-          <Link href={`/${locale}/account`}>{t.signin}</Link>
+          <ButtonLink href={`/${locale}/account`}>{t.signin}</ButtonLink>
         )}
         {api?.requestId && <bdi dir="ltr">{api.requestId}</bdi>}
+        </State>
       </div>
     );
   }
@@ -165,6 +168,13 @@ export function Feedback({
       {t.saved}
     </p>
   ) : null;
+}
+export function BusinessLoading() {
+  const t = useCopy();
+  return <div role="status" aria-label={t.loading} aria-busy="true" className="business-loading"><span className="sr-only">{t.loading}</span>{[0, 1, 2].map(row => <Skeleton key={row} className="business-row-skeleton" />)}</div>;
+}
+export function BusinessEmpty({ text }: { text: string }) {
+  return <State title={text} body="" />;
 }
 export function useAction() {
   const [pending, setPending] = useState(false),
@@ -195,7 +205,7 @@ export function Submit({
 }) {
   const t = useCopy();
   return (
-    <Button type="submit" disabled={pending}>
+    <Button chonk type="submit" disabled={pending} aria-busy={pending}>
       {pending ? t.loading : label}
     </Button>
   );

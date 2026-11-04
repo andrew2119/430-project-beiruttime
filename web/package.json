@@ -8,7 +8,7 @@
     "start": "next start --hostname 0.0.0.0",
     "typecheck": "node scripts/generate-nav.mjs && tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run && node scripts/test-features.mjs"
   },
   "dependencies": {
     "@beirut-time/contracts-core": "workspace:*",
@@ -16,6 +16,7 @@
     "@beirut-time/ui": "workspace:*",
     "@tanstack/react-query": "5.105.3",
     "clsx": "2.1.1",
+    "lucide-react": "^1.68.0",
     "next": "16.4.5",
     "react": "19.3.1",
     "react-dom": "19.3.1",

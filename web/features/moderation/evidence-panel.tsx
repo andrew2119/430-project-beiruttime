@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { BidiReference, Button, Card } from '@beirut-time/ui';
+import { FormSelect } from '../business/form-select';
+import { BidiReference, Button, Card, Input } from '@beirut-time/ui';
 import { ApiError } from '@/lib/api/client';
 import { mutation, operationsRequest } from './api';
 import { CommandState, LoadState, useCommand, useCopy, useResource } from './common';
@@ -51,6 +52,6 @@ export default function EvidencePanel({token,id,revision,query,onChange}:{token:
       return true;
     });
   }
-  return <Card><h2>{t('privateEvidence')}</h2><p className="ops-muted">{t('privateEvidenceHint')}</p><LoadState loading={resource.loading} error={resource.error} refresh={resource.refresh}/><ul className="ops-records">{resource.data?.items.map(item=><li key={item.id}><div><p>{t(item.kind)} · {item.size.toLocaleString(locale)} B</p><BidiReference>{item.id}</BidiReference></div><Button type="button" className="button-secondary" disabled={command.pending} onClick={()=>void download(item)}>{t('downloadPrivate')}</Button></li>)}</ul>
-    <form className="ops-form" onSubmit={upload} aria-busy={command.pending}><fieldset className="ops-form-fields" disabled={command.pending}><label>{t('evidenceKind')}<select value={kind} onChange={event=>setKind(event.target.value)}><option value="condition_photo">{t('condition_photo')}</option><option value="prior_owner_record">{t('prior_owner_record')}</option></select></label><label>{t('privateFile')}<input className="input" type="file" required accept="image/jpeg,image/png,image/webp,application/pdf" onChange={event=>setFile(event.target.files?.[0]??null)}/></label><Button type="submit" disabled={!file||command.pending}>{t('attachPrivate')}</Button></fieldset></form><CommandState {...command} successKey={lastAction==='download'?'downloadReady':'saved'}/></Card>;
+  return <Card><h2>{t('privateEvidence')}</h2><p className="ops-muted">{t('privateEvidenceHint')}</p><LoadState loading={resource.loading} error={resource.error} refresh={resource.refresh}/><ul className="ops-records">{resource.data?.items.map(item=><li key={item.id}><div><p>{t(item.kind)} · {item.size.toLocaleString(locale)} B</p><BidiReference>{item.id}</BidiReference></div><Button type="button" variant="outline" disabled={command.pending} onClick={()=>void download(item)}>{t('downloadPrivate')}</Button></li>)}</ul>
+    <form className="ops-form" onSubmit={upload} aria-busy={command.pending}><fieldset className="ops-form-fields" disabled={command.pending}><label>{t('evidenceKind')}<FormSelect value={kind} onChange={event=>setKind(event.target.value)}><option value="condition_photo">{t('condition_photo')}</option><option value="prior_owner_record">{t('prior_owner_record')}</option></FormSelect></label><label>{t('privateFile')}<Input type="file" required accept="image/jpeg,image/png,image/webp,application/pdf" onChange={event=>setFile(event.target.files?.[0]??null)}/></label><Button chonk type="submit" disabled={!file||command.pending}>{t('attachPrivate')}</Button></fieldset></form><CommandState {...command} successKey={lastAction==='download'?'downloadReady':'saved'}/></Card>;
 }

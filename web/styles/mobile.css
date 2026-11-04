@@ -1,0 +1,523 @@
+/* Phone composition follows the pinned Variation 4 reference at <=850px.
+ * Desktop selectors do not change. The drawer uses the shared Radix engine.
+ */
+.pg-boot-topbar, .pg-boot-dock { display: none; }
+.pg-dock-chat-place { display: none; }
+
+@media (max-width: 850px) {
+  .pg-list-page { padding: var(--ds-phone-gutter); }
+  .pg-bulk-creator-row { flex-wrap: wrap; }
+  .pg-bulk-creator-row > .pg-bulk-creator-handle { flex: 1; max-inline-size: none; }
+  .pg-bulk-creator-niche { order: 2; flex-basis: 100%; justify-content: flex-start; }
+  .pg-approval-summary { grid-template-columns: minmax(0, 1fr); }
+  :is(main, [role="dialog"]) label:has(input:is([type="checkbox"], [type="radio"])) { min-block-size: 44px; min-inline-size: 44px; }
+  :is(main, [role="dialog"]) label input:is([type="checkbox"], [type="radio"]) {
+    min-inline-size: 1rem;
+    min-block-size: 1rem;
+    inline-size: 1rem;
+    block-size: 1rem;
+    flex-shrink: 0;
+  }
+  .pg-list-page > .pg-list-page { padding: 0; }
+  .pg-list-header { padding: 0.875rem; }
+  .ar-number-stepper > div { min-inline-size: 135px; }
+  .ar-add-deal-sheet { scroll-padding-block: 100px 96px; }
+  .ar-board-actions { flex-wrap: wrap; inline-size: 100%; }
+  .pg-network-row, .pg-micro-creator-row { flex-wrap: wrap; gap: 10px 12px; padding: 12px; }
+  .pg-network-identity, .pg-micro-creator-identity { flex: 1 1 0%; inline-size: auto; min-inline-size: 0; }
+  .pg-network-stats, .pg-micro-creator-stats { flex: 1 1 100%; min-inline-size: 0; flex-wrap: wrap; }
+  .pg-network-email, .pg-micro-creator-source { flex: 1 1 100%; min-inline-size: 0; }
+  .pg-network-email .truncate, .pg-micro-creator-source .truncate { white-space: normal; overflow-wrap: anywhere; }
+  .ar-scout-row { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px 12px; padding: 12px; }
+  .ar-scout-identity { min-inline-size: 0; }
+  .ar-scout-stats, .ar-scout-social, .ar-scout-actions { grid-column: 1 / -1; }
+  .ar-scout-stats { justify-content: space-between; }
+  .ar-scout-actions { margin-inline-start: 0; justify-content: flex-end; flex-wrap: wrap; }
+  .ar-scout-header { flex-wrap: wrap; }
+  .ar-scout-header > div { flex: 1 1 100%; min-inline-size: 0; }
+  .ar-scout-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); inline-size: 100%; }
+  .ar-scout-dates > span:first-child { grid-column: 1 / -1; }
+  .ar-scout-dates > span:nth-child(3) { display: none; }
+  .ar-scout-dates input { inline-size: 100%; max-inline-size: 100%; }
+  .pg-draft-row-header {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+    gap: 8px;
+  }
+  .pg-draft-row-header > button[aria-pressed] { grid-column: 1; grid-row: 1; align-self: start; }
+  .pg-draft-identity { grid-column: 2 / -1; grid-row: 1; }
+  .pg-draft-identity .truncate { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+  .pg-draft-row-header > .ui-select { grid-column: 1 / 3; grid-row: 2; inline-size: 100%; }
+  .pg-draft-row-header > button[aria-label^="Flag"] { grid-column: 3; grid-row: 2; }
+  .pg-draft-row-header > button[aria-label^="Remove"] { grid-column: 4; grid-row: 2; }
+  .pg-admin-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 26px; }
+  .pg-admin-row > .pg-admin-avatar { grid-column: 1; grid-row: 1; }
+  .pg-admin-row > .pg-row-info { grid-column: 2; grid-row: 1; }
+  .pg-admin-row > .pg-admin-row-chevron { grid-column: 3; grid-row: 1; }
+  .pg-admin-row > .pg-admin-row-side { grid-column: 2 / -1; justify-content: flex-start; margin-inline-start: 0; }
+  .pg-admin-row .pg-row-meta { flex-wrap: wrap; overflow: visible; }
+  .pg-admin-row .pg-row-meta > span:first-child { white-space: normal; overflow-wrap: anywhere; }
+  .fin-row-item { display: flex; flex-direction: column; gap: 4px; }
+  .fin-row-actions, .fin-row-item[data-active="true"] .fin-row-actions {
+    position: static;
+    align-self: flex-end;
+    padding-inline-start: 0;
+    background: transparent;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+  .fin-row-primary { white-space: normal; overflow-wrap: anywhere; }
+  /* Hit areas grow with the phone layout, including portalled forms. */
+  :is(main, [role="dialog"]) :is(button, a, input, select, textarea, [role="button"]) {
+    min-inline-size: 44px;
+    min-block-size: 44px;
+  }
+  .draft-checkbox-label { min-block-size: 48px; }
+  :is([role="dialog"], .pg-mk-discovery) .draft-checkbox-label input[type="checkbox"] {
+    min-inline-size: 1rem;
+    min-block-size: 1rem;
+  }
+  .pg-admin-notice a, .pg-admin-link, .pg-auth-card a, main a.underline {
+    display: inline-flex;
+    align-items: center;
+  }
+  /* The menu-backed select trigger keeps the 44 px target on its own; in a
+     header row only 36 px of it is drawn (phone scale below, captain Q7). */
+  :is(main, [role="dialog"]) .ui-select { min-block-size: 44px; }
+  /* A search field's text is 16 px on a phone: iOS zooms the page into any
+     field with smaller text (captain Q7). Unlayered, so a size utility at the
+     call site cannot bring the zoom back. */
+  :is(main, [role="dialog"]) .pg-search-field { font-size: 1rem; }
+  .pg-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+  }
+  /* SSR can paint before the media subscription hydrates. */
+  .pg-shell > .pg-rail { display: none; }
+  /* ADR-0035: the boot frame mirrors the phone shell, which keeps the rail in the drawer. */
+  .pg-boot-frame {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+  }
+  .pg-boot-frame > .pg-boot-rail { display: none; }
+  .pg-boot-topbar {
+    grid-row: 1;
+    display: block;
+    min-block-size: 48px;
+    background: var(--card);
+    border-radius: var(--radius-xl);
+    padding-inline: 4px 12px;
+    box-shadow: var(--ds-shadow-small);
+  }
+  .pg-boot-tray { grid-row: 2; min-inline-size: 0; }
+  .pg-boot-dock {
+    grid-row: 3;
+    display: block;
+    box-sizing: content-box;
+    block-size: 48px;
+    padding: 4px 4px max(8px, env(safe-area-inset-bottom));
+    background: var(--card);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--ds-shadow-small);
+  }
+  html[data-boot-home="true"] .pg-boot-dock { display: none; }
+  .pg-shell > .pg-tray-frame { grid-row: 2; min-inline-size: 0; }
+  .pg-mobile-topbar {
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-block-size: 48px;
+    background: var(--card);
+    border-radius: var(--radius-xl);
+    padding-inline: 4px 12px;
+    box-shadow: var(--ds-shadow-small);
+  }
+  .pg-mobile-menu, .pg-mobile-close {
+    display: grid;
+    place-items: center;
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    border-radius: var(--radius-md);
+    color: var(--foreground);
+    background: var(--card);
+    cursor: pointer;
+  }
+  .pg-mobile-menu svg, .pg-mobile-close svg { inline-size: 20px; block-size: 20px; }
+  .pg-mobile-brand { display: flex; align-items: center; min-block-size: 44px; font-weight: var(--ds-weight-heavy); }
+  .pg-mobile-drawer {
+    inset: max(10px, env(safe-area-inset-top)) auto max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    inline-size: min(246px, calc(100vw - 20px));
+    border-radius: var(--ds-radius-rail);
+    background: var(--card);
+    box-shadow: var(--ds-shadow-modal);
+  }
+  .pg-mobile-drawer .pg-rail { inline-size: 100%; block-size: 100%; padding-block-start: 52px; }
+  .pg-mobile-close { position: absolute; inset-block-start: 4px; inset-inline-end: 4px; z-index: 2; }
+  .pg-mobile-drawer :is(button, a) { min-block-size: 44px; }
+  .pg-mobile-dock {
+    grid-row: 3;
+    display: flex;
+    gap: 4px;
+    background: var(--card);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: 4px 4px max(8px, env(safe-area-inset-bottom));
+    box-shadow: var(--ds-shadow-small);
+  }
+  .pg-mobile-dock :is(a, button) {
+    display: flex;
+    flex: 1 1 0;
+    min-inline-size: 0;
+    min-block-size: 48px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 2px;
+    border-radius: var(--radius-md);
+    /* Five tabs share a 390px bar: the narrow inline padding and the single
+       line keep "Draft Board" on one row, so every tab stays 48px tall and the
+       bar keeps the height its reserved slot holds below. */
+    padding: 4px 2px;
+    color: var(--muted-foreground);
+    font-size: 11px;
+    font-weight: var(--ds-weight-strong);
+    text-align: center;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+  .pg-mobile-dock button { cursor: pointer; }
+  /* On the narrowest phones five 11px labels would touch ("Campaigns" beside
+     "Draft Board"); one step down keeps a gap between them. */
+  @media (max-width: 340px) {
+    .pg-mobile-dock :is(a, button) { font-size: 10px; }
+  }
+  /* While the bar keeps its room for the round buttons (.psb-dock-room, drawn once a
+     round button is in the dock), 11px labels leave Home and Menu under the 44px
+     target; the captain's pick PT-1 a (2026-10-09) steps them down to 10px there and
+     the bar keeps the room. */
+  .pg-mobile-dock:has(> .psb-dock-room) > :is(a, button) { font-size: 10px; }
+  .pg-mobile-dock svg { inline-size: 20px; block-size: 20px; flex-shrink: 0; }
+  /* Reserved dock row while the phone module loads: identical box metrics to a
+     populated dock (48px links inside 4px/safe-area padding), so the content tray
+     never shrinks after first paint. */
+  .pg-dock-slot {
+    grid-row: 3;
+    box-sizing: content-box;
+    block-size: 48px;
+    padding: 4px 4px max(8px, env(safe-area-inset-bottom));
+    background: var(--card);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--ds-shadow-small);
+  }
+  .pg-mobile-dock a[aria-current="page"] { background: var(--accent); color: var(--foreground); box-shadow: inset 0 -2px var(--primary-ink); }
+  /* The tab bar's Menu tab when it is the current place (the lab's
+     styles/proto-sidebar.css .psb-dock-menu[data-current]): that layered rule's
+     ink loses to the unlayered label colour above, which leaves the label at
+     4.07:1 on its accent fill; this states the lab's own ink where it wins. */
+  .pg-mobile-dock .psb-dock-menu[data-current] { color: var(--foreground); }
+  html[data-keyboard="open"] .pg-mobile-dock { display: none; }
+  /* The bell stacks above the round chat button's place, clear of the tab bar,
+     as the approved lab draws it (lab 48721958). Until cp-staff-chat lists that
+     button in the dock, the bell's piece marks the place as held
+     (components/notifications/inbox/dock-bell.tsx), and the dock rises by the
+     button and the dock's gap and centres the bell on the button's column, so
+     nothing of the dock lies over a tab and the bell stays put when the button
+     lands. */
+  .proto-dock:has(> .pg-dock-chat-place) {
+    inset-block-end: calc(1.5rem + 3.25rem + 0.625rem);
+    inset-inline-end: calc(1.75rem + (3.25rem - 2.75rem) / 2);
+  }
+  /* The dock's room on a phone (styles/shell.css .pg-tray): the dock's top stands
+     11.5rem above the screen's foot (1.5, the chat 3.25 or its held place, 0.625,
+     the companion 2.75, 0.625, the bell 2.75) and the tray ends 60px plus the safe
+     area (at least 8px) above it (the tab bar's 48 + 4, the shell's 8 gap). */
+  .pg-tray { --dock-room: calc(11.5rem - 60px - max(8px, env(safe-area-inset-bottom)) + var(--ds-space-2)); }
+  /* The drafts pagers (the Draft Board's and a campaign's Drafts tab) centre their
+     buttons clear of the dock's column (3.25rem wide), so the page ends at the pager
+     with no room lifted under it (captain, click-test 2026-10-20, finding 19). */
+  nav.pg-card.pg-empty-card { padding-inline-end: calc(3.25rem + var(--ds-space-4)); }
+  /* A phone held upright draws its toasts across the screen (the toast library's own
+     phone lane, up to 600px wide), resting 0.625rem above the dock (styles/proto.css),
+     so a control stopped just above the dock lay under a resting toast (the Draft
+     Board's pager under a note-save failure, update 23). The shell copies the height
+     of the resting toasts here (the front toast and any queued behind it, measured);
+     without one, the page keeps only dock room, and a page already at its end when a
+     toast arrives is kept at its end. The stop may take up to 40% of the
+     tray, which still keeps a control brought into view below the pinned page header
+     on a short screen. */
+  @media (max-width: 600px) {
+    .pg-tray {
+      --toast-room: 0px;
+      --dock-room: calc(11.5rem - 60px - max(8px, env(safe-area-inset-bottom)) + var(--ds-space-2) + var(--toast-room) + min(var(--toast-room), 0.625rem));
+      scroll-padding-block-end: min(var(--dock-room), 40%);
+    }
+  }
+  .pg-home-page .pg-dept-grid { grid-template-columns: minmax(0, 1fr); }
+
+  /* Phone scale, layout hooks (unlayered on purpose: they must beat the flex
+     utilities at the call site). A filter-chip group is ONE row that scrolls
+     sideways, instead of wrapping into a stack of full-height rows that pushed
+     the list below the fold. The row stops on a clean hard edge with no
+     see-through fade (captain 2026-09-30); the half-shown last pill says there
+     is more. */
+  :is(.pg-tray, [role="dialog"]) .pg-pill-strip {
+    flex-wrap: nowrap;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+  :is(.pg-tray, [role="dialog"]) .pg-pill-strip::-webkit-scrollbar { display: none; }
+  :is(.pg-tray, [role="dialog"]) .pg-pill-strip > * { flex-shrink: 0; }
+  /* Selection squares: the button is the 44 px target and its inner box
+     stays 18 px. The focus ring hugs the square instead of the target. */
+  .pg-select-toggle:focus-visible { outline-offset: calc((1.125rem - var(--ds-hit-target)) / 2 + 0.125rem); }
+  :is(.pg-tray, [role="dialog"]) .pg-compact-square {
+    --_compact-slop: calc((var(--ds-hit-target) - var(--ds-phone-chip)) / 2);
+    border: var(--_compact-slop) solid transparent;
+    border-radius: calc(var(--radius-lg) + var(--_compact-slop));
+    background-clip: padding-box;
+  }
+  :is(.pg-tray, [role="dialog"]) .pg-compact-square-ring {
+    box-shadow: inset 0 0 0 1px var(--ds-hairline);
+  }
+  :is(.pg-tray, [role="dialog"]) .pg-compact-square-border {
+    box-shadow: inset 0 0 0 1px var(--_compact-edge, var(--border));
+  }
+  :is(.pg-tray, [role="dialog"]) .pg-compact-square-dashed:not(:focus-visible) {
+    outline: 1px dashed var(--_compact-edge, var(--border));
+    outline-offset: calc(-1 * var(--_compact-slop) - 1px);
+  }
+  :is(.pg-tray, [role="dialog"]) .pg-compact-square:focus-visible {
+    outline-offset: -4px;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    :is(.pg-tray, [role="dialog"]) :is(.pg-compact-square-border, .pg-compact-square-dashed):hover {
+      --_compact-edge: var(--primary-ink);
+    }
+  }
+}
+
+/* ============================================================================
+   Phone scale (captain staging review round 1, 2026-09-24). The phone layout
+   fitted, but kept the desktop's visual scale: every control inflated to its
+   44 px target, header actions stretched to half the screen, chip groups
+   wrapped into stacks, and frames kept desktop padding, corners and glow.
+   Here every compact action KEEPS its 44 by 44 target (the rule above and
+   tests/a11y/phone-targets.spec.ts), but only the part that is drawn follows
+   the phone scale in tokens.css: a pressable is drawn --ds-phone-control
+   (36 px) and a chip --ds-phone-chip (32 px) tall, centred in the target.
+   Header-row fields follow the same rule (captain Q7, 2026-09-30, replacing
+   the painted 44 px field of 2026-09-24): a list header's search field and
+   sort dropdown are drawn 36 px inside the 44 px target, and the search text
+   is 16 px so an iPhone never zooms into it. Fields inside a form keep their
+   painted boundary. The target's remainder is a transparent border (background-clip
+   keeps the fill inside it) or, for the chonk, a pseudo-element inset, so the
+   hit area is still the element's own box. Rings become inset hairlines,
+   because an outer ring would trace the invisible target; focus rings keep their
+   component recipes and move inward to hug the drawn shape. Layered in
+   `components` so a utility passed at the call site still wins.
+   Guard: tests/a11y/phone-scale.spec.ts.
+   ========================================================================== */
+@layer components {
+  @media (max-width: 850px) {
+    /* ---- Frames: tighter rhythm, calmer corners, one title step down ---- */
+    .pg-list-header {
+      margin-block-end: var(--ds-phone-gutter);
+      border-radius: var(--radius-xl);
+    }
+    .pg-header-surface { gap: 0.625rem; margin-block-end: 0.75rem; }
+    .pg-page-title { font-size: 1.25rem; }
+    .pg-filter-bar,
+    .ar-toolbar,
+    .fin-toolbar { gap: 0.5rem; margin-block-end: 0.75rem; }
+    .pg-list-header > .pg-search-wrap { margin-block-start: 0.625rem; }
+    .pg-mk-row,
+    .pg-dept-link,
+    .pg-dept-card { border-radius: var(--radius-xl); }
+    .pg-mk-row { gap: 0.75rem; padding: 0.75rem 0.875rem; }
+    .pg-creator-row { gap: 0.75rem; padding-inline: 0.875rem; }
+    .pg-dept-grid { gap: 0.625rem; }
+    /* One floor for the loaded card and its skeleton: a two-line description
+       fills it exactly, so the route skeleton never shifts the grid. */
+    .pg-dept-card,
+    .pg-dept-card-skeleton { min-block-size: 5.75rem; }
+    .pg-dept-card { gap: 0.875rem; padding: 0.875rem 1rem; }
+    .pg-dept-card-icon {
+      inline-size: 2.5rem;
+      block-size: 2.5rem;
+      border-radius: var(--radius-lg);
+    }
+    :where(.ui-dialog) { padding: 1.25rem; }
+
+    /* ---- Chonk: plinth and face drawn at the control height ------------- */
+    :is(.pg-tray, [role="dialog"]) .pg-chonk { padding-inline: 0.875rem; }
+    :is(.pg-tray, [role="dialog"]) .pg-chonk-sm { padding-inline: 0.75rem; }
+    :is(.pg-tray, [role="dialog"]) .pg-chonk > span { font-size: 0.8125rem; }
+    :is(.pg-tray, [role="dialog"]) .pg-chonk::after { inset-block: max(0px, 50% - var(--ds-phone-control) / 2); }
+    :is(.pg-tray, [role="dialog"]) .pg-chonk::before {
+      top: calc(max(0px, 50% - var(--ds-phone-control) / 2) + 2px);
+      height: calc(100% - 2 * max(0px, 50% - var(--ds-phone-control) / 2) - 2px);
+    }
+
+    /* ---- Buttons and raised tray buttons: drawn 36 px in a 44 px target -- */
+    :is(.pg-tray, [role="dialog"]) :is(
+      .ui-btn-sm, .ui-btn-md,
+      .pg-sort-button,
+      .pg-admin-btn, .pg-face-secondary, .pg-modal-utility-primary,
+      .pg-mk-verdict-btn, .pg-detail-back
+    ) {
+      --_slop: calc((var(--ds-hit-target) - var(--ds-phone-control)) / 2);
+      border-block: var(--_slop) solid transparent;
+      background-clip: padding-box;
+    }
+    :is(.pg-tray, [role="dialog"]) :is(.ui-btn-sm, .ui-btn-md) {
+      border-radius: var(--radius-md) / calc(var(--radius-md) + var(--_slop));
+    }
+    :is(.pg-tray, [role="dialog"]) :is(
+      .pg-sort-button,
+      .pg-admin-btn, .pg-face-secondary, .pg-mk-verdict-btn, .pg-detail-back
+    ) {
+      border-radius: var(--radius-lg) / calc(var(--radius-lg) + var(--_slop));
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-modal-utility-primary {
+      border-radius: var(--radius-xl) / calc(var(--radius-xl) + var(--_slop));
+    }
+    :is(.pg-tray, [role="dialog"]) .ui-btn-icon {
+      --_slop: calc((var(--ds-hit-target) - var(--ds-phone-control)) / 2);
+      border: var(--_slop) solid transparent;
+      border-radius: calc(var(--radius-md) + var(--_slop));
+      background-clip: padding-box;
+    }
+    /* The primitive's focus ring is a box-shadow, so its resting ring gives
+       way only while the button is not keyboard-focused. */
+    :is(.pg-tray, [role="dialog"]) :is(.ui-btn-sm, .ui-btn-md, .ui-btn-icon):is(.ui-btn-default, .ui-btn-destructive):focus-visible {
+      box-shadow: inset 0 0 0 2px var(--primary-foreground);
+    }
+    :is(.pg-tray, [role="dialog"]) :is(.ui-btn-sm, .ui-btn-md, .ui-btn-icon):is(.ui-btn-outline, .ui-btn-ghost):focus-visible {
+      box-shadow: inset 0 0 0 2px var(--ring);
+    }
+    :is(.pg-tray, [role="dialog"]) :is(
+      .ui-btn-outline:not(:focus-visible),
+      .pg-sort-button,
+      .pg-admin-btn:not(.pg-admin-btn-quiet), .pg-face-secondary,
+      .pg-detail-back:not(:focus-visible)
+    ) {
+      box-shadow: inset 0 0 0 1px var(--ds-hairline);
+    }
+    :is(.pg-tray, [role="dialog"]) :is(.ui-btn-default, .ui-btn-destructive, .pg-mk-verdict-btn):not(:focus-visible),
+    :is(.pg-tray, [role="dialog"]) .pg-modal-utility-primary {
+      box-shadow: none;
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-post-tool-primary {
+      border-inline-color: transparent;
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-post-tool-primary:not(:focus-visible) {
+      box-shadow: inset 0 0 0 1px var(--primary-ink);
+    }
+    :is(.pg-tray, [role="dialog"]) :is(.pg-sort-button, .pg-admin-btn, .pg-face-secondary, .pg-modal-utility-primary, .pg-detail-back):focus-visible {
+      outline-offset: -2px;
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-mk-verdict-btn:focus-visible {
+      outline-offset: -4px;
+    }
+
+    /* ---- Header-row search: drawn 36 px in a 44 px target ----------------
+       The field's ring becomes an inset hairline. Every search field shows
+       one focus outline that hugs the drawn shape, including the campaign
+       toolbars' fields, whose desktop cue is a coloured border (it would
+       paint the transparent target margin here). */
+    :is(.pg-tray, [role="dialog"]) .pg-search-field {
+      --_slop: calc((var(--ds-hit-target) - var(--ds-phone-control)) / 2);
+      block-size: var(--ds-hit-target);
+      border-block: var(--_slop) solid transparent;
+      border-radius: var(--radius-xl) / calc(var(--radius-xl) + var(--_slop));
+      background-clip: padding-box;
+      box-shadow: inset 0 0 0 1px var(--ds-hairline);
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-search-field:focus-visible {
+      border-color: transparent;
+      box-shadow: inset 0 0 0 1px var(--ds-hairline);
+      outline: 0.125rem solid var(--ring);
+      outline-offset: -2px;
+    }
+    /* A sort dropdown that carries a set filter keeps its tint; its coloured
+       border becomes an inset ring at the drawn edge. */
+    :is(.pg-tray, [role="dialog"]) .pg-creator-niche-active { border-inline-color: transparent; }
+    :is(.pg-tray, [role="dialog"]) .pg-creator-niche-active:not(:focus-visible) {
+      box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 40%, transparent);
+    }
+
+    /* ---- Filter chips: drawn 32 px in a 44 px target --------------------- */
+    :is(.pg-tray, [role="dialog"]) :is(.pg-filter-pill, .pg-pill-strip > button, .pg-status-pill-trigger, .pg-phone-chip) {
+      --_slop: calc((var(--ds-hit-target) - var(--ds-phone-chip)) / 2);
+      border-block: var(--_slop) solid transparent;
+      border-radius: var(--radius-2xl) / calc(var(--radius-2xl) + var(--_slop));
+      background-clip: padding-box;
+      padding-block: 0;
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-filter-pill { padding-inline: 0.875rem; }
+    :is(.pg-tray, [role="dialog"]) .pg-filter-pill:not([aria-pressed="true"], .pg-creator-filter-active) {
+      box-shadow: inset 0 0 0 1px var(--ds-hairline);
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-filter-pill:is([aria-pressed="true"], .pg-creator-filter-active) {
+      box-shadow: none;
+    }
+    :is(.pg-tray, [role="dialog"]) :is(.pg-filter-pill, .pg-pill-strip > button, .pg-status-pill-trigger, .pg-phone-chip):focus-visible {
+      outline-offset: -4px;
+    }
+    /* ---- Segmented: a 36 px track, a 28 px thumb, 44 px option targets ----
+       Each option overhangs the track by its slop (negative margin), so the
+       track is drawn at the control height while every option keeps its full
+       target; the measured thumb is inset by the same slop. */
+    :is(.pg-tray, [role="dialog"]) .pg-toggle {
+      --_seg-slop: calc((var(--ds-hit-target) - var(--ds-phone-control)) / 2 + 0.25rem);
+      padding: 0.25rem;
+      border-radius: var(--radius-xl);
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-toggle .pg-toggle-item {
+      margin-block: calc(-1 * var(--_seg-slop));
+      padding-block: 0;
+      border-block: var(--_seg-slop) solid transparent;
+      border-radius: var(--radius-lg) / calc(var(--radius-lg) + var(--_seg-slop));
+      background-clip: padding-box;
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-toggle .pg-toggle-item:focus-visible {
+      outline-offset: calc(0.125rem - var(--_seg-slop));
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-toggle:not(.pg-creator-view-bar) > .pg-seg-thumb {
+      border-radius: var(--radius-lg);
+      transform: translate(var(--pg-seg-x), calc(var(--pg-seg-y) + var(--_seg-slop)));
+      block-size: calc(var(--pg-seg-h) - 2 * var(--_seg-slop));
+    }
+    /* The campaign creator view bar measures a wrapper around each option
+       (the option plus its edit control), whose box is already the drawn
+       area once both overhang the track; its dashed New View option redraws
+       its boundary as an inset outline at the drawn edge. */
+    :is(.pg-tray, [role="dialog"]) .pg-creator-view-bar .pg-creator-view-edit {
+      margin-block: calc(-1 * var(--_seg-slop));
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-creator-view-bar .pg-creator-view-add {
+      border: var(--_seg-slop) solid transparent;
+      border-radius: calc(var(--radius-lg) + var(--_seg-slop));
+    }
+    :is(.pg-tray, [role="dialog"]) .pg-creator-view-bar .pg-creator-view-add:not(:focus-visible) {
+      outline: 0.0625rem dashed var(--border);
+      outline-offset: calc(-1 * var(--_seg-slop) - 0.0625rem);
+    }
+  }
+}
+
+/* A dialog on a phone keeps the page gutter on both sides instead of meeting
+   the screen edge; an explicit width utility at the call site still wins. */
+@layer components {
+  @media (max-width: 30rem) {
+    :where(.ui-dialog) { inline-size: calc(100% - 2 * var(--ds-phone-gutter)); }
+  }
+}

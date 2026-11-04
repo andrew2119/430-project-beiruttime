@@ -1,8 +1,9 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-import Link from 'next/link';
+import { Gavel } from 'lucide-react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
-import {Button,Card,Input,BidiReference} from '@beirut-time/ui';
+import {Button,ButtonLink,Card,Input,BidiReference} from '@beirut-time/ui';
+import {CardHead,LoadingRows,SectionState} from '@beirut-time/ui';
 import type {SlotContext} from '@/registry-types';
 import type {AuctionSnapshot} from '@contracts/contracts-auction/core';
 import {ApiError,request} from '@/lib/api/client';
@@ -75,8 +76,8 @@ function MaximumFormForBuyer({auctionId,revision,currency,locale,onRefresh,getQu
   }
   const frozen=state==='sending'||state==='uncertain'||state==='quoting';
   const privacyId=`proxy-privacy-${auctionId}`,feedbackId=`proxy-feedback-${auctionId}`,limitId=`proxy-limit-${auctionId}`;
-  return <Card className="proxy-panel"><h2>{t.privateMaximum}</h2><p id={privacyId}>{t.privacy}</p>
-    {session.state==='restoring'?<p role="status">{t.loading}</p>:session.state==='unavailable'?<><p role="status">{t.unavailable}</p><Button onClick={()=>void refreshSession().catch(()=>{})}>{t.retry}</Button></>:!allowed?<><p>{session.signedIn?t.accessDenied:t.signIn}</p>{!session.signedIn&&<Link className="button" href={signInHref(signInNext??'/buyer',locale)}>{t.account}</Link>}</>:!getQuote?<p role="status">{t.unavailable}</p>:<form onSubmit={event=>{event.preventDefault();void submit();}}>
+  return <Card className="proxy-panel"><CardHead title={t.privateMaximum} icon={Gavel}/><p id={privacyId}>{t.privacy}</p>
+    {session.state==='restoring'?<LoadingRows label={t.loading}/>:session.state==='unavailable'?<SectionState title={t.unavailable} kind="error"><Button chonk size="sm" onClick={()=>void refreshSession().catch(()=>{})}>{t.retry}</Button></SectionState>:!allowed?<SectionState title={session.signedIn?t.accessDenied:t.signIn} kind="locked">{!session.signedIn&&<ButtonLink href={signInHref(signInNext??'/buyer',locale)}>{t.account}</ButtonLink>}</SectionState>:!getQuote?<SectionState title={t.unavailable} kind="error"/>:<form onSubmit={event=>{event.preventDefault();void submit();}}>
       <label htmlFor={`maximum-${auctionId}`}>{t.maximumLabel} <BidiReference>{currency}</BidiReference></label>
       <p id={limitId} className="buyer-note">{t.quoteLimit}: <BidiReference>{formatMinor(MAX_QUOTE_MINOR,currency,locale)}</BidiReference></p>
       <Input id={`maximum-${auctionId}`} inputMode="decimal" autoComplete="off" type="text" value={value} maxLength={18}
@@ -86,8 +87,8 @@ function MaximumFormForBuyer({auctionId,revision,currency,locale,onRefresh,getQu
         <div><dt>{t.quoteTotal}</dt><dd><BidiReference>{formatMinor(quote.total_minor,quote.currency,locale)}</BidiReference></dd></div>
       </dl></div>}
       <p id={feedbackId} role="status" aria-live="polite">{state==='quoted'&&savedQuote&&!quote?t.stale:state==='idle'?'':state==='sending'?t.sending:t[state]}</p>
-      <div className="proxy-actions"><Button type="submit" disabled={state==='sending'||state==='quoting'}>{state==='uncertain'?t.retry:state==='sending'?t.sending:quote?t.setMaximum:t.previewMaximum}</Button>
-        {state==='stale'&&<Button type="button" onClick={onRefresh}>{t.refreshAuction}</Button>}</div>
+      <div className="proxy-actions"><Button chonk size="sm" type="submit" disabled={state==='sending'||state==='quoting'}>{state==='uncertain'?t.retry:state==='sending'?t.sending:quote?t.setMaximum:t.previewMaximum}</Button>
+        {state==='stale'&&<Button chonk size="sm" variant="outline" type="button" onClick={onRefresh}>{t.refreshAuction}</Button>}</div>
     </form>}
   </Card>;
 }
@@ -111,6 +112,5 @@ export default function ProxyBidSlot({locale,resourceId}:SlotContext) {
       onRefresh={()=>{void query.refetch();void cache.invalidateQueries({queryKey:['L06','buyer-workspace']});}}/>;
   }
   const message=query.isPending?t.loading:canonical&&auction.status==='scheduled'?t.auctionScheduled:canonical&&auction.status==='ended'?t.auctionEnded:t.unavailable;
-  return <Card className="proxy-panel"><h2>{t.privateMaximum}</h2><p>{t.privacy}</p><p role="status">{message}</p>
-    {query.isError&&<Button onClick={()=>void query.refetch()}>{t.retry}</Button>}</Card>;
+  return <Card className="proxy-panel"><CardHead title={t.privateMaximum} icon={Gavel}/><p>{t.privacy}</p>{query.isPending?<LoadingRows label={message}/>:<SectionState title={message} kind={query.isError?'error':'empty'} icon={Gavel}>{query.isError&&<Button chonk size="sm" onClick={()=>void query.refetch()}>{t.retry}</Button>}</SectionState>}</Card>;
 }

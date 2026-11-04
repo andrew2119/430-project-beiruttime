@@ -1,7 +1,10 @@
 'use client';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BidiReference, Button, ButtonLink, Card, Input, State } from '@beirut-time/ui';
+import { AnimatedList, BidiReference, Button, ButtonLink, Card, Input } from '@beirut-time/ui';
+import { ShoppingBag } from 'lucide-react';
+import { PageHeader, PageLayout } from '@/shell/page-header';
+import { CardHead, LoadingRows, Notice, SectionState } from '@beirut-time/ui';
 import { useLocale } from '@/shell/locale-context';
 import { useSession, signInHref } from '@/features/identity/session';
 import { ApiError } from '@/lib/api/client';
@@ -16,7 +19,7 @@ export default function Checkout(){
   const boundary=useQuery({queryKey:['l08-orders',session?.access_fingerprint??'restore'],queryFn:({signal})=>buyNowApi.orders(signal),retry:false});
   if(!session){
     const outage=boundary.error instanceof ApiError&&boundary.error.status>=500;
-    return <State title={t.title} body={boundary.isPending?t.loading:outage?t.unavailable:t.signInBody}>{outage?<Button onClick={()=>void boundary.refetch()}>{t.reload}</Button>:!boundary.isPending&&<ButtonLink href={signInHref('/checkout',locale)}>{t.signIn}</ButtonLink>}</State>;
+    return <PageLayout className="checkout-page"><PageHeader title={t.title} count={t.intro} tag={<span className="hx-tag">{t.eyebrow}</span>}/><Card>{boundary.isPending?<LoadingRows label={t.loading}/>:<SectionState title={outage?t.unavailable:t.signIn} body={outage?undefined:t.signInBody} kind={outage?'error':'locked'}>{outage?<Button chonk size="sm" onClick={()=>void boundary.refetch()}>{t.reload}</Button>:<ButtonLink href={signInHref('/checkout',locale)}>{t.signIn}</ButtonLink>}</SectionState>}</Card></PageLayout>;
   }
   return <CheckoutBody key={session.access_fingerprint} fingerprint={session.access_fingerprint} buyerId={session.principal.actor.subject_id}/>;
 }
@@ -67,19 +70,19 @@ function CheckoutBody({fingerprint,buyerId}:{fingerprint:string;buyerId:string})
     document.addEventListener('click',switchLocale,true);return()=>document.removeEventListener('click',switchLocale,true);
   },[busy,uncertain,watch,quote,result,reserve,generation]);
   const state=availability.data;const allowed=state?.status==='available'&&state.sale_mode==='fixed'&&state.watch_id===watch&&uuid.test(quote);
-  return <div className="checkout-page"><header><p className="eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p>{t.intro}</p></header>
-    <div className="checkout-grid"><Card><form className="checkout-form" method="post" autoComplete="off" onSubmit={check}>
+  return <PageLayout className="checkout-page"><PageHeader title={t.title} count={t.intro} tag={<span className="hx-tag">{t.eyebrow}</span>}/>
+    <div className="checkout-grid"><Card><CardHead title={t.reserve} icon={ShoppingBag}/><form className="checkout-form" method="post" autoComplete="off" onSubmit={check}>
       <label>{t.watch}<Input name="watch_id" dir="ltr" value={watch} onChange={e=>{setWatch(canonicalReference(e.target.value));setResult(null);}} maxLength={36} required disabled={busy||uncertain} autoComplete="off"/></label>
       <label>{t.quote}<Input name="quote_id" dir="ltr" value={quote} onChange={e=>{setQuote(canonicalReference(e.target.value));setResult(null);}} maxLength={36} disabled={busy||uncertain} autoComplete="off"/><small>{t.quoteHelp}</small></label>
-      <Button type="submit" className="button-secondary" disabled={busy||uncertain}>{t.load}</Button>
+      <Button chonk size="sm" type="submit" variant="outline" disabled={busy||uncertain}>{t.load}</Button>
     </form>
-    {availability.isFetching&&<p role="status">{t.loading}</p>}
+    {availability.isFetching&&<LoadingRows label={t.loading}/>}
     {state&&<div className="checkout-status"><strong>{t[state.status]}</strong>{state.is_demo&&<p>{t.sample}</p>}<p>{t.revision} <BidiReference>{state.revision}</BidiReference></p>{state.sale_mode!=='fixed'&&<p>{t.auction}</p>}</div>}
     {(error||availability.error)&&<div className="checkout-error" role="alert"><p>{errorText(error??availability.error,t)}</p>{error instanceof ApiError&&error.requestId&&<small>{t.support}: <BidiReference>{error.requestId}</BidiReference></small>}</div>}
     {uncertain&&<p role="status">{t.uncertain}</p>}
-    <div className="checkout-actions"><Button disabled={busy||(!allowed&&!uncertain)||result?.status==='succeeded'} onClick={()=>void reserve()}>{busy?t.loading:uncertain?t.retry:t.reserve}</Button><ButtonLink className="button-secondary" href={`/${locale}/prices${state?'?listing_id='+encodeURIComponent(state.listing_id):''}`}>{t.quoteLink}</ButtonLink></div>
+    <div className="checkout-actions"><Button chonk size="sm" disabled={busy||(!allowed&&!uncertain)||result?.status==='succeeded'} onClick={()=>void reserve()}>{busy?t.loading:uncertain?t.retry:t.reserve}</Button><ButtonLink size="sm" variant="outline" href={`/${locale}/prices${state?'?listing_id='+encodeURIComponent(state.listing_id):''}`}>{t.quoteLink}</ButtonLink></div>
     {result&&<div className="checkout-status" role="status"><h2>{result.status==='succeeded'?t.saved:t[result.code??'denied']??t.denied}</h2>{result.order&&<><p>{t[result.order.state]}</p><p>{t.deadline}: <time dateTime={result.order.deadline}>{new Date(result.order.deadline).toLocaleString(locale,{timeZone:'Asia/Beirut'})}</time></p><ButtonLink href={`/${locale}/checkout/${result.order.id}`}>{t.open}</ButtonLink></>}</div>}
-    </Card><aside><Card><h2>{t.yourOrders}</h2>{orders.isPending&&<p role="status">{t.loading}</p>}{orders.error&&<div role="alert"><p>{errorText(orders.error,t)}</p><Button className="button-secondary" onClick={()=>void orders.refetch()}>{t.reload}</Button></div>}
-    {orders.data?.items.length===0&&<p>{t.empty}</p>}<ul className="checkout-orders">{orders.data?.items.map(order=><li key={order.id}><a href={`/${locale}/checkout/${order.id}`}><BidiReference>{order.id}</BidiReference></a><p>{t[order.state]}</p>{order.is_demo&&<small>{t.sample}</small>}</li>)}</ul></Card></aside></div>
-    <div className="checkout-status">{t.paymentNotice}</div></div>;
+    </Card><aside><Card><CardHead title={t.yourOrders} icon={ShoppingBag}/>{orders.isPending&&<LoadingRows label={t.loading}/>} {orders.error&&<div role="alert"><p>{errorText(orders.error,t)}</p><Button chonk size="sm" variant="outline" onClick={()=>void orders.refetch()}>{t.reload}</Button></div>}
+    <AnimatedList className="checkout-orders" items={orders.data?.items??[]} getKey={order=>order.id} empty={orders.isSuccess?<SectionState title={t.empty} icon={ShoppingBag}/>:undefined}>{order=><article className="checkout-order-row"><ButtonLink className="checkout-order-link" size="sm" variant="ghost" href={`/${locale}/checkout/${order.id}`}><BidiReference>{order.id}</BidiReference></ButtonLink><p>{t[order.state]}</p>{order.is_demo&&<small>{t.sample}</small>}</article>}</AnimatedList></Card></aside></div>
+    <Notice>{t.paymentNotice}</Notice></PageLayout>;
 }

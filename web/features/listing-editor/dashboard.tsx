@@ -1,7 +1,11 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { ButtonLink, Skeleton, BidiReference } from "@beirut-time/ui";
+import { ButtonLink, BidiReference } from "@beirut-time/ui";
+import { Watch } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { PageHeader, PageLayout } from "@/shell/page-header";
+import { ListingSkeleton } from "./row-skeleton";
 import { useLocale } from "@/shell/locale-context";
 import { useAccessContext } from "@/shell/access-context";
 import { slotsFor } from "@/registry-loader";
@@ -28,7 +32,8 @@ function Workspace({
   organization: string | null;
 }) {
   const locale = useLocale(),
-    t = copy(locale);
+    t = copy(locale),
+    router = useRouter();
   const listingApi = useMemo(
     () => listingApiFor(fingerprint, organization),
     [fingerprint, organization],
@@ -47,19 +52,10 @@ function Workspace({
   });
   const data = workspace.isError ? undefined : workspace.data;
   return (
-    <div className="le-page">
-      <header className="le-page-header">
-        <div>
-          <p className="le-eyebrow">{t.eyebrow}</p>
-          <h1>{t.dashboard}</h1>
-          <p>{t.workspaceIntro}</p>
-        </div>
-        <ButtonLink
-          href={scopedHref(`/${locale}/seller/listings`, organization)}
-        >
-          {t.listings} ↗
-        </ButtonLink>
-      </header>
+    <PageLayout className="le-page">
+      <PageHeader title={t.dashboard} count={t.workspaceIntro} actions={[
+        { id: "listings", label: t.listings, icon: Watch, primary: true, onSelect: () => router.push(scopedHref(`/${locale}/seller/listings`, organization)) },
+      ]} />
       {own.error && (
         <Failure
           error={own.error}
@@ -69,7 +65,7 @@ function Workspace({
         />
       )}
       {own.isPending ? (
-        <Skeleton label={t.loading} />
+        <ListingSkeleton label={t.loading} />
       ) : (
         own.data && (
           <>
@@ -128,7 +124,7 @@ function Workspace({
             <p>{t.unavailable}</p>
           )}
           <ButtonLink
-            className="button-secondary"
+            variant="outline"
             href={scopedHref(`/${locale}/seller/auctions`, organization)}
           >
             {t.auction} ↗
@@ -161,7 +157,7 @@ function Workspace({
         </section>
       </div>
       <SellerSlots locale={locale} fingerprint={fingerprint} />
-    </div>
+    </PageLayout>
   );
 }
 // Registered contributions own their source DTOs; this workspace does not recreate

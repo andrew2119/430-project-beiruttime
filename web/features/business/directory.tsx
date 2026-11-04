@@ -1,9 +1,11 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { BidiReference, Button, Card } from "@beirut-time/ui";
+import { AnimatedList, BidiReference, Button, Card, Checkbox, StatusBadge } from "@beirut-time/ui";
 import type { OfficialBusiness } from "@contracts/contracts-identity/businesses";
 import { businessRequest, command } from "./transport";
 import {
+  BusinessEmpty,
+  BusinessLoading,
   Feedback,
   Field,
   Select,
@@ -51,25 +53,23 @@ export default function BusinessDirectory() {
   return (
     <Workspace title={t.title} intro={t.intro}>
       {query.isPending ? (
-        <p role="status">{t.loading}</p>
+        <BusinessLoading />
       ) : query.isError ? (
         <>
           <Feedback error={query.error} />
           <Button onClick={() => query.refetch()}>{t.retry}</Button>
         </>
       ) : !query.data.items.length ? (
-        <Card>
-          <p>{t.empty}</p>
-        </Card>
+        <BusinessEmpty text={t.empty} />
       ) : (
-        <div className="business-grid">
-          {query.data.items.map((business) => (
+        <AnimatedList items={query.data.items} getKey={business => business.id} grid className="business-grid">
+          {(business) => (
             <Card key={business.id} className="business-card">
               <p className="business-eyebrow">
                 {business.kind === "brand" ? t.brand : t.dealer}
               </p>
               <h2>{business.public_name}</h2>
-              {business.sample && <p className="business-badge">{t.sample}</p>}
+              {business.sample && <StatusBadge hue="neutral">{t.sample}</StatusBadge>}
               <p>{t.onboarded}</p>
               <ul>
                 {business.capabilities.map((capability) => (
@@ -80,8 +80,8 @@ export default function BusinessDirectory() {
                 {t.recordRef}: <BidiReference>{business.id}</BidiReference>
               </small>
             </Card>
-          ))}
-        </div>
+          )}
+        </AnimatedList>
       )}
       {managed.data?.items.map((business) => (
         <Card key={`${business.id}:${business.revision}`}>
@@ -175,15 +175,11 @@ export default function BusinessDirectory() {
               <legend>{t.scope}</legend>
               {(["sales", "customization", "servicing"] as const).map(
                 (capability) => (
-                  <label key={capability}>
-                    <input
-                      type="checkbox"
+                  <Checkbox key={capability}
                       name="capabilities"
                       value={capability}
                       defaultChecked={capability === "sales"}
-                    />
-                    {t[capability]}
-                  </label>
+                    >{t[capability]}</Checkbox>
                 ),
               )}
             </fieldset>
@@ -193,10 +189,7 @@ export default function BusinessDirectory() {
               minLength={5}
               maxLength={500}
             />
-            <label className="business-check">
-              <input type="checkbox" name="sample" />
-              {t.sampleInput}
-            </label>
+            <Checkbox name="sample" className="business-check">{t.sampleInput}</Checkbox>
             <Submit pending={action.pending} label={t.onboard} />
             <Feedback error={action.error} success={action.success} />
           </form>

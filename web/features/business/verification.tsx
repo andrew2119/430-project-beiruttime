@@ -8,6 +8,8 @@ import { useSession } from "@/features/identity/session";
 import { businessRequest, businessFile, command } from "./transport";
 import { DecisionHistory, type ReviewDetail } from "./history";
 import {
+  BusinessEmpty,
+  BusinessLoading,
   Feedback,
   Field,
   Select,
@@ -55,11 +57,11 @@ export default function VerificationDesk() {
         <h2>{t.queue}</h2>
         <p>{t.reviewHelp}</p>
         {query.isPending ? (
-          <p role="status">{t.loading}</p>
+          <BusinessLoading />
         ) : query.isError ? (
           <Feedback error={query.error} />
         ) : !query.data.items.length ? (
-          <p>{t.noReviews}</p>
+          <BusinessEmpty text={t.noReviews} />
         ) : (
           <ul className="business-queue">
             {query.data.items.map((review) => (
@@ -70,7 +72,7 @@ export default function VerificationDesk() {
                     {t[review.state]} · {t.revision} {review.revision}
                   </p>
                 </div>
-                <Button onClick={() => setSelected(review.id)}>{t.open}</Button>
+                <Button variant="outline" aria-pressed={selected === review.id} onClick={() => setSelected(review.id)}>{t.open}</Button>
               </li>
             ))}
           </ul>
@@ -78,11 +80,11 @@ export default function VerificationDesk() {
         <Button onClick={() => query.refetch()}>{t.reload}</Button>
       </Card>
       {selected && (
-        <Card>
+        <Card className="pg-detail-arrive">
           {detail.isError ? (
             <Feedback error={detail.error} />
           ) : detail.isPending ? (
-            <p role="status">{t.loading}</p>
+            <BusinessLoading />
           ) : (
             <>
               <h2>
@@ -90,6 +92,8 @@ export default function VerificationDesk() {
               </h2>
               <h3>{t.evidence}</h3>
               <Feedback error={evidence.error} />
+              {evidence.isPending && <BusinessLoading />}
+              {evidence.data?.items.length === 0 && <BusinessEmpty text={t.evidenceIncomplete} />}
               <ul className="business-queue">
                 {evidence.data?.items.map((file) => (
                   <li key={file.id}>

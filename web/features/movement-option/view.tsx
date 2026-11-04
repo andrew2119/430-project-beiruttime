@@ -1,7 +1,7 @@
 'use client';
 import { useId, useState } from 'react';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, BidiReference, Input } from '@beirut-time/ui';
+import { Button, BidiReference, Input, Card, Skeleton } from '@beirut-time/ui';
 import { request, ApiError } from '@/lib/api/client';
 import { useSession } from '@/features/identity/session';
 import { SignInAction } from '../service-directory/auth-action';
@@ -94,7 +94,7 @@ export default function MovementOption({ brandId, sample }: { brandId: string; s
     if (stored) void specific.refetch();
   };
 
-  return <section className="movement-panel" aria-labelledby={headingId}>
+  return <Card className="movement-panel" aria-labelledby={headingId}>
     <p className="eyebrow">{t.option}</p>
     <h2 id={headingId}>{t.title}</h2>
     <p>{t.intro}</p>
@@ -110,15 +110,15 @@ export default function MovementOption({ brandId, sample }: { brandId: string; s
       {snapshotOutdated && <p role="status">{t.stale}</p>}
       <p>{stored.status === 'manual_review' ? t.manual : t.saved}</p>
     </div>}
-    {options.isPending ? <p role="status">{t.loading}</p> : options.isError ? <div role="alert">
-      <p>{t.error}</p><Button className="button-secondary" onClick={reload}>{t.retry}</Button>
+    {options.isPending ? <Skeleton label={t.loading}/> : options.isError ? <div role="alert">
+      <p>{t.error}</p><Button variant="outline" onClick={reload}>{t.retry}</Button>
     </div> : !selected ? <p>{t.empty}</p> : <form onSubmit={event => { event.preventDefault(); mutation.mutate(); }}>
       <label>{t.option}
         <select value={selected.id} onChange={event => chooseOption(event.target.value)} disabled={restoring}>
           {movements.map(item => <option key={item.id} value={item.id}>{locale === 'ar' ? item.label_ar : item.label_en}</option>)}
         </select>
       </label>
-      {options.hasNextPage && <Button type="button" className="button-secondary" disabled={options.isFetchingNextPage} onClick={() => void options.fetchNextPage()}>{t.more}</Button>}
+      {options.hasNextPage && <Button type="button" variant="outline" disabled={options.isFetchingNextPage} onClick={() => void options.fetchNextPage()}>{t.more}</Button>}
       <div className="movement-facts">
         <span>{t.caliber}<br /><strong><BidiReference>{selected.caliber}</BidiReference></strong></span>
         <span>{t.impact}<br /><strong><BidiReference>{formatMinor(selected.quote_minor, selected.currency, locale, t.minorUnits)}</BidiReference></strong></span>
@@ -138,10 +138,10 @@ export default function MovementOption({ brandId, sample }: { brandId: string; s
       </label>
       {result && <p className="notice" role="status">{outdated ? t.stale : result.status === 'manual_review' ? t.manual : t.saved}</p>}
       {mutation.isError && <p role="alert">{mutation.error instanceof ApiError && mutation.error.code === 'stale_revision' ? t.stale : t.saveError}</p>}
-      {(saved.isError || specific.isError) && <div role="alert"><p>{t.saveError}</p><Button className="button-secondary" type="button" onClick={reload}>{t.retry}</Button></div>}
+      {(saved.isError || specific.isError) && <div role="alert"><p>{t.saveError}</p><Button variant="outline" type="button" onClick={reload}>{t.retry}</Button></div>}
       {signedIn
-        ? <Button aria-busy={mutation.isPending} disabled={mutation.isPending || restoring || saved.isError}>{mutation.isPending ? t.saving : t.save}</Button>
+        ? <Button chonk aria-busy={mutation.isPending} disabled={mutation.isPending || restoring || saved.isError}>{mutation.isPending ? t.saving : t.save}</Button>
         : <SignInAction next={`/services?purpose=customization&business=${brandId}`} label={t.signin}/>}
     </form>}
-  </section>;
+  </Card>;
 }

@@ -26,7 +26,7 @@ export function SignInAction({ next, label }: { next: string; label: string }) {
     {!session && availability.isPending && <p role="status">{t.authPending}</p>}
     {!session && availability.isError && <div className="notice" role="alert">
       <p>{availability.error instanceof ApiError && availability.error.status === 403 ? t.authDenied : t.authUnavailable}</p>
-      <Button type="button" className="button-secondary" onClick={() => void availability.refetch()}>{t.authRetry}</Button>
+      <Button type="button" variant="outline" onClick={() => void availability.refetch()}>{t.authRetry}</Button>
     </div>}
     <ButtonLink href={signInHref(next, locale)}>{label}</ButtonLink>
   </>;

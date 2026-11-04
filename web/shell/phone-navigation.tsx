@@ -1,58 +1,57 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
+import { Menu, X } from 'lucide-react';
 import type { NavEntry } from '@/registry-types';
 import type { Locale, Messages } from '@/lib/i18n';
-import { Button } from './primitives';
+import { Sheet, SheetContent, SheetTitle, SheetClose } from '@beirut-time/ui';
 import { useAccessContext } from './access-context';
 import { localizePath } from './paths';
 import { areaForPath, permittedEntries, type RouteEntry } from './navigation';
-let menuInvoker: HTMLButtonElement | null = null;
-let menuNavigating = false;
-function openMenu(invoker: HTMLButtonElement) { menuInvoker=invoker; menuNavigating=false; document.querySelector<HTMLDialogElement>('.phone-drawer')?.showModal(); }
-export function PhoneMenuButton({ label }: { label: string }) {
-  return <Button className="icon-button top-menu" aria-label={label} aria-haspopup="dialog" aria-controls="phone-menu" onClick={event => openMenu(event.currentTarget)}><span aria-hidden="true">☰</span></Button>;
+import { RouteIcon } from './route-icon';
+// One drawer, two doors, with the same SSR-safe external-store pattern as CP.
+let drawer = { open: false, path: '' };
+let drawerInvoker: HTMLButtonElement | null = null;
+function openDrawer(path: string, invoker: HTMLButtonElement) {
+  drawerInvoker = invoker;
+  setDrawer({ open: true, path });
 }
-export function PhoneNavigation({ entries, routes, locale, t }: { entries: NavEntry[]; routes: RouteEntry[]; locale: Locale; t: Messages }) {
-  const path = usePathname();
-  const access = useAccessContext();
-  const allowed = permittedEntries(entries, access.roles);
-  const bottom = permittedEntries(entries, access.roles, areaForPath(path,routes)).filter(n=>n.bottom).slice(0,4);
-  const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    // CP F-40/F-41: CSS and JS share exactly 850px. Keep page children mounted.
-    const media = window.matchMedia('(max-width: 850px)');
-    const resize = () => { if (!media.matches && dialog.current?.open) { menuNavigating=true; dialog.current.close(); document.getElementById('main-content')?.focus({preventScroll:true}); } };
-    media.addEventListener('change', resize);
-    const vv = window.visualViewport;
-    const keyboard = () => {
-      const focused = document.activeElement?.matches('input,textarea,[contenteditable="true"]');
-      document.documentElement.toggleAttribute('data-keyboard-open', !!(media.matches && focused && vv && vv.scale === 1 && vv.height < innerHeight * .8));
-    };
-    vv?.addEventListener('resize', keyboard);
-    document.addEventListener('focusin', keyboard);
-    document.addEventListener('focusout', keyboard);
-    return () => {
-      media.removeEventListener('change', resize);
-      vv?.removeEventListener('resize', keyboard);
-      document.removeEventListener('focusin', keyboard);
-      document.removeEventListener('focusout', keyboard);
-      document.documentElement.removeAttribute('data-keyboard-open');
-    };
-  }, []);
+const closed = { open: false, path: '' };
+const listeners = new Set<() => void>();
+function setDrawer(next: typeof drawer) { drawer=next; listeners.forEach(listener=>listener()); }
+function subscribe(listener: () => void) { listeners.add(listener); return ()=>{listeners.delete(listener);}; }
+function useDrawer() { return useSyncExternalStore(subscribe,()=>drawer,()=>closed); }
+export function PhoneMenuButton({ label }: { label: string }) {
+  const path=usePathname(), state=useDrawer();
+  return <button type="button" className="pg-mobile-menu" aria-label={label} aria-haspopup="dialog" aria-expanded={state.open && state.path===path} aria-controls="phone-menu" onClick={event=>openDrawer(path,event.currentTarget)}><Menu aria-hidden="true"/></button>;
+}
+export function PhoneNavigation({ entries, routes, locale, t, sidebar }: { entries: NavEntry[]; routes: RouteEntry[]; locale: Locale; t: Messages; sidebar: ReactNode }) {
+  const path=usePathname(), state=useDrawer(), navigating=useRef(false);
+  const access=useAccessContext();
+  const bottom=permittedEntries(entries,access.roles,areaForPath(path,routes)).filter(n=>n.bottom).slice(0,4);
+  const open=state.open && state.path===path;
+  useEffect(()=>{
+    const media=window.matchMedia('(max-width: 850px)');
+    const resize=()=>{ if(!media.matches && drawer.open) { navigating.current=true; setDrawer(closed); requestAnimationFrame(()=>document.getElementById('main-content')?.focus({preventScroll:true})); } };
+    media.addEventListener('change',resize);
+    const vv=window.visualViewport;
+    const keyboard=()=>{ const focused=document.activeElement?.matches('input:not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]'); document.documentElement.toggleAttribute('data-keyboard-open',!!(media.matches && focused && vv && vv.scale===1 && vv.height<innerHeight*.8)); };
+    vv?.addEventListener('resize',keyboard); document.addEventListener('focusin',keyboard); document.addEventListener('focusout',keyboard);
+    return ()=>{ media.removeEventListener('change',resize); vv?.removeEventListener('resize',keyboard); document.removeEventListener('focusin',keyboard); document.removeEventListener('focusout',keyboard); document.documentElement.removeAttribute('data-keyboard-open'); setDrawer(closed); };
+  },[]);
   return <>
-    <nav className="bottom-nav" aria-label={t.navigation} style={{ gridTemplateColumns: `repeat(${bottom.length + 1},minmax(0,1fr))` }}>
-      {bottom.map((n, i) => <Link key={n.id} href={`/${locale}${n.href}`} aria-current={localizePath(path,locale) === `/${locale}${n.href}` ? 'page' : undefined}><span aria-hidden="true">{['⌂','◷','◇','○'][i]}</span>{n.label[locale]}</Link>)}
-      <Button className="bottom-menu" aria-haspopup="dialog" aria-controls="phone-menu" onClick={event => openMenu(event.currentTarget)}><span aria-hidden="true">☰</span>{t.menu}</Button>
-    </nav>
-    <dialog id="phone-menu" ref={dialog} className="phone-drawer" aria-labelledby="menu-title" onClose={() => { if(!menuNavigating && menuInvoker?.isConnected) menuInvoker.focus(); }} onClick={e => { const rect=e.currentTarget.getBoundingClientRect(); if(e.target===e.currentTarget && (e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)) dialog.current?.close(); }}>
-      <div className="drawer-heading"><h2 id="menu-title">{t.brand}</h2><Button aria-label={t.close} className="icon-button" onClick={() => dialog.current?.close()}>×</Button></div>
-      <nav aria-label={t.navigation}>{allowed.map(n => <Link key={n.id} href={`/${locale}${n.href}`} onClick={() => {
-        // Bubble after Next's link handler; destination focus has one owner (CP mobile §6.2).
-        menuNavigating=localizePath(path,locale)!==`/${locale}${n.href}`;
-        dialog.current?.close();
-      }}>{n.label[locale]}</Link>)}</nav>
-    </dialog>
+    <nav className="pg-mobile-dock" aria-label={t.navigation}>{bottom.map(n=>{
+      const active=localizePath(path,locale)===`/${locale}${n.href}`;
+      return <Link key={n.id} href={`/${locale}${n.href}`} aria-current={active?'page':undefined}><RouteIcon id={n.id} href={n.href}/><span>{n.label[locale]}</span></Link>;
+    })}<button type="button" className="psb-dock-menu" aria-haspopup="dialog" aria-controls="phone-menu" aria-expanded={open} data-current={open || undefined} onClick={event=>openDrawer(path,event.currentTarget)}><Menu aria-hidden="true"/><span>{t.menu}</span></button></nav>
+    <Sheet open={open} onOpenChange={open=>{navigating.current=false;setDrawer({open,path});}}><SheetContent id="phone-menu" className="pg-mobile-drawer psb-drawer" aria-describedby={undefined} onOpenAutoFocus={()=>{navigating.current=false;}} onCloseAutoFocus={event=>{
+      // Neither door is a Radix Trigger: restore the actual invoker explicitly.
+      event.preventDefault();
+      if(!navigating.current && state.path===path && drawerInvoker?.isConnected) drawerInvoker.focus({preventScroll:true});
+    }} onClick={event=>{
+      const link=(event.target as Element).closest<HTMLAnchorElement>('a[href]');
+      if(link && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) { navigating.current=new URL(link.href).pathname!==path; setDrawer({open:false,path}); }
+    }}><SheetTitle className="sr-only">{t.navigation}</SheetTitle><SheetClose className="pg-mobile-close" aria-label={t.close}><X aria-hidden="true"/></SheetClose>{sidebar}</SheetContent></Sheet>
   </>;
 }

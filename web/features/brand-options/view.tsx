@@ -1,9 +1,9 @@
 'use client';
-import Link from 'next/link';
+import { PageHeader, PageLayout } from '@/shell/page-header';
 import Image from 'next/image';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BidiReference, Button, Input } from '@beirut-time/ui';
+import { BidiReference, Button, ButtonLink, Card, Input, Segmented, Radio, Skeleton, AnimatedList } from '@beirut-time/ui';
 import type { Configuration, Kind, Option, SelectionWrite } from '@contracts/contracts-catalog/options';
 import { ApiError } from '@/lib/api/client';
 import { useLocale } from '@/shell/locale-context';
@@ -141,10 +141,10 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
   if(base)returnQuery.set('base',base);
   if(caliber)returnQuery.set('caliber',caliber);
   if(configurationId)returnQuery.set('configuration',configurationId);
-  return <div className="bo-page">
-    <header className="bo-heading"><p className="eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p>{t.intro}</p></header>
+  return <PageLayout className="bo-page">
+    <PageHeader lead={t.eyebrow} title={t.title} count={t.intro}/>
     <div className="bo-layout">
-      <div className="bo-workbench">
+      <Card className="bo-workbench">
         <section className="bo-binding" aria-label={t.brand}>
           <label>{t.brand}<select name="brand" value={brand} disabled={busy||!!ack} onChange={e=>{setBrand(e.target.value);setBase('');setCaliber('');setChosen('');updateUrl('',e.target.value);updateBindings('','');}}>
             <option value="">{t.chooseBrand}</option>{selectedBrand&&catalogQuery.data&&<option value={selectedBrand}>{catalogQuery.data.brand.name[locale]}</option>}{listedBrands.map(b=><option value={b.organization_id} key={b.organization_id}>{b.name[locale]}</option>)}
@@ -156,37 +156,37 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
             <option value="">{t.chooseCaliber}</option>{calibers.map(c=><option key={c} value={c}>{c}</option>)}
           </select></label>
         </section>
-        {brandQuery.hasNextPage&&<Button className="button-secondary" disabled={brandQuery.isFetchingNextPage||busy} onClick={()=>void brandQuery.fetchNextPage()}>{brandQuery.isFetchingNextPage?t.loading:t.moreBrands}</Button>}
+        {brandQuery.hasNextPage&&<Button variant="outline" disabled={brandQuery.isFetchingNextPage||busy} onClick={()=>void brandQuery.fetchNextPage()}>{brandQuery.isFetchingNextPage?t.loading:t.moreBrands}</Button>}
         {catalogQuery.data?.brand.sample&&<p className="notice">{t.sample}</p>}
-        {(brandQuery.isLoading||catalogQuery.isLoading)&&<div role="status" className="bo-loading"><div className="skeleton"/>{t.loading}</div>}
-        {(brandQuery.error||catalogQuery.error)&&<div className="notice" role="alert"><p>{t.unavailable}</p><Button className="button-secondary" onClick={()=>{void brandQuery.refetch();void catalogQuery.refetch();}}>{t.retry}</Button></div>}
+        {(brandQuery.isLoading||catalogQuery.isLoading)&&<div role="status" className="bo-loading"><Skeleton/>{t.loading}</div>}
+        {(brandQuery.error||catalogQuery.error)&&<div className="notice" role="alert"><p>{t.unavailable}</p><Button variant="outline" onClick={()=>{void brandQuery.refetch();void catalogQuery.refetch();}}>{t.retry}</Button></div>}
         {brandQuery.isSuccess&&!listedBrands.length&&!brandQuery.hasNextPage&&<p className="notice">{t.noBrands}</p>}
-        <div className="bo-categories" role="group" aria-label={t.chooseCategory}>{kinds.map((value,index)=><button key={value} type="button" aria-pressed={kind===value} disabled={busy} onClick={()=>{setKind(value);setChosen('');setMessage('');}}><span aria-hidden="true">0{index+1}</span>{t[value]}</button>)}</div>
+        <div className="bo-categories" inert={busy}><Segmented aria-label={t.chooseCategory} value={kind} onChange={value=>{setKind(value as Kind);setChosen('');setMessage('');}} options={kinds.map(value=>({value,label:t[value]}))}/></div>
         {!base||!caliber?<p className="bo-empty">{t.noSelection}</p>:<fieldset className="bo-options" disabled={busy}><legend className="sr-only">{t[kind]}</legend>
-          {supported.length?supported.map(option=><label className="bo-option" data-selected={chosen===option.id} key={option.id}>
-            <div className="bo-option-title"><input type="radio" name="brand-option" value={option.id} checked={chosen===option.id} disabled={!option.available} onChange={()=>{setChosen(option.id);setMessage('');}}/><h2>{option.label[locale]}</h2></div>
+          {supported.length?<AnimatedList items={supported} getKey={option=>option.id}>{option=><div className="bo-option" data-selected={chosen===option.id} onClick={event=>{if(!busy&&option.available){setChosen(option.id);setMessage('');event.currentTarget.querySelector('input')?.focus();}}}>
+            <Radio className="bo-option-title" name="brand-option" value={option.id} checked={chosen===option.id} disabled={!option.available} onChange={()=>{setChosen(option.id);setMessage('');}}>{option.label[locale]}</Radio>
             <p className="bo-option-meta">{t.component}: {t[option.component]} · {t.revision} <BidiReference>{option.revision}</BidiReference></p>
             <OptionDetails option={option} locale={locale} t={t}/>
             {!option.available&&<p className="notice">{t.invalid}</p>}
-          </label>):<p className="bo-empty">{t.empty}</p>}
+          </div>}</AnimatedList>:<p className="bo-empty">{t.empty}</p>}
         </fieldset>}
         {kind==='dial'&&<section className="bo-reference"><h2>{t.privateReference}</h2><p id="bo-reference-help">{t.referenceHelp}</p><Input name="private_dial_reference" ref={fileInput} type="file" accept="image/png" disabled={!ack||!fingerprint||busy||references.length>=3} aria-label={t.upload} aria-describedby="bo-reference-help" onChange={e=>{void upload(e.target.files?.[0]);}}/><p>{t.references}: <BidiReference>{references.length} / 3</BidiReference></p>{ack&&<div className="bo-private-images">{references.map(id=><PrivateReference key={id} configurationId={ack.id} referenceId={id} label={t.privateReference} failureLabel={t.referenceUnavailable} retryLabel={t.retry}/>)}</div>}</section>}
         {identityPending&&<p className="bo-feedback" role="status">{t.loadingSaved}</p>}
-        {!!identityError&&<div className="notice" role="alert"><p>{t.identityUnavailable}</p><Button className="button-secondary" onClick={retryIdentity}>{t.retry}</Button></div>}
-        {!fingerprint&&!identityPending&&!identityError&&<div className="bo-signin"><Link className="button" href={signInHref('/customize'+(returnQuery.size?'?'+returnQuery:''),locale)}>{t.signIn}</Link><p>{t.signInBody}</p></div>}
-        <div className="bo-actions"><Button disabled={!selected?.available||!fingerprint||busy} onClick={()=>void save()}>{busy?t.saving:t.save}<span aria-hidden="true">↗</span></Button>
-          {(ack||configurationId)&&<Button className="button-secondary" disabled={busy} onClick={startNew}>{t.new}</Button>}</div>
+        {!!identityError&&<div className="notice" role="alert"><p>{t.identityUnavailable}</p><Button variant="outline" onClick={retryIdentity}>{t.retry}</Button></div>}
+        {!fingerprint&&!identityPending&&!identityError&&<div className="bo-signin"><ButtonLink href={signInHref('/customize'+(returnQuery.size?'?'+returnQuery:''),locale)}>{t.signIn}</ButtonLink><p>{t.signInBody}</p></div>}
+        <div className="bo-actions"><Button chonk disabled={!selected?.available||!fingerprint||busy} onClick={()=>void save()}>{busy?t.saving:t.save}<span aria-hidden="true">↗</span></Button>
+          {(ack||configurationId)&&<Button variant="outline" disabled={busy} onClick={startNew}>{t.new}</Button>}</div>
         <div aria-live="polite" role="status" className="bo-feedback">{busy?t.pending:reconciled?t.saved:message}</div>
         {activeError&&<div role="alert" className="notice"><p>{errorCopy(activeError,t)}</p>{activeError instanceof ApiError&&activeError.requestId&&<BidiReference>{activeError.requestId}</BidiReference>}
-          <Button className="button-secondary" disabled={busy} onClick={()=>{setFailure(null);void catalogQuery.refetch();void savedQuery.refetch();if(configurationId)void configurationQuery.refetch();}}>{t.refresh}</Button></div>}
-      </div>
-      <aside className="bo-summary" aria-label={t.summary}>
-        <figure className="bo-illustration"><svg viewBox="0 0 320 340" role="img" aria-label={t.watchFace}><rect x="132" y="4" width="56" height="330" rx="14" fill={palette.strap} stroke="var(--accent)"/><circle cx="160" cy="170" r="112" fill={palette.case} stroke={palette.bezel} strokeWidth="3"/><circle cx="160" cy="170" r="97" fill={palette.dial}/>{Array.from({length:12},(_,i)=><path key={i} d="M160 83v10" transform={`rotate(${i*30} 160 170)`} stroke={palette.markers} strokeWidth="2"/>)}<path d="M160 109v61l43 29" stroke={palette.hands} strokeWidth="4" fill="none"/><circle cx="160" cy="170" r="5" fill={palette.hands}/></svg><figcaption>{t.illustration}</figcaption></figure>
-        <section><p className="eyebrow">{t.notApproved}</p><h2>{t.summary}</h2>{ack?<><p>{t.savedRevision} <BidiReference>{ack.revision}</BidiReference></p><dl className="bo-saved">{ack.selections.map(s=><div key={`${s.kind}-${s.component}`}><dt>{t[s.kind]} · {t[s.component]}</dt><dd>{s.definition.label[locale]} <small>{t.revision} <BidiReference>{s.option_revision}</BidiReference></small>{!s.current&&<p className="notice">{t.needsReview}</p>}</dd></div>)}</dl>{hasRoute('/custom-requests')&&<Link className="button button-secondary" href={`/${locale}/custom-requests?configuration=${ack.id}&revision=${ack.revision}`}>{t.next}</Link>}</>:<p>{t.summaryEmpty}</p>}</section>
+          <Button variant="outline" disabled={busy} onClick={()=>{setFailure(null);void catalogQuery.refetch();void savedQuery.refetch();if(configurationId)void configurationQuery.refetch();}}>{t.refresh}</Button></div>}
+      </Card>
+      <aside className="bo-summary ui-card" aria-label={t.summary}>
+        <figure className="bo-illustration"><svg viewBox="0 0 320 340" role="img" aria-label={t.watchFace}><rect x="132" y="4" width="56" height="330" rx="14" fill={palette.strap} stroke="var(--primary-ink)"/><circle cx="160" cy="170" r="112" fill={palette.case} stroke={palette.bezel} strokeWidth="3"/><circle cx="160" cy="170" r="97" fill={palette.dial}/>{Array.from({length:12},(_,i)=><path key={i} d="M160 83v10" transform={`rotate(${i*30} 160 170)`} stroke={palette.markers} strokeWidth="2"/>)}<path d="M160 109v61l43 29" stroke={palette.hands} strokeWidth="4" fill="none"/><circle cx="160" cy="170" r="5" fill={palette.hands}/></svg><figcaption>{t.illustration}</figcaption></figure>
+        <section><p className="eyebrow">{t.notApproved}</p><h2>{t.summary}</h2>{ack?<><p>{t.savedRevision} <BidiReference>{ack.revision}</BidiReference></p><dl className="bo-saved">{ack.selections.map(s=><div key={`${s.kind}-${s.component}`}><dt>{t[s.kind]} · {t[s.component]}</dt><dd>{s.definition.label[locale]} <small>{t.revision} <BidiReference>{s.option_revision}</BidiReference></small>{!s.current&&<p className="notice">{t.needsReview}</p>}</dd></div>)}</dl>{hasRoute('/custom-requests')&&<ButtonLink variant="outline" href={`/${locale}/custom-requests?configuration=${ack.id}&revision=${ack.revision}`}>{t.next}</ButtonLink>}</>:<p>{t.summaryEmpty}</p>}</section>
         {!!savedQuery.data?.items.length&&<label className="bo-resume">{t.resume}<select dir="ltr" name="saved_configuration" value={configurationId} disabled={busy} onChange={e=>{setBrand(brand);setBase(base);setCaliber(caliber);setConfigurationId(e.target.value);setChosen('');setFailure(null);setOperation(null);updateUrl(e.target.value,'');}}><option value="">—</option>{savedQuery.data.items.map(c=><option key={c.id} value={c.id}>{c.base_model} · {c.id.slice(0,8)} · {c.revision}</option>)}</select></label>}
       </aside>
     </div>
-  </div>;
+  </PageLayout>;
 }
 
 function PrivateReference({configurationId,referenceId,label,failureLabel,retryLabel}: {configurationId:string;referenceId:string;label:string;failureLabel:string;retryLabel:string}) {
@@ -205,9 +205,9 @@ function PrivateReference({configurationId,referenceId,label,failureLabel,retryL
       .catch(()=>{if(!abort.signal.aborted)setResult({key:requestKey,url:'',failed:true});});
     return close;
   },[configurationId,referenceId,token,requestKey]);
-  if(current?.failed)return <div><p role="status">{failureLabel}</p><Button className="button-secondary" onClick={()=>setAttempt(prior=>prior+1)}>{retryLabel}</Button></div>;
+  if(current?.failed)return <div><p role="status">{failureLabel}</p><Button variant="outline" onClick={()=>setAttempt(prior=>prior+1)}>{retryLabel}</Button></div>;
   // Memory-only private data must never enter the public image optimizer.
-  return current?.url?<Image unoptimized src={current.url} alt={label} width={120} height={120} onError={()=>setResult({key:requestKey,url:'',failed:true})}/>:<span className="skeleton" role="status" aria-label={label}/>;
+  return current?.url?<Image unoptimized src={current.url} alt={label} width={120} height={120} onError={()=>setResult({key:requestKey,url:'',failed:true})}/>:<Skeleton role="status" aria-label={label} aria-hidden={false}/>;
 }
 
 function OptionDetails({option,locale,t}: {option:Option;locale:'en'|'ar';t:Copy}) {

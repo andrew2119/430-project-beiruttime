@@ -14,6 +14,7 @@ vi.mock("@/shell/locale-context", () => ({ useLocale: () => "ar" }));
 vi.mock("./components", () => ({
   useCopy: () => ({ private: "Private", contactIntro: "Private records", loading: "Restoring session", unavailable: "Unavailable", retry: "Retry", signin: "Sign in" }),
   Workspace: ({ children }: { children: ReactNode }) => createElement("section", null, children),
+  BusinessLoading: () => createElement("p", { role: "status" }, "Restoring session"),
 }));
 import BusinessBoundary from "./boundary";
 function render(publicWorkspace = false) {

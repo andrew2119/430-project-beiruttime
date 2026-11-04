@@ -1,0 +1,57 @@
+@layer components {
+.pg-skeleton-row {
+  block-size: 5.5rem;
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--ds-shadow-small);
+}
+.pg-skeleton-card {
+  border-radius: var(--radius-2xl);
+  background: color-mix(in oklab, var(--card) 92%, var(--muted));
+  box-shadow: var(--ds-shadow-small);
+}
+.pg-skeleton-line { border-radius: var(--radius-md); }
+/* ADR-0031: composed row skeleton that reserves the image slot. The row keeps
+   the .pg-skeleton marker (settle waits count it) but paints a still card
+   surface; the media box (::before of the row, shape = a modifier class on the
+   row) and the two text lines (::before/::after of the copy column) are the
+   shimmering pseudo-elements, declared beside .pg-skeleton in motion.css. */
+.pg-skeleton.pg-skeleton-row-composed {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-inline: 1rem;
+  background: color-mix(in oklab, var(--card) 92%, var(--muted));
+  background-size: auto;
+  animation: none;
+}
+.pg-skeleton-row-composed::before {
+  content: "";
+  flex: 0 0 auto;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--radius-xl);
+}
+.pg-skeleton-media-avatar::before { border-radius: 9999px; }
+.pg-skeleton-media-avatar-square::before { border-radius: var(--radius-xl); }
+.pg-skeleton-media-cover::before {
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  border-radius: var(--radius-xl);
+}
+.pg-skeleton-copy {
+  display: flex;
+  min-inline-size: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.pg-skeleton-copy::before,
+.pg-skeleton-copy::after {
+  content: "";
+  display: block;
+  border-radius: var(--radius-md);
+}
+.pg-skeleton-copy::before { block-size: 0.875rem; inline-size: 40%; }
+.pg-skeleton-copy::after { block-size: 0.625rem; inline-size: 24%; }
+
+}

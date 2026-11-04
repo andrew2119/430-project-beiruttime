@@ -1,0 +1,1195 @@
+/* Creator Pipeline Calm card header and shared control recipes. */
+/* The same phone values, applied by width instead of by screen: the gallery
+   shows a phone frame on a desktop screen (and the header itself is a
+   container, so it lays out by its own width). */
+.hx-phone-scale,
+.hx-wrap.hx-is-phone {
+  --ds-control: var(--ds-phone-control);
+  --ds-control-target: var(--ds-hit-target);
+  --ds-pad-header-block: var(--ds-space-4);
+  --ds-pad-header-inline: var(--ds-space-4);
+  --ds-pad-card-block: var(--ds-space-3);
+  --ds-pad-card-inline: var(--ds-space-4);
+  --ds-gap-content: var(--ds-space-3);
+  --ds-title-size: 1.25rem;
+  --ds-title-line: 24px;
+}
+
+/* ============================================================================
+   Part 2 - shared controls refined to the system (scope: .hx-sys)
+   The invisible part of a phone target is a transparent border ("slop");
+   rings are INSET hairlines so they hug the drawn shape, never the target.
+   ========================================================================== */
+.hx-sys {
+  --hx-slop: calc((var(--ds-control-target) - var(--ds-control)) / 2);
+  --hx-seg-slop: calc(var(--hx-slop) + 3px);
+  --hx-ring: inset 0 0 0 1px var(--ds-hairline);
+  --hx-raise: inset 0 0 0 1px var(--ds-hairline), inset 0 -1px 0 var(--ds-hairline);
+}
+
+/* Pills: 32 (phone: 36 in 44), 8 apart, fully round, counts muted. The element
+   selector outranks the phone-scale chip rule in mobile.css (drawn 32). */
+.hx-sys button.pg-filter-pill {
+  box-sizing: border-box;
+  display: inline-flex;
+  block-size: var(--ds-control-target);
+  min-block-size: 0;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 0 14px;
+  border: 0;
+  border-block: var(--hx-slop) solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  font-size: var(--ds-control-text);
+  white-space: nowrap;
+}
+.hx-sys .pg-filter-pill:not([aria-pressed="true"]):not(.hx-x) { box-shadow: var(--hx-ring); }
+.hx-sys .pg-filter-pill[aria-pressed="true"]:not(.hx-x) { box-shadow: none; }
+.hx-sys .pg-filter-pill:focus-visible { outline-offset: calc(2px - var(--hx-slop)); }
+.hx-sys .pg-filter-pill svg { inline-size: 14px; block-size: 14px; }
+.hx-pcount {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ds-weight-strong);
+  opacity: 0.62;
+}
+[aria-pressed="true"] > .hx-pcount { opacity: 0.8; }
+/* Decision 25 completion: 62% green counts fail AA at rest and on the hover wash. */
+[data-theme="dark"] .hx-pills > .pg-filter-pill[aria-pressed="false"][style*="--green-ink"] > .hx-pcount { opacity: 1; }
+
+/* Chonk buttons: every row action is the small chonk, drawn at the control
+   height; its plinth and face shrink into the target on a phone. */
+.hx-sys .pg-chonk {
+  block-size: var(--ds-control-target);
+  height: var(--ds-control-target);
+  min-block-size: 0;
+  padding-inline: 12px;
+  border-radius: var(--ds-control-radius);
+}
+.hx-sys .pg-chonk > span { gap: 6px; font-size: var(--ds-control-text); }
+.hx-sys .pg-chonk svg { inline-size: var(--ds-control-icon); block-size: var(--ds-control-icon); }
+.hx-sys .pg-chonk::after { inset-block: var(--hx-slop); }
+.hx-sys .pg-chonk::before {
+  top: calc(var(--hx-slop) + 2px);
+  height: calc(100% - 2 * var(--hx-slop) - 2px);
+}
+.hx-sys .pg-chonk.hx-square {
+  inline-size: var(--ds-control-target);
+  min-inline-size: var(--ds-control-target);
+  margin-inline: calc(-1 * var(--hx-slop));
+  padding-inline: 0;
+}
+.hx-sys .pg-chonk.hx-square::after,
+.hx-sys .pg-chonk.hx-square::before { inset-inline: var(--hx-slop); }
+.hx-sys .pg-chonk[aria-pressed="true"] {
+  --chonk-surface: color-mix(in oklab, var(--primary) 10%, var(--card));
+  --chonk-base: color-mix(in oklab, var(--primary) 30%, var(--border));
+  color: var(--primary-ink);
+}
+
+/* Badges inside buttons (Sort the backlog 16, Filters 2). */
+.hx-badge {
+  display: inline-grid;
+  min-inline-size: 18px;
+  block-size: 18px;
+  place-items: center;
+  padding-inline: 5px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ds-weight-strong);
+  line-height: 1;
+}
+.pg-chonk-primary .hx-badge {
+  background: color-mix(in oklab, var(--primary-foreground) 20%, transparent);
+  color: var(--primary-foreground);
+}
+.hx-badge-on {
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+  color: var(--primary-ink);
+}
+
+/* Search: 32, no built-in margin (the Draft Board bug), radius 8 like every
+   rectangle in the row, 16 px icon, 13 px text. */
+.hx-search {
+  position: relative;
+  min-inline-size: 0;
+  margin: 0;
+}
+.hx-row > .hx-search { flex: 0 1 360px; min-inline-size: 200px; }
+.hx-sys .hx-search .pg-search-icon { inset-inline-start: 10px; inline-size: 16px; block-size: 16px; }
+.hx-sys .pg-search-field {
+  box-sizing: border-box;
+  display: block;
+  inline-size: 100%;
+  block-size: var(--ds-control-target);
+  min-block-size: 0;
+  padding: 0 32px 0 34px;
+  border: 0;
+  border-block: var(--hx-slop) solid transparent;
+  border-radius: var(--ds-control-radius) / calc(var(--ds-control-radius) + var(--hx-slop));
+  background-color: color-mix(in oklab, var(--muted) 70%, var(--card));
+  background-clip: padding-box;
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  box-shadow: var(--hx-ring);
+  transition: background-color var(--ds-motion-fast) var(--ease-standard),
+    box-shadow var(--ds-motion-fast) var(--ease-standard);
+}
+.hx-sys .pg-search-field:focus-visible {
+  background-color: var(--card);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ring) 55%, transparent);
+  outline-offset: calc(2px - var(--hx-slop));
+}
+.hx-sys .hx-search .pg-search-clear {
+  inset-inline-end: 4px;
+  inline-size: 24px;
+  block-size: 24px;
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .hx-sys .pg-search-field:hover { background-color: var(--card); }
+}
+
+/* Dropdown triggers (Select): a quiet raised rectangle, 32, label 12 px. */
+.hx-sys .ui-select {
+  box-sizing: border-box;
+  block-size: var(--ds-control-target);
+  min-block-size: 0;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 0 8px 0 10px;
+  border: 0;
+  border-block: var(--hx-slop) solid transparent;
+  border-radius: var(--ds-control-radius) / calc(var(--ds-control-radius) + var(--hx-slop));
+  background-color: var(--card);
+  background-clip: padding-box;
+  color: var(--foreground);
+  font-size: var(--ds-control-text);
+  font-weight: var(--ds-weight-strong);
+  box-shadow: var(--hx-raise);
+}
+.hx-sys .ui-select:focus-visible { outline-offset: calc(0px - var(--hx-slop)); }
+.hx-sys .ui-select .ui-select-caret { inline-size: 14px; block-size: 14px; }
+@media (hover: hover) and (pointer: fine) {
+  .hx-sys .ui-select:hover { background-color: color-mix(in oklab, var(--accent) 45%, var(--card)); }
+}
+
+/* Segmented: the compact recipe everywhere in a row. Track 32 (phone 36),
+   thumb 26 (phone 30); each option keeps the full target on a phone by
+   overhanging the track, and the measured thumb is inset by the same amount. */
+.hx-sys .pg-toggle {
+  box-sizing: border-box;
+  block-size: var(--ds-control);
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--ds-control-radius);
+  box-shadow: var(--hx-ring);
+}
+.hx-sys .pg-toggle .pg-toggle-item {
+  box-sizing: border-box;
+  block-size: calc(var(--ds-control) - 6px + 2 * var(--hx-seg-slop));
+  min-block-size: 0;
+  margin-block: calc(-1 * var(--hx-seg-slop));
+  padding: 0 10px;
+  border: 0;
+  border-block: var(--hx-seg-slop) solid transparent;
+  border-radius: calc(var(--ds-control-radius) - 2px) / calc(var(--ds-control-radius) - 2px + var(--hx-seg-slop));
+  background-clip: padding-box;
+  font-size: var(--ds-control-text);
+}
+.hx-sys .pg-toggle .pg-toggle-item svg { inline-size: 15px; block-size: 15px; }
+:is(.hx-sys) .pg-toggle.pg-seg > .pg-seg-thumb {
+  border-radius: calc(var(--ds-control-radius) - 2px);
+  transform: translate(var(--pg-seg-x), calc(var(--pg-seg-y) + var(--hx-seg-slop)));
+  block-size: calc(var(--pg-seg-h) - 2 * var(--hx-seg-slop));
+}
+.hx-sys .pg-toggle .pg-toggle-item:focus-visible { outline-offset: calc(0px - var(--hx-seg-slop)); }
+
+/* ============================================================================
+   Part 3 - the page header (one component, design A "Calm card")
+   ========================================================================== */
+.hx-wrap {
+  container: hx / inline-size;
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+.hx-zone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-gap-row);
+}
+.hx-head {
+  --hx-block-gap: calc(var(--ds-gap-block) - var(--hx-slop));
+  --hx-row-gap: calc(var(--ds-gap-row) - 2 * var(--hx-slop));
+  --hx-group-gap: var(--ds-gap-group);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  /* backwards, not both: once it has arrived the header keeps no animation
+     layer (its end state is its natural state). */
+  animation: pg-contentIn var(--ds-motion-overlay) var(--ease-out-soft) backwards;
+}
+.hx-head > .hx-row + .hx-row { margin-block-start: var(--hx-row-gap); }
+.hx-head > .hx-titlerow + .hx-row { margin-block-start: var(--hx-block-gap); }
+.hx-head > .hx-lead + .hx-titlerow { margin-block-start: calc(var(--ds-gap-row) - var(--hx-slop)); }
+
+.hx-row {
+  position: relative;
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hx-row-gap) var(--hx-group-gap);
+}
+.hx-group {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hx-group-gap);
+}
+.hx-spacer { flex: 1 1 0; min-inline-size: calc(var(--ds-gap-cluster) - var(--hx-group-gap)); }
+
+/* Title line: [cover] title block, then the actions at the far end. When the
+   line is full the actions wrap under the title block instead of squeezing it.
+   Title block: title 24/28, count line 12/16, 4 apart = 48 tall. */
+.hx-titlerow {
+  position: relative;
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-gap-row) var(--ds-gap-cluster);
+}
+.hx-ident {
+  display: flex;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  flex: 1 0 auto;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+.hx-tblock { display: flex; min-inline-size: 0; flex-direction: column; }
+.hx-media { grid-area: media; flex: none; }
+.hx-titleline {
+  grid-area: title;
+  display: flex;
+  min-inline-size: 0;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+.hx-title {
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: var(--ds-title-size);
+  font-weight: var(--ds-weight-black);
+  letter-spacing: -0.025em;
+  line-height: var(--ds-title-line);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hx-titlerow[data-media] .hx-title { font-size: 1.25rem; letter-spacing: -0.03em; }
+.hx-count {
+  grid-area: count;
+  align-self: start;
+  margin-block-start: var(--ds-gap-title);
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 450;
+  line-height: var(--ds-count-line);
+  opacity: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hx-actions {
+  grid-area: actions;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--hx-group-gap);
+  margin-inline-start: auto;
+}
+.hx-cover {
+  display: grid;
+  inline-size: 48px;
+  block-size: 48px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: color-mix(in oklab, var(--primary) 10%, var(--card));
+  color: var(--primary-ink);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.hx-cover svg { inline-size: 20px; block-size: 20px; }
+.hx-tag {
+  display: inline-flex;
+  block-size: 22px;
+  align-items: center;
+  padding-inline: 8px;
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: var(--ds-weight-strong);
+  white-space: nowrap;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* Lead row (the campaign family bar: back link and the member switch). */
+.hx-lead {
+  display: flex;
+  min-inline-size: 0;
+  align-items: center;
+  gap: var(--ds-gap-cluster);
+}
+.hx-back {
+  display: inline-flex;
+  min-inline-size: 0;
+  block-size: var(--ds-control-target);
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary-ink);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: var(--ds-weight-strong);
+}
+.hx-back svg { inline-size: 16px; block-size: 16px; flex: 0 0 auto; transition: transform var(--ds-motion-fast) var(--ease-standard); }
+.hx-back span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (hover: hover) and (pointer: fine) {
+  .hx-back:hover svg { transform: translateX(-2px); }
+}
+.hx-member { display: inline-flex; align-items: center; gap: 6px; }
+.hx-member-dot {
+  display: inline-grid;
+  inline-size: 20px;
+  block-size: 20px;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--primary) 12%, var(--card));
+  color: var(--primary-ink);
+  font-size: 0.5625rem;
+  font-weight: var(--ds-weight-heavy);
+}
+
+/* Views as pills carry their tone when a status has one. */
+.hx-pills {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hx-group-gap);
+}
+
+/* The campaign tabs as underline tabs on the card's edge, with ONE sliding
+   indicator measured from the active tab. */
+.hx-tabs {
+  position: relative;
+  display: flex;
+  min-inline-size: 0;
+  align-items: stretch;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.hx-tabs::-webkit-scrollbar { display: none; }
+.hx-tab {
+  position: relative;
+  display: inline-flex;
+  block-size: var(--ds-tab-height);
+  min-block-size: 0;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  white-space: nowrap;
+  transition: color var(--ds-motion-fast) var(--ease-standard),
+    background-color var(--ds-motion-fast) var(--ease-standard);
+}
+.hx-tab[aria-selected="true"],
+.hx-tab[aria-current="page"] { color: var(--foreground); font-weight: var(--ds-weight-heavy); }
+.hx-tab svg { inline-size: 16px; block-size: 16px; }
+.hx-tab .hx-tab-count {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ds-weight-strong);
+  line-height: 1;
+}
+.hx-tab[aria-selected="true"] .hx-tab-count,
+.hx-tab[aria-current="page"] .hx-tab-count {
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+  color: var(--primary-ink);
+}
+.hx-tab-dot { inline-size: 6px; block-size: 6px; border-radius: 999px; background: currentColor; }
+.hx-tab:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+@media (hover: hover) and (pointer: fine) {
+  .hx-tab:not([aria-selected="true"]):not([aria-current="page"]):hover {
+    background: color-mix(in oklab, var(--accent) 70%, transparent);
+    color: var(--foreground);
+  }
+}
+.hx-ind {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  inline-size: var(--hx-ind-w, 0);
+  block-size: 2px;
+  border-radius: 2px;
+  background: var(--primary-ink);
+  transform: translateX(var(--hx-ind-x, 0));
+  transition: transform var(--ds-motion-popover) var(--ease-settle),
+    inline-size var(--ds-motion-popover) var(--ease-settle);
+  pointer-events: none;
+}
+.hx-tabs[data-tint] .hx-tab[aria-current="page"] {
+  background: color-mix(in oklab, var(--primary) 8%, transparent);
+}
+
+/* Status line under a header (results, sort, active filter chips). */
+.hx-status {
+  display: flex;
+  min-block-size: 20px;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding-inline: 4px;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+.hx-status b { color: var(--foreground); font-weight: var(--ds-weight-strong); }
+.hx-status .hx-spacer { min-inline-size: 0; }
+.hx-linkbtn {
+  display: inline-flex;
+  min-block-size: 20px;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: var(--ds-weight-strong);
+}
+.hx-linkbtn svg { inline-size: 14px; block-size: 14px; }
+@media (hover: hover) and (pointer: fine) {
+  .hx-linkbtn:hover { color: var(--foreground); }
+}
+
+/* Notice: one calm alert row (icon square, two lines, one action). */
+.hx-notice {
+  display: flex;
+  min-inline-size: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  border-radius: var(--radius-2xl);
+  background: var(--card);
+  box-shadow: var(--ds-shadow-border);
+}
+.hx-notice-icon {
+  display: grid;
+  inline-size: 36px;
+  block-size: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--color-status-orange) 12%, var(--card));
+  color: var(--color-status-orange);
+}
+.hx-notice-icon svg { inline-size: 18px; block-size: 18px; }
+.hx-notice-copy { display: grid; min-inline-size: 0; flex: 1 1 auto; gap: 2px; }
+.hx-notice-copy b { color: var(--foreground); font-size: 0.8125rem; font-weight: var(--ds-weight-heavy); }
+.hx-notice-copy span { color: var(--muted-foreground); font-size: 0.75rem; line-height: 1.4; }
+[data-theme="dark"] .hx-notice-icon { color: color-mix(in oklab, var(--color-status-orange) 62%, var(--foreground)); }
+
+/* Filters panel (the site's popover; fields like the Reach Out Room's). */
+/* Any panel taller than the room below its button keeps to the screen and scrolls
+   (a phone, a landscape phone or a short window). */
+.hx-panel {
+  display: grid;
+  inline-size: 18.5rem;
+  max-block-size: var(--radix-popover-content-available-height, 40rem);
+  gap: 14px;
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.hx-panel-head { display: flex; align-items: baseline; justify-content: space-between; }
+.hx-panel-head b { color: var(--foreground); font-size: 0.8125rem; font-weight: var(--ds-weight-heavy); }
+.hx-panel-head span { color: var(--muted-foreground); font-size: 0.6875rem; }
+.hx-panel .pg-form-field { display: grid; gap: 6px; }
+.hx-panel .ui-select { inline-size: 100%; }
+.hx-panel .pg-toggle { inline-size: max-content; max-inline-size: 100%; }
+/* Only-on-a-phone and only-on-desktop pieces (by the header's own width). */
+.hx-phone-only { display: none !important; }
+.hx-pmode { grid-area: pmode; }
+
+/* ---------------------------------------------------------------------------
+   Option A - "Calm card": everything in the raised header card, three quiet
+   lines (title, views, tools); navigation tabs sit on the card's bottom edge.
+   ------------------------------------------------------------------------- */
+.hx-head[data-opt="A"] {
+  padding: var(--ds-pad-header-block) var(--ds-pad-header-inline);
+  border-radius: var(--radius-2xl);
+  /* Round 5: flat card (no gradients anywhere, captain 2026-09-30); the soft
+     shell shadow and the hairline gloss lines keep the lift. */
+  background: var(--card);
+  box-shadow: var(--ds-shadow-shell), inset 0 1px 0 var(--ds-gloss-line),
+    inset 0 -1px 0 var(--ds-gloss-under);
+}
+.hx-head[data-opt="A"][data-nav] { padding-block-end: 0; }
+.hx-head[data-opt="A"] > .hx-navrow {
+  margin-block-start: var(--ds-gap-block);
+  margin-inline: calc(-1 * var(--ds-pad-header-inline) + 12px);
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+/* A campaign page in the gallery: the campaign header joined to the tab's
+   toolbar in one card (like the real header and body). */
+.hx-detail { display: flex; min-inline-size: 0; flex-direction: column; }
+.hx-detail .hx-head[data-opt="A"] { border-radius: var(--radius-2xl) var(--radius-2xl) 0 0; }
+
+/* Toolbar under a detail header (a campaign tab's own tools). */
+.hx-toolbar { display: flex; flex-direction: column; gap: var(--ds-gap-row); }
+.hx-toolbar-body {
+  padding: var(--ds-pad-header-block) var(--ds-pad-header-inline);
+  border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+  background: var(--card);
+  box-shadow: var(--ds-shadow-border);
+}
+
+/* ---------------------------------------------------------------------------
+   The phone layout, by the header's own width (30rem, the site's existing
+   phone-header container step). One title line with icon actions; the count
+   line under it at full width; views scroll sideways in one line to a clean
+   hard edge at the card's side; search and Filters share one line; dropdowns
+   and view switches move into the panel.
+   ------------------------------------------------------------------------- */
+@container hx (max-width: 30rem) {
+  .hx-head {
+    --ds-control: var(--ds-phone-control);
+    --ds-control-target: var(--ds-hit-target);
+    --ds-pad-header-block: var(--ds-space-4);
+    --ds-pad-header-inline: var(--ds-space-4);
+    --ds-title-size: 1.25rem;
+    --ds-title-line: 24px;
+    --hx-slop: calc((var(--ds-control-target) - var(--ds-control)) / 2);
+    --hx-seg-slop: calc(var(--hx-slop) + 3px);
+  }
+  .hx-desk-only { display: none !important; }
+  .hx-row.hx-phone-only,
+  .hx-group.hx-phone-only,
+  .hx-pmode.hx-phone-only { display: flex !important; }
+  .pg-chonk.hx-phone-only { display: inline-flex !important; }
+  /* Title line: title and icon actions on one 36 px line, the count line under
+     them at full width, the page mode as its own full-width line. */
+  .hx-head[data-opt] > .hx-titlerow { display: grid; row-gap: 0; }
+  .hx-titlerow .hx-ident,
+  .hx-titlerow .hx-tblock { display: contents; }
+  .hx-actions { margin-inline-start: 0; }
+  .hx-head[data-opt] > .hx-titlerow:not([data-media]) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "title actions" "count count" "pmode pmode";
+    column-gap: 12px;
+  }
+  .hx-head[data-opt] > .hx-titlerow[data-media] {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "media title actions" "media count count" "pmode pmode pmode";
+    column-gap: 12px;
+  }
+  .hx-titleline { align-self: start; min-block-size: var(--ds-control); }
+  .hx-count { margin-block-start: 0; }
+  .hx-actions { align-self: start; margin-block: calc(-1 * var(--hx-slop)); }
+  .hx-media { align-self: start; }
+  .hx-pmode { margin-block-start: calc(var(--ds-gap-block) - var(--hx-slop)); }
+  .hx-pmode > * { flex: 1 1 auto; }
+  .hx-title { white-space: normal; overflow-wrap: anywhere; }
+  .hx-titlerow[data-media] .hx-title { font-size: 1.0625rem; line-height: 22px; }
+  .hx-count { white-space: normal; }
+  .hx-cover { inline-size: 40px; block-size: 40px; border-radius: var(--radius-lg); }
+  /* Actions (captain Q8): the page's primary action keeps its label; every
+     other action is an icon alone (its name shows on a long press, hover or
+     focus), drawn 36 inside its 44 square. */
+  :is(.hx-act:not(.hx-act-primary), .hx-filters) :is(.hx-act-label, .hx-act-badge) { display: none; }
+  .hx-sys .pg-chonk.hx-act:not(.hx-act-primary) {
+    inline-size: var(--ds-control-target);
+    min-inline-size: var(--ds-control-target);
+    margin-inline: calc(-1 * var(--hx-slop));
+    padding-inline: 0;
+  }
+  .hx-sys .pg-chonk.hx-act:not(.hx-act-primary)::after,
+  .hx-sys .pg-chonk.hx-act:not(.hx-act-primary)::before { inset-inline: var(--hx-slop); }
+  .hx-sys .pg-chonk.hx-act-primary { flex: none; padding-inline: 12px; }
+  .hx-sys .pg-chonk.hx-act-primary svg { flex: none; }
+  /* Views: one sideways-scrolling line reaching the card edge, where it stops on
+     a clean hard edge (no fade; the half-shown last pill says there is more). */
+  .hx-scroll {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    margin-inline: calc(-1 * var(--ds-pad-header-inline));
+    padding-inline: var(--ds-pad-header-inline) calc(var(--ds-pad-header-inline) + 12px);
+  }
+  .hx-scroll::-webkit-scrollbar { display: none; }
+  .hx-row.hx-tools-row { flex-wrap: nowrap; }
+  .hx-row.hx-tools-row .hx-search { flex: 1 1 auto; min-inline-size: 7.5rem; }
+  /* A phone keeps 16 px text in fields (iOS zooms into anything smaller). */
+  .hx-sys .pg-search-field { font-size: 1rem; }
+  .hx-pmode .pg-toggle { inline-size: 100%; }
+  .hx-pmode .pg-toggle .pg-toggle-item { flex: 1 1 0; }
+  .hx-head[data-opt="A"] > .hx-navrow { margin-inline: calc(-1 * var(--ds-pad-header-inline)); padding-inline: 4px; }
+  /* Campaign tabs: all five side by side, icon over label (like the dock),
+     so the current one is never scrolled out of sight. */
+  .hx-tabs[data-nav] {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 2px;
+  }
+  .hx-tabs[data-nav] .hx-tab {
+    position: relative;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    block-size: 52px;
+    min-inline-size: 0;
+    padding: 6px 2px 4px;
+    font-size: 0.6875rem;
+  }
+  .hx-tabs[data-nav] .hx-tab .hx-tab-count {
+    position: absolute;
+    inset-block-start: 4px;
+    inset-inline-start: calc(50% + 6px);
+    min-inline-size: 16px;
+    block-size: 16px;
+    padding: 0 4px;
+    font-size: 0.625rem;
+  }
+  /* Text buttons on the status line keep a 44 px target without growing the line. */
+  .hx-linkbtn {
+    min-block-size: var(--ds-hit-target);
+    margin-block: calc((20px - var(--ds-hit-target)) / 2);
+  }
+  .hx-notice { flex-wrap: wrap; padding: 12px; }
+  .hx-notice-copy { flex-basis: calc(100% - 48px); }
+  .hx-notice > .pg-chonk { margin-inline-start: 48px; }
+  .hx-lead { gap: var(--ds-space-3); }
+  .hx-member-name { display: none; }
+  .hx-toolbar[data-opt] .hx-toolbar-body { padding: var(--ds-space-3) var(--ds-pad-header-inline); }
+}
+
+/* ============================================================================
+   Part 4 - the gallery page (/lab/headers)
+   ========================================================================== */
+.hx-page {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-8);
+  inline-size: 100%;
+  padding: 1.5rem 1.75rem 7rem;
+}
+.hx-sec { display: flex; flex-direction: column; gap: var(--ds-space-4); min-inline-size: 0; }
+.hx-sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding-inline: 4px; }
+.hx-sec-title { color: var(--foreground); font-size: 1rem; font-weight: var(--ds-weight-heavy); letter-spacing: -0.01em; }
+.hx-sec-sub { color: var(--muted-foreground); font-size: 0.75rem; }
+.hx-sec-route {
+  margin-inline-start: auto;
+  color: var(--muted-foreground);
+  font-family: var(--font-geist-mono, ui-monospace, monospace);
+  font-size: 0.6875rem;
+}
+.hx-card {
+  padding: var(--ds-space-5) var(--ds-space-6);
+  border-radius: var(--radius-2xl);
+  background: var(--card);
+  box-shadow: var(--ds-shadow-border);
+}
+
+/* The system card: the scale, the named gaps, one row of every control. */
+.hx-sys-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: var(--ds-space-8);
+}
+.hx-sys-h { margin-block-end: var(--ds-space-3); color: var(--muted-foreground); font-size: 0.625rem; font-weight: var(--ds-weight-heavy); letter-spacing: 0.06em; text-transform: uppercase; }
+.hx-scale { display: grid; gap: 6px; }
+.hx-scale-row { display: grid; grid-template-columns: 64px 36px minmax(0, 1fr); align-items: center; gap: 12px; font-size: 0.75rem; }
+.hx-scale-row code { color: var(--muted-foreground); font-size: 0.6875rem; }
+.hx-scale-row b { color: var(--foreground); font-variant-numeric: tabular-nums; font-weight: var(--ds-weight-strong); }
+.hx-scale-bar {
+  block-size: 12px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--primary) 16%, var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary-ink) 22%, transparent);
+}
+.hx-gaps { display: grid; gap: 0; margin: 0; font-size: 0.75rem; }
+.hx-gaps > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px 88px;
+  align-items: center;
+  gap: 12px;
+  min-block-size: 32px;
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+.hx-gaps > div:last-child { box-shadow: none; }
+.hx-gaps dt { color: var(--foreground); }
+.hx-gaps dd { margin: 0; color: var(--foreground); font-variant-numeric: tabular-nums; font-weight: var(--ds-weight-strong); }
+.hx-gaps dd + dd { color: var(--muted-foreground); font-weight: 500; }
+.hx-gaps .hx-gaps-head dt,
+.hx-gaps .hx-gaps-head dd { color: var(--muted-foreground); font-size: 0.625rem; font-weight: var(--ds-weight-heavy); letter-spacing: 0.06em; text-transform: uppercase; }
+.hx-lineup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--ds-gap-group) - 2 * var(--hx-slop)) var(--ds-gap-group);
+  margin-block-start: var(--ds-space-6);
+  padding: var(--ds-space-4);
+  border-radius: var(--radius-xl);
+  background: color-mix(in oklab, var(--muted) 35%, var(--card));
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.hx-lineup .hx-search { flex: 0 1 220px; }
+.hx-lineup-note { margin-block-start: 8px; color: var(--muted-foreground); font-size: 0.75rem; }
+
+/* One header section: desktop frame, then phone frame beside its notes. */
+.hx-frame {
+  position: relative;
+  min-inline-size: 0;
+  padding: var(--ds-space-5);
+  border-radius: var(--radius-2xl);
+  background: color-mix(in oklab, var(--card) 78%, var(--background));
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.hx-frame-label {
+  position: absolute;
+  inset-block-start: -9px;
+  inset-inline-start: 16px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 0.625rem;
+  font-weight: var(--ds-weight-heavy);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.hx-pair { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--ds-space-6); }
+.hx-frame-phone {
+  flex: 0 0 auto;
+  inline-size: 390px;
+  max-inline-size: 100%;
+  padding: 20px;
+  border-radius: 32px;
+}
+.hx-notes { display: grid; min-inline-size: 16rem; flex: 1 1 18rem; gap: 12px; padding-block-start: 8px; }
+.hx-note { display: grid; gap: 4px; font-size: 0.75rem; line-height: 1.45; }
+.hx-note b { color: var(--foreground); font-size: 0.6875rem; font-weight: var(--ds-weight-heavy); letter-spacing: 0.05em; text-transform: uppercase; }
+.hx-note span { color: var(--muted-foreground); }
+.hx-note ul { margin: 0; padding-inline-start: 1rem; color: var(--muted-foreground); }
+.hx-note li + li { margin-block-start: 2px; }
+.hx-note-after span { color: var(--foreground); }
+
+/* The first piece of page content under a header, to show the header-to-content gap. */
+.hx-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-block-start: var(--ds-gap-content);
+  padding: var(--ds-pad-card-block) var(--ds-pad-card-inline);
+  border-radius: var(--radius-2xl);
+  background: var(--card);
+  box-shadow: var(--ds-shadow-border);
+}
+.hx-content-dot { inline-size: 40px; block-size: 40px; flex: 0 0 auto; border-radius: var(--radius-lg); background: var(--muted); }
+.hx-content-lines { display: grid; flex: 1 1 auto; gap: 8px; }
+.hx-content-lines i { display: block; block-size: 10px; border-radius: 4px; background: var(--muted); }
+.hx-content-lines i:first-child { inline-size: 42%; }
+.hx-content-lines i:last-child { inline-size: 26%; opacity: 0.7; }
+.hx-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--ds-space-2);
+  margin-block-start: var(--ds-gap-content);
+}
+.hx-stat {
+  display: grid;
+  gap: 4px;
+  padding: var(--ds-space-3);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  text-align: center;
+  box-shadow: var(--ds-shadow-border);
+}
+.hx-stat b { color: var(--foreground); font-size: 1rem; font-variant-numeric: tabular-nums; font-weight: var(--ds-weight-black); }
+.hx-stat span { color: var(--muted-foreground); font-size: 0.5625rem; font-weight: var(--ds-weight-heavy); letter-spacing: 0.05em; text-transform: uppercase; }
+
+/* Touch-ups: today's control beside the refined one. */
+.hx-touch { display: grid; grid-template-columns: repeat(auto-fill, minmax(30rem, 1fr)); gap: var(--ds-space-4); }
+.hx-touch-card { display: grid; align-content: start; gap: 12px; padding: var(--ds-space-4) var(--ds-space-5); border-radius: var(--radius-2xl); background: var(--card); box-shadow: var(--ds-shadow-border); }
+.hx-touch-title { color: var(--foreground); font-size: 0.8125rem; font-weight: var(--ds-weight-heavy); }
+.hx-touch-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 12px; min-block-size: 44px; }
+.hx-touch-row > span:first-child { color: var(--muted-foreground); font-size: 0.625rem; font-weight: var(--ds-weight-heavy); letter-spacing: 0.05em; text-transform: uppercase; }
+.hx-touch-row > div { display: flex; min-inline-size: 0; flex-wrap: wrap; align-items: center; gap: 8px; }
+.hx-touch-row .pg-search-wrap { flex: 1 1 12rem; margin: 0; }
+.hx-touch-row .hx-search { flex: 1 1 12rem; }
+.hx-touch-note { color: var(--muted-foreground); font-size: 0.75rem; line-height: 1.45; }
+.hx-h { color: var(--muted-foreground); font-size: 0.6875rem; font-variant-numeric: tabular-nums; font-weight: var(--ds-weight-strong); }
+
+/* Spacing redlines ("Show spacing"): row gaps as tinted bands with their
+   value, header padding as a tinted frame, every control's target dashed. */
+.hx-page {
+  --hx-rl: color-mix(in oklab, var(--color-status-pink) 16%, transparent);
+  --hx-rl-ink: var(--color-status-pink);
+}
+[data-theme="dark"] .hx-page { --hx-rl-ink: color-mix(in oklab, var(--color-status-pink) 70%, var(--foreground)); }
+.hx-page[data-redlines] [data-rl] { position: relative; }
+.hx-page[data-redlines] [data-rl]::before {
+  content: attr(data-rl);
+  position: absolute;
+  z-index: 3;
+  inset-inline: 0;
+  inset-block-start: calc(-1 * var(--rl, 12px));
+  display: grid;
+  block-size: var(--rl, 12px);
+  place-items: center;
+  background: var(--hx-rl);
+  color: var(--hx-rl-ink);
+  font-size: 9px;
+  font-weight: var(--ds-weight-heavy);
+  line-height: 1;
+  pointer-events: none;
+  animation: pg-overlayIn var(--ds-motion-fast) var(--ease-standard) both;
+}
+.hx-page[data-redlines] .hx-head[data-opt="A"]::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  border-color: var(--hx-rl);
+  border-style: solid;
+  border-width: var(--ds-pad-header-block) var(--ds-pad-header-inline);
+  border-radius: inherit;
+  pointer-events: none;
+  animation: pg-overlayIn var(--ds-motion-fast) var(--ease-standard) both;
+}
+.hx-page[data-redlines] .hx-head[data-opt="A"][data-nav]::after { border-block-end-width: 0; }
+.hx-page[data-redlines] .hx-sys :is(.pg-filter-pill, .pg-chonk, .ui-select, .pg-toggle, .pg-search-field) {
+  outline: 1px dashed color-mix(in oklab, var(--hx-rl-ink) 55%, transparent);
+  outline-offset: 0;
+}
+
+@container (max-width: 52rem) {
+  .hx-sys-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 850px) {
+  .hx-page { padding: var(--ds-phone-gutter) var(--ds-phone-gutter) 7rem; gap: var(--ds-space-6); }
+}
+@container (max-width: 30rem) {
+  .hx-frame { padding: 0; background: none; box-shadow: none; border-radius: 0; }
+  .hx-frame-label { position: static; display: inline-block; margin-block-end: 8px; }
+  .hx-frame-phone { inline-size: 100%; }
+  .hx-frame-desk-wrap { display: none; }
+  .hx-card { padding: var(--ds-space-4); }
+  .hx-gaps > div { grid-template-columns: minmax(0, 1fr) 48px 56px; }
+  .hx-touch { grid-template-columns: minmax(0, 1fr); }
+}
+.hx-desk-note { display: none; color: var(--muted-foreground); font-size: 0.75rem; }
+@container (max-width: 30rem) {
+  .hx-desk-note { display: block; padding-inline: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hx-head,
+  .hx-page[data-redlines] [data-rl]::before,
+  .hx-page[data-redlines] .hx-head::after { animation: none; }
+  .hx-ind { transition: none; }
+}
+
+/* The design's own rules, above the rebuilt headers. */
+.hx-optcard ul { display: grid; gap: 6px; margin: 0; padding-inline-start: 1.1rem; color: var(--foreground); font-size: 0.8125rem; line-height: 1.45; }
+.hx-optcard p { margin-block-start: 12px; color: var(--muted-foreground); font-size: 0.75rem; }
+
+/* The Posts tab's stat tiles in a phone frame: three across. */
+.hx-frame-phone { container-type: inline-size; }
+@container (max-width: 30rem) {
+  .hx-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hx-stat { padding: var(--ds-space-2); }
+  .hx-stat b { font-size: 0.875rem; }
+}
+.hx-phone-scale.hx-sys .pg-search-field,
+.hx-phone-scale .hx-sys .pg-search-field { font-size: 1rem; }
+@media (max-width: 850px) {
+  .hx-sys .pg-search-field { font-size: 1rem; }
+}
+.hx-note-metric em { color: var(--foreground); font-style: normal; font-variant-numeric: tabular-nums; font-weight: var(--ds-weight-heavy); }
+
+/* ============================================================================
+   Round 5 (2026-09-30): the header on the REAL pages
+   ========================================================================== */
+/* Real links as tabs (the campaign sub-tabs keep their prefetching links). */
+a.hx-tab { text-decoration: none; }
+
+/* A page's own control in an action's place, and a page's own Filters popover
+   trigger: drawn to the system (32, radius 8, 12 px label, inset hairline). */
+.hx-own,
+.hx-ownfilter { display: inline-flex; flex: 0 0 auto; align-items: center; }
+.hx-sys .hx-ownfilter > .ui-btn,
+.hx-sys .hx-ownfilter > button:not(.pg-chonk),
+.hx-sys .hx-own > .ui-btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  block-size: var(--ds-control-target);
+  min-block-size: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 0;
+  border-block: var(--hx-slop) solid transparent;
+  border-radius: var(--ds-control-radius) / calc(var(--ds-control-radius) + var(--hx-slop));
+  background-color: var(--card);
+  background-clip: padding-box;
+  color: var(--foreground);
+  font-size: var(--ds-control-text);
+  font-weight: var(--ds-weight-strong);
+  white-space: nowrap;
+  box-shadow: var(--hx-raise);
+}
+.hx-sys .hx-ownfilter > .ui-btn svg,
+.hx-sys .hx-own > .ui-btn svg { inline-size: var(--ds-control-icon); block-size: var(--ds-control-icon); }
+@media (hover: hover) and (pointer: fine) {
+  .hx-sys .hx-ownfilter > .ui-btn:hover,
+  .hx-sys .hx-own > .ui-btn:hover { background-color: color-mix(in oklab, var(--accent) 45%, var(--card)); }
+}
+/* A set filter reads as the Filters count does (tinted, primary ink). */
+.hx-sys .hx-ownfilter > .ui-btn[class*="border-primary"] {
+  background-color: color-mix(in oklab, var(--primary) 8%, var(--card));
+  color: var(--primary-ink);
+}
+@container hx (max-width: 30rem) {
+  /* Phone: the page's own Filters trigger becomes a 44 icon square like the
+     built-in one; its words stay as the accessible name. */
+  .hx-sys .hx-ownfilter > .ui-btn,
+  .hx-sys .hx-ownfilter > button:not(.pg-chonk) {
+    inline-size: var(--ds-control-target);
+    min-inline-size: var(--ds-control-target);
+    justify-content: center;
+    margin-inline: calc(-1 * var(--hx-slop));
+    padding: 0;
+    border-inline: var(--hx-slop) solid transparent;
+    border-radius: calc(var(--ds-control-radius) + var(--hx-slop));
+    font-size: 0;
+  }
+  .hx-sys .hx-ownfilter > .pg-chonk {
+    inline-size: var(--ds-control-target);
+    min-inline-size: var(--ds-control-target);
+    margin-inline: calc(-1 * var(--hx-slop));
+    padding-inline: 0;
+  }
+  .hx-sys .hx-ownfilter > .pg-chonk::after,
+  .hx-sys .hx-ownfilter > .pg-chonk::before { inset-inline: var(--hx-slop); }
+}
+
+/* The header on a real page: the named gap to the page content under it. */
+.hx-onpage { margin-block-end: var(--ds-gap-content); }
+/* A destructive quiet text button on the status line (Delete N). */
+.hx-linkbtn-danger { color: var(--destructive); }
+@media (hover: hover) and (pointer: fine) {
+  .hx-linkbtn-danger:hover { color: color-mix(in oklab, var(--destructive) 80%, var(--foreground)); }
+}
+[data-theme="dark"] .hx-linkbtn-danger { color: color-mix(in oklab, var(--destructive) 70%, var(--foreground)); }
+
+/* ---------------------------------------------------------------------------
+   A campaign page on the real site (campaign-detail-shell.tsx, and the fan
+   page): the shared header, then the tab's body card, joined into one card
+   (today's look, the tabs on the seam).
+   ------------------------------------------------------------------------- */
+.hx-detail-page .hx-detail-cover {
+  inline-size: 48px;
+  block-size: 48px;
+  border-radius: var(--radius-xl);
+}
+.hx-tags { display: inline-flex; flex: none; align-items: center; gap: var(--ds-space-2); }
+.hx-detail-page .hx-head[data-opt="A"] {
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  box-shadow: var(--ds-shadow-border);
+}
+.hx-detail-page .hx-detail-body {
+  padding: var(--ds-pad-header-block) var(--ds-pad-header-inline) var(--ds-space-6);
+}
+/* The tab's body card always reaches the page's foot: a tab with a few rows never
+   leaves the card short over an empty band (captain, click-test 2026-10-20, finding 15). */
+.pg-tray > .hx-detail-page { display: flex; flex-direction: column; min-block-size: 100%; }
+.pg-tray > .hx-detail-page > .hx-detail-body { flex: 1 0 auto; }
+.hx-lead .proto-fam-bar { flex: 1 1 auto; min-inline-size: 0; margin: 0; }
+.hx-lead .proto-fam-back { block-size: var(--ds-control-target); }
+
+/* A tab's toolbar inside the body card: the card is already the surface. */
+.hx-toolbar[data-embedded] .hx-toolbar-body {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.hx-toolbar[data-embedded] .hx-scroll { margin-inline: 0; padding-inline: 0; }
+.hx-toolbar[data-embedded] + *,
+.hx-wrap:has(> .hx-toolbar[data-embedded]) + * { margin-block-start: var(--ds-gap-content); }
+
+/* Toolbar rows: optional lead rows, then the views with the tools. */
+.hx-tb-lead { display: flex; min-inline-size: 0; flex-direction: column; gap: var(--ds-gap-row); }
+.hx-tb-lead + * { margin-block-start: calc(var(--ds-gap-row) - var(--hx-slop)); }
+.hx-tb-row {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hx-row-gap) var(--ds-gap-cluster);
+}
+.hx-tb-views { display: flex; min-inline-size: 0; flex: 0 1 auto; }
+.hx-tb-row > .hx-tb-tools { flex: 1 1 22rem; }
+@container hx (max-width: 30rem) {
+  .hx-tb-row { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+  .hx-tb-row > .hx-tb-tools { flex: 0 0 auto; }
+  .hx-tb-views > .hx-scroll { flex: 1 1 auto; }
+  .hx-detail-page .hx-detail-cover { inline-size: 40px; block-size: 40px; border-radius: var(--radius-lg); }
+}
+@container (max-width: 40rem) {
+  .hx-detail-page .hx-detail-body { padding: var(--ds-space-4); }
+}
+
+/* The campaign creator view bar measures a wrapper around each option (its
+   drawn area), so its thumb is not inset like the plain Segmented's. */
+:is(.hx-sys) .pg-toggle.pg-seg.pg-creator-view-bar > .pg-seg-thumb {
+  transform: translate(var(--pg-seg-x), var(--pg-seg-y));
+  block-size: var(--pg-seg-h);
+}
+.hx-sys .pg-creator-view-bar { inline-size: max-content; max-inline-size: 100%; }
+.hx-tb-lead > .pg-filter-bar { margin: 0; gap: var(--ds-gap-group); }
+.hx-cc-selection { flex-wrap: nowrap; }
+.hx-cc-selection > .pg-sort-button,
+.hx-cc-selection .pg-creator-delete { block-size: var(--ds-control); min-block-size: 0; }
+.hx-status .pd-lede { margin: 0; color: var(--muted-foreground); font-size: 0.75rem; }
+/* The Creators tab's saved views and filter chips share one line. */
+.hx-tb-leadrow {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hx-row-gap) var(--ds-gap-cluster);
+}
+.hx-tb-leadrow > .pg-filter-bar { margin: 0; gap: var(--ds-gap-group); }
+
+@container hx (max-width: 30rem) {
+  /* A crowded phone tools line (four squares or more): the search takes its own
+     line so it never shrinks to a stub; the squares sit under it, at the end. */
+  .hx-row.hx-tools-row[data-crowd] { flex-wrap: wrap; justify-content: flex-end; }
+  .hx-row.hx-tools-row[data-crowd] > .hx-search { flex: 1 1 100%; }
+  /* A long title wraps and its tags drop under it instead of squeezing it; a
+     campaign title (with a cover) stops at two lines, like the Campaigns card. */
+  .hx-titleline { flex-wrap: wrap; row-gap: var(--ds-space-1); }
+  .hx-titlerow[data-media] .hx-title {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+@container hx (min-width: 30.01rem) and (max-width: 56rem) {
+  .hx-row.hx-tools-row[data-many] > .hx-search { flex: 1 1 100%; max-inline-size: none; }
+}
+.hx-tb-leadrow > .pg-creator-view-bar { margin: 0; }
+.hx-sys .pg-creator-view-bar .pg-creator-view-add:not(:focus-visible) {
+  outline: 1px dashed var(--border);
+  outline-offset: calc(-1 * var(--hx-seg-slop) - 1px);
+}
+
+/* ---------------------------------------------------------------------------
+   Round 6 (captain Q8, 2026-09-30): the name of an icon-only button, shown on a
+   long press (touch), hover (mouse) or keyboard focus. One small bubble in the
+   site's popover look, above the button (below it near the top of the screen).
+   A long press only names the button; the tap still acts.
+   ------------------------------------------------------------------------- */
+.hx-sys [data-hx-tip],
+.hx-sys .hx-ownfilter > button {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.hx-tip {
+  position: fixed;
+  z-index: 60;
+  max-inline-size: calc(100vw - 16px);
+  padding: 6px 10px;
+  border-radius: var(--radius-lg);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: var(--ds-shadow-menu);
+  font-size: 0.75rem;
+  font-weight: var(--ds-weight-strong);
+  line-height: 16px;
+  white-space: nowrap;
+  pointer-events: none;
+  translate: -50% calc(-100% - 4px);
+  animation: pg-slideUpAndFade var(--ds-motion-fast) var(--ease-out-soft) both;
+}
+.hx-tip[data-below] { translate: -50% 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .hx-tip { animation: none; }
+}
+
+/* Round 6 (captain Q8): the phone title line stays ONE line. The title never
+   wraps; when it does not fit beside the actions at 20 px, "tight" sets it at
+   18 px with an 8 gap, and "squeeze" also lets the primary label shorten with
+   an ellipsis (page-header.tsx measures, from natural widths). A campaign title
+   (with a cover) keeps its two-line clamp. A primary action's short phone label
+   (`phoneLabel`) replaces its label on a phone. */
+.hx-act-label-phone { display: none; }
+@container hx (max-width: 30rem) {
+  .hx-act-primary .hx-act-label-desk { display: none; }
+  .hx-act-primary .hx-act-label-phone { display: inline; }
+  .hx-titlerow:not([data-media]) .hx-title {
+    overflow: hidden;
+    overflow-wrap: normal;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+  .hx-head[data-opt] > .hx-titlerow[data-fit] { column-gap: var(--ds-space-2); }
+  .hx-titlerow[data-fit]:not([data-media]) .hx-title { font-size: 1.125rem; }
+  .hx-head[data-opt] > .hx-titlerow[data-fit="squeeze"]:not([data-media]) {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+  .hx-titlerow[data-fit="squeeze"] .hx-actions { min-inline-size: 0; }
+  .hx-titlerow[data-fit="squeeze"] .pg-chonk.hx-act-primary { flex: 0 1 auto; min-inline-size: 0; }
+  .hx-titlerow[data-fit="squeeze"] .hx-act-primary > span { min-inline-size: 0; }
+  .hx-titlerow[data-fit="squeeze"] .hx-act-primary .hx-act-label {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

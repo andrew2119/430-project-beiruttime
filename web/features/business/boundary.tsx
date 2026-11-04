@@ -1,15 +1,14 @@
 "use client";
 import { Fragment, type ReactNode } from "react";
 import { useAccessContext } from "@/shell/access-context";
-import Link from "next/link";
-import { Button } from "@beirut-time/ui";
+import { Button, ButtonLink, State } from "@beirut-time/ui";
 import { useLocale } from "@/shell/locale-context";
 import {
   refreshSession,
   useSession,
   useSessionState,
 } from "@/features/identity/session";
-import { useCopy, Workspace } from "./components";
+import { BusinessLoading, useCopy, Workspace } from "./components";
 /** Private forms remount on actual account/org/access changes, not theme changes. */
 export default function BusinessBoundary({
   children,
@@ -30,16 +29,15 @@ export default function BusinessBoundary({
     return (
       <Workspace title={t.private} intro={t.contactIntro}>
         {state === "restoring" ? (
-          <p role="status">{t.loading}</p>
+          <BusinessLoading />
         ) : state === "unavailable" ? (
-          <div role="alert">
-            <p>{t.unavailable}</p>
+          <div role="alert"><State kind="error" title={t.retry} body={t.unavailable}>
             <Button onClick={() => void refreshSession().catch(() => {})}>
               {t.retry}
             </Button>
-          </div>
+          </State></div>
         ) : (
-          <Link href={`/${locale}/account`}>{t.signin}</Link>
+          <State title={t.signin} body={t.contactIntro}><ButtonLink href={`/${locale}/account`}>{t.signin}</ButtonLink></State>
         )}
       </Workspace>
     );

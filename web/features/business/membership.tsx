@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BidiReference, Card } from "@beirut-time/ui";
+import { BidiReference, Card, Checkbox, StatusBadge } from "@beirut-time/ui";
 import type { Membership } from "@contracts/contracts-identity/businesses";
 import { useAccessContext } from "@/shell/access-context";
 import { useSession } from "@/features/identity/session";
 import { businessRequest, command } from "./transport";
 import {
+  BusinessEmpty,
+  BusinessLoading,
   Feedback,
   capabilityLabel,
   Field,
@@ -50,13 +52,15 @@ export default function Memberships() {
         </form>
         <Feedback error={query.error} />
       </Card>
+      {business && query.isPending && <BusinessLoading />}
+      {query.data?.items.length === 0 && <BusinessEmpty text={t.noMembers} />}
       {query.data?.items.map((member) => (
         <Card key={`${member.id}:${member.revision}`}>
           <h2>
             <BidiReference>{member.subject_id}</BidiReference>
           </h2>
           <p>
-            {t[member.state]} · {t.revision} {member.revision}
+            <StatusBadge hue={member.state === "active" ? "green" : "orange"}>{t[member.state]}</StatusBadge> · {t.revision} {member.revision}
           </p>
           <p>{member.intervention_scope}</p>
           <p>
@@ -120,15 +124,10 @@ export default function Memberships() {
                   "business.records.read",
                   "business.staff.manage",
                 ].map((capability) => (
-                  <label key={capability}>
-                    <input
-                      type="checkbox"
-                      name="capabilities"
-                      value={capability}
-                      defaultChecked={member.capabilities.includes(capability)}
-                    />
+                  <Checkbox key={capability} name="capabilities" value={capability}
+                    defaultChecked={member.capabilities.includes(capability)}>
                     {capabilityLabel(capability, t)}
-                  </label>
+                  </Checkbox>
                 ))}
               </fieldset>
               <Field
@@ -184,14 +183,9 @@ export default function Memberships() {
                 "business.records.read",
                 "business.staff.manage",
               ].map((capability) => (
-                <label key={capability}>
-                  <input
-                    type="checkbox"
-                    name="capabilities"
-                    value={capability}
-                  />
+                <Checkbox key={capability} name="capabilities" value={capability}>
                   {capabilityLabel(capability, t)}
-                </label>
+                </Checkbox>
               ))}
             </fieldset>
             <Field

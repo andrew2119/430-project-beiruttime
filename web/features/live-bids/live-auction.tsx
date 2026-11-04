@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { BidiReference } from '@beirut-time/ui';
+import { AnimatedList, BidiReference, Card, StatusBadge } from '@beirut-time/ui';
 import { useLocale } from '@/shell/locale-context';
 import type { AuctionSnapshot } from '@contracts/contracts-catalog/discovery';
 import { discoveryApi } from '../discovery/api';
@@ -47,17 +47,17 @@ export default function LiveAuction({listingId}:{listingId:string}) {
   },[listingId]);
   const fresh=connection==='connected',remaining=snapshot&&clock?secondsRemaining(snapshot.ends_at,clock,now):null,price=snapshot?displayedPrice(snapshot):null;
   const status=connection==='connected'?t.liveNow:connection==='connecting'?t.connecting:connection==='offline'?t.offline:connection==='not_started'?t.notStarted:t.reconnecting;
-  return <section className="live-auction" aria-labelledby="live-auction-title" data-connection={connection}>
+  return <Card className="live-auction" aria-labelledby="live-auction-title" data-connection={connection}>
     <div className="live-auction-heading"><h2 id="live-auction-title">{t.live}</h2><p role="status" className="discovery-help">{status}</p></div>
     {!fresh&&connection!=='not_started'&&<p className="notice">{t.auctionUnavailable}</p>}
     {snapshot&&<>
-      <div className="live-auction-stats"><div><p>{price?.opening?t.openingPrice:t.currentPrice}{!fresh?' · —':''}</p><strong>{fresh&&price?exactMoney(price.money.amount,price.money.currency,locale):'—'}</strong></div><div><p>{t.remaining}</p><strong><BidiReference>{fresh&&remaining!==null?countdown(remaining):'—'}</BidiReference></strong></div><span className="discovery-badge">{t[snapshot.status]}</span></div>
+      <div className="live-auction-stats"><div><p>{price?.opening?t.openingPrice:t.currentPrice}{!fresh?' · —':''}</p><strong>{fresh&&price?exactMoney(price.money.amount,price.money.currency,locale):'—'}</strong></div><div><p>{t.remaining}</p><strong><BidiReference>{fresh&&remaining!==null?countdown(remaining):'—'}</BidiReference></strong></div><StatusBadge hue={snapshot.status==='open'?'green':snapshot.status==='scheduled'?'blue':'neutral'}>{t[snapshot.status]}</StatusBadge></div>
       {fresh&&<p className="discovery-help">{t.endsAt}: <time dateTime={snapshot.ends_at}>{new Intl.DateTimeFormat(locale,{timeZone:'Asia/Beirut',dateStyle:'medium',timeStyle:'short'}).format(new Date(snapshot.ends_at))}</time></p>}
       {fresh&&snapshot.status==='scheduled'&&snapshot.starts_at&&<p className="discovery-help">{t.startsAt}: <time dateTime={snapshot.starts_at}>{new Intl.DateTimeFormat(locale,{timeZone:'Asia/Beirut',dateStyle:'medium',timeStyle:'short'}).format(new Date(snapshot.starts_at))}</time></p>}
       {fresh&&remaining===0&&snapshot.status==='open'&&<p role="status">{t.elapsed}</p>}
       <p className="sr-only" role="status" key={snapshot.last_sequence}>{t.newBid} {snapshot.last_sequence}</p>
-      <div className="live-auction-history"><h3>{t.history}</h3><p className="discovery-help">{t.masked}</p>{!snapshot.bids.length?<p>{snapshot.history_truncated?t.emptyHistoryWindow:t.noBids}</p>:<ol>{[...snapshot.bids].sort((a,b)=>b.sequence-a.sequence).map(bid=><li key={bid.sequence}><span><BidiReference>#{bid.sequence} · {bid.bidder_label}</BidiReference></span><strong>{exactMoney(bid.amount.amount,bid.amount.currency,locale)}</strong><time dateTime={bid.accepted_at}>{new Intl.DateTimeFormat(locale==='ar'?'ar-LB':'en-GB',{timeZone:'Asia/Beirut',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(bid.accepted_at))}</time></li>)}</ol>}{snapshot.history_truncated&&<p className="discovery-help">{t.latestHistory}</p>}</div>
+      <div className="live-auction-history"><h3>{t.history}</h3><p className="discovery-help">{t.masked}</p>{!snapshot.bids.length?<p>{snapshot.history_truncated?t.emptyHistoryWindow:t.noBids}</p>:<div role="list"><AnimatedList items={[...snapshot.bids].sort((a,b)=>b.sequence-a.sequence)} getKey={bid=>bid.sequence} enters={(_bid,shownBefore)=>!shownBefore}>{bid=><div role="listitem" className="live-auction-history-row"><span><BidiReference>#{bid.sequence} · {bid.bidder_label}</BidiReference></span><strong>{exactMoney(bid.amount.amount,bid.amount.currency,locale)}</strong><time dateTime={bid.accepted_at}>{new Intl.DateTimeFormat(locale==='ar'?'ar-LB':'en-GB',{timeZone:'Asia/Beirut',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(bid.accepted_at))}</time></div>}</AnimatedList></div>}{snapshot.history_truncated&&<p className="discovery-help">{t.latestHistory}</p>}</div>
       <p className="discovery-help">{t.canonicalVersion}: <BidiReference>{snapshot.revision}</BidiReference> · {t.endVersion}: <BidiReference>{snapshot.end_version}</BidiReference></p>
     </>}
-  </section>;
+  </Card>;
 }

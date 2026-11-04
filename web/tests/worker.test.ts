@@ -25,3 +25,19 @@ it('never intercepts APIs, RSC, external resources or commands; activation waits
   handlers.get('message')!({ data:'SKIP_WAITING' });
   expect(skipWaiting).toHaveBeenCalledTimes(1);
 });
+
+it('retires only older public caches after activation so updated icons can load', async () => {
+  const handlers = new Map<string, (event: Record<string, unknown>) => void>();
+  const deleted = vi.fn().mockResolvedValue(true);
+  const claim = vi.fn().mockResolvedValue(undefined);
+  runInNewContext(readFileSync('public/sw.js', 'utf8'), {
+    self: { addEventListener: (name: string, handler: (event: Record<string, unknown>) => void) => handlers.set(name, handler), clients: { claim } },
+    caches: { keys: vi.fn().mockResolvedValue(['bt-public-v1', 'bt-public-v2', 'unrelated-cache']), delete: deleted },
+  });
+  let activation: Promise<void> | undefined;
+  handlers.get('activate')!({ waitUntil: (task: Promise<void>) => { activation = task; } });
+  await activation;
+  expect(deleted).toHaveBeenCalledTimes(1);
+  expect(deleted).toHaveBeenCalledWith('bt-public-v1');
+  expect(claim).toHaveBeenCalledTimes(1);
+});
