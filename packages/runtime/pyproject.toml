@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bt-runtime"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ['bt-contracts-core==0.1.0', 'bt-bulkheads==0.1.0', 'bt-events==0.1.0', 'fastapi==0.121.0', 'pydantic-settings==2.12.0', 'asyncpg==0.30.0', 'PyJWT[crypto]==2.10.1']
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"bt_runtime" = ["migrations/*.sql"]

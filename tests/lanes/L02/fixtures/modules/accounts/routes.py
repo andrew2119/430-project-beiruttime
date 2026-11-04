@@ -122,6 +122,9 @@ async def login(body: Credentials, request: Request, response: Response):
             result, refresh = None, None
             await audit(tx, request, None, None, 'account.login', 'denied')
         else:
+            if not account['password_hash'].startswith('scrypt$16384$8$5$'):
+                upgraded = await password_work(hash_password,body.password)
+                await tx.execute('UPDATE identity_accounts SET password_hash=$2 WHERE id=$1',account['id'],upgraded)
             result, refresh = await new_session(tx, request, account)
             await audit(tx, request, account['id'], account['id'], 'account.login', 'accepted')
     if result is None:

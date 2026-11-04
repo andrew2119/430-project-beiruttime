@@ -33,7 +33,7 @@ for attempt in {1..50}; do
 done
 chrome-devtools-axi open http://localhost:3202/en/business >/dev/null
 chrome-devtools-axi emulate --viewport 1440x900x1 >/dev/null
-chrome-devtools-axi run < tests/lanes/L02/browser-public.js > tests/lanes/L02/evidence/public-desktop.json
+chrome-devtools-axi run < tests/lanes/L02/browser-public.mjs > tests/lanes/L02/evidence/public-desktop.json
 chrome-devtools-axi emulate --viewport 390x844x3,mobile,touch >/dev/null
-chrome-devtools-axi run < tests/lanes/L02/browser-public.js > tests/lanes/L02/evidence/public-phone.json
+chrome-devtools-axi run < tests/lanes/L02/browser-public.mjs > tests/lanes/L02/evidence/public-phone.json
 printf '%s\n' 'Eight connected public browser cells passed, including asserted 390px viewport and clipping/target checks.'

@@ -5,7 +5,7 @@ The production routes and all their acknowledged writes remain real PostgreSQL.
 """
 
 import hashlib
-import importlib.util
+import importlib
 import json
 import os
 import shutil
@@ -19,7 +19,6 @@ import pytest_asyncio
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from bt_runtime.app import db
-from bt_runtime.app.main import create_app
 from bt_runtime.app.settings import Settings
 from bt_runtime.modules import discover
 
@@ -42,12 +41,15 @@ for name in ("accounts", "private-seller"):
         shutil.copytree(
             HERE / "fixtures/modules" / name, MODULES / name, dirs_exist_ok=True
         )
-try:
-    provider = importlib.util.find_spec("service_app.identity")
-except ModuleNotFoundError:
-    provider = None
-if provider is None:
-    sys.path.insert(0, str(HERE / "fixtures/runtime"))
+provider_runtime = (
+    Path("/app")
+    if Path("/app/service_app/main.py").is_file()
+    else SOURCE.parent / "runtime"
+)
+if not (provider_runtime / "service_app/main.py").is_file():
+    provider_runtime = HERE / "fixtures/runtime"
+sys.path.insert(0, str(provider_runtime))
+create_app = importlib.import_module("service_app.main").create_app
 os.environ["BT_MODULES_PATH"] = str(MODULES)
 pytest_plugins = ["bt_runtime.testing"]
 PERMISSIONS = [
@@ -97,6 +99,7 @@ async def api(database_url, monkeypatch):
     monkeypatch.setenv("BT_CONTACT_SIMULATOR", "1")
     monkeypatch.setenv("BT_WEB_ORIGIN", "http://identity")
     monkeypatch.setenv("BT_LOCAL_HTTP", "1")
+    monkeypatch.delenv("BT_EVENT_PRIVATE_KEY", raising=False)
     private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     private_pem = private.private_bytes(
         serialization.Encoding.PEM,
@@ -192,7 +195,11 @@ async def api(database_url, monkeypatch):
                     state["permissions"],
                 )
                 state["authority"][actor] = tuple(state["permissions"])
-            if request.method == "POST" and request.url.path == "/v1/private-reviews":
+            if (
+                request.method == "POST"
+                and request.url.path == "/v1/private-reviews"
+                and state.get("seed_case_on_assign", True)
+            ):
                 body = json.loads(request.content)
                 if state["seller_type"] == "private":
                     identity = UUID(body["application_id"])

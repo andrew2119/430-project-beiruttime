@@ -1,0 +1,2 @@
+# L00-owned fallback for an absent lane. Consumer fragments are never scaffolded here.
+services: {}

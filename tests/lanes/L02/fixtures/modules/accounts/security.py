@@ -18,7 +18,7 @@ from bt_runtime.principal import CurrentPrincipal, OrganizationGrant
 
 hash_slots = asyncio.Semaphore(2)
 # One verification KDF for unknown and known recipients; this value grants no identity.
-DUMMY_PASSWORD_HASH = 'scrypt$AAAAAAAAAAAAAAAAAAAAAA==$+RF4mCDRd3vqijnTN1XYGJ7Ugd+50DsEb4BfXrVOdQ0='
+DUMMY_PASSWORD_HASH = 'scrypt$16384$8$5$AAAAAAAAAAAAAAAAAAAAAA==$+/fpavYGsDiOiBCZChyFGxxutVCG281aiPQJ1W3Ot24='
 
 
 def digest(token: str) -> str:
@@ -34,24 +34,40 @@ def private_key() -> str:
 
 def hash_password(password: str, salt: bytes | None = None) -> str:
     salt = salt or secrets.token_bytes(16)
-    value = hashlib.scrypt(password.encode(), salt=salt, n=16384, r=8, p=1, dklen=32)
-    return 'scrypt$' + base64.b64encode(salt).decode() + '$' + base64.b64encode(value).decode()
+    # The 16 MiB/p=5 profile keeps two concurrent verifications inside the runtime budget.
+    value = hashlib.scrypt(password.encode(), salt=salt, n=16384, r=8, p=5, dklen=32)
+    return 'scrypt$16384$8$5$' + base64.b64encode(salt).decode() + '$' + base64.b64encode(value).decode()
 
 
 def password_matches(password: str, encoded: str) -> bool:
     try:
-        _, salt, _ = encoded.split('$')
-        return hmac.compare_digest(hash_password(password, base64.b64decode(salt)), encoded)
+        parts = encoded.split('$')
+        if len(parts) == 3 and parts[0] == 'scrypt':
+            _, salt, expected = parts
+            parallelism = 1  # Read-only compatibility; successful login upgrades this profile.
+        elif len(parts) == 6 and parts[:4] == ['scrypt','16384','8','5']:
+            _, _, _, _, salt, expected = parts
+            parallelism = 5
+        else:
+            return False
+        value = hashlib.scrypt(password.encode(),salt=base64.b64decode(salt,validate=True),n=16384,r=8,p=parallelism,dklen=32)
+        return hmac.compare_digest(value,base64.b64decode(expected,validate=True))
     except (ValueError, TypeError):
         return False
 
 
 async def password_work(callback, *args):
-    # Bound allocations before running memory-hard work off the event loop.
+    # Cancellation must not free capacity while its blocking KDF still owns memory.
     if hash_slots.locked():
         raise PublicError('try_later', 'Try again shortly.', status=429)
-    async with hash_slots:
-        return await asyncio.to_thread(callback, *args)
+    await hash_slots.acquire()
+    task = asyncio.create_task(asyncio.to_thread(callback,*args))
+    def completed(result):
+        hash_slots.release()
+        if not result.cancelled():
+            result.exception()
+    task.add_done_callback(completed)
+    return await asyncio.shield(task)
 
 
 def check_password(value: str):
@@ -105,7 +121,7 @@ async def event(tx, request, subject, kind):
 
 
 async def projection(tx, account, session):
-    grants = await tx.fetch('SELECT * FROM identity_access_grants WHERE subject_id=$1 AND revoked_at IS NULL', account['id'])
+    grants = await tx.fetch('SELECT * FROM identity_access_grants WHERE subject_id=$1 AND revoked_at IS NULL ORDER BY organization_id,role,id', account['id'])
     roles, permissions, orgs = {'buyer'}, set(), {}
     for grant in grants:
         if grant['organization_id'] is None:
