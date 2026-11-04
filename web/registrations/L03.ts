@@ -8,6 +8,7 @@ export default {
   routes: [
     { path: "/seller/listings", roles: [...sellers], area: "seller" },
     { path: "/seller/listings/:id", roles: [...sellers], area: "seller" },
+    { path: "/seller/dashboard", roles: [...sellers], area: "seller" },
   ],
   navigation: [
     {
@@ -15,6 +16,14 @@ export default {
       href: "/seller/listings",
       label: { en: "My listings", ar: "إعلاناتي" },
       order: 30,
+      area: "seller",
+      roles: [...sellers],
+    },
+    {
+      id: "seller-dashboard",
+      href: "/seller/dashboard",
+      label: { en: "Seller workspace", ar: "لوحة البائع" },
+      order: 20,
       area: "seller",
       roles: [...sellers],
     },
