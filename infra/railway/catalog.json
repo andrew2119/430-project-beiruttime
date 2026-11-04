@@ -1,0 +1,26 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "services/catalog/runtime/Dockerfile",
+    "watchPatterns": [
+      "services/catalog/**",
+      "packages/**",
+      "contracts/**",
+      "infra/foundation/discover-contracts.py",
+      "infra/foundation/package-contracts.py",
+      "demo/**",
+      "web/public/demo/**",
+      ".dockerignore",
+      "infra/railway/catalog.json"
+    ]
+  },
+  "deploy": {
+    "healthcheckPath": "/health/ready",
+    "healthcheckTimeout": 120,
+    "preDeployCommand": [
+      "sh -c 'BT_DATABASE_URL=\"$BT_MIGRATION_DATABASE_URL\" python -m service_app.migrate'"
+    ],
+    "startCommand": "sh -c 'unset BT_MIGRATION_DATABASE_URL; exec uvicorn bt_runtime.app.main:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log'"
+  }
+}
