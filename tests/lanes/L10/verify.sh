@@ -43,6 +43,8 @@ docker run --name "$lint_container" -v "$PWD:/work:ro" "$image" ruff check --no-
   /work/services/catalog/modules/options/color /work/services/catalog/modules/options/material \
   /work/services/catalog/modules/options/dial /work/services/catalog/modules/options/sophistication \
   /work/packages/contracts-catalog/options /work/tests/lanes/L10
+pnpm --filter beirut-time-web lint
+pnpm --filter beirut-time-web typecheck
 pnpm build
 pnpm test
 pnpm --filter beirut-time-web exec vitest run --config features/brand-options/vitest.config.ts
