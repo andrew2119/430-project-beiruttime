@@ -11,15 +11,9 @@ import { movementPath, privateRequest, useJsonCommand } from '../service-directo
 import type { Configuration, Movement, MovementSelection } from '@contracts/contracts-service/directory';
 import en from './en.json';
 import ar from './ar.json';
+import { formatMinor } from './money';
 
 type OptionsPage = { items: Movement[]; next_after: string | null };
-function formatMinor(minor: number, currency: 'USD' | 'LBP', locale: 'en' | 'ar') {
-  return new Intl.NumberFormat(locale === 'ar' ? 'ar-LB' : 'en-LB', {
-    style: 'currency', currency,
-    minimumFractionDigits: currency === 'USD' ? 2 : 0,
-    maximumFractionDigits: currency === 'USD' ? 2 : 0,
-  }).format(minor / (currency === 'USD' ? 100 : 1));
-}
 function initialConfiguration(option?: Movement): Configuration {
   return { case: option?.cases[0] ?? '', dial: option?.dials[0] ?? '', hands: option?.hands[0] ?? '', functions: option?.functions ?? [] };
 }
@@ -109,7 +103,7 @@ export default function MovementOption({ brandId, sample }: { brandId: string; s
       <p className="eyebrow">{t.restored}</p>
       <dl>
         <div><dt>{t.savedOption}</dt><dd><BidiReference>{stored.option_id} · v{stored.option_revision}</BidiReference></dd></div>
-        <div><dt>{t.impact}</dt><dd><BidiReference>{formatMinor(stored.quote_impact.minor, stored.quote_impact.currency, locale)}</BidiReference></dd></div>
+        <div><dt>{t.impact}</dt><dd><BidiReference>{formatMinor(stored.quote_impact.minor, stored.quote_impact.currency, locale, t.minorUnits)}</BidiReference></dd></div>
         {(['case', 'dial', 'hands'] as const).map(field => <div key={field}><dt>{t[field]}</dt><dd><BidiReference>{stored.configuration[field]}</BidiReference></dd></div>)}
         <div><dt>{t.functions}</dt><dd><BidiReference>{stored.configuration.functions.join(', ') || '—'}</BidiReference></dd></div>
       </dl>
@@ -127,7 +121,7 @@ export default function MovementOption({ brandId, sample }: { brandId: string; s
       {options.hasNextPage && <Button type="button" className="button-secondary" disabled={options.isFetchingNextPage} onClick={() => void options.fetchNextPage()}>{t.more}</Button>}
       <div className="movement-facts">
         <span>{t.caliber}<br /><strong><BidiReference>{selected.caliber}</BidiReference></strong></span>
-        <span>{t.impact}<br /><strong><BidiReference>{formatMinor(selected.quote_minor, selected.currency, locale)}</BidiReference></strong></span>
+        <span>{t.impact}<br /><strong><BidiReference>{formatMinor(selected.quote_minor, selected.currency, locale, t.minorUnits)}</BidiReference></strong></span>
       </div>
       <p className="directory-muted">{t.units}</p>
       <div className="movement-fields">
