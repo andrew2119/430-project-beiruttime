@@ -1,0 +1,1 @@
+{"version":1,"id":"L09.operator-workspace","dependencies":["fastapi","httpx"],"routes":["routes.py:router"],"workers":["routes.py:run"]}

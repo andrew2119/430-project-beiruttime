@@ -1,0 +1,4 @@
+export type IntakeCommandV1 = {order_id:string;custody_receipt_id:string|null;serial:string;reference:string;movement:string;received_condition:string;accessories:string;reported_issue:string;assessed_issue:string;diagnostic_opening_permission:boolean;no_polish_acknowledged:boolean;fee_acknowledged:boolean;fee_minor:number;currency:'USD'|'LBP'};
+export type IntakeEventV1 = {record_id:string;order_id:string;organization_id:string;state:'awaiting_intake'|'received';revision:number;custody_receipt_id:string|null};
+export type IntakeEvidenceUploadV1 = {kind:'condition_photo'|'prior_owner_record';media_type:'image/jpeg'|'image/png'|'image/webp'|'application/pdf';content_base64:string};
+export type CustodyReceiptV1 = {id:string;order_id:string;organization_id:string;received_at:string;revision:number;valid:true};

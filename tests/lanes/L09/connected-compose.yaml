@@ -1,0 +1,35 @@
+services:
+  proof:
+    image: ${BT_L09_TEST_IMAGE:?Use an existing dependency test image}
+    pull_policy: never
+    command: [python, /workspace/tests/lanes/L09/connected_identity.py]
+    environment:
+      BT_L09_CONNECTED_PROOF: "1"
+      BT_L09_PROOF_ORIGIN: ${BT_L09_PROOF_ORIGIN:?Set the exact local web origin}
+      TEST_DATABASE_ADMIN_URL: ${TEST_DATABASE_ADMIN_URL:?Use the local test maintenance database}
+      PYTHONPATH: /opt/domain-contracts:/workspace/packages/runtime/src:/workspace/packages/events/src:/workspace/packages/bulkheads/src:/workspace/packages/contracts-core/src
+    volumes:
+      - ${BT_L09_WORKTREE:?}:/workspace:ro
+      - ${BT_L09_CONTRACTS:?}:/opt/domain-contracts:ro
+    ports:
+      - "127.0.0.1::18301"
+      - "127.0.0.1::18306"
+      - "127.0.0.1::18307"
+    networks: [proof-network]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; [urllib.request.urlopen('http://127.0.0.1:'+str(p)+'/health/ready', timeout=2) for p in (18301,18306,18307)]"]
+      interval: 2s
+      timeout: 10s
+      retries: 40
+    cpus: 0.5
+    mem_limit: 384m
+    pids_limit: 128
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    stop_grace_period: 30s
+networks:
+  proof-network:
+    external: true
+    name: ${BT_L09_NETWORK:-beirut-time_default}
