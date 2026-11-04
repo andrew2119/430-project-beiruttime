@@ -109,6 +109,32 @@ async def test_report_claim_hide_reinstate_appeal_and_durable_outbox(api):
 
 
 @pytest.mark.asyncio
+async def test_failed_outbox_decision_rolls_back_case_audit_and_request_key(api,monkeypatch):
+    client,app=api
+    case=(await report(client)).json()['id']
+    path=f'/v1/moderation/cases/{case}'
+    await client.post(path+'/claim',headers=headers('reviewer','rollback-claim',1))
+    module=next(module for module in app.state.modules if module.id=='L09.moderation')
+    command=module.load('routes.py:decide')
+    async def failed_enqueue(*args,**kwargs):
+        raise RuntimeError('Proof outbox unavailable')
+    body={'action':'hide','reason':'SAMPLE transaction rollback proof'}
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app,raise_app_exceptions=False),base_url='http://trust') as guarded:
+        with monkeypatch.context() as patch:
+            patch.setitem(command.__globals__,'enqueue',failed_enqueue)
+            result=await guarded.post(path+'/decisions',headers=headers('reviewer','rollback-decision',2),json=body)
+            assert result.status_code==500
+    async with app.state.pool.acquire() as tx:
+        row=await tx.fetchrow('SELECT revision,last_action FROM moderation_cases WHERE id=$1',UUID(case))
+        assert row['revision']==2 and row['last_action'] is None
+        assert await tx.fetchval('SELECT count(*) FROM moderation_audit')==1
+        assert await tx.fetchval('SELECT count(*) FROM outbox')==0
+        assert await tx.fetchval("SELECT count(*) FROM moderation_operations WHERE key='rollback-decision'")==0
+    retried=await client.post(path+'/decisions',headers=headers('reviewer','rollback-decision',2),json=body)
+    assert retried.status_code==200 and retried.json()['revision']==3
+
+
+@pytest.mark.asyncio
 async def test_permissions_conflicts_scoped_previews_and_atomic_races(api):
     client,app=api
     assert (await client.get('/v1/moderation/cases',headers=headers())).status_code==403
