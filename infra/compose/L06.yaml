@@ -1,0 +1,3 @@
+# Secondary modules are discovered inside the sole L05 Auction and L07
+# Communications runtimes. This lane never starts a parallel authority.
+services: {}
