@@ -33,11 +33,13 @@ async def bridge(app, stop):
                 token = jwt.encode({'sub': 'communications', 'type': 'service',
                     'iss': app.state.settings.auth_issuer, 'aud': 'communications',
                     'iat': now, 'exp': now + 60}, key, algorithm='RS256')
-                # communications.inbox.v1 carries bounded references, never caller URLs or bid ceilings.
-                body = {'occurrence_id': 'bid-notice:' + notice['id'], 'recipient_id': str(row['recipient_id']),
-                    'kind': notice['kind'], 'resource_id': notice['auction_id'], 'resource_revision': None,
-                    'resource_owner_id': str(row['recipient_id']), 'event_time': notice['created_at'],
-                    'required': True, 'sample': False}
+                # Match Inbox's released, authenticated Bid-notices V1 bridge.
+                # All values come from the sanitized accepted-event projection;
+                # href is only a relative listing reference, never a caller URL.
+                body = {'id':notice['id'], 'recipient_id':str(row['recipient_id']),
+                    'kind':notice['kind'], 'resource_type':'auction', 'resource_id':notice['auction_id'],
+                    'href':notice['href'], 'created_at':notice['created_at'], 'resource_revision':None,
+                    'data':{key:notice[key] for key in ('current_minor','currency','ends_at','sequence')}}
                 result = await inbox.request('POST', '/internal/v1/notices', json=body,
                     headers={'Authorization': 'Bearer ' + token, 'Idempotency-Key': notice['id']})
                 ok = not isinstance(result, Unavailable) and 200 <= result.status_code < 300

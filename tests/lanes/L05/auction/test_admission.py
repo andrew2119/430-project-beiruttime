@@ -65,8 +65,11 @@ class Upstreams:
             return httpx.Response(200, json=self.contact_payload if self.contact_payload is not None else
                 {'revision': 1, 'email_verified': self.contact, 'phone_verified': False, 'pending_challenge': None})
         if name == 'catalog':
-            return httpx.Response(200, json={'id': str(self.listing_id), 'watch_id': str(self.watch_id), 'seller_id': str(self.listing_seller_id),
-                'seller_organization_id': str(self.listing_organization_id) if self.listing_organization_id else None, 'status': 'published' if self.published else 'hidden'})
+            assert path == f'/v1/listings/{self.listing_id}'
+            return httpx.Response(200, json={'id': str(self.listing_id), 'physical_watch_id': str(self.watch_id), 'seller_id': str(self.listing_seller_id),
+                'organization_id': str(self.listing_organization_id) if self.listing_organization_id else None,
+                'registration':{'watch_id':str(self.watch_id),'listing_id':str(self.listing_id),'sale_mode':'auction','revision':1},
+                'facts':{'sale_mode':'auction'}, 'status': 'published' if self.published else 'hidden'})
         if name == 'orders':
             try:
                 claims = jwt.decode(token, SERVICE_PUBLIC, algorithms=['RS256'], audience='orders', issuer='beirut-time-identity')
