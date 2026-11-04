@@ -13,7 +13,7 @@ PYTHONPATH=tests/lanes .venv/bin/python -m L11.browser_fixture > .venv/browser-f
 BT_PUBLIC_WEB_ORIGINS=http://127.0.0.1:3111 BT_TRUST_FORWARDED_ORIGIN=false \
 IDENTITY_API_URL=http://127.0.0.1:38101 CATALOG_API_URL=http://127.0.0.1:38102 SERVICE_OPERATIONS_API_URL=http://127.0.0.1:38109 \
   node web/node_modules/next/dist/bin/next "$next_command" web --hostname 127.0.0.1 --port 3111 > .venv/web.log 2>&1 & web=$!
-cleanup() { kill "$web" "$fixture" 2>/dev/null || true; wait "$web" "$fixture" 2>/dev/null || true; }
+cleanup() { chrome-devtools-axi stop >/dev/null 2>&1 || true; kill "$web" "$fixture" 2>/dev/null || true; wait "$web" "$fixture" 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
 for _ in {1..50}; do
   if curl -fsS http://127.0.0.1:3111/api/health >/dev/null 2>&1 && curl -fsS http://127.0.0.1:38109/health/ready >/dev/null 2>&1; then break; fi
@@ -22,8 +22,11 @@ done
 curl -fsS http://127.0.0.1:3111/api/health >/dev/null
 curl -fsS http://127.0.0.1:38109/health/ready >/dev/null
 curl -fsSL --max-redirs 5 http://127.0.0.1:3111/en/services > .venv/proof-page.html
-printf '{"mode":"%s","identity":"contract fixture","domain_persistence":"isolated PostgreSQL","web_host":"127.0.0.1"}\n' "${L11_WEB_MODE:-production}" > tests/lanes/L11/evidence/environment.json
+authority='contract fixture'
+if [ "${L11_REAL_ACCOUNTS_PROOF:-0}" = 1 ]; then authority='real Accounts routes; business/staff V1 fixture'; fi
+printf '{"mode":"%s","identity":"%s","domain_persistence":"isolated PostgreSQL","web_host":"127.0.0.1"}\n' "${L11_WEB_MODE:-production}" "$authority" > tests/lanes/L11/evidence/environment.json
 echo 'Proof services ready'
+chrome-devtools-axi open http://127.0.0.1:3111/en/services >/dev/null
 check_json() { .venv/bin/python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert isinstance(d,dict) and d and all(v is True for v in d.values())' "$1"; }
 for variant in 'desktop|1440x1000x1' 'phone|390x844x1,mobile,touch' 'narrow|320x740x1,mobile,touch' 'landscape|932x430x1,mobile,touch'; do
   name=${variant%%|*}; viewport=${variant#*|}
@@ -71,4 +74,13 @@ console.log(JSON.stringify({movement_recovers:true}));
 JS
 check_json .venv/outage-4.json
 printf '{"directory_hides_unverified":true,"directory_recovers":true,"movement_failure_isolated":true,"no_invented_price":true,"movement_recovers":true}\n' > tests/lanes/L11/evidence/outage-dom.json
+if [ "${L11_REAL_ACCOUNTS_PROOF:-0}" = 1 ]; then
+  for variant in 'desktop|1440x1000x1' 'phone|390x844x1,mobile,touch'; do
+    name=${variant%%|*}; viewport=${variant#*|}
+    chrome-devtools-axi emulate --viewport "$viewport" >/dev/null
+    chrome-devtools-axi run < tests/lanes/L11/buyer-ui-proof.js > "tests/lanes/L11/evidence/buyer-$name-dom.json"
+    .venv/bin/python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert len(d["cases"])==4 and d["cross_buyer_isolation"] is True and d["revoked_session_clears_private_state"] is True' "tests/lanes/L11/evidence/buyer-$name-dom.json"
+    echo "$name real-buyer UI persistence/privacy/units passed"
+  done
+fi
 node tests/lanes/L11/capture.cjs

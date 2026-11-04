@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from bt_bulkheads import DependencyClient, Unavailable
 from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_events import OutboxRelay
-from bt_runtime.principal import CurrentPrincipal, current_principal
+from bt_runtime.principal import CurrentPrincipal
 
 
 class OfficialBusiness(BaseModel):
@@ -42,22 +42,22 @@ async def scoped_principal(request: Request, organization_id: UUID | None = None
     authorization = request.headers.get('Authorization', '')
     if not authorization.startswith('Bearer ') or not 1 <= len(authorization[7:]) <= 8192:
         raise PublicError('unauthorized', 'Sign in to continue.', status=401)
-    try:
-        if organization_id is None:
-            result = await current_principal(identity_for(request.app), authorization[7:], request.state.request_id)
-        else:
-            result = await identity_for(request.app).request('GET', '/internal/v1/principal',
-                params={'organization_id': str(organization_id)},
-                headers={'Authorization': authorization, 'X-Request-ID': request.state.request_id})
-            if not isinstance(result, Unavailable):
-                if result.status_code != 200:
-                    raise AccessDenied('Current organization membership could not be established')
-                result = CurrentPrincipal.model_validate(result.json())
-    except (ValidationError, ValueError):
-        raise PublicError('unavailable', 'Identity is temporarily unavailable.', status=503) from None
+    result = await identity_for(request.app).request('GET', '/internal/v1/principal',
+        params={'organization_id': str(organization_id)} if organization_id else {},
+        headers={'Authorization': authorization, 'X-Request-ID': request.state.request_id})
     if isinstance(result, Unavailable):
         raise PublicError('unavailable', 'Identity is temporarily unavailable.', status=503)
-    return result
+    # Preserve expired/revoked authentication so the browser can refresh or discard private state.
+    if result.status_code == 401:
+        raise PublicError('unauthorized', 'Sign in to continue.', status=401)
+    if result.status_code == 403:
+        raise AccessDenied('Current organization membership could not be established')
+    if result.status_code != 200:
+        raise PublicError('unavailable', 'Identity is temporarily unavailable.', status=503)
+    try:
+        return CurrentPrincipal.model_validate(result.json())
+    except (ValidationError, ValueError):
+        raise PublicError('unavailable', 'Identity is temporarily unavailable.', status=503) from None
 
 
 async def official(request: Request, organization_id: UUID, *, brand_only=False, capability: str | None = None):

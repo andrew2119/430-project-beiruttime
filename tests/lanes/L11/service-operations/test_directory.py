@@ -1,5 +1,5 @@
 import asyncio
-from uuid import uuid4
+from uuid import UUID, uuid4
 import pytest
 from L11.conftest import BRAND, DEALER
 
@@ -50,7 +50,7 @@ async def test_publication_scope_revision_replay_and_atomic_outbox(directory):
         assert await tx.fetchval('SELECT count(*) FROM outbox')==1
         assert 'sample@example.invalid' not in await tx.fetchval('SELECT envelope::text FROM outbox LIMIT 1')
     identity.revoked=True
-    assert (await client.put(f'/v1/directory/businesses/{BRAND}',json=profile(expected_revision=1),headers=headers(key='revoked-key-v1'))).status_code==403
+    assert (await client.put(f'/v1/directory/businesses/{BRAND}',json=profile(expected_revision=1),headers=headers(key='revoked-key-v1'))).status_code==401
 
 
 @pytest.mark.asyncio
@@ -148,3 +148,48 @@ async def test_directory_requires_jobs_grant_and_cannot_enlarge_onboarding_scope
     assert (await client.get('/v1/directory/businesses?purpose=servicing')).json()['items']==[]
     assert (await client.get(f'/v1/directory/providers/{BRAND}')).status_code==409
     assert len((await client.get('/v1/directory/businesses?purpose=customization')).json()['items'])==1
+
+
+@pytest.mark.asyncio
+async def test_filtered_scan_stays_bounded_and_keeps_a_progress_cursor(directory):
+    client,app,identity=directory
+    assert (await client.put(f'/v1/directory/businesses/{BRAND}',json=profile(),headers=headers())).status_code==200
+    identifiers=[UUID(int=BRAND.int+index) for index in range(21)]
+    # Same-module fixture snapshots only; Identity authority remains a separate transport fixture.
+    async with app.state.pool.acquire() as tx:
+        for organization in identifiers[1:]:
+            await tx.execute('''INSERT INTO directory_profiles(organization_id,revision,capabilities,contact,visit_en,visit_ar,scope_en,scope_ar,published)
+                SELECT $1,revision,capabilities,contact,visit_en,visit_ar,scope_en,scope_ar,published
+                FROM directory_profiles WHERE organization_id=$2''',organization,BRAND)
+    for organization in identifiers:
+        identity.kinds[str(organization)]='brand'
+        identity.capabilities[str(organization)]=['customization']
+    identity.capabilities[str(identifiers[-1])]=['servicing']
+    identity.requests.clear()
+    first=await client.get('/v1/directory/businesses?limit=20')
+    assert first.status_code==200
+    assert first.json()=={'items':[],'next_after':str(identifiers[19])}
+    assert len(identity.requests)==20
+    identity.requests.clear()
+    second=await client.get('/v1/directory/businesses',params={'after':first.json()['next_after']})
+    assert second.status_code==200 and second.json()['next_after'] is None
+    assert [item['organization_id'] for item in second.json()['items']]==[str(identifiers[-1])]
+    assert len(identity.requests)==1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('upstream,expected',[(401,401),(403,403),(404,503),(200,503)])
+async def test_principal_authentication_scope_and_malformed_responses_stay_distinct(directory,monkeypatch,upstream,expected):
+    import httpx
+    client,app,identity=directory
+    original=identity.handle
+    def authority(request):
+        if request.url.path=='/internal/v1/principal':
+            return httpx.Response(upstream,json={})
+        return original(request)
+    monkeypatch.setattr(identity,'handle',authority)
+    assert (await client.get('/v1/directory/choices/current',headers=headers('buyer'))).status_code==expected
+    assert (await client.put(f'/v1/directory/businesses/{BRAND}',json=profile(),headers=headers())).status_code==expected
+    async with app.state.pool.acquire() as tx:
+        assert await tx.fetchval('SELECT count(*) FROM directory_profiles')==0
+        assert await tx.fetchval('SELECT count(*) FROM outbox')==0

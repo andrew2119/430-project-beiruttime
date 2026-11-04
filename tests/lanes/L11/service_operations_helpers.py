@@ -2,7 +2,7 @@ def headers(token='brand', key='directory-proof-v1'):
     return {'Authorization': 'Bearer ' + token, 'Idempotency-Key': key}
 
 
-async def prove_signed_delivery(app, monkeypatch):
+async def prove_signed_delivery(app, monkeypatch, receiver_status=204):
     import asyncio
     import json
     import httpx
@@ -26,7 +26,7 @@ async def prove_signed_delivery(app, monkeypatch):
         assert claims['type']=='service' and claims['sub']==envelope['source']==app.state.settings.service_name
         assert claims['exp']-claims['iat']==60
         verified.append(envelope['id'])
-        return httpx.Response(204)
+        return httpx.Response(receiver_status)
     def dependency(name, url, **kwargs):
         if name=='communications':
             kwargs['transport']=httpx.MockTransport(receive)
@@ -42,4 +42,8 @@ async def prove_signed_delivery(app, monkeypatch):
     await asyncio.wait_for(worker(app,stop),3)
     assert verified==[str(event.id)]
     async with app.state.pool.acquire() as tx:
-        assert await tx.fetchval('SELECT delivered_at IS NOT NULL FROM outbox WHERE event_id=$1',event.id)
+        row=await tx.fetchrow('SELECT delivered_at,attempts,leased_until,available_at>now() AS backoff FROM outbox WHERE event_id=$1',event.id)
+        assert (row['delivered_at'] is not None)==(200<=receiver_status<300)
+        assert row['attempts']==1 and row['leased_until'] is None
+        if receiver_status>=300:
+            assert row['backoff'] is True

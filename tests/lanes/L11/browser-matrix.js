@@ -21,9 +21,11 @@ for(const locale of ['en','ar']){
       foreground:getComputedStyle(document.body).color,background:getComputedStyle(document.body).backgroundColor
     })));
     if(context.locale!==locale||context.dir!==(locale==='ar'?'rtl':'ltr')||context.theme!==theme||context.overflow||context.businessCount!==1||context.sampleLabels<2||!context.detailFocused||!context.publicContextPreserved||context.smallControls)throw new Error(JSON.stringify(context));
-    await page.fill('.movement-panel form > label:last-of-type > input','hours, minutes, seconds, chronograph');
+    // CSS fill changes the DOM without notifying React; use focused keyboard input.
+    await page.eval(()=>{const input=document.querySelector('.movement-panel form > label:last-of-type > input');input.focus();input.select();});
+    await page.type('hours, minutes, seconds, chronograph');
     const value=await page.eval(()=>document.querySelector('.movement-panel form > label:last-of-type > input').value);
-    if(value!=='hours, minutes, seconds, chronograph')throw new Error('Functions editing lost a comma or value');
+    if(value!=='hours, minutes, seconds, chronograph')throw new Error(`Functions editing mismatch: ${value}`);
     await page.eval(()=>document.querySelector('.movement-panel a.button').scrollIntoView({block:'center',behavior:'instant'}));
     const target=JSON.parse(await page.eval(()=>{const e=document.querySelector('.movement-panel a.button'),r=e.getBoundingClientRect(),m=document.querySelector('main').getBoundingClientRect();return JSON.stringify({reachable:r.top>=m.top&&r.bottom<=m.bottom,uncovered:e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)),signIn:e.getAttribute('href').includes('/account?next=')});}));
     if(!target.reachable||!target.uncovered||!target.signIn)throw new Error(JSON.stringify(target));

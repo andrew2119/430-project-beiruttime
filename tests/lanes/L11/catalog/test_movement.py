@@ -133,7 +133,56 @@ async def test_movement_requires_catalog_stock_grant_and_current_customization_o
 
 
 @pytest.mark.asyncio
-async def test_movement_event_uses_the_authenticated_receiver_contract(movement,monkeypatch):
+async def test_movement_event_uses_signed_foundation_transport(movement,monkeypatch):
     from L11.service_operations_helpers import prove_signed_delivery
     _,app,_=movement
     await prove_signed_delivery(app,monkeypatch)
+
+
+@pytest.mark.asyncio
+async def test_refused_movement_event_stays_pending_with_bounded_retry(movement,monkeypatch):
+    from L11.service_operations_helpers import prove_signed_delivery
+    _,app,_=movement
+    await prove_signed_delivery(app,monkeypatch,receiver_status=403)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('upstream,expected',[(401,401),(403,403),(404,503),(200,503)])
+async def test_movement_principal_errors_preserve_session_recovery(movement,monkeypatch,upstream,expected):
+    import httpx
+    client,app,identity=movement
+    original=identity.handle
+    def authority(request):
+        if request.url.path=='/internal/v1/principal':
+            return httpx.Response(upstream,json={})
+        return original(request)
+    monkeypatch.setattr(identity,'handle',authority)
+    assert (await client.get(f'/v1/options/movement/selections/current?brand_id={BRAND}',headers=headers('buyer'))).status_code==expected
+    assert (await client.put(f'/v1/options/movement/{OPTION}',json=option(),headers=headers())).status_code==expected
+    async with app.state.pool.acquire() as tx:
+        assert await tx.fetchval('SELECT count(*) FROM movement_options')==0
+        assert await tx.fetchval('SELECT count(*) FROM outbox')==0
+
+
+@pytest.mark.asyncio
+async def test_withdrawn_option_keeps_private_snapshot_across_application_restart(movement):
+    import httpx
+    from bt_runtime.app.main import create_app
+    from bt_runtime.app.db import create_pool
+    client,app,identity=movement
+    assert (await client.put(f'/v1/options/movement/{OPTION}',json=option(),headers=headers())).status_code==200
+    expected=(await client.post('/v1/options/movement/selections',json=selection(),headers=headers('buyer'))).json()
+    assert (await client.put(f'/v1/options/movement/{OPTION}',json=option(expected_revision=1,active=False),headers=headers(key='withdraw-movement-v1'))).status_code==200
+    assert (await client.get(f'/v1/options/movement/{OPTION}')).status_code==404
+    assert (await client.get(f'/v1/options/movement?brand_id={BRAND}')).json()['items']==[]
+    assert (await client.post('/v1/options/movement/selections',json=selection(expected_revision=1,option_revision=2),headers=headers('buyer','withdrawn-selection-v1'))).status_code==409
+    restarted=create_app(app.state.settings)
+    restarted.state.pool=await create_pool(app.state.settings.database_url,1)
+    restarted.state.l11_identity=app.state.l11_identity
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=restarted),base_url='http://restarted.fixture') as new:
+            response=await new.get(f'/v1/options/movement/selections/current?brand_id={BRAND}',headers=headers('buyer'))
+            assert response.status_code==200 and response.json()['selection']==expected
+            assert (await new.get(f'/v1/options/movement/selections/current?brand_id={BRAND}',headers=headers('other'))).json()['selection'] is None
+    finally:
+        await restarted.state.pool.close()

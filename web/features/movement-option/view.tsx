@@ -40,7 +40,7 @@ export default function MovementOption({ brandId, sample }: { brandId: string; s
   const savedKey = ['movement-selection', access.fingerprint, brandId];
   const saved = useQuery({
     queryKey: savedKey,
-    queryFn: ({ signal }) => privateRequest<{ selection: MovementSelection | null }>(`${movementPath}/selections/current?brand_id=${brandId}`, { signal }),
+    queryFn: ({ signal }) => privateRequest<{ selection: MovementSelection | null }>(`${movementPath}/selections/current?brand_id=${brandId}`, { signal, accessFingerprint: access.fingerprint ?? undefined }),
     enabled: signedIn,
     retry: false,
   });

@@ -1,1 +1,1 @@
-{"mode":"production","identity":"contract fixture","domain_persistence":"isolated PostgreSQL","web_host":"127.0.0.1"}
+{"mode":"production","identity":"real Accounts routes; business/staff V1 fixture","domain_persistence":"isolated PostgreSQL","web_host":"127.0.0.1"}

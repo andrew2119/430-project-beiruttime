@@ -32,7 +32,7 @@ function DirectoryContent() {
   const businesses = directory.data?.pages.flatMap(page=>page.items) ?? [];
   const command = useJsonCommand();
   const choiceKey = ['directory-choice',access.fingerprint];
-  const saved = useQuery({queryKey:choiceKey,queryFn:({signal})=>privateRequest<{choice:Choice|null}>(`${directoryPath}/choices/current`,{signal}),enabled:signedIn,retry:false});
+  const saved = useQuery({queryKey:choiceKey,queryFn:({signal})=>privateRequest<{choice:Choice|null}>(`${directoryPath}/choices/current`,{signal,accessFingerprint:access.fingerprint??undefined}),enabled:signedIn,retry:false});
   const savedChoice = saved.data?.choice;
   const selectedId = businessId || savedChoice?.organization_id || '';
   const selectedDetail = useQuery({

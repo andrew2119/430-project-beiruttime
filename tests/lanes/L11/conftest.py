@@ -55,7 +55,7 @@ class IdentityFixture:
 
 
 @asynccontextmanager
-async def module_stack(kind, database_url, database_owner_url):
+async def module_stack(kind, database_url, database_owner_url, accounts_app=None):
     # Container runner mounts the owning module; host runner can cover both domains.
     root = ROOT / ('services/service-operations/modules/directory' if kind=='directory' else 'services/catalog/modules/options/movement')
     if not root.exists():
@@ -68,12 +68,23 @@ async def module_stack(kind, database_url, database_owner_url):
     app = create_app(settings)
     app.state.pool = await db.create_pool(database_url,2)
     identity = IdentityFixture()
-    dependency = DependencyClient('identity','http://identity.fixture',transport=httpx.MockTransport(identity.handle),failure_threshold=50)
+    accounts = httpx.AsyncClient(transport=httpx.ASGITransport(app=accounts_app),base_url='http://identity.fixture') if accounts_app else None
+    async def authority(request):
+        fixture_tokens = {'Bearer buyer','Bearer other','Bearer brand','Bearer dealer','Bearer cross'}
+        if (accounts and not identity.unavailable and request.url.path == '/internal/v1/principal'
+                and request.headers.get('Authorization') not in fixture_tokens):
+            return await accounts.request(request.method,str(request.url),headers=dict(request.headers),content=request.content)
+        return identity.handle(request)
+    dependency = DependencyClient('identity','http://identity.fixture',transport=httpx.MockTransport(authority),failure_threshold=50)
     app.state.l11_identity = dependency
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://service.fixture') as client:
-        yield client, app, identity
-    await dependency.aclose()
-    await app.state.pool.close()
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://service.fixture') as client:
+            yield client, app, identity
+    finally:
+        await dependency.aclose()
+        if accounts:
+            await accounts.aclose()
+        await app.state.pool.close()
 
 
 @pytest_asyncio.fixture

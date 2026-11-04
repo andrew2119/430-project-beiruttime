@@ -54,7 +54,14 @@ async def test_missing_signer_leaves_intent_pending_without_claiming_peer_events
 
 
 @pytest.mark.asyncio
-async def test_directory_service_event_uses_the_authenticated_receiver_contract(directory,monkeypatch):
+async def test_directory_service_event_uses_signed_foundation_transport(directory,monkeypatch):
     from L11.service_operations_helpers import prove_signed_delivery
     _,app,_=directory
     await prove_signed_delivery(app,monkeypatch)
+
+
+@pytest.mark.asyncio
+async def test_refused_directory_event_stays_pending_with_bounded_retry(directory,monkeypatch):
+    from L11.service_operations_helpers import prove_signed_delivery
+    _,app,_=directory
+    await prove_signed_delivery(app,monkeypatch,receiver_status=403)
