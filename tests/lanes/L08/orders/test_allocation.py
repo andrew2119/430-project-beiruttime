@@ -502,6 +502,9 @@ async def test_released_communications_receiver_keeps_the_bounded_client(market)
     dependency = DependencyClient("communications", "http://communications", transport=httpx.MockTransport(receiver))
     try:
         adapter = module.InboxDestination(dependency)
+        from bt_events import OutboxRelay
+        relay = OutboxRelay(app.state.pool, {'communications':adapter}, headers=lambda _: {})
+        assert adapter.timeout == dependency.timeout and relay.lease_seconds >= 30
         response = await adapter.request(
             "POST", "/internal/v1/events", json={"id": "same-event"}, headers={"Authorization": "Bearer service-test"}
         )
