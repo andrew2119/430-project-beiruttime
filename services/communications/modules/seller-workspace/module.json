@@ -1,0 +1,1 @@
+{"version":1,"id":"L03.seller-workspace","dependencies":["fastapi","httpx","asyncpg","PyJWT"],"routes":["routes.py:router","events.py:router"],"migrations":["migrations/L03_0001_updates.sql"],"workers":["routes.py:manage_clients"]}

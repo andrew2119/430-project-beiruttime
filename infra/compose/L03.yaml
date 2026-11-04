@@ -1,0 +1,25 @@
+services:
+  catalog:
+    mem_limit: 512m
+    image: beirut-time/catalog:local
+    build:
+      context: .
+      dockerfile: services/catalog/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/catalog
+    environment:
+      BT_REQUEST_BODY_LIMIT: "8500000"
+      BT_ENVIRONMENT: ${BT_ENVIRONMENT:-local}
+      BT_AUTH_PUBLIC_KEY: ${BT_AUTH_PUBLIC_KEY:-}
+      BT_SERVICE_AUTH_PRIVATE_KEY: ${BT_SERVICE_AUTH_PRIVATE_KEY:-}
+      BT_SERVICE_AUTH_PUBLIC_KEY: ${BT_SERVICE_AUTH_PUBLIC_KEY:-}
+      IDENTITY_URL: ${IDENTITY_URL:-http://identity:8000}
+      PRICING_URL: ${PRICING_URL:-http://pricing:8000}
+      ORDERS_URL: ${ORDERS_URL:-http://orders:8000}
+  catalog-migrate:
+    image: beirut-time/catalog:local
+    build:
+      context: .
+      dockerfile: services/catalog/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/catalog

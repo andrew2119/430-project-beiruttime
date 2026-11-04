@@ -1,0 +1,153 @@
+{
+  "version": "v3.1",
+  "lane": "L03",
+  "story": "V31-DEMO",
+  "jira_feature": "BT-13",
+  "import_contract": {
+    "max_original_bytes": 8000000,
+    "max_decoded_pixels": 20000000,
+    "timeout_seconds": 15,
+    "max_redirects": 3,
+    "allowed_hosts": [
+      "upload.wikimedia.org"
+    ],
+    "formats": [
+      "image/jpeg",
+      "image/png"
+    ],
+    "output_max_edge": 1600,
+    "record_after_download": [
+      "resolved_url",
+      "sha256",
+      "bytes",
+      "mime",
+      "dimensions",
+      "variant_changes"
+    ],
+    "rules": [
+      "Download to owned local demo asset directory; never hotlink in the demo.",
+      "Use bounded streaming and actual image decoding; reject missing or changed license metadata.",
+      "Render author/source/license links on detail and /image-credits; preserve credit on thumbnails and exports.",
+      "For altered CC BY-SA images distribute the derivative under its same license; do not claim share-alike relicenses unrelated application code.",
+      "No legal, brand affiliation or photographed-stock ownership claim. All prices and sellers are synthetic.",
+      "Do not enable production import/reset. Preserve real listings."
+    ]
+  },
+  "assets": [
+    {
+      "id": "IMG-01",
+      "title": "Seiko 5",
+      "file": "seiko-5.jpg",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Seiko_5.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Seiko_5.jpg",
+      "author": "Isik",
+      "author_url": "https://commons.wikimedia.org/wiki/User:Isik",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "original_dimensions": [
+        3456,
+        4608
+      ],
+      "alt_en": "Illustrative photograph of a Seiko 5 automatic watch",
+      "alt_ar": "صورة توضيحية لساعة سيكو 5 أوتوماتيكية",
+      "checked_on": "2026-11-04",
+      "source_repository": "Wikimedia Commons",
+      "planned_local_path": "web/public/demo/watches/seiko-5.jpg",
+      "changes": "Oriented, metadata removed, aspect-preserving resize to at most 1600 pixels; JPEG/PNG re-encoded.",
+      "credit": "Seiko 5 — Isik, CC BY-SA 4.0, via Wikimedia Commons",
+      "source_evidence": "Exact Wikimedia Commons file-page author and license checked 2026-11-04; services/catalog/fixtures/demo/license-evidence.json.",
+      "share_alike_required": true,
+      "use": "Illustrative demo photography only; does not establish stock ownership, authenticity, condition, permission to sell the photographed physical watch, or brand endorsement.",
+      "resolved_url": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Seiko_5.jpg",
+      "source_sha256": "4e8c6f95eeb1ba88040f0d314ebee0eef25c98a676988c4458b3f7be92cb2d84",
+      "source_bytes": 1769668,
+      "local_sha256": "989c5822d6fffcb2e65cfb909cebf154c6373fb804dfbb0c1878916d8cbe1adf",
+      "local_bytes": 121187,
+      "local_dimensions": [
+        1200,
+        1600
+      ],
+      "local_url": "/demo/watches/seiko-5.jpg",
+      "derivative_license": "CC BY-SA 4.0",
+      "derivative_license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution_metadata": "Authored JPEG comment: author, source, license and changes; source metadata removed."
+    },
+    {
+      "id": "IMG-02",
+      "title": "Omega X33 ‘Mars’ watch",
+      "file": "omega-x33-mars.jpg",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Omega_X33_%27Mars%27_watch.jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Omega_X33_%27Mars%27_watch.jpg",
+      "author": "Chris Gaunt",
+      "author_url": "https://commons.wikimedia.org/wiki/User:Chris_Gaunt",
+      "license": "CC BY 3.0",
+      "license_url": "https://creativecommons.org/licenses/by/3.0/",
+      "original_dimensions": [
+        1024,
+        768
+      ],
+      "alt_en": "Illustrative photograph of an Omega X33 Mk1 titanium watch",
+      "alt_ar": "صورة توضيحية لساعة أوميغا إكس 33 من التيتانيوم",
+      "checked_on": "2026-11-04",
+      "source_repository": "Wikimedia Commons",
+      "planned_local_path": "web/public/demo/watches/omega-x33-mars.jpg",
+      "changes": "Oriented, metadata removed, aspect-preserving resize to at most 1600 pixels; JPEG/PNG re-encoded.",
+      "credit": "Omega X33 ‘Mars’ watch — Chris Gaunt, CC BY 3.0, via Wikimedia Commons",
+      "source_evidence": "Exact Wikimedia Commons file-page author and license checked 2026-11-04; services/catalog/fixtures/demo/license-evidence.json.",
+      "share_alike_required": false,
+      "use": "Illustrative demo photography only; does not establish stock ownership, authenticity, condition, permission to sell the photographed physical watch, or brand endorsement.",
+      "resolved_url": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Omega_X33_%27Mars%27_watch.jpg",
+      "source_sha256": "59066f7be58d52cd8d0b93bedcfb67bccb4b6ab8e68c7b757928b10e990f574d",
+      "source_bytes": 871007,
+      "local_sha256": "65a4c5aa28de40e9cc68afa080b9c83ae7435bcce1c138c00bca27e30735a56b",
+      "local_bytes": 204058,
+      "local_dimensions": [
+        1024,
+        768
+      ],
+      "local_url": "/demo/watches/omega-x33-mars.jpg",
+      "derivative_license": "CC BY 3.0",
+      "derivative_license_url": "https://creativecommons.org/licenses/by/3.0/",
+      "attribution_metadata": "Authored JPEG comment: author, source, license and changes; source metadata removed."
+    },
+    {
+      "id": "IMG-03",
+      "title": "Vintage Seiko Automatic 21 Jewels",
+      "file": "seiko-automatic-21-jewels.jpg",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Vintage_Seiko_Automatic_(Self-Winding)_Wrist_Watch,_21_Jewels,_Made_in_Japan_(11755025415).jpg",
+      "download_url": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Vintage_Seiko_Automatic_%28Self-Winding%29_Wrist_Watch%2C_21_Jewels%2C_Made_in_Japan_%2811755025415%29.jpg",
+      "author": "Joe Haupt (France1978)",
+      "author_url": "https://www.flickr.com/photos/51764518@N02",
+      "license": "CC BY-SA 2.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/2.0/",
+      "original_dimensions": [
+        2544,
+        3274
+      ],
+      "alt_en": "Illustrative photograph of a Seiko Automatic 21 Jewels wristwatch",
+      "alt_ar": "صورة توضيحية لساعة سيكو أوتوماتيكية 21 حجراً",
+      "checked_on": "2026-11-04",
+      "source_repository": "Wikimedia Commons",
+      "planned_local_path": "web/public/demo/watches/seiko-automatic-21-jewels.jpg",
+      "changes": "Oriented, metadata removed, aspect-preserving resize to at most 1600 pixels; JPEG/PNG re-encoded.",
+      "credit": "Vintage Seiko Automatic 21 Jewels — Joe Haupt (France1978), CC BY-SA 2.0, via Wikimedia Commons",
+      "source_evidence": "Exact file page Summary author Joe Haupt and Licensing CC BY-SA 2.0 checked 2026-11-04. Flickr review confirms cc-by-sa-2.0. Evidence: services/catalog/fixtures/demo/replacement-license-evidence.json.",
+      "replacement_reason": "Original planned IMG-03 returned HTTP 429 repeatedly; same-brand openly licensed replacement authorized for this illustrative fixture.",
+      "share_alike_required": true,
+      "use": "Illustrative demo photography only; does not establish stock ownership, authenticity, condition, permission to sell the photographed physical watch, or brand endorsement.",
+      "resolved_url": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Vintage_Seiko_Automatic_%28Self-Winding%29_Wrist_Watch%2C_21_Jewels%2C_Made_in_Japan_%2811755025415%29.jpg",
+      "source_sha256": "27b46c3f1738fe87b2b1e8391bf8fd33754d45620c45ad7a1a1072a71ba230bd",
+      "source_bytes": 2454076,
+      "local_sha256": "c5ee9bea012e9e6738b41aebfe89b989bd165d0de6f10d9c000e81996b517059",
+      "local_bytes": 383323,
+      "local_dimensions": [
+        1243,
+        1600
+      ],
+      "local_url": "/demo/watches/seiko-automatic-21-jewels.jpg",
+      "derivative_license": "CC BY-SA 2.0",
+      "derivative_license_url": "https://creativecommons.org/licenses/by-sa/2.0/",
+      "attribution_metadata": "Authored JPEG comment: author, source, license and changes; source metadata removed."
+    }
+  ]
+}

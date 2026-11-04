@@ -1,0 +1,95 @@
+# Disposable connected proof. Every runtime has a unique restricted database;
+# shared PostgreSQL is only storage. No other lane's service is replaced.
+name: bt-l03-connected
+x-common: &common
+  read_only: true
+  tmpfs: [/tmp]
+  mem_limit: 256m
+  cpus: 0.5
+  networks: [storage]
+x-env: &env
+  BT_AUTH_ISSUER: beirut-time-identity
+  BT_AUTH_AUDIENCE: beirut-time
+  BT_AUTH_PUBLIC_KEY: ${L03_AUTH_PUBLIC_KEY:?}
+  BT_SERVICE_AUTH_PUBLIC_KEY: ${L03_SERVICE_PUBLIC_KEY:?}
+  BT_SERVICE_AUTH_PRIVATE_KEY: ${L03_SERVICE_PRIVATE_KEY:?}
+  BT_EVENT_PRIVATE_KEY: ${L03_SERVICE_PRIVATE_KEY:?}
+  BT_ENVIRONMENT: demo
+  IDENTITY_URL: http://l03-identity:8000
+  IDENTITY_API_URL: http://l03-identity:8000
+  CATALOG_URL: http://l03-catalog:8000
+  CATALOG_API_URL: http://l03-catalog:8000
+  PRICING_URL: http://l03-pricing:8000
+  PRICING_API_URL: http://l03-pricing:8000
+  ORDERS_URL: http://l03-orders:8000
+  ORDERS_API_URL: http://l03-orders:8000
+  COMMUNICATIONS_URL: http://l03-communications:8000
+  COMMUNICATIONS_API_URL: http://l03-communications:8000
+services:
+  l03-identity:
+    <<: *common
+    image: beirut-time/identity:local
+    environment:
+      <<: *env
+      BT_SERVICE_NAME: identity
+      BT_DATABASE_URL: ${L03_IDENTITY_DATABASE_URL:?}
+      BT_AUTH_PRIVATE_KEY: ${L03_AUTH_PRIVATE_KEY:?}
+      BT_LOCAL_HTTP: '1'
+      BT_WEB_ORIGIN: http://localhost:3077
+      BT_ALLOWED_WEB_ORIGINS: http://localhost:3077
+    ports: ['127.0.0.1:43101:8000']
+    volumes:
+      - ../../../services/identity/runtime/service_app:/app/service_app:ro
+      - ../../../services/identity/modules:/app/modules:ro
+      - ../../../packages/runtime/src/bt_runtime:/opt/venv/lib/python3.11/site-packages/bt_runtime:ro
+      - ../../../packages/events/src/bt_events:/opt/venv/lib/python3.11/site-packages/bt_events:ro
+      - ./bootstrap_identity.py:/proof/bootstrap_identity.py:ro
+      - ./artifacts/isolated-actors.key:/proof/isolated-actors.key:ro
+  l03-catalog:
+    <<: *common
+    image: beirut-time/catalog:local
+    mem_limit: 512m
+    environment:
+      <<: *env
+      BT_SERVICE_NAME: catalog
+      BT_DATABASE_URL: ${L03_CATALOG_DATABASE_URL:?}
+      BT_REQUEST_BODY_LIMIT: '8500000'
+    ports: ['127.0.0.1:43102:8000']
+    volumes:
+      - ../../../services/catalog/runtime/service_app:/app/service_app:ro
+      - ../../../services/catalog/modules:/app/modules:ro
+      - ./artifacts/domain-contracts:/opt/domain-contracts:ro
+  l03-pricing:
+    <<: *common
+    image: beirut-time/l07-pricing:proof
+    environment:
+      <<: *env
+      BT_SERVICE_NAME: pricing
+      BT_DATABASE_URL: ${L03_PRICING_DATABASE_URL:?}
+    ports: ['127.0.0.1:43104:8000']
+  l03-orders:
+    <<: *common
+    image: beirut-time/orders:local
+    environment:
+      <<: *env
+      BT_SERVICE_NAME: orders
+      BT_DATABASE_URL: ${L03_ORDERS_DATABASE_URL:?}
+    ports: ['127.0.0.1:43105:8000']
+    volumes:
+      - ../../../services/orders/runtime/service_app:/app/service_app:ro
+      - ../../../services/orders/modules:/app/modules:ro
+      - ./artifacts/domain-contracts:/opt/domain-contracts:ro
+  l03-communications:
+    <<: *common
+    image: beirut-time/l07-communications:proof
+    environment:
+      <<: *env
+      BT_SERVICE_NAME: communications
+      BT_DATABASE_URL: ${L03_COMMUNICATIONS_DATABASE_URL:?}
+    ports: ['127.0.0.1:43108:8000']
+    volumes:
+      - ../../../services/communications/modules/seller-workspace:/app/modules/seller-workspace:ro
+networks:
+  storage:
+    external: true
+    name: beirut-time_default

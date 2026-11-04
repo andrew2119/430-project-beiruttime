@@ -1,0 +1,1 @@
+{"version":1,"id":"L03.media","dependencies":["fastapi","asyncpg","Pillow"],"routes":["routes.py:router"],"migrations":["migrations/L03_0001_media.sql"]}

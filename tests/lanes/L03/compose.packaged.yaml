@@ -1,0 +1,4 @@
+# Final release-image proof: Catalog must run without hiding image contents.
+services:
+  l03-catalog:
+    volumes: !reset []
