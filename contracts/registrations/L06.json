@@ -2,6 +2,7 @@
   "version": 1,
   "lane": "L06",
   "contracts": [
-    {"namespace": "auction.proxy.v1", "path": "packages/contracts-auction/proxy", "fixtures": ["packages/contracts-auction/proxy/fixtures/competition.v1.json"]}
+    {"namespace": "auction.proxy.v1", "path": "packages/contracts-auction/proxy", "fixtures": ["packages/contracts-auction/proxy/fixtures/competition.v1.json"]},
+    {"namespace": "communications.buyer-workspace.v1", "path": "packages/contracts-comms/buyer-workspace", "fixtures": []}
   ]
 }

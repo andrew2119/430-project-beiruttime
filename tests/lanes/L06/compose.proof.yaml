@@ -1,0 +1,22 @@
+# Unit/contract proofs only. Real connected Auction/Orders demo is a separate gate.
+services:
+  auction-proof:
+    image: beirut-time/l06-proof:local
+    build:
+      context: ../../..
+      dockerfile: services/_template/runtime/Dockerfile
+      target: test
+    environment:
+      BT_SERVICE_NAME: auction
+      BT_MODULES_PATH: /app/modules
+    volumes:
+      - ../../../services/auction/modules:/app/modules:ro
+    command: [python, -m, pytest, -q, /lane-tests/L06/auction, -o, cache_dir=/tmp/pytest-cache]
+  communications-proof:
+    image: beirut-time/l06-proof:local
+    environment:
+      BT_SERVICE_NAME: communications
+      BT_MODULES_PATH: /app/modules
+    volumes:
+      - ../../../services/communications/modules:/app/modules:ro
+    command: [python, -m, pytest, -q, /lane-tests/L06/communications, -o, cache_dir=/tmp/pytest-cache]
