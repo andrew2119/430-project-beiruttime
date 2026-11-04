@@ -27,7 +27,7 @@ ARG SERVICE_PATH=services/pricing
 COPY ${SERVICE_PATH}/runtime/requirements-dev.txt /tmp/requirements-dev.txt
 RUN pip install --no-cache-dir -r /tmp/requirements-dev.txt
 COPY ${SERVICE_PATH}/runtime /app
-COPY services/_template/modules /app/modules
+COPY ${SERVICE_PATH}/modules /app/modules
 COPY tests/foundation /foundation-tests
 COPY tests/lanes /lane-tests
 COPY contracts /contracts
@@ -37,7 +37,7 @@ CMD ["python", "/app/run_tests.py"]
 FROM base AS runtime
 ARG SERVICE_PATH=services/pricing
 COPY --chown=app:app ${SERVICE_PATH}/runtime/service_app /app/service_app
-COPY --chown=app:app services/_template/modules /app/modules
+COPY --chown=app:app ${SERVICE_PATH}/modules /app/modules
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=6 CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)"]
