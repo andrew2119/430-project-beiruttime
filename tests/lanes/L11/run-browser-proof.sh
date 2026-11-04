@@ -6,12 +6,14 @@ export CHROME_DEVTOOLS_AXI_SESSION=bt-l11
 case "${L11_WEB_MODE:-production}" in production) next_command=start;; dev) next_command=dev;; *) echo 'Choose production or dev proof mode' >&2; exit 2;; esac
 (cd web && node scripts/generate-nav.mjs)
 mkdir -p tests/lanes/L11/evidence
-for port in 3111 38101 38102 38109; do
+ports=(3111 38101 38102 38109)
+if [ "${L11_REAL_ACCOUNTS_PROOF:-0}" = 1 ]; then ports+=(38103); fi
+for port in "${ports[@]}"; do
   if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then echo "Proof port $port is already in use; nothing was stopped" >&2; exit 2; fi
 done
 PYTHONPATH=tests/lanes .venv/bin/python -m L11.browser_fixture > .venv/browser-fixture.log 2>&1 & fixture=$!
 BT_PUBLIC_WEB_ORIGINS=http://127.0.0.1:3111 BT_TRUST_FORWARDED_ORIGIN=false \
-IDENTITY_API_URL=http://127.0.0.1:38101 CATALOG_API_URL=http://127.0.0.1:38102 SERVICE_OPERATIONS_API_URL=http://127.0.0.1:38109 \
+IDENTITY_API_URL=http://127.0.0.1:38101 ELIGIBILITY_API_URL=http://127.0.0.1:38103 CATALOG_API_URL=http://127.0.0.1:38102 SERVICE_OPERATIONS_API_URL=http://127.0.0.1:38109 \
   node web/node_modules/next/dist/bin/next "$next_command" web --hostname 127.0.0.1 --port 3111 > .venv/web.log 2>&1 & web=$!
 cleanup() { chrome-devtools-axi stop >/dev/null 2>&1 || true; kill "$web" "$fixture" 2>/dev/null || true; wait "$web" "$fixture" 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
@@ -79,7 +81,7 @@ if [ "${L11_REAL_ACCOUNTS_PROOF:-0}" = 1 ]; then
     name=${variant%%|*}; viewport=${variant#*|}
     chrome-devtools-axi emulate --viewport "$viewport" >/dev/null
     chrome-devtools-axi run < tests/lanes/L11/buyer-ui-proof.js > "tests/lanes/L11/evidence/buyer-$name-dom.json"
-    .venv/bin/python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert len(d["cases"])==4 and d["cross_buyer_isolation"] is True and d["revoked_session_clears_private_state"] is True' "tests/lanes/L11/evidence/buyer-$name-dom.json"
+    .venv/bin/python -c 'import json,sys; d=json.load(open(sys.argv[1])); assert len(d["cases"])==4 and d["cross_buyer_isolation"] is True and d["revoked_session_clears_private_state"] is True and d["real_registration_and_signin"] is True and d["consent_outage_saved_nothing"] is True' "tests/lanes/L11/evidence/buyer-$name-dom.json"
     echo "$name real-buyer UI persistence/privacy/units passed"
   done
 fi

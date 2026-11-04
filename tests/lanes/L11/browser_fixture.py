@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from .conftest import IdentityFixture, module_stack, BRAND
 from .service_operations_helpers import headers
 from .service_operations_tests_data import profile, option
-from .real_accounts import accounts_routes
+from .real_accounts import accounts_routes, consent_routes
 from .testing_database import disposable_database
 
 
@@ -34,9 +34,12 @@ async def main():
         directory_db = await stack.enter_async_context(disposable_database())
         catalog_db = await stack.enter_async_context(disposable_database())
         accounts_app = None
+        eligibility_app = None
         if os.environ.get('L11_REAL_ACCOUNTS_PROOF') == '1':
             accounts_db = await stack.enter_async_context(disposable_database())
             accounts_app = await stack.enter_async_context(accounts_routes(accounts_db))
+            eligibility_db = await stack.enter_async_context(disposable_database())
+            eligibility_app = await stack.enter_async_context(consent_routes(eligibility_db, accounts_app))
         dc, directory_app, identity = await stack.enter_async_context(module_stack(
             'directory',directory_db.runtime_url,directory_db.owner_url,accounts_app))
         mc, movement_app, movement_identity = await stack.enter_async_context(module_stack(
@@ -73,8 +76,11 @@ async def main():
             async def identity_route(path:str,request:Request):
                 response=web_authority.handle(httpx.Request(request.method,str(request.url),headers=dict(request.headers)))
                 return JSONResponse(response.json() if response.content else {},status_code=response.status_code)
+        applications=[(directory_app,38109),(movement_app,38102),(identity_app,38101)]
+        if eligibility_app:
+            applications.append((eligibility_app,38103))
         servers=[ProofServer(uvicorn.Config(app,host='127.0.0.1',port=port,lifespan='off',log_level='warning'))
-            for app,port in ((directory_app,38109),(movement_app,38102),(identity_app,38101))]
+            for app,port in applications]
         tasks=[asyncio.create_task(server.serve()) for server in servers]
         try:
             await stop.wait()

@@ -55,7 +55,9 @@ class IdentityFixture:
 
 
 @asynccontextmanager
-async def module_stack(kind, database_url, database_owner_url, accounts_app=None):
+async def module_stack(kind, database_url, database_owner_url, accounts_app=None, *, real_businesses=False):
+    if real_businesses and accounts_app is None:
+        raise ValueError('Real business authority requires an actual Identity app')
     # Container runner mounts the owning module; host runner can cover both domains.
     root = ROOT / ('services/service-operations/modules/directory' if kind=='directory' else 'services/catalog/modules/options/movement')
     if not root.exists():
@@ -71,8 +73,10 @@ async def module_stack(kind, database_url, database_owner_url, accounts_app=None
     accounts = httpx.AsyncClient(transport=httpx.ASGITransport(app=accounts_app),base_url='http://identity.fixture') if accounts_app else None
     async def authority(request):
         fixture_tokens = {'Bearer buyer','Bearer other','Bearer brand','Bearer dealer','Bearer cross'}
-        if (accounts and not identity.unavailable and request.url.path == '/internal/v1/principal'
-                and request.headers.get('Authorization') not in fixture_tokens):
+        current_actor = request.url.path == '/internal/v1/principal' and (
+            real_businesses or request.headers.get('Authorization') not in fixture_tokens)
+        current_business = real_businesses and request.url.path.startswith('/v1/businesses/')
+        if accounts and not identity.unavailable and (current_actor or current_business):
             return await accounts.request(request.method,str(request.url),headers=dict(request.headers),content=request.content)
         return identity.handle(request)
     dependency = DependencyClient('identity','http://identity.fixture',transport=httpx.MockTransport(authority),failure_threshold=50)

@@ -1,16 +1,61 @@
 // Real published Accounts routes + real care APIs/SQL; business/staff onboarding stays a V1 fixture.
 const brand='00000000-0011-4000-8000-000000000001';
 const address=locale=>`http://127.0.0.1:3111/${locale}/services?business=${brand}`;
+const account=`http://127.0.0.1:3111/en/account?next=${encodeURIComponent(`/services?business=${brand}`)}`;
+async function ready(selector){
+  await page.wait(selector,10000);
+  if(await page.eval(`()=>Boolean(document.querySelector(${JSON.stringify(selector)}))`)!==true)throw new Error(`Expected screen state missing: ${selector}`);
+}
+async function typeField(selector,value){
+  const focused=await page.eval(`()=>{const input=document.querySelector(${JSON.stringify(selector)});if(!input||input.disabled)return false;input.focus();input.select();return document.activeElement===input;}`);
+  if(focused!==true)throw new Error(`Cannot edit inactive field: ${selector}`);
+  await page.type(value);
+}
 async function createBuyer(){
-  const result=await page.eval(async()=>{
-    const response=await fetch('/api/web/v1/identity/v1/accounts/register',{method:'POST',credentials:'same-origin',
-      headers:{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},
-      body:JSON.stringify({email:`care-${crypto.randomUUID()}@example.invalid`,password:`Care-Proof-${crypto.randomUUID()}`,display_name:'Demo care buyer'})});
-    const data=await response.json();
-    return JSON.stringify({created:response.ok,buyer:data.principal?.roles.includes('buyer')===true,private_cookie:!document.cookie.includes('bt_refresh=')});
-  });
-  const checks=JSON.parse(result);
-  if(!checks.created||!checks.buyer||!checks.private_cookie)throw new Error('Real buyer creation failed');
+  // Exercise the merged registration and sign-in forms, never inject a token or session.
+  const email=`care-${crypto.randomUUID()}@example.invalid`,password=`Care-Proof-${crypto.randomUUID()}`;
+  await page.open(account);
+  const logout='.identity-grid > .identity-stack > .card:first-child > .identity-stack > button';
+  await ready(`.identity-tabs button:not([disabled]),${logout}:not([disabled])`);
+  if(await page.eval(`()=>Boolean(document.querySelector(${JSON.stringify(logout)}))`))await page.click(logout);
+  await ready('.identity-tabs button:not([disabled])');
+  await page.click('.identity-tabs button:nth-child(2)');
+  await ready('.identity-form input[name="display_name"]');
+  await typeField('.identity-form input[name="display_name"]','Demo care buyer');
+  await typeField('.identity-form input[name="email"]',email);
+  await typeField('.identity-form input[name="password"]',password);
+  await page.click('.identity-form > button');
+  await ready('.directory-detail > .card form > button:not([disabled])');
+  await page.open(account);
+  await ready(logout);
+  await page.click(logout);
+  await ready('.identity-tabs button:not([disabled])');
+  await typeField('.identity-form input[name="email"]',email);
+  await typeField('.identity-form input[name="password"]',password);
+  await page.click('.identity-form > button');
+  await ready('.directory-detail > .card form > button:not([disabled])');
+  if(await page.eval(()=>document.cookie.includes('bt_refresh=')))throw new Error('Refresh credential became script-readable');
+}
+async function checkConsentOutage(){
+  // Real merged consent code + fresh principal/SQL; no canonical request means no recorded decision.
+  const consent='http://127.0.0.1:3111/en/consent';
+  await page.open(consent);
+  await page.wait('.identity-form input[name="request_id"]');
+  await page.wait('.identity-grid > .identity-stack > .card:nth-child(2) > p:not([role])');
+  await typeField('.identity-form input[name="request_id"]',crypto.randomUUID());
+  await typeField('.identity-form input[name="brand_id"]',brand);
+  await page.click('.consent-choices input[value="refuse"]');
+  await page.wait('.identity-form > button:not([disabled])');
+  await page.click('.identity-form > button');
+  await page.wait('.identity-grid > .identity-stack > .card:first-child [role="alert"]');
+  const denied=await page.eval(()=>document.querySelector('.identity-grid > .identity-stack > .card:first-child [role="alert"]').textContent.includes('No consent or evidence was saved'));
+  if(!denied)throw new Error('Consent did not explain its canonical request outage');
+  await page.open(consent);
+  await page.wait('.identity-grid > .identity-stack > .card:nth-child(2) > p:not([role])');
+  const empty=await page.eval(()=>document.querySelector('.identity-grid > .identity-stack > .card:nth-child(2)').textContent.includes('No consent has been recorded for your account.')&&!document.querySelector('.consent-records'));
+  if(!empty)throw new Error('A canonical request outage manufactured a consent decision');
+  await page.open(address('en'));
+  await page.wait('.directory-detail > .card form > button:not([disabled])');
 }
 await page.open(address('en'));
 const reset=await page.eval(async()=>{
@@ -25,6 +70,7 @@ const reset=await page.eval(async()=>{
 });
 if(!reset)throw new Error('Sample indicative option could not be restored');
 await createBuyer();
+await checkConsentOutage();
 await page.open(address('en'));
 await page.wait('.directory-detail > .card form > button:not([disabled])');
 await page.click('.directory-detail > .card form > button:not([disabled])');
@@ -91,4 +137,4 @@ await page.open(address('en'));
 await page.wait('.movement-panel form > button:not([disabled])');
 const isolated=await page.eval(()=>!document.querySelector('.movement-snapshot')&&!document.querySelector('.directory-restored')&&!document.querySelector('.movement-panel form > label:last-of-type input').value.includes('unsupported-chronograph'));
 if(!isolated)throw new Error('A different real buyer inherited private state');
-console.log(JSON.stringify({cases,cross_buyer_isolation:true,revoked_session_clears_private_state:true,authority:'real Accounts routes; business/staff V1 fixture'}));
+console.log(JSON.stringify({cases,cross_buyer_isolation:true,revoked_session_clears_private_state:true,real_registration_and_signin:true,consent_outage_saved_nothing:true,authority:'real Accounts routes; business/staff V1 fixture'}));

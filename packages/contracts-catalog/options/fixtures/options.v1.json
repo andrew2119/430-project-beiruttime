@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "sample": true,
+  "base_model": "atelier-38",
+  "caliber": "manual-01",
+  "options": [
+    {
+      "kind": "color", "id": "10000000-0000-4000-8000-000000000001",
+      "definition": {
+        "expected_revision": 0, "component": "case", "available": true,
+        "label": {"en": "Sample · Midnight brushed", "ar": "نموذج · أزرق ليلي مصقول"},
+        "base_models": ["atelier-38"], "calibers": ["manual-01"],
+        "details": {"color": {"en": "Midnight blue", "ar": "أزرق ليلي"}, "finish": {"en": "Brushed", "ar": "مصقول بخطوط"}, "coating": null, "swatch": "#243c54"}
+      }
+    },
+    {
+      "kind": "material", "id": "10000000-0000-4000-8000-000000000002",
+      "definition": {
+        "expected_revision": 0, "component": "case", "available": true,
+        "label": {"en": "Sample · Solid 316L steel", "ar": "نموذج · فولاذ صلب 316L"},
+        "base_models": ["atelier-38"], "calibers": ["manual-01"],
+        "details": {"material": {"en": "Stainless steel", "ar": "فولاذ مقاوم للصدأ"}, "grade": "316L", "construction": "solid", "substrate": null, "thickness_micrometers": null}
+      }
+    },
+    {
+      "kind": "dial", "id": "10000000-0000-4000-8000-000000000003",
+      "definition": {
+        "expected_revision": 0, "component": "dial", "available": true,
+        "label": {"en": "Sample · Original sector dial", "ar": "نموذج · ميناء قطاعي أصلي"},
+        "base_models": ["atelier-38"], "calibers": ["manual-01"],
+        "details": {"dial": {"en": "Sector layout", "ar": "تصميم قطاعي"}, "hands": {"en": "Leaf hands", "ar": "عقارب ورقية"}, "markers": {"en": "Applied baton indices", "ar": "مؤشرات خطية بارزة"}, "provenance": "original", "source_reference": "sample-dial-01"}
+      }
+    },
+    {
+      "kind": "sophistication", "id": "10000000-0000-4000-8000-000000000004",
+      "definition": {
+        "expected_revision": 0, "component": "package", "available": true,
+        "label": {"en": "Sample · Atelier finishing", "ar": "نموذج · تشطيب المشغل"},
+        "base_models": ["atelier-38"], "calibers": ["manual-01"],
+        "details": {
+          "interventions": [{"en": "Hand-finish existing bridges", "ar": "تشطيب الجسور الحالية يدوياً"}],
+          "exclusions": [{"en": "No tourbillon or chronograph conversion", "ar": "لا تحويل إلى توربيون أو كرونوغراف"}],
+          "required_tests": [{"en": "Brand timing and sealing assessment", "ar": "تقييم الدقة والإحكام لدى العلامة"}],
+          "price_reference": "sample-finishing-2026", "price_minor": 25000, "currency": "USD", "conversion": "none"
+        }
+      }
+    },
+    {
+      "kind": "color", "id": "10000000-0000-4000-8000-000000000005",
+      "definition": {
+        "expected_revision": 0, "component": "case", "available": true,
+        "label": {"en": "Sample · Silver polished", "ar": "نموذج · فضي لامع"},
+        "base_models": ["atelier-38"], "calibers": ["manual-01"],
+        "details": {"color": {"en": "Silver", "ar": "فضي"}, "finish": {"en": "Polished", "ar": "لامع"}, "coating": null, "swatch": "#a8afb0"}
+      }
+    },
+    {
+      "kind": "color", "id": "10000000-0000-4000-8000-000000000006",
+      "definition": {
+        "expected_revision": 0, "component": "case", "available": true,
+        "label": {"en": "Sample · Black DLC", "ar": "نموذج · أسود بكسوة DLC"},
+        "base_models": ["atelier-38"], "calibers": ["manual-01"],
+        "details": {"color": {"en": "Black", "ar": "أسود"}, "finish": {"en": "Matte", "ar": "مطفي"}, "coating": {"en": "DLC coating", "ar": "كسوة كربونية شبيهة بالألماس"}, "swatch": "#252b2a"}
+      }
+    },
+    {
+      "kind": "material", "id": "10000000-0000-4000-8000-000000000007",
+      "definition": {
+        "expected_revision": 0, "component": "case", "available": true,
+        "label": {"en": "Sample · Solid grade 5 titanium", "ar": "نموذج · تيتانيوم صلب درجة 5"},
+        "base_models": ["atelier-38"], "calibers": ["manual-01"],
+        "details": {"material": {"en": "Titanium", "ar": "تيتانيوم"}, "grade": "Ti-6Al-4V / Grade 5", "construction": "solid", "substrate": null, "thickness_micrometers": null}
+      }
+    },
+    {
+      "kind": "dial", "id": "10000000-0000-4000-8000-000000000008",
+      "definition": {
+        "expected_revision": 0, "component": "dial", "available": true,
+        "label": {"en": "Sample · Aftermarket minimal dial", "ar": "نموذج · ميناء مبسط من طرف ثالث"},
+        "base_models": ["atelier-38"], "calibers": ["manual-01"],
+        "details": {"dial": {"en": "Minimal layout", "ar": "تصميم مبسط"}, "hands": {"en": "Straight hands", "ar": "عقارب مستقيمة"}, "markers": {"en": "Printed indices", "ar": "مؤشرات مطبوعة"}, "provenance": "aftermarket", "source_reference": "sample-dial-02"}
+      }
+    },
+    {
+      "kind": "sophistication", "id": "10000000-0000-4000-8000-000000000009",
+      "definition": {
+        "expected_revision": 0, "component": "package", "available": true,
+        "label": {"en": "Sample · Precision regulation", "ar": "نموذج · ضبط الدقة"},
+        "base_models": ["atelier-38"], "calibers": ["manual-01"],
+        "details": {
+          "interventions": [{"en": "Regulate the existing manual caliber", "ar": "ضبط العيار اليدوي الحالي"}],
+          "exclusions": [{"en": "No new complications or replacement caliber", "ar": "لا تعقيدات إضافية أو استبدال للعيار"}],
+          "required_tests": [{"en": "Multi-position timing assessment", "ar": "تقييم الدقة في أوضاع متعددة"}],
+          "price_reference": "sample-regulation-2026", "price_minor": 15000, "currency": "USD", "conversion": "none"
+        }
+      }
+    }
+  ]
+}

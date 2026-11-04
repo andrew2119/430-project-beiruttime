@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "id": "L01.private-seller",
+  "dependencies": [
+    "fastapi",
+    "asyncpg",
+    "PyJWT",
+    "cryptography"
+  ],
+  "routes": [
+    "routes.py:router"
+  ],
+  "migrations": [
+    "migrations/L01_0001_private_seller.sql",
+    "migrations/L01_0002_evidence_binding.sql"
+  ],
+  "workers": []
+}

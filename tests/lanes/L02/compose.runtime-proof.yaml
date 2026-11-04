@@ -1,0 +1,43 @@
+services:
+  identity-proof:
+    image: beirut-time/l02-module-test:local
+    command: [uvicorn, service_app.main:create_app, --factory, --host, 0.0.0.0, --port, '8000', --no-access-log]
+    environment:
+      PYTHONPATH: /proof-core/runtime:/proof-core/bulkheads:/proof-core/events:/proof-core/contracts
+      BT_SERVICE_NAME: identity
+      BT_MODULES_PATH: /app/modules
+      BT_DATABASE_URL: ${BT_L02_PROOF_DATABASE_URL:?Disposable runtime URL required}
+      BT_AUTH_PRIVATE_KEY: ${BT_AUTH_PRIVATE_KEY:?Ephemeral test signing material required}
+      BT_AUTH_PUBLIC_KEY: ${BT_AUTH_PUBLIC_KEY:?Ephemeral test verification material required}
+      BT_AUTH_ISSUER: beirut-time-identity
+      BT_AUTH_AUDIENCE: beirut-time
+      BT_EVENT_PRIVATE_KEY: ''
+      BT_ALLOWED_WEB_ORIGINS: http://identity,http://localhost:3202,http://127.0.0.1:3202
+      BT_LOCAL_HTTP: '1'
+      BT_CONTACT_SIMULATOR: '1'
+    volumes:
+      - ./services/identity/runtime/service_app:/app/service_app:ro
+      - ./services/identity/modules:/app/modules:ro
+      - ./packages/runtime/src:/proof-core/runtime:ro
+      - ./packages/bulkheads/src:/proof-core/bulkheads:ro
+      - ./packages/events/src:/proof-core/events:ro
+      - ./packages/contracts-core/src:/proof-core/contracts:ro
+    ports: ['127.0.0.1:8202:8000']
+    networks: [shared]
+    read_only: true
+    tmpfs: [/tmp]
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    healthcheck:
+      test: [CMD, python, '-c', "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready',timeout=2)"]
+      interval: 1s
+      timeout: 3s
+      retries: 20
+      start_period: 1s
+networks:
+  shared:
+    external: true
+    name: beirut-time_default
