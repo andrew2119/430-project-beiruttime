@@ -6,10 +6,18 @@ export default {
   lane: "L03",
   namespace: "listing-editor",
   routes: [
+    { path: "/seller/listings", roles: [...sellers], area: "seller" },
     { path: "/seller/listings/:id", roles: [...sellers], area: "seller" },
   ],
   navigation: [
-
+    {
+      id: "seller-listings",
+      href: "/seller/listings",
+      label: { en: "My listings", ar: "إعلاناتي" },
+      order: 30,
+      area: "seller",
+      roles: [...sellers],
+    },
   ],
   dictionaries: { en, ar },
   gateway: [
