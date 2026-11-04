@@ -1,1 +1,1 @@
-pytest_plugins = ['bt_runtime.testing']
+pytest_plugins = ["bt_runtime.testing"]

@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BidiReference, Button, ButtonLink, Card, Input, State } from '@beirut-time/ui';
 import { useLocale } from '@/shell/locale-context';
 import { useSession, signInHref } from '@/features/identity/session';
@@ -52,7 +52,7 @@ function Editor({owner,initial}:{owner:string;initial:DraftMemory|null}){
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
   useEffect(()=>{remember({owner,form,id,revision,dirty,pending:op.current},generation);},[owner,form,id,revision,dirty,uncertain,generation]);
   const drafts=useQuery({queryKey:['l08-drafts',owner],queryFn:({signal})=>draftApi.list(signal),retry:false});
-  const catalogue=useQuery({queryKey:['l08-draft-catalogue',owner],queryFn:({signal})=>draftApi.catalogue(signal),retry:false});
+  const catalogue=useInfiniteQuery({queryKey:['l08-draft-catalogue',owner,form.kind],initialPageParam:null as string|null,queryFn:({signal,pageParam})=>draftApi.catalogue(form.kind,pageParam,signal),getNextPageParam:last=>last.data?.next_after??undefined,retry:false});
   const readiness=useQuery({queryKey:['l08-draft-readiness',owner,id,revision],queryFn:({signal})=>draftApi.readiness(id!,signal),enabled:!!id,retry:false});
   function change<K extends keyof DraftInput>(key:K,value:DraftInput[K]){if(draftMemoryEpoch()!==generation)return;setForm(prior=>({...prior,[key]:value}));setSaved(false);setDirty(true);}
   function resume(draft:RequestDraft){if(draftMemoryEpoch()!==generation)return;setId(draft.id);setRevision(draft.revision);setForm(fromServer(owner,draft).form);setDirty(false);setSaved(false);setError(null);op.current=null;replaceDraftReference(draft.id);}
@@ -84,16 +84,19 @@ function Editor({owner,initial}:{owner:string;initial:DraftMemory|null}){
     };
     document.addEventListener('click',switchLocale,true);return()=>document.removeEventListener('click',switchLocale,true);
   },[dirty,uncertain,busy,persist,generation]);
-  const businesses=catalogue.data?.data?.items??[];
+  const businesses=[...new Map((catalogue.data?.pages.flatMap(page=>page.data?.items??[])??[]).map(business=>[business.id,business])).values()];
+  const directoryUnavailable=!!catalogue.error||!catalogue.data?.pages.length||catalogue.data.pages.some(page=>page.status!=='available');
   const options=optionItems(readiness.data?.options,locale);
   const currentOptions=readiness.data?.draft.brand_id===form.brand_id;
+  const boundReadiness=readiness.data?.draft.configuration_id===form.configuration_id?readiness.data?.configuration:undefined;
   return <div className="request-page"><header><p className="eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p>{t.intro}</p></header>
   <div className="request-grid"><div><Card><form className="request-form" method="post" autoComplete="off" onSubmit={event=>{event.preventDefault();void persist();}}>
     {id&&<p><BidiReference>{id}</BidiReference> · {t.revision} {revision.toLocaleString(locale)}</p>}
-    {form.configuration_id&&<div className="request-notice"><strong>{t.configuration}</strong><p><BidiReference>{form.configuration_id}</BidiReference> · {t.revision} {form.configuration_revision?.toLocaleString(locale)}</p><p>{t.configurationHelp}</p><ButtonLink className="button-secondary" href={`/${locale}/customize?configuration=${encodeURIComponent(form.configuration_id)}`}>{t.openOptions}</ButtonLink><Button type="button" className="button-secondary" disabled={busy||uncertain} onClick={()=>{change('configuration_id',null);change('configuration_revision',null);change('options',{});}}>{t.detachConfiguration}</Button></div>}
+    {form.configuration_id&&<div className="request-notice"><strong>{t.configuration}</strong><p><BidiReference>{form.configuration_id}</BidiReference> · {t.revision} {form.configuration_revision?.toLocaleString(locale)}</p><p>{t.configurationHelp}</p>{boundReadiness?.status==='unavailable'&&<p role="status">{t.configurationUnavailable}</p>}{boundReadiness?.data?.selection_summary.some(selection=>!selection.current)&&<p role="status">{t.configurationChanged}</p>}<ButtonLink className="button-secondary" href={`/${locale}/customize?configuration=${encodeURIComponent(form.configuration_id)}`}>{t.openOptions}</ButtonLink><Button type="button" className="button-secondary" disabled={busy||uncertain} onClick={()=>{change('configuration_id',null);change('configuration_revision',null);change('options',{});}}>{t.detachConfiguration}</Button></div>}
     <label>{t.kind}<select name="kind" className="input" value={form.kind} disabled={busy||uncertain} onChange={e=>change('kind',e.target.value as DraftInput['kind'])}><option value="customization">{t.customization}</option><option value="service">{t.service}</option></select></label>
     <label>{t.brand}<select name="brand_id" className="input" value={form.brand_id??''} disabled={busy||uncertain||!!form.configuration_id} onChange={e=>{change('brand_id',e.target.value||null);change('options',{});}}><option value="">{t.chooseBrand}</option>{form.brand_id&&!businesses.some(b=>b.id===form.brand_id)&&<option value={form.brand_id}>{form.brand_id}</option>}{businesses.map(b=><option key={b.id} value={b.id}>{b.name}{b.sample_content?' — '+t.sample:''}</option>)}</select></label>
-    {catalogue.data?.status!=='available'&&<p className="request-notice">{t.brandUnavailable}</p>}
+    {directoryUnavailable&&<div className="request-notice"><p>{t.brandUnavailable}</p><Button type="button" className="button-secondary" disabled={catalogue.isFetching} onClick={()=>void catalogue.refetch()}>{t.directoryReload}</Button></div>}
+    {catalogue.hasNextPage&&<Button type="button" className="button-secondary" disabled={busy||uncertain||catalogue.isFetchingNextPage} onClick={()=>void catalogue.fetchNextPage()}>{t.moreBusinesses}</Button>}
     <label>{t.watchContext}<select name="watch_context" className="input" value={form.watch_context} disabled={busy||uncertain} onChange={e=>change('watch_context',e.target.value as DraftInput['watch_context'])}>{(['undecided','owned_watch','seller_base']as const).map(context=><option value={context} key={context}>{t[context]}</option>)}</select></label>
     <label>{t.watch}<Input name="watch_reference" value={form.watch_reference} maxLength={300} disabled={busy||uncertain} onChange={e=>change('watch_reference',e.target.value)}/></label>
     <label>{t.scope}<textarea name="scope_intent" className="input" value={form.scope_intent} maxLength={1000} disabled={busy||uncertain} onChange={e=>change('scope_intent',e.target.value)}/></label>
