@@ -103,8 +103,50 @@ async def test_required_preferences_foreign_links_and_cursor_scope(api):
     assert (await client.get('/v1/inbox?cursor=' + notice['id'], headers=headers(token='bob'))).status_code == 400
 
 
+@pytest.mark.asyncio
+async def test_draft_races_revision_owner_release_and_restart(api, database_url):
+    app, client, _ = api
+    first, second = await asyncio.gather(*(client.post('/v1/buying/drafts', json=DRAFT, headers=headers()) for _ in range(2)))
+    assert first.status_code == second.status_code == 201 and first.json() == second.json()
+    draft = first.json()
+    path = '/v1/buying/drafts/' + draft['id']
+    assert (await client.get(path, headers=headers(token='bob'))).status_code == 404
+    assert (await client.put(path, json={**DRAFT, 'expected_revision': 1}, headers=headers(token='bob'))).status_code == 404
+    updated = await client.put(path, json={**DRAFT, 'amount_minor': 490000, 'expected_revision': 1}, headers=headers('update-one'))
+    assert updated.status_code == 200 and updated.json()['revision'] == 2
+    assert (await client.put(path, json={**DRAFT, 'expected_revision': 1}, headers=headers('stale-update'))).status_code == 409
+    for action in ('send', 'accept'):
+        denied = await client.post(path + '/' + action, headers=headers())
+        assert denied.status_code == 403 and denied.json()['error']['code'] == 'capability_not_released'
+    assert (await client.post('/v1/buying/payment', headers=headers())).status_code == 403
+    readiness = (await client.get('/v1/buying/readiness?reservation_id=' + str(uuid4()) + '&quote_id=' + str(uuid4()), headers=headers())).json()
+    assert readiness['reservation']['status'] == readiness['quote']['status'] == 'unavailable'
+    assert not any(readiness['release'].values()) and all(not route['released'] for route in readiness['routes'])
+    assert readiness['drafts'][0]['amount_minor'] == 490000
+    restored = create_app(Settings(database_url=database_url, service_name='communications'))
+    async with restored.router.lifespan_context(restored):
+        async with restored.state.pool.acquire() as tx:
+            assert await tx.fetchval('SELECT amount_minor FROM l07_offer_drafts WHERE id=$1', UUID(draft['id'])) == 490000
 
 
+@pytest.mark.asyncio
+async def test_real_upstream_contract_projection_and_fail_closed_link(api):
+    app, client, token = api
+    async def owner_response(request):
+        assert request.headers['Authorization'] == 'Bearer alice'
+        return httpx.Response(200, json={'order': {'id': str(DRAFT['subject_id']), 'state': 'awaiting_payment', 'buyer_id': str(ALICE),
+            'currency': 'USD', 'total_minor': 515000, 'revision': 1, 'deadline': '2026-11-05T07:00:00Z', 'payment_authority': False,
+            'private_evidence': 'must-not-escape'}, 'history': [{'reason': 'private audit reason'}]})
+    await app.state.orders.aclose()
+    app.state.orders = DependencyClient('orders', 'http://orders', transport=httpx.MockTransport(owner_response))
+    result = (await client.get('/v1/buying/readiness?reservation_id=' + DRAFT['subject_id'], headers=headers())).json()
+    assert result['reservation']['record']['state'] == 'awaiting_payment'
+    assert result['quote']['status'] == 'binding_unavailable'
+    assert 'private_evidence' not in result['reservation']['record']
+    payload = event()
+    await client.post(EVENTS, json=payload, headers={'Authorization': 'Bearer ' + token()})
+    notice = (await client.get('/v1/inbox', headers=headers())).json()['items'][0]
+    assert (await client.get('/v1/inbox/' + notice['id'] + '/destination', headers=headers())).status_code == 503
 
 
 @pytest.mark.asyncio
@@ -138,6 +180,15 @@ async def test_reordered_notices_page_canonically_without_marking_read(api):
     assert all(item['read_at'] is None for item in items)
 
 
+@pytest.mark.asyncio
+async def test_malformed_upstream_success_stays_unavailable(api):
+    app, client, _ = api
+    for dependency in ('orders', 'pricing'):
+        await getattr(app.state, dependency).aclose()
+        setattr(app.state, dependency, DependencyClient(dependency, 'http://upstream', transport=httpx.MockTransport(lambda request: httpx.Response(200, json={'state': 'paid'}))))
+    result = (await client.get('/v1/buying/readiness?reservation_id=' + str(uuid4()) + '&quote_id=' + str(uuid4()), headers=headers())).json()
+    assert result['reservation']['status'] == result['quote']['status'] == 'unavailable'
+    assert not result['release']['payment']
 
 
 @pytest.mark.asyncio
@@ -166,3 +217,25 @@ async def test_l05_bridge_authenticated_durable_dedupe_and_canonical_destination
     await app.state.auction.aclose()
 
 
+@pytest.mark.asyncio
+async def test_actual_order_wrapper_exact_quote_binding_and_buyer_scope(api):
+    app, client, _ = api
+    snapshot = json.loads((Path(quote_models.__file__).parent / 'fixtures/sample-quote.v1.json').read_text())
+    snapshot.update(id=str(uuid4()), owner_id=str(ALICE), source='listing', source_verified=True)
+    order = {'id': str(uuid4()), 'buyer_id': str(ALICE), 'state': 'awaiting_payment', 'quote_id': snapshot['id'],
+        'currency': 'USD', 'total_minor': 515000, 'revision': 1, 'deadline': snapshot['expires_at'], 'payment_authority': False}
+    await app.state.orders.aclose()
+    await app.state.pricing.aclose()
+    app.state.orders = DependencyClient('orders', 'http://orders', transport=httpx.MockTransport(lambda request: httpx.Response(200, json={'order': order, 'history': [{'reason': 'private'}]})))
+    app.state.pricing = DependencyClient('pricing', 'http://pricing', transport=httpx.MockTransport(lambda request: httpx.Response(200, json=snapshot)))
+    path = '/v1/buying/readiness?reservation_id=' + order['id']
+    result = (await client.get(path, headers=headers())).json()
+    assert result['reservation']['status'] == result['quote']['status'] == 'available'
+    assert result['quote']['record']['id'] == snapshot['id']
+    assert 'history' not in result['reservation']['record'] and 'buyer_id' not in result['reservation']['record']
+    assert (await client.get(path + '&quote_id=' + str(uuid4()), headers=headers())).status_code == 409
+    order['total_minor'] = 1
+    assert (await client.get(path, headers=headers())).json()['quote']['status'] == 'unavailable'
+    order['buyer_id'] = str(BOB)
+    denied = (await client.get(path, headers=headers())).json()
+    assert denied['reservation']['status'] == 'denied' and 'record' not in denied['reservation']

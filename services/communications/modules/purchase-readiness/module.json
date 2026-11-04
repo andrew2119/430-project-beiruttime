@@ -1,0 +1,1 @@
+{"version":1,"id":"L07.purchase-readiness","dependencies":["fastapi","asyncpg","httpx","pydantic"],"routes":["routes.py:router"],"migrations":["migrations/L07_0001_offer_drafts.sql"]}

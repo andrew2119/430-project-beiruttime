@@ -10,7 +10,7 @@ import ar from './ar.json';
 export function useCopy() { const locale=useLocale(); return {locale,t:locale==='ar'?ar:en}; }
 export function Desk({children,title,intro,current}:{children:React.ReactNode;title:string;intro:string;current:'prices'|'inbox'|'buying'}) {
   const {locale,t}=useCopy();
-  return <div className="l07"><header><p className="eyebrow">{t.eyebrow}</p><h1 tabIndex={-1}>{title}</h1><p>{intro}</p></header><nav className="l07-tabs" aria-label={t.eyebrow}>{(['prices','inbox'] as const).map(path=><Link key={path} href={`/${locale}/${path}`} className={`button ${current===path?'':'button-secondary'}`} aria-current={current===path?'page':undefined}>{path==='prices'?t.allQuotes:path==='inbox'?t.inbox:t.buying}</Link>)}</nav>{children}</div>;
+  return <div className="l07"><header><p className="eyebrow">{t.eyebrow}</p><h1 tabIndex={-1}>{title}</h1><p>{intro}</p></header><nav className="l07-tabs" aria-label={t.eyebrow}>{(['prices','inbox','buying'] as const).map(path=><Link key={path} href={`/${locale}/${path}`} className={`button ${current===path?'':'button-secondary'}`} aria-current={current===path?'page':undefined}>{path==='prices'?t.allQuotes:path==='inbox'?t.inbox:t.buying}</Link>)}</nav>{children}</div>;
 }
 export function PrivateGate({children,next}:{children:React.ReactNode;next:string}) {
   const session=useSession(),{locale,t}=useCopy();
