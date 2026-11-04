@@ -1,6 +1,5 @@
 """Identity-local fresh authority, sharing the Accounts row/session fence."""
 
-from uuid import UUID
 from fastapi import HTTPException, Request
 from bt_contracts_core.errors import AccessDenied
 from bt_contracts_core.models import Actor
@@ -27,22 +26,11 @@ async def principal(request: Request) -> CurrentPrincipal:
                 )
                 grant["permissions"].update(row["permissions"])
                 grant["roles"].add(row["role"])
-        selected = request.path_params.get("business_id")
-        if selected:
-            try:
-                selected = UUID(str(selected))
-            except ValueError:
-                raise HTTPException(404) from None
-            if (
-                selected not in organizations
-                and "identity.membership.manage" not in permissions
-            ):
-                raise AccessDenied("Requested organization is not currently held")
         return CurrentPrincipal(
             actor=Actor(
                 subject_id=account["id"],
                 session_id=str(session),
-                organization_id=selected,
+                organization_id=None,
             ),
             roles=sorted(roles),
             permissions=sorted(permissions),

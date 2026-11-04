@@ -132,7 +132,8 @@ export default function BusinessDirectory() {
             className="business-form"
             onSubmit={(event) => {
               event.preventDefault();
-              const data = new FormData(event.currentTarget);
+              const form = event.currentTarget;
+              const data = new FormData(form);
               void action.run(async () => {
                 await command("/v1/businesses", {
                   legal_name: text(data, "legal_name"),
@@ -143,6 +144,7 @@ export default function BusinessDirectory() {
                   reason: text(data, "reason"),
                   sample: data.get("sample") === "on",
                 });
+                form.reset();
                 clearDraft();
                 await Promise.all([query.refetch(), managed.refetch()]);
               });
