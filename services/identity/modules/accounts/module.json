@@ -5,7 +5,8 @@
     "fastapi",
     "asyncpg",
     "PyJWT",
-    "cryptography"
+    "cryptography",
+    "httpx"
   ],
   "routes": [
     "routes.py:router"
@@ -16,5 +17,6 @@
   ],
   "workers": [
     "workers.py:run"
-  ]
+  ],
+  "fixtures": {"demo":"fixtures.py:seed"}
 }
