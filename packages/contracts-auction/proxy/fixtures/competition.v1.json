@@ -1,0 +1,21 @@
+{
+  "label": "Synthetic contract fixture, not a persisted marketplace bid",
+  "state": {
+    "current_minor": 10000,
+    "opening_minor": 10000,
+    "leader_id": "buyer-A",
+    "sequence": 1,
+    "increment_bands": [{"from_minor": 0, "step_minor": 1000}],
+    "maxima": [{"bidder_id": "buyer-A", "amount_minor": 20000, "sequence": 1}]
+  },
+  "command": {"kind": "maximum", "bidder_id": "buyer-B", "amount_minor": 15000, "sequence": 2},
+  "result": {
+    "leader_id": "buyer-A",
+    "current_minor": 16000,
+    "maxima": [
+      {"bidder_id": "buyer-A", "amount_minor": 20000, "sequence": 1},
+      {"bidder_id": "buyer-B", "amount_minor": 15000, "sequence": 2}
+    ],
+    "bids": [{"bidder_id": "buyer-A", "amount_minor": 16000, "automatic": true}]
+  }
+}
