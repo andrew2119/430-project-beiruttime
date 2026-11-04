@@ -1,0 +1,232 @@
+/* CP F-29/F-33: native form semantics over immutable shell primitives.
+   CP F-40/F-41: one content tree, container-driven density, 850px shell boundary. */
+.business-workspace {
+  max-inline-size: 1180px;
+  margin-inline: auto;
+  padding: 32px 28px 48px;
+  display: grid;
+  gap: 20px;
+  container-type: inline-size;
+}
+.business-heading {
+  max-inline-size: 780px;
+  padding-block: 16px;
+}
+.business-heading h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 400;
+  line-height: 1.16;
+  margin-block: 12px 16px;
+}
+.business-heading p:not(.business-eyebrow) {
+  max-inline-size: 66ch;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.business-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  font-weight: 700;
+}
+.business-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-block-end: 1px solid var(--border);
+  padding-block-end: 12px;
+}
+.business-tabs a {
+  padding: 12px 16px;
+  min-block-size: 44px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+.business-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+}
+.business-card {
+  min-inline-size: 0;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.business-card h2 {
+  font-size: 24px;
+  font-weight: 500;
+}
+.business-card li {
+  margin-inline-start: 20px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.business-card small {
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+.business-badge {
+  font-size: 12px;
+  display: inline-flex;
+  inline-size: fit-content;
+  padding: 6px 10px;
+  background: var(--accent-soft);
+  color: var(--foreground);
+  border-radius: 4px;
+}
+.business-workspace .card > h2 {
+  margin-block-end: 12px;
+}
+.business-workspace .card > p {
+  line-height: 1.7;
+}
+.business-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-block-start: 20px;
+  align-items: end;
+}
+.business-field {
+  display: grid;
+  gap: 8px;
+  min-inline-size: 0;
+  font-size: 13px;
+}
+.business-field span {
+  line-height: 1.4;
+}
+.business-field select {
+  border: 1px solid var(--control-border);
+  background: var(--surface);
+  color: var(--foreground);
+  min-block-size: 44px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  inline-size: 100%;
+}
+.business-field input {
+  min-inline-size: 0;
+}
+.business-checks {
+  grid-column: 1/-1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: 1px solid var(--border);
+  padding: 12px;
+}
+.business-checks legend {
+  font-size: 13px;
+  padding-inline: 8px;
+}
+.business-check,
+.business-checks label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 44px;
+  font-size: 13px;
+}
+.business-checks input,
+.business-check input {
+  inline-size: 16px;
+  block-size: 16px;
+}
+.business-feedback {
+  grid-column: 1/-1;
+  padding: 16px;
+  border-inline-start: 3px solid var(--accent);
+  background: var(--accent-soft);
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.business-feedback a {
+  text-decoration: underline;
+}
+.business-feedback bdi {
+  display: block;
+  font-size: 12px;
+}
+.business-proof {
+  border-block-start: 1px solid var(--border);
+  padding-block-start: 20px;
+  margin-block-start: 20px;
+  display: grid;
+  gap: 12px;
+}
+.business-queue {
+  display: grid;
+  gap: 12px;
+}
+.business-queue li {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  border-block-end: 1px solid var(--border);
+  padding-block: 12px;
+}
+.business-queue bdi {
+  overflow-wrap: anywhere;
+}
+.business-workspace ol {
+  padding-inline-start: 24px;
+  line-height: 1.7;
+}
+.business-workspace bdi {
+  overflow-wrap: anywhere;
+}
+[dir="rtl"] .business-eyebrow {
+  letter-spacing: normal;
+}
+@container (max-width:42rem) {
+  .business-form {
+    grid-template-columns: 1fr;
+  }
+  .business-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .business-tabs a {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .business-card h2 {
+    font-size: 22px;
+  }
+}
+@media (max-width: 850px) {
+  .business-workspace {
+    padding: 12px 12px 24px;
+    gap: 12px;
+  }
+  .business-heading {
+    padding: 16px 4px;
+  }
+  .business-heading h1 {
+    font-size: 30px;
+  }
+  .business-workspace .card {
+    padding: 16px;
+  }
+  .business-form {
+    gap: 12px;
+  }
+  .business-field input,
+  .business-field select {
+    font-size: 16px;
+  }
+  .business-workspace .button {
+    min-block-size: 44px;
+    max-inline-size: 100%;
+  }
+  .business-grid {
+    gap: 12px;
+  }
+}
