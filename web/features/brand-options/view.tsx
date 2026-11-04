@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BidiReference, Button, Input } from '@beirut-time/ui';
 import type { Configuration, Kind, Option, SelectionWrite } from '@contracts/contracts-catalog/options';
 import { ApiError } from '@/lib/api/client';
@@ -63,7 +63,10 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
   const fileInput = useRef<HTMLInputElement>(null);
   const uploadOperation = useRef<{signature:string;key:string}|null>(null);
   useLayoutEffect(() => fencePrivateState(alive,window), []);
-  const brandQuery = useQuery({queryKey:['brand-options','brands'],queryFn:({signal})=>optionsApi.brands(signal)});
+  const brandQuery = useInfiniteQuery({queryKey:['brand-options','brands'],initialPageParam:null as string|null,
+    queryFn:({signal,pageParam})=>optionsApi.brands(signal,pageParam),getNextPageParam:last=>last.next_after??undefined});
+  const listedBrands=brandQuery.data?.pages.flatMap(page=>page.items)??[];
+  const selectedBrand=listedBrands.some(item=>item.organization_id===brand)?null:brand;
   const catalogQuery = useQuery({queryKey:['brand-options','catalog',brand],queryFn:({signal})=>optionsApi.catalog(brand,signal),enabled:!!brand});
   const savedQuery = useQuery({queryKey:['brand-options','saved',fingerprint],queryFn:({signal})=>optionsApi.configurations(signal),enabled:!!fingerprint});
   const configurationQuery = useQuery({queryKey:['brand-options','configuration',fingerprint,configurationId],queryFn:({signal})=>optionsApi.configuration(configurationId,signal),enabled:!!fingerprint&&!!configurationId&&!pending});
@@ -148,7 +151,7 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
       <div className="bo-workbench">
         <section className="bo-binding" aria-label={t.brand}>
           <label>{t.brand}<select name="brand" value={brand} disabled={busy||!!ack} onChange={e=>{setBrand(e.target.value);setBase('');setCaliber('');setChosen('');updateUrl('',e.target.value);updateBindings('','');}}>
-            <option value="">{t.chooseBrand}</option>{brandQuery.data?.items.map(b=><option value={b.organization_id} key={b.organization_id}>{b.name[locale]}</option>)}
+            <option value="">{t.chooseBrand}</option>{selectedBrand&&catalogQuery.data&&<option value={selectedBrand}>{catalogQuery.data.brand.name[locale]}</option>}{listedBrands.map(b=><option value={b.organization_id} key={b.organization_id}>{b.name[locale]}</option>)}
           </select></label>
           <label>{t.base}<select dir="ltr" name="base_model" value={base} disabled={!brand||busy||!!ack} onChange={e=>{setBase(e.target.value);setCaliber('');setChosen('');updateBindings(e.target.value,'');}}>
             <option value="">{t.chooseBase}</option>{bases.map(b=><option key={b} value={b}>{b}</option>)}
@@ -157,10 +160,11 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
             <option value="">{t.chooseCaliber}</option>{calibers.map(c=><option key={c} value={c}>{c}</option>)}
           </select></label>
         </section>
+        {brandQuery.hasNextPage&&<Button className="button-secondary" disabled={brandQuery.isFetchingNextPage||busy} onClick={()=>void brandQuery.fetchNextPage()}>{brandQuery.isFetchingNextPage?t.loading:t.moreBrands}</Button>}
         {catalogQuery.data?.brand.sample&&<p className="notice">{t.sample}</p>}
         {(brandQuery.isLoading||catalogQuery.isLoading)&&<div role="status" className="bo-loading"><div className="skeleton"/>{t.loading}</div>}
         {(brandQuery.error||catalogQuery.error)&&<div className="notice" role="alert"><p>{t.unavailable}</p><Button className="button-secondary" onClick={()=>{void brandQuery.refetch();void catalogQuery.refetch();}}>{t.retry}</Button></div>}
-        {brandQuery.isSuccess&&!brandQuery.data.items.length&&<p className="notice">{t.noBrands}</p>}
+        {brandQuery.isSuccess&&!listedBrands.length&&!brandQuery.hasNextPage&&<p className="notice">{t.noBrands}</p>}
         <div className="bo-categories" role="group" aria-label={t.chooseCategory}>{kinds.map((value,index)=><button key={value} type="button" aria-pressed={kind===value} disabled={busy} onClick={()=>{setKind(value);setChosen('');setMessage('');}}><span aria-hidden="true">0{index+1}</span>{t[value]}</button>)}</div>
         {!base||!caliber?<p className="bo-empty">{t.noSelection}</p>:<fieldset className="bo-options" disabled={busy}><legend className="sr-only">{t[kind]}</legend>
           {supported.length?supported.map(option=><label className="bo-option" data-selected={chosen===option.id} key={option.id}>

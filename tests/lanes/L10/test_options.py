@@ -35,8 +35,8 @@ def business(**overrides):
 
 def identity(request):
     assert request.method == "GET"
-    if request.url.path == '/v1/businesses':
-        return httpx.Response(200, json={'items': [business()]})
+    if request.url.path.startswith('/v1/businesses/'):
+        return httpx.Response(200, json=business())
     assert request.url.path == "/internal/v1/principal"
     token = request.headers.get("authorization", "").removeprefix("Bearer ")
     if token == "offline":
@@ -76,32 +76,22 @@ def identity(request):
     )
 
 
+def directory_profile(**overrides):
+    return {'organization_id': str(BRAND), 'revision': 1, 'display_name': 'Sample Atelier',
+            'kind': 'brand', 'sample': True, 'capabilities': ['customization'], 'contact': 'Sample contact',
+            'visit_en': 'By request', 'visit_ar': 'حسب الطلب', 'scope_en': 'Sample customization',
+            'scope_ar': 'تخصيص نموذجي', **overrides}
+
+
 def directory(request):
-    assert request.method == "GET" and request.url.path == "/v1/directory"
-    assert dict(request.url.params) == {"kind": "brand", "offering": "customization"}
-    return httpx.Response(
-        200,
-        json={
-            "items": [
-                {
-                    "organization_id": str(BRAND),
-                    "name": {"en": "Sample Atelier", "ar": "المشغل النموذجي"},
-                    "kind": "brand",
-                    "status": "onboarded",
-                    "offerings": ["customization"],
-                    "sample": True,
-                },
-                {
-                    "organization_id": str(OTHER_BRAND),
-                    "name": {"en": "Not onboarded", "ar": "غير معتمدة"},
-                    "kind": "brand",
-                    "status": "pending",
-                    "offerings": ["customization"],
-                    "sample": True,
-                },
-            ]
-        },
-    )
+    assert request.method == 'GET'
+    if request.url.path == f'/v1/directory/businesses/{BRAND}':
+        return httpx.Response(200, json=directory_profile())
+    if request.url.path.startswith('/v1/directory/businesses/'):
+        return httpx.Response(404)
+    assert request.url.path == '/v1/directory/businesses'
+    assert dict(request.url.params) == {'purpose': 'customization', 'limit': '20'}
+    return httpx.Response(200, json={'items': [directory_profile()], 'next_after': None})
 
 
 @pytest_asyncio.fixture
@@ -198,7 +188,7 @@ async def test_all_stories_saved_exactly_and_reloaded_after_restart(env):
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "token,status",
-    [("buyer", 403), ("wrong-org", 403), ("no-grant", 403), ("stock-only", 403), ("invalid", 403), ("offline", 503)],
+    [("buyer", 403), ("wrong-org", 403), ("no-grant", 403), ("stock-only", 403), ("invalid", 401), ("offline", 503)],
 )
 async def test_brand_permissions_are_current_and_org_scoped(env, token, status):
     app, client, _ = env
@@ -510,8 +500,8 @@ async def test_current_business_authority_overrules_a_stale_directory(env, polic
     config = uuid4()
     saved = (await save(client, samples()[0], config)).json()
     def transport(request):
-        if request.url.path == '/v1/businesses':
-            return httpx.Response(200, json={'items':[business(**policy)]})
+        if request.url.path.startswith('/v1/businesses/'):
+            return httpx.Response(200, json=business(**policy))
         return identity(request)
     await app.state.l10_clients['identity'].aclose()
     app.state.l10_clients['identity'] = DependencyClient('identity','http://identity',transport=httpx.MockTransport(transport))
@@ -525,7 +515,7 @@ async def test_business_read_outage_does_not_grant_from_cached_directory_claims(
     app, client, _ = env
     await populate(client)
     def transport(request):
-        if request.url.path == '/v1/businesses':
+        if request.url.path.startswith('/v1/businesses/'):
             return httpx.Response(503)
         return identity(request)
     await app.state.l10_clients['identity'].aclose()
@@ -547,3 +537,124 @@ async def test_sample_business_marker_cannot_be_hidden_by_directory_metadata(env
     app.state.l10_clients['directory'] = DependencyClient('directory','http://directory',transport=httpx.MockTransport(transport))
     response = await client.get(ROOT+'/brands')
     assert response.json()['items'][0]['sample'] is True
+
+
+@pytest.mark.asyncio
+async def test_directory_v1_cursor_survives_empty_filtered_page_and_resolves_exact_brand(env):
+    app, client, _ = env
+    def transport(request):
+        if request.url.path == '/v1/directory/businesses':
+            assert request.url.params['purpose'] == 'customization'
+            assert request.url.params['limit'] == '20'
+            if 'after' not in request.url.params:
+                return httpx.Response(200, json={'items': [], 'next_after': str(BRAND)})
+            assert request.url.params['after'] == str(BRAND)
+            return httpx.Response(200, json={'items': [directory_profile(organization_id=str(OTHER_BRAND))], 'next_after': None})
+        return directory(request)
+    def current_business(request):
+        if request.url.path == f'/v1/businesses/{OTHER_BRAND}':
+            return httpx.Response(200, json=business(id=str(OTHER_BRAND)))
+        return identity(request)
+    await app.state.l10_clients['directory'].aclose()
+    app.state.l10_clients['directory'] = DependencyClient('directory','http://directory',transport=httpx.MockTransport(transport))
+    await app.state.l10_clients['identity'].aclose()
+    app.state.l10_clients['identity'] = DependencyClient('identity','http://identity',transport=httpx.MockTransport(current_business))
+    first = (await client.get(ROOT+'/brands')).json()
+    assert first == {'items': [], 'next_after': str(BRAND)}
+    second = (await client.get(ROOT+'/brands', params={'after': first['next_after']})).json()
+    assert second['items'][0]['organization_id'] == str(OTHER_BRAND) and second['next_after'] is None
+    # Direct selected-brand reads never depend on being in the first scan page.
+    assert (await client.get(f'{ROOT}/brands/{BRAND}')).status_code == 200
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('payload', [
+    {'items': [], 'next_after': str(BRAND)},
+    {'items': [directory_profile()], 'next_after': None},
+    {'items': [directory_profile(), directory_profile()], 'next_after': None},
+])
+async def test_directory_v1_rejects_nonprogressing_or_duplicate_pages(env, payload):
+    app, client, _ = env
+    await app.state.l10_clients['directory'].aclose()
+    app.state.l10_clients['directory'] = DependencyClient('directory','http://directory',
+        transport=httpx.MockTransport(lambda request: httpx.Response(200, json=payload)))
+    response = await client.get(ROOT+'/brands', params={'after': str(BRAND)})
+    assert response.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_catalog_budget_counts_kind_and_id_but_allows_revision_updates(env):
+    app, client, _ = env
+    entries = samples()[:4]
+    ids = [uuid4() for _ in range(50)]
+    async with app.state.pool.acquire() as tx:
+        await tx.executemany("""INSERT INTO l10_options(brand_id,kind,option_id,revision,definition,created_by)
+            VALUES($1,$2,$3,1,$4::jsonb,$5)""", [(BRAND, entry['kind'], option_id,
+            json.dumps(entry['definition']), STAFF) for entry in entries for option_id in ids])
+    assert len((await client.get(f'{ROOT}/brands/{BRAND}')).json()['items']) == 200
+    assert (await publish(client, samples()[0])).status_code == 409
+    existing = copy.deepcopy(entries[0])
+    existing['id'] = str(ids[0])
+    existing['definition']['expected_revision'] = 1
+    assert (await publish(client, existing)).status_code == 200
+    async with app.state.pool.acquire() as tx:
+        assert await tx.fetchval('SELECT count(*) FROM l10_options') == 201
+        assert await tx.fetchval('SELECT count(*) FROM outbox') == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('policy', [
+    {'platform_onboarded':'true'}, {'authenticated_business':1}, {'sample':'false'}, {'revision':True},
+    {'id':str(OTHER_BRAND)},
+])
+async def test_business_v1_rejects_coerced_authority_and_mismatched_ids(env, policy):
+    app, client, _ = env
+    def transport(request):
+        if request.url.path.startswith('/v1/businesses/'):
+            return httpx.Response(200, json=business(**policy))
+        return identity(request)
+    await app.state.l10_clients['identity'].aclose()
+    app.state.l10_clients['identity'] = DependencyClient('identity','http://identity',transport=httpx.MockTransport(transport))
+    assert (await client.get(ROOT+'/brands')).status_code == 503
+    assert (await client.get(f'{ROOT}/brands/{BRAND}')).status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_option_events_use_registered_inbox_path_and_short_lived_service_authority(env, monkeypatch):
+    import jwt
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from bt_events import OutboxRelay
+    from bt_contracts.catalog.options.events import OptionEventData, EVENT_TYPES
+    app, client, _ = env
+    await populate(client)
+    module = next(m for m in app.state.modules if m.id == 'L10.options-color')
+    headers_for = module.load('dependencies.py:delivery_headers')
+    destination = module.load('dependencies.py:InboxDestination')
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    encoded = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                               serialization.NoEncryption()).decode()
+    monkeypatch.setenv('BT_SERVICE_AUTH_PRIVATE_KEY', encoded)
+    authorization = headers_for(app,'communications')
+    monkeypatch.delenv('BT_SERVICE_AUTH_PRIVATE_KEY')
+    claims = jwt.decode(authorization['Authorization'][7:], key.public_key(), algorithms=['RS256'],
+                        audience='communications', issuer=app.state.settings.auth_issuer)
+    assert claims['sub'] == 'catalog' and claims['type'] == 'service' and claims['exp']-claims['iat'] == 60
+    observed = []
+    def receiver(request):
+        assert request.method == 'POST' and request.url.path == '/internal/v1/inbox/events'
+        assert request.headers['Authorization'] == authorization['Authorization']
+        envelope = json.loads(request.content)
+        assert envelope['source'] == 'catalog' and envelope['type'] in EVENT_TYPES
+        OptionEventData.model_validate(envelope['data'])
+        observed.append(envelope['id'])
+        return httpx.Response(200, json={'accepted':True})
+    dependency = DependencyClient('communications','http://communications',transport=httpx.MockTransport(receiver))
+    try:
+        relay = OutboxRelay(app.state.pool, {'communications':destination(dependency)}, headers=lambda _:authorization)
+        await relay.tick()
+    finally:
+        await dependency.aclose()
+    assert len(set(observed)) == len(samples())
+    async with app.state.pool.acquire() as tx:
+        assert await tx.fetchval('SELECT count(*) FROM outbox WHERE delivered_at IS NULL') == 0

@@ -4,7 +4,7 @@ import type { Brand, Catalog, Configuration, Kind, SelectionWrite } from '@contr
 const root = '/api/web/v1/catalog/v1/brand-options';
 // Session credentials stay in the Identity SDK's memory; no credential form or persistence.
 export const optionsApi = {
-  brands: (signal?: AbortSignal) => request<{items: Brand[]}>(`${root}/brands`, {signal}),
+  brands: (signal?: AbortSignal, after?: string|null) => request<{items: Brand[];next_after:string|null}>(`${root}/brands${after?'?after='+encodeURIComponent(after):''}`, {signal}),
   catalog: (brand: string, signal?: AbortSignal) => request<Catalog>(`${root}/brands/${encodeURIComponent(brand)}`, {signal}),
   configurations: (signal?: AbortSignal) => authenticatedRequest<{items: Pick<Configuration, 'id' | 'brand_id' | 'base_model' | 'caliber' | 'revision'>[]}>(`${root}/configurations`, {signal}),
   configuration: (id: string, signal?: AbortSignal) => authenticatedRequest<Configuration>(`${root}/configurations/${encodeURIComponent(id)}`, {signal}),

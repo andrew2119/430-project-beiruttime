@@ -136,8 +136,8 @@ async def snapshot(tx, config):
 
 
 @router.get("/brands")
-async def list_brands(request: Request):
-    return {"items": [b.model_dump(mode="json") for b in await dependencies.brands(request)]}
+async def list_brands(request: Request, after: UUID | None = None):
+    return await dependencies.brands(request, after)
 
 
 @router.get("/brands/{brand_id}")
@@ -193,7 +193,7 @@ async def publish(brand_id: UUID, kind: Kind, option_id: UUID, body: OptionWrite
         if revision != body.expected_revision:
             raise error("stale_option", "Reload the current option revision.")
         if revision == 0:
-            count = await tx.fetchval("SELECT count(DISTINCT option_id) FROM l10_options WHERE brand_id=$1", brand_id)
+            count = await tx.fetchval("SELECT count(DISTINCT (kind,option_id)) FROM l10_options WHERE brand_id=$1", brand_id)
             if count >= 200:
                 raise error("catalog_limit", "The brand catalog is full.")
         revision += 1

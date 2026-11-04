@@ -6,6 +6,8 @@ Never use this entry point for the connected marketplace acceptance or productio
 import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import httpx
 import uvicorn
 from bt_bulkheads import DependencyClient
@@ -18,7 +20,12 @@ from test_options import directory, identity, populate
 
 async def main():
     access_context = asynccontextmanager(database_access.__wrapped__)
-    async with access_context() as access:
+    with TemporaryDirectory() as temporary:
+        async with access_context(SimpleNamespace(param='core-only'), Path(temporary)) as access:
+            await serve(access)
+
+
+async def serve(access):
         modules = Path("/app/modules")
         await migrate(access.owner_url, modules)
         app = create_app(Settings(service_name="catalog", database_url=access.runtime_url, modules_path=modules))

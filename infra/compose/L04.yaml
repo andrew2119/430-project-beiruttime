@@ -1,0 +1,9 @@
+# Discovery is a Catalog module, never a second authoritative runtime.
+# L03 packages services/catalog/modules/** through the frozen module loader.
+services:
+  catalog:
+    environment:
+      AUCTION_API_URL: http://auction:8000
+      ORDERS_API_URL: http://orders:8000
+      IDENTITY_API_URL: http://identity:8000
+      CATALOG_MEDIA_API_URL: http://127.0.0.1:8000

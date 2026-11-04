@@ -1,0 +1,54 @@
+/* CP F-35/F-41: semantic ink, structural phone recomposition, separate paint and hit targets. */
+.auction-feature { container-type:inline-size; min-inline-size:0; }
+.auction-studio { padding:24px 28px; }
+.auction-heading { margin-block-end:24px; }
+.auction-heading h1 { font-size:clamp(1.5rem,3vw,2.25rem); letter-spacing:-.035em; margin-block:8px; }
+.auction-heading p,.auction-feature .muted { color:var(--muted); }
+.auction-studio-grid { display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:24px;align-items:start; }
+.auction-form { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-block-start:24px; }
+.auction-form label,.auction-bid-form>label { display:grid;gap:8px;min-inline-size:0;font-size:.875rem; }
+.auction-form input,.auction-form select,.auction-bid-form input { inline-size:100%;min-inline-size:0; }
+.auction-form select { border:1px solid var(--border);background:var(--surface);color:var(--foreground);border-radius:8px;padding:8px; }
+.auction-span { grid-column:1/-1; }
+.auction-fields { display:contents;border:0;padding:0;margin:0; }
+.auction-submit { display:flex;justify-content:flex-end; }
+.auction-list { display:grid;gap:16px; }
+.auction-organization { display:grid;gap:8px;max-inline-size:32rem;margin-block:0 20px;font-size:.875rem; }
+.auction-organization select { background:var(--surface);color:var(--foreground);border:1px solid var(--border);padding:10px;min-block-size:44px;max-inline-size:100%; }
+.auction-row { display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap; }
+.auction-summary h2 { font-size:1.8rem;margin-block:16px; }
+.auction-feature dl { display:grid;gap:12px; }
+.auction-feature dl div { display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap; }
+.auction-feature dt { color:var(--muted);font-size:.875rem; }
+.auction-feature dd { margin:0;overflow-wrap:anywhere;text-align:end; }
+.auction-state { border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:.75rem;font-weight:600; }
+.auction-state.live { color:var(--brand-ink);background:var(--brand); }
+.auction-price { display:grid;gap:8px;margin-block:20px; }
+.auction-price strong { font-size:2rem;font-variant-numeric:tabular-nums; }
+.auction-price small { color:var(--muted); }
+.auction-feature details { border-block:1px solid var(--border);padding-block:12px;margin-block:16px; }
+.auction-feature summary { cursor:pointer;min-block-size:32px; }
+.auction-bid-form { display:grid;gap:12px; }
+.auction-fee-preview { border:1px solid var(--border);border-radius:12px;padding:16px; }
+.auction-check { display:flex;align-items:center;gap:8px;min-block-size:44px; }
+.auction-check input { inline-size:18px;block-size:18px;flex:none; }
+.auction-history,.auction-notices { list-style:none;margin:0;padding:0; }
+.auction-history li { display:grid;grid-template-columns:1fr auto;gap:8px;padding-block:12px;border-block-end:1px solid var(--border); }
+.auction-history time { grid-column:1/-1;font-size:.75rem;color:var(--muted);overflow-wrap:anywhere; }
+.auction-notices li { display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:16px;border-block-end:1px solid var(--border); }
+.auction-notices p { font-size:.875rem;overflow-wrap:anywhere; }
+@container (max-width:52rem) { .auction-studio-grid { grid-template-columns:minmax(0,1fr);gap:16px; } }
+@container (max-width:30rem) { .auction-form { grid-template-columns:minmax(0,1fr);gap:12px; } .auction-notices li { align-items:start;flex-direction:column;gap:8px; } }
+@media (max-width:850px) {
+ .auction-studio { padding:12px; }
+ .auction-feature.card { padding:16px; }
+ .auction-heading { margin-block-end:16px; }
+ .auction-heading h1 { font-size:1.5rem; }
+ .auction-feature input,.auction-feature select { font-size:16px;min-block-size:44px; }
+ .auction-feature .button { min-block-size:44px;border-block:4px solid transparent;background-clip:padding-box; }
+ .auction-feature summary { min-block-size:44px;display:flex;align-items:center; }
+ .auction-studio-grid { gap:12px; }
+ .auction-feature .card { padding:16px; }
+ .auction-feature bdi { overflow-wrap:anywhere; }
+}
+@media (prefers-reduced-motion:reduce) { .auction-feature * { scroll-behavior:auto;transition:none;animation:none; } }

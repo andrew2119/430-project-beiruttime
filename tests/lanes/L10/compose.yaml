@@ -31,6 +31,29 @@ services:
     pids_limit: 128
     security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
+  connected-proof:
+    profiles: [live]
+    image: ${L10_TEST_IMAGE:-beirut-time/l10-options:browser}
+    command: [python, /lane-tests/L10/live_server.py]
+    environment:
+      TEST_DATABASE_ADMIN_URL: postgresql://postgres:${POSTGRES_PASSWORD:-local-bootstrap-only}@postgres:5432/postgres
+      BT_MODULES_PATH: /tmp/l10-core-baseline
+      PYTHONPATH: /proof/packages/runtime/src:/proof/packages/events/src:/proof/packages/bulkheads/src:/proof/packages/contracts-core/src:/proof/repository/services/identity/runtime:/opt/domain-contracts
+    volumes:
+      - ../../..:/proof/repository:ro
+      - ../../../packages:/proof/packages:ro
+      - .:/lane-tests/L10:ro
+      - ../../../packages/contracts-catalog/options:/opt/domain-contracts/bt_contracts/catalog/options:ro
+    ports: ["127.0.0.1:9110:8000", "127.0.0.1:9121:8121"]
+    networks: [foundation]
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 128
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
 networks:
   foundation:
     external: true

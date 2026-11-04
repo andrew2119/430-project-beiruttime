@@ -36,6 +36,10 @@ describe('brand options V1 transport', () => {
     expect(send.mock.calls[0][1].signal).toBe(signal);
     expect(authenticated.mock.calls[0][1].signal).toBe(signal);
   });
+  it('passes the bounded directory cursor without turning it into a path', async () => {
+    await optionsApi.brands(undefined,'next/cursor?');
+    expect(send.mock.calls[0][0]).toBe('/api/web/v1/catalog/v1/brand-options/brands?after=next%2Fcursor%3F');
+  });
   it('reads private images with the live memory-only credential, never a public file path', async () => {
     await optionsApi.reference('configuration','reference','current-token');
     expect(blob).toHaveBeenCalledWith('/api/web/v1/catalog/v1/brand-options/configurations/configuration/references/reference',{

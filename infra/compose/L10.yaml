@@ -7,3 +7,4 @@ services:
       SERVICE_OPERATIONS_API_URL: http://service-operations:8000
       COMMUNICATIONS_API_URL: http://communications:8000
       BT_OPTIONS_EVENT_TOKEN: ${BT_OPTIONS_EVENT_TOKEN:-}
+      BT_SERVICE_AUTH_PRIVATE_KEY: ${BT_SERVICE_AUTH_PRIVATE_KEY:-}
