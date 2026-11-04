@@ -294,6 +294,42 @@ async def publish(listing_id: UUID, body: Publish, request: Request):
         return answer
 
 
+@router.get("/v1/listings/{listing_id}/report-subject")
+async def report_subject(listing_id: UUID, request: Request):
+    person = await principal(request)
+    async with request.app.state.pool.acquire() as tx:
+        row = await tx.fetchrow("SELECT * FROM catalog_listings WHERE id=$1 AND status='published'", listing_id)
+    if row is None:
+        raise PublicError("not_found", "Listing not found.", status=404)
+    if row["is_hidden"]:
+        owner = (
+            row["organization_id"] is None
+            and person.actor.organization_id is None
+            and row["owner_subject_id"] == person.actor.subject_id
+        )
+        if row["organization_id"] == person.actor.organization_id and row["organization_id"] is not None:
+            seller_scope(person, "identity.listings.publish")
+            owner = True
+        if not owner:
+            orders = await upstream(request, "orders", "GET", "/v1/orders")
+            records = orders.get("items") if isinstance(orders, dict) else None
+            if not isinstance(records, list):
+                raise PublicError(
+                    "orders_unavailable", "Transaction participation is temporarily unavailable.", status=503
+                )
+            party = person.actor.organization_id is None and any(
+                isinstance(item, dict)
+                and item.get("watch_id") == str(row["physical_watch_id"])
+                and item.get("buyer_id") == str(person.actor.subject_id)
+                for item in records
+            )
+            if not party:
+                raise AccessDenied("Hidden listing is limited to its current transaction parties")
+    return {
+        "id": str(row["id"]),
+        "seller_id": str(row["owner_subject_id"]),
+        "organization_id": str(row["organization_id"]) if row["organization_id"] else None,
+    }
 
 
 @router.get("/v1/listings/{listing_id}/publication")

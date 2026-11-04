@@ -9,7 +9,8 @@
     "PyJWT"
   ],
   "routes": [
-    "routes.py:router"
+    "routes.py:router",
+    "moderation.py:router"
   ],
   "migrations": [
     "migrations/L03_0001_listings.sql",
