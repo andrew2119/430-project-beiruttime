@@ -1,0 +1,178 @@
+{
+  "version": "v3.1",
+  "mode": "demo-only",
+  "import_owner": "L03",
+  "listings": [
+    {
+      "id": "DEMO-WATCH-01",
+      "is_demo": true,
+      "seller": "private-seller-demo-1",
+      "seller_type": "private",
+      "onboarding": "synthetic private seller verification",
+      "brand": "Seiko",
+      "model": "5 Automatic",
+      "title_en": "Seiko 5 — illustrative demo 1",
+      "title_ar": "ساعة تجريبية توضيحية 1",
+      "currency": "USD",
+      "price_minor": 18000,
+      "sale_mode": "auction",
+      "condition": "Synthetic demo description; source photo is illustrative, not evidence of this inventory.",
+      "modified_disclosure": "No modification claimed; demo image does not prove component originality.",
+      "location": "Beirut — synthetic fixture",
+      "image_ids": [
+        "IMG-01"
+      ],
+      "image_manifest": "demo-images-manifest.json",
+      "public_status": "published through real API after private verification or official business onboarding",
+      "authentication_route": "required-after-payment-private-watch",
+      "payment_status": null,
+      "inspection_result": null,
+      "auction": {
+        "start": "relative to demo import clock",
+        "end": "start + 60 minutes",
+        "max_bid_enabled": true,
+        "reserve": "none in Sprint 1"
+      }
+    },
+    {
+      "id": "DEMO-WATCH-02",
+      "is_demo": true,
+      "seller": "dealer-demo-1",
+      "seller_type": "dealer",
+      "onboarding": "synthetic operator-onboarded authenticated dealer",
+      "brand": "Seiko",
+      "model": "5 Automatic",
+      "title_en": "Seiko 5 — illustrative demo 2",
+      "title_ar": "ساعة تجريبية توضيحية 2",
+      "currency": "USD",
+      "price_minor": 18000,
+      "sale_mode": "fixed-price",
+      "condition": "Synthetic demo description; source photo is illustrative, not evidence of this inventory.",
+      "modified_disclosure": "No modification claimed; demo image does not prove component originality.",
+      "location": "Beirut — synthetic fixture",
+      "image_ids": [
+        "IMG-01"
+      ],
+      "image_manifest": "demo-images-manifest.json",
+      "public_status": "published through real API after private verification or official business onboarding",
+      "authentication_route": "onboarded-business-assurance-no-independent-case",
+      "payment_status": null,
+      "inspection_result": null,
+      "auction": null
+    },
+    {
+      "id": "DEMO-WATCH-03",
+      "is_demo": true,
+      "seller": "private-seller-demo-1",
+      "seller_type": "private",
+      "onboarding": "synthetic private seller verification",
+      "brand": "Omega",
+      "model": "X33 Mk1",
+      "title_en": "Omega X33 ‘Mars’ watch — illustrative demo 3",
+      "title_ar": "ساعة تجريبية توضيحية 3",
+      "currency": "USD",
+      "price_minor": 210000,
+      "sale_mode": "auction",
+      "condition": "Synthetic demo description; source photo is illustrative, not evidence of this inventory.",
+      "modified_disclosure": "No modification claimed; demo image does not prove component originality.",
+      "location": "Beirut — synthetic fixture",
+      "image_ids": [
+        "IMG-02"
+      ],
+      "image_manifest": "demo-images-manifest.json",
+      "public_status": "published through real API after private verification or official business onboarding",
+      "authentication_route": "required-after-payment-private-watch",
+      "payment_status": null,
+      "inspection_result": null,
+      "auction": {
+        "start": "relative to demo import clock",
+        "end": "start + 60 minutes",
+        "max_bid_enabled": true,
+        "reserve": "none in Sprint 1"
+      }
+    },
+    {
+      "id": "DEMO-WATCH-04",
+      "is_demo": true,
+      "seller": "dealer-demo-1",
+      "seller_type": "dealer",
+      "onboarding": "synthetic operator-onboarded authenticated dealer",
+      "brand": "Omega",
+      "model": "X33 Mk1",
+      "title_en": "Omega X33 ‘Mars’ watch — illustrative demo 4",
+      "title_ar": "ساعة تجريبية توضيحية 4",
+      "currency": "USD",
+      "price_minor": 210000,
+      "sale_mode": "fixed-price",
+      "condition": "Synthetic demo description; source photo is illustrative, not evidence of this inventory.",
+      "modified_disclosure": "No modification claimed; demo image does not prove component originality.",
+      "location": "Beirut — synthetic fixture",
+      "image_ids": [
+        "IMG-02"
+      ],
+      "image_manifest": "demo-images-manifest.json",
+      "public_status": "published through real API after private verification or official business onboarding",
+      "authentication_route": "onboarded-business-assurance-no-independent-case",
+      "payment_status": null,
+      "inspection_result": null,
+      "auction": null
+    },
+    {
+      "id": "DEMO-WATCH-05",
+      "is_demo": true,
+      "seller": "private-seller-demo-1",
+      "seller_type": "private",
+      "onboarding": "synthetic private seller verification",
+      "brand": "Seiko",
+      "model": "5 Automatic",
+      "title_en": "Seiko 5 Automatic 21 Jewels — illustrative demo 5",
+      "title_ar": "ساعة تجريبية توضيحية 5",
+      "currency": "USD",
+      "price_minor": 22000,
+      "sale_mode": "auction",
+      "condition": "Synthetic demo description; source photo is illustrative, not evidence of this inventory.",
+      "modified_disclosure": "No modification claimed; demo image does not prove component originality.",
+      "location": "Beirut — synthetic fixture",
+      "image_ids": [
+        "IMG-03"
+      ],
+      "image_manifest": "demo-images-manifest.json",
+      "public_status": "published through real API after private verification or official business onboarding",
+      "authentication_route": "required-after-payment-private-watch",
+      "payment_status": null,
+      "inspection_result": null,
+      "auction": {
+        "start": "relative to demo import clock",
+        "end": "start + 60 minutes",
+        "max_bid_enabled": true,
+        "reserve": "none in Sprint 1"
+      }
+    },
+    {
+      "id": "DEMO-WATCH-06",
+      "is_demo": true,
+      "seller": "dealer-demo-1",
+      "seller_type": "dealer",
+      "onboarding": "synthetic operator-onboarded authenticated dealer",
+      "brand": "Seiko",
+      "model": "5 Automatic",
+      "title_en": "Seiko 5 Automatic 21 Jewels — illustrative demo 6",
+      "title_ar": "ساعة تجريبية توضيحية 6",
+      "currency": "USD",
+      "price_minor": 22000,
+      "sale_mode": "fixed-price",
+      "condition": "Synthetic demo description; source photo is illustrative, not evidence of this inventory.",
+      "modified_disclosure": "No modification claimed; demo image does not prove component originality.",
+      "location": "Beirut — synthetic fixture",
+      "image_ids": [
+        "IMG-03"
+      ],
+      "image_manifest": "demo-images-manifest.json",
+      "public_status": "published through real API after private verification or official business onboarding",
+      "authentication_route": "onboarded-business-assurance-no-independent-case",
+      "payment_status": null,
+      "inspection_result": null,
+      "auction": null
+    }
+  ]
+}

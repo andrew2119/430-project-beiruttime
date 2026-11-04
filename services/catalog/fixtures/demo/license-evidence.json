@@ -1,0 +1,22 @@
+[
+  {
+    "id":"IMG-01",
+    "source_url":"https://commons.wikimedia.org/wiki/File:Seiko_5.jpg",
+    "source_html_sha256":"29a62ac584d7106f8eef5a527a2cd9f87a6d1ea451ca334225999792312e66c6",
+    "license":"CC BY-SA 4.0",
+    "license_url":"https://creativecommons.org/licenses/by-sa/4.0/",
+    "author":"Isik",
+    "checked_on":"2026-11-04",
+    "passage":"licensetpl_short: CC BY-SA 4.0; licensetpl_long: Creative Commons Attribution-Share Alike 4.0. Exact image file-page author: Isik."
+  },
+  {
+    "id":"IMG-02",
+    "source_url":"https://commons.wikimedia.org/wiki/File:Omega_X33_%27Mars%27_watch.jpg",
+    "source_html_sha256":"ee1d8ed90f27eb69dea9b176716396d5a5732fd114f2c4faa0ea11bf9b3573b5",
+    "license":"CC BY 3.0",
+    "license_url":"https://creativecommons.org/licenses/by/3.0/",
+    "author":"Chris Gaunt",
+    "checked_on":"2026-11-04",
+    "passage":"licensetpl_short: CC BY 3.0; licensetpl_long: Creative Commons Attribution 3.0. Exact image file-page author: Chris Gaunt."
+  }
+]

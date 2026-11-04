@@ -1,0 +1,1 @@
+{"version":1,"id":"L03.listings","dependencies":["fastapi","asyncpg","httpx","pydantic","PyJWT"],"routes":["routes.py:router","moderation.py:router"],"migrations":["migrations/L03_0001_listings.sql","migrations/L03_0002_visibility.sql"],"workers":["dependencies.py:manage_clients","events.py:relay"],"fixtures":{"demo":"fixtures.py:seed"}}
