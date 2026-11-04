@@ -22,9 +22,9 @@ from .conftest import ROOT
 
 
 @asynccontextmanager
-async def accounts_routes(access):
+async def accounts_routes(access, *, full_authority=False):
     accounts_source = ROOT / 'services/identity/modules/accounts'
-    source = accounts_source
+    source = accounts_source.parent if full_authority else accounts_source
     runtime = ROOT / 'services/identity/runtime'
     if not (accounts_source / 'routes.py').is_file() or not (runtime / 'service_app/identity.py').is_file():
         raise RuntimeError('Stage the published Accounts and Identity-local helper handoffs first')
@@ -37,7 +37,7 @@ async def accounts_routes(access):
     sys.path.insert(0, str(runtime))
     try:
         with TemporaryDirectory(prefix='l11-accounts-', dir=ROOT / '.venv') as temporary:
-            module = Path(temporary) / 'accounts'
+            module = Path(temporary) / ('modules' if full_authority else 'accounts')
             shutil.copytree(source, module, ignore=shutil.ignore_patterns('__pycache__'))
             for metadata_path in module.rglob('module.json'):
                 metadata = json.loads(metadata_path.read_text())
