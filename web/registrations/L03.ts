@@ -9,6 +9,7 @@ export default {
     { path: "/seller/listings", roles: [...sellers], area: "seller" },
     { path: "/seller/listings/:id", roles: [...sellers], area: "seller" },
     { path: "/seller/dashboard", roles: [...sellers], area: "seller" },
+    { path: "/image-credits", roles: ["public"], area: "storefront" },
   ],
   navigation: [
     {
@@ -26,6 +27,14 @@ export default {
       order: 20,
       area: "seller",
       roles: [...sellers],
+    },
+    {
+      id: "image-credits",
+      href: "/image-credits",
+      label: { en: "Image credits", ar: "حقوق الصور" },
+      order: 90,
+      area: "storefront",
+      roles: ["public"],
     },
   ],
   dictionaries: { en, ar },
