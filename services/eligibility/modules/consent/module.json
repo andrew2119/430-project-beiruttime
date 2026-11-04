@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "id": "L01.consent",
+  "dependencies": [
+    "fastapi",
+    "asyncpg",
+    "PyJWT",
+    "cryptography"
+  ],
+  "routes": [
+    "routes.py:router",
+    "routes.py:events"
+  ],
+  "migrations": [
+    "migrations/L01_0001_consent.sql"
+  ],
+  "workers": [
+    "workers.py:run"
+  ]
+}

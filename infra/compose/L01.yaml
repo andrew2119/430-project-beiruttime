@@ -1,0 +1,40 @@
+services:
+  identity:
+    image: beirut-time/identity:local
+    build:
+      context: .
+      dockerfile: services/identity/runtime/Dockerfile
+      args: {SERVICE_PATH: services/identity}
+    environment:
+      BT_AUTH_PRIVATE_KEY: ${BT_AUTH_PRIVATE_KEY:-}
+      BT_AUTH_PUBLIC_KEY: ${BT_AUTH_PUBLIC_KEY:-}
+      BT_SERVICE_AUTH_PUBLIC_KEY: ${BT_SERVICE_AUTH_PUBLIC_KEY:-}
+      BT_EVENT_PRIVATE_KEY: ${BT_EVENT_PRIVATE_KEY:-}
+      BT_WEB_ORIGIN: ${BT_WEB_ORIGIN:-http://localhost:3000}
+      BT_ALLOWED_WEB_ORIGINS: ${BT_ALLOWED_WEB_ORIGINS:-}
+      BT_LOCAL_HTTP: ${BT_LOCAL_HTTP:-0}
+    mem_limit: 256m
+  identity-migrate:
+    image: beirut-time/identity:local
+    build:
+      context: .
+      dockerfile: services/identity/runtime/Dockerfile
+      args: {SERVICE_PATH: services/identity}
+  eligibility:
+    image: beirut-time/eligibility:local
+    build:
+      context: .
+      dockerfile: services/eligibility/runtime/Dockerfile
+      args: {SERVICE_PATH: services/eligibility}
+    environment:
+      BT_AUTH_PUBLIC_KEY: ${BT_AUTH_PUBLIC_KEY:-}
+      BT_SERVICE_AUTH_PUBLIC_KEY: ${BT_SERVICE_AUTH_PUBLIC_KEY:-}
+      BT_EVENT_PRIVATE_KEY: ${BT_EVENT_PRIVATE_KEY:-}
+      BT_IDENTITY_API_URL: http://identity:8000
+      BT_CATALOG_API_URL: http://catalog:8000
+  eligibility-migrate:
+    image: beirut-time/eligibility:local
+    build:
+      context: .
+      dockerfile: services/eligibility/runtime/Dockerfile
+      args: {SERVICE_PATH: services/eligibility}
