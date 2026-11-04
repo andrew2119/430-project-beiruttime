@@ -1,0 +1,9 @@
+# Bid notices v1
+
+Auction emits `auction.bid-accepted.v1` through authenticated durable outbox to Communications `/internal/v1/events`. L05 owns this opt-in receiver in `services/communications/modules/bid-notices`; other Communications modules must not register that same HTTP path. Only service RS256 tokens with `sub=auction`, `type=service`, `aud=communications`, current exp/iat and expected issuer can publish.
+
+Accepted data: auction_id, listing_id, sequence, revision, current_minor, currency, ends_at, bidder_id, previous_leader_id, leader_id. Unknown fields (including maxima) are refused. Required outbid recipients derive solely from the displaced leader, not caller preferences. Notice IDs are deterministic per event/recipient/kind; receipt plus all notices are committed in one transaction. Accepted and outbid messages contain canonical current price/end references, never a private ceiling.
+
+`GET /v1/bid-notices` is owner-private, bounded and uses fresh Identity principal. `GET /v1/bid-notices/{id}` denies other owners by returning 404. Opening a notice fetches Auction `GET /v1/auctions/{id}` through a bounded client; the historical event is never a current fee preview or bid permission. An unavailable canonical read says unavailable while retaining the original notice.
+
+Inbox bridge interface requested from L07: `POST /internal/v1/notices`, authenticated Communications service token, payload `{id,recipient_id,kind,resource_type:'auction',resource_id,href,created_at,data:{current_minor,currency,ends_at,sequence}}`; idempotent by id. The bridge durably retries until Inbox acknowledges; optional channels cannot suppress required notices. `href` is relative `/watches/{listing_id}`. Bid notices remain visible via owner-private endpoint if Inbox is temporarily unavailable, never claimed delivered early. Bridge source is Communications; no public notification publishing endpoint.

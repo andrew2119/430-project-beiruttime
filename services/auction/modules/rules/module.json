@@ -1,0 +1,1 @@
+{"version":1,"id":"L05.a-rules","dependencies":["fastapi","asyncpg","PyJWT","pydantic"],"routes":["routes.py:router","timing.py:router"],"migrations":["migrations/L05_0001_rules.sql","migrations/L05_0002_frozen_rules.sql"],"workers":["workers.py:relay"]}

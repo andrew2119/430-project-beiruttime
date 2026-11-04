@@ -1,0 +1,1 @@
+{"version":1,"id":"L05.b-bid-admission","dependencies":["fastapi","asyncpg","pydantic"],"routes":["routes.py:router"],"migrations":["migrations/L05_0001_bids.sql"]}
