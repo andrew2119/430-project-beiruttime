@@ -333,6 +333,34 @@ async def test_draft_idempotency_and_stale_revision(api):
 
 
 
+async def test_media_private_cross_case_and_bad_image_denied(api):
+    row = await draft(api)
+    doc = await photo(api, row, kind="private_document")
+    row = doc["listing"]
+    assert (await api.client.get(f"/v1/listings/{row['id']}/photos/{doc['asset_id']}/detail")).status_code == 404
+    assert (
+        await api.client.get(f"/v1/seller/listings/{row['id']}/media/{doc['asset_id']}", headers=headers("other"))
+    ).status_code == 403
+    other = await draft(api)
+    denied = await api.client.put(
+        f"/v1/seller/listings/{other['id']}/gallery",
+        json={"photo_ids": [doc["asset_id"]], "cover_id": doc["asset_id"]},
+        headers=headers(revision=1),
+    )
+    assert denied.status_code == 403
+    invalid = await api.client.post(
+        f"/v1/seller/listings/{row['id']}/media",
+        content=b"not an image",
+        headers=headers(revision=row["revision"], **{"X-Media-Kind": "public_photo", "X-Public-Safe": "true"}),
+    )
+    assert invalid.status_code == 422
+    async with api.app.state.pool.acquire() as tx:
+        assert (
+            await tx.fetchval(
+                "SELECT count(*) FROM catalog_media WHERE listing_id=$1", __import__("uuid").UUID(row["id"])
+            )
+            == 1
+        )
 
 
 async def test_business_kind_is_not_inferred_from_staff_job_title(api):
@@ -351,6 +379,16 @@ async def test_business_permissions_never_union_across_organizations(api):
     assert (await api.client.get(f"/v1/seller/listings/{row['id']}", headers=headers("seller"))).status_code == 403
 
 
+async def test_public_image_draft_hidden_and_duplicate_upload_replayed(api):
+    row = await draft(api)
+    key = uuid4().hex
+    h = headers(revision=1, key=key, **{"X-Media-Kind": "public_photo", "X-Public-Safe": "true"})
+    path = f"/v1/seller/listings/{row['id']}/media"
+    first = await api.client.post(path, content=image(), headers=h)
+    repeat = await api.client.post(path, content=image(), headers=h)
+    assert repeat.json() == first.json()
+    asset = first.json()["asset_id"]
+    assert (await api.client.get(f"/v1/listings/{row['id']}/photos/{asset}/thumb")).status_code == 404
 
 
 async def test_demo_disabled_and_finite_money(api):
