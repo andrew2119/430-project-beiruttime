@@ -1,0 +1,5 @@
+.runtime/
+*.log
+fixtures/session-runtime.ts
+proof-web/next-env.d.ts
+proof-web/node_modules
