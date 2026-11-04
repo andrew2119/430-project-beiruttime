@@ -1,5 +1,6 @@
 """Real PostgreSQL + real HTTP routes; deterministic versioned upstream fixtures."""
 
+import asyncio
 import io
 import json
 from pathlib import Path
@@ -321,16 +322,73 @@ async def test_draft_idempotency_and_stale_revision(api):
     assert (await api.client.put(path, json={"facts": facts()}, headers=headers(revision=1))).status_code == 409
 
 
+async def test_incomplete_draft_can_resume_but_not_publish(api):
+    answer = await api.client.post("/v1/seller/listings", json={}, headers=headers())
+    row = answer.json()
+    denied = await publish(api, row)
+    assert denied.status_code == 422
+    assert "brand" in denied.json()["error"]["details"]["fields"]
+    assert not api.calls
 
 
+async def test_empty_component_notes_remain_an_incomplete_draft(api):
+    value = facts()
+    value["component_wear"] = {"case": "   "}
+    row = await draft(api, value=value)
+    row = (await photo(api, row))["listing"]
+    answer = await publish(api, row)
+    assert answer.status_code == 422 and "component_wear" in answer.json()["error"]["details"]["fields"]
+    assert not api.calls
 
 
+async def test_modified_watch_requires_explicit_components(api):
+    value = facts()
+    value["modified"] = True
+    row = await draft(api, value=value)
+    row = (await photo(api, row))["listing"]
+    denied = await publish(api, row)
+    assert denied.status_code == 422 and "modifications" in denied.json()["error"]["details"]["fields"]
 
 
+async def test_publication_one_fence_event_and_gallery(api):
+    row, asset = await ready(api)
+    key = uuid4().hex
+    answers = await asyncio.gather(publish(api, row, key), publish(api, row, key))
+    assert [a.status_code for a in answers] == [200, 200]
+    assert all(a.json()["revision"] == row["revision"] + 1 for a in answers)
+    assert len({call[0] for call in api.calls}) == 1
+    public = await api.client.get(f"/v1/listings/{row['id']}/publication")
+    assert public.status_code == 200 and "fee_snapshot" not in public.json()
+    picture = await api.client.get(f"/v1/listings/{row['id']}/photos/{asset}/detail")
+    assert picture.status_code == 200
+    with Image.open(io.BytesIO(picture.content)) as decoded:
+        assert not decoded.getexif() and decoded.size == (800, 600)
+    async with api.app.state.pool.acquire() as tx:
+        assert (
+            await tx.fetchval("SELECT count(*) FROM outbox WHERE envelope->>'type'='catalog.listing.published.v1'") == 1
+        )
+    assert (
+        await api.client.put(
+            f"/v1/seller/listings/{row['id']}", json={"facts": facts()}, headers=headers(revision=row["revision"] + 1)
+        )
+    ).status_code == 409
 
 
+async def test_outage_stays_pending_and_resumes_same_registration(api):
+    row, _ = await ready(api)
+    api.fail["orders"] = True
+    assert (await publish(api, row)).status_code == 503
+    assert (await api.client.get(f"/v1/listings/{row['id']}/publication")).status_code == 404
+    api.fail["orders"] = False
+    assert (await publish(api, row)).status_code == 200
 
 
+async def test_unverified_or_unavailable_identity_cannot_publish(api):
+    row, _ = await ready(api)
+    assert (await publish(api, row, token="unverified")).status_code == 403
+    api.fail["identity"] = True
+    assert (await publish(api, row)).status_code == 503
+    assert not api.calls
 
 
 async def test_media_private_cross_case_and_bad_image_denied(api):

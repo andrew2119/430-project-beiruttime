@@ -1,9 +1,10 @@
 import io
 import struct
 import zlib
+from uuid import uuid4
 from PIL import Image
 import pytest
-from .test_listing_lifecycle import headers, image, draft, photo
+from .test_listing_lifecycle import headers, facts, image, draft, photo, ready, publish
 
 pytestmark = pytest.mark.asyncio
 
@@ -74,12 +75,57 @@ async def test_file_count_budget_and_failed_upload_no_orphan(api):
         assert await tx.fetchval("SELECT count(*) FROM catalog_media_variants") == 36
 
 
+async def test_invalid_quote_does_not_freeze_draft(api):
+    row, _ = await ready(api)
+    api.quotes["value"]["subject_revision"] = 999
+    response = await publish(api, row)
+    assert response.status_code == 409 and not api.calls
+    response = await api.client.get(f"/v1/seller/listings/{row['id']}", headers=headers())
+    assert response.json()["status"] == "draft"
 
 
+async def test_ambiguous_register_reuses_frozen_snapshot_and_operation(api):
+    row, _ = await ready(api)
+    api.fail["orders"] = True
+    assert (await publish(api, row)).status_code == 503
+    api.fail["orders"] = False
+    # The previously accepted quote can expire while an ambiguous registration is
+    # being reconciled. Its frozen price/rules remain bound to the same intent.
+    api.quotes["value"]["expires_at"] = "2000-01-01T00:00:00Z"
+    assert (await publish(api, row)).status_code == 200
+    assert len(api.calls) == 1
 
 
+async def test_pending_publication_disallows_fact_and_media_mutations(api):
+    row, _ = await ready(api)
+    api.fail["orders"] = True
+    assert (await publish(api, row)).status_code == 503
+    assert (
+        await api.client.put(
+            f"/v1/seller/listings/{row['id']}", json={"facts": facts()}, headers=headers(revision=row["revision"])
+        )
+    ).status_code == 409
+    assert (
+        await api.client.post(
+            f"/v1/seller/listings/{row['id']}/media",
+            content=image(),
+            headers=headers(revision=row["revision"], **{"X-Media-Kind": "public_photo", "X-Public-Safe": "true"}),
+        )
+    ).status_code == 409
 
 
+async def test_duplicate_publication_and_upload_survive_new_connection_pool(api, database_url):
+    import asyncpg
+
+    row, _ = await ready(api)
+    key = uuid4().hex
+    first = await publish(api, row, key)
+    assert first.status_code == 200
+    await api.app.state.pool.close()
+    api.app.state.pool = await asyncpg.create_pool(database_url, min_size=1, max_size=5)
+    repeated = await publish(api, row, key)
+    assert repeated.json() == first.json()
+    assert len(api.calls) == 1
 
 
 async def test_identity_token_and_record_headers_cannot_grant_ownership(api):

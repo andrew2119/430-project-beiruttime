@@ -1,11 +1,13 @@
+import json
 import os
 from uuid import UUID, uuid4
 from fastapi import APIRouter, Request, Query
-from bt_contracts.catalog.listings.v1 import CreateDraft, SaveDraft
+from bt_contracts.catalog.listings.v1 import CreateDraft, SaveDraft, Publish, WatchFacts, incomplete
 from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_runtime.app.db import unit_of_work
-from .dependencies import principal, seller_scope, assert_owner, upstream
-from .repository import dto, command_key, revision, check_revision, replay, remember, emit
+from .dependencies import principal, seller_scope, assert_owner, upstream, service_request
+from .repository import dto, unpack, command_key, revision, check_revision, replay, remember, emit
+from .quotes import publication_quote
 
 router = APIRouter()
 
@@ -139,7 +141,168 @@ async def save(listing_id: UUID, body: SaveDraft, request: Request):
         return answer
 
 
+@router.post("/v1/seller/listings/{listing_id}/publish")
+async def publish(listing_id: UUID, body: Publish, request: Request):
+    person = await principal(request)
+    seller_scope(person, "identity.listings.publish")
+    expected = revision(request)
+    key = command_key(request)
+    scope = f"publish:{listing_id}:{person.actor.subject_id}"
+    payload = {"revision": expected, **body.model_dump(mode="json")}
+    async with request.app.state.pool.acquire() as tx:
+        preview = await tx.fetchrow("SELECT * FROM catalog_listings WHERE id=$1", listing_id)
+    assert_owner(preview, person)
+    if preview["is_hidden"]:
+        raise PublicError("listing_moderated", "This listing is not currently eligible for publication.", status=403)
+    # An invalid quote must not strand an otherwise editable draft. A prepared
+    # operation retains its accepted snapshot while retrying an ambiguous fence.
+    quote = unpack(preview["fee_snapshot"]) if preview["status"] != "draft" else None
+    if quote is None:
+        # Report incomplete facts before consulting an optional quote reference.
+        missing = incomplete(WatchFacts.model_validate(unpack(preview["facts"])), len(preview["photo_ids"]))
+        if missing:
+            raise PublicError(
+                "listing_incomplete",
+                "Complete the highlighted steps before publishing.",
+                status=422,
+                details={"fields": missing},
+            )
+        quote = await upstream(request, "pricing", "GET", f"/v1/quotes/{body.fee_quote_id}")
+    # Freeze first, release SQL locks before remote work. Retrying resumes the SAME
+    # Orders registration identity; ambiguous upstream results can never free a fence.
+    async with unit_of_work(request.app.state.pool, lock_key=f"listing:{listing_id}") as tx:
+        row = await tx.fetchrow("SELECT * FROM catalog_listings WHERE id=$1 FOR UPDATE", listing_id)
+        assert_owner(row, person)
+        previous = await replay(tx, scope, key, payload)
+        if previous is not None:
+            return previous
+        operation = await tx.fetchrow("SELECT * FROM catalog_publications WHERE listing_id=$1", listing_id)
+        if operation:
+            if unpack(operation["request"]) != body.model_dump(mode="json") or operation["base_revision"] != expected:
+                raise PublicError("publication_in_progress", "Resume the original publication request.", status=409)
+            if row["status"] == "published":
+                return dto(row)
+            # A durable prepared decision keeps its original accepted terms when
+            # an ambiguous Orders result is retried, without extending a quote.
+            quote = publication_quote(
+                unpack(row["fee_snapshot"]),
+                body=body,
+                row=row,
+                owner_id=operation["actor_id"],
+                accepted_at=operation["created_at"],
+            )
+        else:
+            check_revision(row, expected)
+            facts = WatchFacts.model_validate(unpack(row["facts"]))
+            missing = incomplete(facts, len(row["photo_ids"]))
+            if missing:
+                raise PublicError(
+                    "listing_incomplete",
+                    "Complete the highlighted steps before publishing.",
+                    status=422,
+                    details={"fields": missing},
+                )
+            if row["status"] != "draft":
+                raise PublicError("listing_frozen", "Listing cannot be published.", status=409)
+            quote = publication_quote(
+                quote,
+                body=body,
+                row=row,
+                owner_id=person.actor.subject_id,
+                accepted_at=await tx.fetchval("SELECT clock_timestamp()"),
+            )
+            operation = await tx.fetchrow(
+                """INSERT INTO catalog_publications(id,listing_id,actor_id,base_revision,request)
+                VALUES($1,$2,$3,$4,$5::jsonb) RETURNING *""",
+                uuid4(),
+                listing_id,
+                person.actor.subject_id,
+                expected,
+                body.model_dump_json(),
+            )
+            row = await tx.fetchrow(
+                "UPDATE catalog_listings SET status='publication_pending',fee_snapshot=$2::jsonb,rules_version=$3,updated_at=now() WHERE id=$1 RETURNING *",
+                listing_id,
+                json.dumps(quote),
+                body.rules_version,
+            )
+    facts = unpack(row["facts"])
+    sale_mode = {"fixed_price": "fixed", "auction": "auction", "offer": "seller_base"}[facts["sale_mode"]]
+    registered = await service_request(
+        request,
+        "orders",
+        "POST",
+        "/internal/v1/watches/register",
+        headers={"Idempotency-Key": str(operation["id"])},
+        json={
+            "watch_id": str(row["physical_watch_id"]),
+            "listing_id": str(listing_id),
+            "listing_revision": expected + 1,
+            "sale_mode": sale_mode,
+            "is_demo": row["is_demo"],
+            "seller_id": str(row["owner_subject_id"]),
+            "organization_id": str(row["organization_id"]) if row["organization_id"] else None,
+        },
+    )
+    # Orders commands return a retained command outcome containing the minimal
+    # watch projection. A transport 200 or a denied outcome is never a fence.
+    registration = registered.get("watch") if isinstance(registered, dict) else None
+    if (
+        not isinstance(registration, dict)
+        or registered.get("status") != "succeeded"
+        or registered.get("resource_id") != str(row["physical_watch_id"])
+        or registration.get("is_demo") is not row["is_demo"]
+        or registration.get("status") != "available"
+        or registration.get("watch_id") != str(row["physical_watch_id"])
+        or registration.get("listing_id") != str(listing_id)
+        or registration.get("sale_mode") != sale_mode
+        or type(registration.get("revision")) is not int
+        or registration["revision"] < 1
+    ):
+        raise PublicError(
+            "registration_pending", "Physical watch registration is not confirmed. Retry this operation.", status=503
+        )
+    # Keep only the immutable registration proof, never buyer data or a stale
+    # availability status. Current availability always belongs to Orders.
+    registration = {name: registration[name] for name in ("watch_id", "listing_id", "sale_mode", "revision")}
+    # Refresh authorization after the network gap, before making a public projection.
+    person = await principal(request)
+    seller_scope(person, "identity.listings.publish")
+    async with unit_of_work(request.app.state.pool, lock_key=f"listing:{listing_id}") as tx:
+        current = await tx.fetchrow("SELECT * FROM catalog_listings WHERE id=$1 FOR UPDATE", listing_id)
+        assert_owner(current, person)
+        if current["is_hidden"]:
+            raise PublicError(
+                "listing_moderated", "This listing is not currently eligible for publication.", status=403
+            )
+        if current["status"] == "published":
+            return dto(current)
+        if current["revision"] != expected or current["status"] != "publication_pending":
+            raise PublicError("stale_revision", "The listing revision changed.", status=409)
+        row = await tx.fetchrow(
+            """UPDATE catalog_listings SET status='published',revision=revision+1,published_at=now(),updated_at=now(),
+            registration=$2::jsonb,fee_snapshot=$3::jsonb,rules_version=$4 WHERE id=$1 RETURNING *""",
+            listing_id,
+            json.dumps(registration),
+            json.dumps(quote),
+            body.rules_version,
+        )
+        await tx.execute("UPDATE catalog_publications SET status='succeeded' WHERE listing_id=$1", listing_id)
+        await emit(tx, request, row, "published")
+        answer = dto(row)
+        await remember(tx, scope, key, payload, answer)
+        return answer
 
 
 
 
+@router.get("/v1/listings/{listing_id}/publication")
+async def publication(listing_id: UUID, request: Request):
+    # A minimal public, canonical publication proof for downstream sale commands.
+    async with request.app.state.pool.acquire() as tx:
+        row = await tx.fetchrow(
+            "SELECT * FROM catalog_listings WHERE id=$1 AND status='published' AND NOT is_hidden", listing_id
+        )
+    if row is None:
+        raise PublicError("not_found", "Listing not found.", status=404)
+    return dto(row, public=True)

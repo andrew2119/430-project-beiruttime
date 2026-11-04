@@ -336,7 +336,7 @@ async def public_photo(listing_id: UUID, asset_id: UUID, variant: str, request: 
         asset = await tx.fetchrow(
             """SELECT v.content,m.credit FROM catalog_media_variants v JOIN catalog_media m ON m.id=v.media_id
             JOIN catalog_listings l ON l.id=m.listing_id WHERE l.id=$1 AND m.id=$2 AND v.variant=$3
-            AND l.status='published' AND m.kind='public_photo' AND m.id=ANY(l.photo_ids)""",
+            AND l.status='published' AND NOT l.is_hidden AND m.kind='public_photo' AND m.id=ANY(l.photo_ids)""",
             listing_id,
             asset_id,
             variant,
@@ -355,7 +355,7 @@ async def photo_credits(listing_id: UUID, request: Request):
     async with request.app.state.pool.acquire() as tx:
         rows = await tx.fetch(
             """SELECT m.id,m.credit FROM catalog_media m JOIN catalog_listings l ON l.id=m.listing_id
-            WHERE l.id=$1 AND l.status='published' AND m.id=ANY(l.photo_ids) AND m.kind='public_photo' """,
+            WHERE l.id=$1 AND l.status='published' AND NOT l.is_hidden AND m.id=ANY(l.photo_ids) AND m.kind='public_photo' """,
             listing_id,
         )
     return {

@@ -12,7 +12,8 @@
     "routes.py:router"
   ],
   "migrations": [
-    "migrations/L03_0001_listings.sql"
+    "migrations/L03_0001_listings.sql",
+    "migrations/L03_0002_visibility.sql"
   ],
   "workers": [
     "dependencies.py:manage_clients",

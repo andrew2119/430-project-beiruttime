@@ -38,7 +38,7 @@ def dto(row, *, public=False):
     )
     if not public:
         result.update(
-            updated_at=row["updated_at"], fee_snapshot=unpack(row["fee_snapshot"]), is_hidden=row.get("is_hidden", False)
+            updated_at=row["updated_at"], fee_snapshot=unpack(row["fee_snapshot"]), is_hidden=row["is_hidden"]
         )
     else:
         result.update(seller_id=row["owner_subject_id"], organization_id=row["organization_id"])

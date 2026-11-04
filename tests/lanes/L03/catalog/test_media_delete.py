@@ -1,7 +1,7 @@
 from uuid import UUID, uuid4
 import hashlib
 import pytest
-from .test_listing_lifecycle import draft, photo, headers, image
+from .test_listing_lifecycle import draft, photo, headers, ready, publish, image
 
 pytestmark = pytest.mark.asyncio
 
@@ -27,6 +27,27 @@ async def test_remove_cover_is_idempotent_and_cleans_all_variants(api):
         assert await tx.fetchval("SELECT count(*) FROM catalog_media_variants") == 0
 
 
+async def test_cross_case_cross_owner_and_published_removal_deny(api):
+    first = await draft(api)
+    second = await draft(api)
+    asset = await photo(api, second)
+    path = f"/v1/seller/listings/{first['id']}/media/{asset['asset_id']}"
+    assert (await api.client.delete(path, headers=headers(revision=1))).status_code == 404
+    assert (
+        await api.client.delete(
+            f"/v1/seller/listings/{second['id']}/media/{asset['asset_id']}",
+            headers=headers("other", revision=asset["listing"]["revision"]),
+        )
+    ).status_code == 403
+    row, public_asset = await ready(api)
+    published = await publish(api, row)
+    assert published.status_code == 200
+    assert (
+        await api.client.delete(
+            f"/v1/seller/listings/{row['id']}/media/{public_asset}",
+            headers=headers(revision=published.json()["revision"]),
+        )
+    ).status_code == 409
 
 
 async def test_private_image_aggregate_budget_uses_original_measured_bytes(api):
