@@ -1,0 +1,9 @@
+{
+  "fixtures":{"watch":"00000000-0000-4000-8000-000000000001","quote_a":"00000000-0000-4000-8000-000000000002","quote_b":"00000000-0000-4000-8000-000000000003"},
+  "steps":[
+    {"id":"one-watch-race","capability":"exclusive_reservation","race":[
+      {"id":"buyer-a","actor":"buyer_a","method":"POST","path":"/api/web/v1/orders/v1/reservations","operation_key":"sprint1-buyer-a","body":{"watch_id":"${fixtures.watch}","quote_id":"${fixtures.quote_a}","expected_revision":1}},
+      {"id":"buyer-b","actor":"buyer_b","method":"POST","path":"/api/web/v1/orders/v1/reservations","operation_key":"sprint1-buyer-b","body":{"watch_id":"${fixtures.watch}","quote_id":"${fixtures.quote_b}","expected_revision":1}}
+    ],"capture":{"winner_order":"winner.resource_id"}}
+  ]
+}

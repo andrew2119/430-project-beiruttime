@@ -12,9 +12,10 @@ from bt_runtime.app.main import create_app
 from bt_runtime.app.settings import Settings
 
 ROOT = next((p for p in Path(__file__).resolve().parents if (p / 'services').is_dir()), Path('/app'))
-MODULES = ROOT / 'services/communications/modules'
+# Keep this module's JWT proofs independent of other Communications extensions.
+MODULES = ROOT / 'services/communications/modules/buyer-workspace'
 if not MODULES.exists():
-    MODULES = Path('/app/modules')
+    MODULES = Path('/app/modules/buyer-workspace')
 OWNER = '00000000-0000-0000-0000-000000000006'
 OTHER = '00000000-0000-0000-0000-000000000007'
 
@@ -84,6 +85,16 @@ async def test_unavailable_identity_prevents_all_private_upstream_reads(signing_
     async with boundary(public, identity_status=503) as (http, calls):
         response = await http.get('/v1/buyer-workspace', headers={'Authorization': 'Bearer ' + token(private), 'X-Request-ID': 'request-6'})
     assert response.status_code == 503 and calls == ['identity']
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('status', [401, 403])
+async def test_current_identity_denial_is_preserved_before_source_reads(signing_keys, status):
+    private, public = signing_keys
+    async with boundary(public, identity_status=status) as (http, calls):
+        response = await http.get('/v1/buyer-workspace', headers={'Authorization': 'Bearer ' + token(private), 'X-Request-ID': 'request-6'})
+    assert response.status_code == status and calls == ['identity']
+    assert response.json()['error']['code'] == ('unauthorized' if status == 401 else 'forbidden')
 
 
 @pytest.mark.asyncio

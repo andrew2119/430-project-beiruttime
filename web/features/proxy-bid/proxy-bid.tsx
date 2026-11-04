@@ -6,7 +6,7 @@ import {Button,Card,Input,BidiReference} from '@beirut-time/ui';
 import type {SlotContext} from '@/registry-types';
 import type {AuctionSnapshot} from '@contracts/contracts-auction/core';
 import {ApiError,request} from '@/lib/api/client';
-import {signInHref,useBuyerSession} from './session';
+import {refreshSession,signInHref,useBuyerSession} from './session';
 import {MAX_QUOTE_MINOR,previewMaximum,reviewMaximum,sendMaximum,type MaximumIntent,type MaximumQuote} from './maximum-api';
 import {formatMinor,parseMaximum} from './money';
 import en from './en.json';
@@ -24,7 +24,7 @@ function MaximumFormForBuyer({auctionId,revision,currency,locale,onRefresh,getQu
   const [state,setState]=useState<'idle'|'quoting'|'quoted'|'quoteUnavailable'|'quoteExpired'|'sending'|'acknowledged'|'invalidAmount'|'denied'|'stale'|'uncertain'|'offline'>('idle');
   const intent=useRef<MaximumIntent|null>(null),generation=useRef(0),cancellation=useRef<AbortController|null>(null);
   const review=useRef<{key:string;quote:MaximumQuote;acknowledged:boolean}|null>(null);
-  const allowed=Boolean(session.signedIn&&session.subjectId&&session.fingerprint&&session.roles.includes('buyer'));
+  const allowed=Boolean(session.state==='authenticated'&&session.signedIn&&session.subjectId&&session.fingerprint&&session.roles.includes('buyer'));
   useEffect(()=>()=>{generation.current++;cancellation.current?.abort();intent.current=null;review.current=null;},[]);
   async function submit() {
     if(!allowed||state==='sending'||state==='quoting'||!session.fingerprint||!getQuote) return;
@@ -76,7 +76,7 @@ function MaximumFormForBuyer({auctionId,revision,currency,locale,onRefresh,getQu
   const frozen=state==='sending'||state==='uncertain'||state==='quoting';
   const privacyId=`proxy-privacy-${auctionId}`,feedbackId=`proxy-feedback-${auctionId}`,limitId=`proxy-limit-${auctionId}`;
   return <Card className="proxy-panel"><h2>{t.privateMaximum}</h2><p id={privacyId}>{t.privacy}</p>
-    {!allowed?<><p>{session.signedIn?t.accessDenied:t.signIn}</p>{!session.signedIn&&<Link className="button" href={signInHref(signInNext??'/buyer',locale)}>{t.account}</Link>}</>:!getQuote?<p role="status">{t.unavailable}</p>:<form onSubmit={event=>{event.preventDefault();void submit();}}>
+    {session.state==='restoring'?<p role="status">{t.loading}</p>:session.state==='unavailable'?<><p role="status">{t.unavailable}</p><Button onClick={()=>void refreshSession().catch(()=>{})}>{t.retry}</Button></>:!allowed?<><p>{session.signedIn?t.accessDenied:t.signIn}</p>{!session.signedIn&&<Link className="button" href={signInHref(signInNext??'/buyer',locale)}>{t.account}</Link>}</>:!getQuote?<p role="status">{t.unavailable}</p>:<form onSubmit={event=>{event.preventDefault();void submit();}}>
       <label htmlFor={`maximum-${auctionId}`}>{t.maximumLabel} <BidiReference>{currency}</BidiReference></label>
       <p id={limitId} className="buyer-note">{t.quoteLimit}: <BidiReference>{formatMinor(MAX_QUOTE_MINOR,currency,locale)}</BidiReference></p>
       <Input id={`maximum-${auctionId}`} inputMode="decimal" autoComplete="off" type="text" value={value} maxLength={18}
@@ -105,7 +105,7 @@ export default function ProxyBidSlot({locale,resourceId}:SlotContext) {
   if(!resourceId||(!auction&&query.isSuccess&&validPage)) return null;
   if(auction&&typeof auction.id==='string'&&auction.listing_id===resourceId&&auction.status==='live'&&(auction.currency==='USD'||auction.currency==='LBP')&&Number.isSafeInteger(auction.revision)&&auction.revision>0) {
     return <MaximumForm auctionId={auction.id} revision={auction.revision} currency={auction.currency} locale={locale}
-      signInNext={`/buyer/auctions/${resourceId}`} getQuote={(amount,signal)=>previewMaximum(auction,amount,session.subjectId!,signal)}
+      signInNext={`/buyer/auctions/${resourceId}`} getQuote={(amount,signal)=>previewMaximum(auction,amount,{subjectId:session.subjectId!,accessFingerprint:session.fingerprint!},signal)}
       onRefresh={()=>{void query.refetch();void cache.invalidateQueries({queryKey:['L06','buyer-workspace']});}}/>;
   }
   const message=query.isPending?t.loading:auction?.status==='scheduled'?t.auctionScheduled:auction?.status==='ended'?t.auctionEnded:t.unavailable;

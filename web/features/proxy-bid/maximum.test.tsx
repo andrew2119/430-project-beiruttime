@@ -3,9 +3,9 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import ProxyBidSlot,{MaximumForm} from './proxy-bid';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import type {AuctionSnapshot} from '@contracts/contracts-auction/core';
-const session=vi.hoisted(()=>({signedIn:true,fingerprint:'buyer-A',subjectId:'00000000-0000-0000-0000-000000000001',roles:['buyer']}));
-vi.mock('./session',()=>({useBuyerSession:()=>session,authenticatedRequest:vi.fn(),signInHref:(next:string,locale:string)=>`/${locale}/account?next=${encodeURIComponent(next)}`}));
-beforeEach(()=>{session.signedIn=true;session.roles=['buyer'];});
+const session=vi.hoisted(()=>({state:'authenticated' as 'restoring'|'unavailable'|'signed-out'|'authenticated',signedIn:true,fingerprint:'buyer-A',subjectId:'00000000-0000-0000-0000-000000000001',roles:['buyer']}));
+vi.mock('./session',()=>({useBuyerSession:()=>session,authenticatedRequest:vi.fn(),refreshSession:vi.fn(),signInHref:(next:string,locale:string)=>`/${locale}/account?next=${encodeURIComponent(next)}`}));
+beforeEach(()=>{session.state='authenticated';session.signedIn=true;session.roles=['buyer'];});
 const lot:AuctionSnapshot={id:'00000000-0000-0000-0000-000000000006',listing_id:'00000000-0000-0000-0000-000000000007',currency:'USD',opening_minor:400000,current_minor:400000,next_minimum_minor:410000,increment_bands:[{from_minor:0,step_minor:10000}],starts_at:'2020-01-01T00:00:00Z',ends_at:'2050-01-01T00:00:00Z',server_time:'2026-01-01T00:00:00Z',revision:4,accepted_sequence:1,rules_version:'ordinary.v1',extension_policy:'none.v1',high_value_minor:1000000,reserve_set:false,leader:'bidder-1',status:'live'};
 function slot(data:unknown) {
   const client=new QueryClient();client.setQueryData(['listing-auction',lot.listing_id],data);
@@ -25,13 +25,19 @@ describe('canonical listing auction slot',()=>{
   });
 });
 describe('maximum form capability boundary',()=>{
+  it.each(['restoring','unavailable'] as const)('cannot submit while the current identity is %s',state=>{
+    session.state=state;
+    const html=renderToStaticMarkup(<MaximumForm auctionId="auction-A" revision={1} currency="USD" locale="en" onRefresh={()=>{}} getQuote={vi.fn()}/>);
+    expect(html).not.toContain('<input');expect(html).not.toContain('type="submit"');
+    expect(html).toContain(state==='restoring'?'Loading':'Temporarily unavailable');
+  });
   it('renders permission denial rather than a fabricated buyer or submit control',()=>{
     session.roles=['operator'];
     const html=renderToStaticMarkup(<MaximumForm auctionId="auction-A" revision={1} currency="USD" locale="en" onRefresh={()=>{}} getQuote={vi.fn()}/>);
     expect(html).toContain('Your current account cannot use buyer actions.');expect(html).not.toContain('<input');
   });
   it('preserves the non-secret intended auction route when signing in',()=>{
-    session.signedIn=false;
+    session.state='signed-out';session.signedIn=false;
     const html=renderToStaticMarkup(<MaximumForm auctionId="auction-A" revision={1} currency="USD" locale="en" onRefresh={()=>{}} signInNext="/buyer/auctions/watch-A" getQuote={vi.fn()}/>);
     expect(html).toContain('/en/account?next=%2Fbuyer%2Fauctions%2Fwatch-A');expect(html).not.toContain('<input');
   });

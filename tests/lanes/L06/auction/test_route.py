@@ -7,9 +7,10 @@ from bt_runtime.app.main import create_app
 from bt_runtime.app.settings import Settings
 
 ROOT = next((p for p in Path(__file__).resolve().parents if (p / 'services').is_dir()), Path('/app'))
-MODULES = ROOT / 'services/auction/modules'
+# These proofs isolate the owned route; the complete Auction runtime has its own suite.
+MODULES = ROOT / 'services/auction/modules/proxy'
 if not MODULES.exists():
-    MODULES = Path('/app/modules')
+    MODULES = Path('/app/modules/proxy')
 AUCTION = '00000000-0000-0000-0000-000000000006'
 QUOTE = '00000000-0000-0000-0000-000000000007'
 

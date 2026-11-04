@@ -1,0 +1,102 @@
+[
+  {
+    "url": "/en/business",
+    "width": 390,
+    "height": 844,
+    "dpr": 3,
+    "locale": "en",
+    "dir": "ltr",
+    "theme": "light",
+    "documentWidth": 390,
+    "title": "Official businesses",
+    "cards": [
+      {
+        "title": "Sample Beirut Watch House",
+        "sample": "Sample business"
+      },
+      {
+        "title": "Sample Cedar Atelier",
+        "sample": "Sample business"
+      }
+    ],
+    "background": "rgb(255, 252, 245)",
+    "clippedContent": [],
+    "smallTargets": [],
+    "forbiddenApplication": false
+  },
+  {
+    "url": "/en/business",
+    "width": 390,
+    "height": 844,
+    "dpr": 3,
+    "locale": "en",
+    "dir": "ltr",
+    "theme": "dark",
+    "documentWidth": 390,
+    "title": "Official businesses",
+    "cards": [
+      {
+        "title": "Sample Beirut Watch House",
+        "sample": "Sample business"
+      },
+      {
+        "title": "Sample Cedar Atelier",
+        "sample": "Sample business"
+      }
+    ],
+    "background": "rgb(23, 42, 35)",
+    "clippedContent": [],
+    "smallTargets": [],
+    "forbiddenApplication": false
+  },
+  {
+    "url": "/ar/business",
+    "width": 390,
+    "height": 844,
+    "dpr": 3,
+    "locale": "ar",
+    "dir": "rtl",
+    "theme": "light",
+    "documentWidth": 390,
+    "title": "الأعمال الرسمية",
+    "cards": [
+      {
+        "title": "Sample Beirut Watch House",
+        "sample": "نشاط تجاري تجريبي"
+      },
+      {
+        "title": "Sample Cedar Atelier",
+        "sample": "نشاط تجاري تجريبي"
+      }
+    ],
+    "background": "rgb(255, 252, 245)",
+    "clippedContent": [],
+    "smallTargets": [],
+    "forbiddenApplication": false
+  },
+  {
+    "url": "/ar/business",
+    "width": 390,
+    "height": 844,
+    "dpr": 3,
+    "locale": "ar",
+    "dir": "rtl",
+    "theme": "dark",
+    "documentWidth": 390,
+    "title": "الأعمال الرسمية",
+    "cards": [
+      {
+        "title": "Sample Beirut Watch House",
+        "sample": "نشاط تجاري تجريبي"
+      },
+      {
+        "title": "Sample Cedar Atelier",
+        "sample": "نشاط تجاري تجريبي"
+      }
+    ],
+    "background": "rgb(23, 42, 35)",
+    "clippedContent": [],
+    "smallTargets": [],
+    "forbiddenApplication": false
+  }
+]

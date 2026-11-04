@@ -1,0 +1,18 @@
+[
+  {
+    "locale": "en",
+    "width": 390,
+    "message": "This service is temporarily unavailable. No change has been confirmed.\n\nTry again",
+    "editable": false,
+    "falseSuccess": false,
+    "retry": true
+  },
+  {
+    "locale": "ar",
+    "width": 390,
+    "message": "الخدمة غير متاحة مؤقتًا. لم يتم تأكيد أي تغيير.\n\nحاول مجددًا",
+    "editable": false,
+    "falseSuccess": false,
+    "retry": true
+  }
+]

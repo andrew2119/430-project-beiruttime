@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button, BidiReference, Card } from '@beirut-time/ui';
 import type { BuyerWorkspace as Workspace } from '@contracts/contracts-comms/buyer-workspace';
 import { useLocale } from '@/shell/locale-context';
-import { authenticatedRequest, signInHref, useBuyerSession } from './session';
+import { authenticatedRequest,refreshSession,signInHref,useBuyerSession } from './session';
 import { formatMinor } from './money';
 import en from './en.json';
 import ar from './ar.json';
@@ -12,16 +12,16 @@ import ar from './ar.json';
 export default function BuyerWorkspace() {
   const locale=useLocale(), t=locale==='ar'?ar:en;
   const session=useBuyerSession();
-  const permitted=Boolean(session.signedIn&&session.fingerprint&&session.roles.includes('buyer'));
+  const permitted=Boolean(session.state==='authenticated'&&session.signedIn&&session.fingerprint&&session.roles.includes('buyer'));
   const query=useQuery({queryKey:['L06','buyer-workspace',session.fingerprint], enabled:permitted,
-    queryFn:({signal})=>authenticatedRequest<Workspace>('/api/web/v1/communications/v1/buyer-workspace',{signal}),refetchInterval:15000});
+    queryFn:({signal})=>authenticatedRequest<Workspace>('/api/web/v1/communications/v1/buyer-workspace',{signal,accessFingerprint:session.fingerprint!}),refetchInterval:15000});
   const date=(instant:string)=>new Intl.DateTimeFormat(locale==='ar'?'ar-LB':'en-LB',{
     dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Beirut'}).format(new Date(instant));
   // Read only the current access partition; no prior-owner placeholderData.
   const data=permitted?query.data:undefined;
   return <div className="buyer-workspace">
     <header className="buyer-heading"><p className="eyebrow">{t.eyebrow}</p><h1>{t.workspace}</h1><p>{t.intro}</p></header>
-    {!permitted?<Card><h2>{session.signedIn?t.accessDenied:t.signIn}</h2><p>{t.signInBody}</p>{!session.signedIn&&<Link className="button" href={signInHref('/buyer',locale)}>{t.account}</Link>}</Card>:
+    {session.state==='restoring'?<p role="status">{t.loading}</p>:session.state==='unavailable'?<Card><p role="status">{t.unavailable}</p><Button onClick={()=>void refreshSession().catch(()=>{})}>{t.retry}</Button></Card>:!permitted?<Card><h2>{session.signedIn?t.accessDenied:t.signIn}</h2><p>{t.signInBody}</p>{!session.signedIn&&<Link className="button" href={signInHref('/buyer',locale)}>{t.account}</Link>}</Card>:
       query.isPending?<p role="status">{t.loading}</p>:
       query.isError?<Card><p role="alert">{t.unavailable}</p><Button onClick={()=>void query.refetch()}>{t.retry}</Button></Card>:
       data?<div className="buyer-columns">

@@ -1,0 +1,60 @@
+# Disposable transport-fixture proof; never included by the marketplace launcher.
+name: bt-l10-proof
+services:
+  catalog-proof:
+    image: ${L10_PROOF_IMAGE:-beirut-time/l10-options:browser}
+    build:
+      context: ../../..
+      dockerfile: tests/lanes/L10/Dockerfile
+      target: browser
+    command: [sh, -c, "python /lane-tests/L10/check_dependencies.py && python /lane-tests/L10/browser_server.py"]
+    environment:
+      TEST_DATABASE_ADMIN_URL: postgresql://postgres:${POSTGRES_PASSWORD:-local-bootstrap-only}@postgres:5432/postgres
+      BT_MODULES_PATH: /tmp/l10-core-baseline
+      PYTHONPATH: /proof/packages/runtime/src:/proof/packages/events/src:/proof/packages/bulkheads/src:/proof/packages/contracts-core/src:/opt/domain-contracts
+    volumes:
+      - ../../../packages:/proof/packages:ro
+      - ../../../services/_template/runtime:/proof/template:ro
+      - .:/lane-tests/L10:ro
+      - ../../../packages/contracts-catalog/options:/opt/domain-contracts/bt_contracts/catalog/options:ro
+      - ../../../services/catalog/modules/options/color:/app/modules/options/color:ro
+      - ../../../services/catalog/modules/options/material:/app/modules/options/material:ro
+      - ../../../services/catalog/modules/options/dial:/app/modules/options/dial:ro
+      - ../../../services/catalog/modules/options/sophistication:/app/modules/options/sophistication:ro
+    ports: ["127.0.0.1:9110:8000"]
+    networks: [foundation]
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+  connected-proof:
+    profiles: [live]
+    image: ${L10_TEST_IMAGE:-beirut-time/l10-options:browser}
+    command: [python, /lane-tests/L10/live_server.py]
+    environment:
+      TEST_DATABASE_ADMIN_URL: postgresql://postgres:${POSTGRES_PASSWORD:-local-bootstrap-only}@postgres:5432/postgres
+      BT_MODULES_PATH: /tmp/l10-core-baseline
+      PYTHONPATH: /proof/packages/runtime/src:/proof/packages/events/src:/proof/packages/bulkheads/src:/proof/packages/contracts-core/src:/proof/repository/services/identity/runtime:/opt/domain-contracts
+    volumes:
+      - ../../..:/proof/repository:ro
+      - ../../../packages:/proof/packages:ro
+      - .:/lane-tests/L10:ro
+      - ../../../packages/contracts-catalog/options:/opt/domain-contracts/bt_contracts/catalog/options:ro
+    ports: ["127.0.0.1:9110:8000", "127.0.0.1:9121:8121"]
+    networks: [foundation]
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 128
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+networks:
+  foundation:
+    external: true
+    name: beirut-time_default

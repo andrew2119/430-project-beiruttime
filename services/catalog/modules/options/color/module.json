@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "id": "L10.options-color",
+  "dependencies": [
+    "fastapi",
+    "asyncpg",
+    "httpx",
+    "pydantic"
+  ],
+  "hooks": {
+    "catalog.options-color.v1": "schema.py:validate"
+  },
+  "routes": [
+    "routes.py:router"
+  ],
+  "migrations": [
+    "migrations/L10_0001_brand_options.sql"
+  ],
+  "workers": [
+    "dependencies.py:run"
+  ],
+  "fixtures": {
+    "demo": "fixtures.py:seed"
+  }
+}

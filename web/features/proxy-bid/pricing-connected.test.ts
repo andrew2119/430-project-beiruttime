@@ -1,15 +1,17 @@
 import {describe,expect,it,vi} from 'vitest';
 import {ApiError} from '@/lib/api/client';
 import {previewMaximum,reviewMaximum} from './maximum-api';
-const live=vi.hoisted(()=>({token:''}));
+const live=vi.hoisted(()=>({token:'',fingerprint:''}));
 const pricing=process.env.BT_L06_PRICING_URL??'http://127.0.0.1:8104';
 const identity=process.env.BT_L06_IDENTITY_URL??'http://127.0.0.1:8101';
 const origin=process.env.BT_L06_IDENTITY_ORIGIN??'http://localhost:3000';
-vi.mock('./session',()=>({authenticatedRequest:async(path:string,options:RequestInit={})=>{
+vi.mock('./session',()=>({authenticatedRequest:async(path:string,options:RequestInit&{accessFingerprint?:string}={})=>{
+  const {accessFingerprint,...init}=options;
+  if(accessFingerprint!==live.fingerprint) throw new ApiError(401,'unauthorized','');
   if(!path.startsWith('/api/web/v1/pricing/')) throw new Error('Unexpected connected proof destination');
   const headers=new Headers(options.headers);headers.set('Authorization',`Bearer ${live.token}`);
   const response=await fetch(`${pricing}${path.slice('/api/web/v1/pricing'.length)}`,{
-    ...options,headers,signal:options.signal??AbortSignal.timeout(4000),
+    ...init,headers,signal:options.signal??AbortSignal.timeout(4000),
   });
   if(!response.ok) {
     const body=await response.json().catch(()=>({}));
@@ -17,7 +19,7 @@ vi.mock('./session',()=>({authenticatedRequest:async(path:string,options:Request
   }
   return response.json();
 }}));
-type Buyer={id:string;token:string;cookie:string};
+type Buyer={id:string;token:string;cookie:string;fingerprint:string};
 async function register():Promise<Buyer> {
   const response=await fetch(`${identity}/v1/accounts/register`,{method:'POST',signal:AbortSignal.timeout(4000),
     headers:{Origin:origin,'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},
@@ -25,8 +27,8 @@ async function register():Promise<Buyer> {
   });
   if(!response.ok) throw new Error(`Sample buyer registration failed (${response.status})`);
   const body=await response.json();
-  if(!body.access_token||!body.account?.id) throw new Error('No live buyer session returned');
-  return {id:body.account.id,token:body.access_token,cookie:(response.headers.get('set-cookie')??'').split(';')[0]};
+  if(!body.access_token||!body.account?.id||!body.access_fingerprint) throw new Error('No live buyer session returned');
+  return {id:body.account.id,token:body.access_token,fingerprint:body.access_fingerprint,cookie:(response.headers.get('set-cookie')??'').split(';')[0]};
 }
 async function logout(buyer:Buyer) {
   const response=await fetch(`${identity}/v1/accounts/logout`,{method:'POST',signal:AbortSignal.timeout(4000),
@@ -42,9 +44,9 @@ describe.skipIf(process.env.BT_L06_CONNECTED_PRICING!=='1')('connected non-bindi
     const buyers:Buyer[]=[];
     try {
       buyers.push(await register());buyers.push(await register());
-      const [owner,other]=buyers;live.token=owner.token;
+      const [owner,other]=buyers;live.token=owner.token;live.fingerprint=owner.fingerprint;
       const proposed={id:crypto.randomUUID(),revision:1,currency:'USD' as const};
-      const quote=await previewMaximum(proposed,800000,owner.id,AbortSignal.timeout(4000));
+      const quote=await previewMaximum(proposed,800000,{subjectId:owner.id,accessFingerprint:owner.fingerprint},AbortSignal.timeout(4000));
       expect(quote.sample).toBe(true);expect(quote.buyer_fee_minor).toBe(24000);expect(quote.total_minor).toBe(824000);
       await reviewMaximum(quote,crypto.randomUUID(),AbortSignal.timeout(4000));
       const read=await fetch(`${pricing}/v1/quotes/${quote.fee_quote_id}`,{headers:{Authorization:`Bearer ${owner.token}`},signal:AbortSignal.timeout(4000)});
@@ -58,7 +60,7 @@ describe.skipIf(process.env.BT_L06_CONNECTED_PRICING!=='1')('connected non-bindi
       expect(reservation.ok).toBe(false);
       const result=await reservation.json();expect(result.error?.code).toBe('quote_not_authoritative');
     } finally {
-      live.token='';
+      live.token='';live.fingerprint='';
       for(const buyer of buyers) await logout(buyer);
     }
   },15000);

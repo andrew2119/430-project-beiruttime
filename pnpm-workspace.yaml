@@ -1,0 +1,7 @@
+packages:
+  - web
+  - packages/contracts-core
+  - packages/ui
+  - packages/i18n
+onlyBuiltDependencies:
+  - esbuild

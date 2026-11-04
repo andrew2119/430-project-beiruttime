@@ -1,0 +1,12 @@
+{
+  "extends": "../../../web/tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "include": [
+    "../../../web/features/business/**/*.ts",
+    "../../../web/features/business/**/*.tsx",
+    "../../../web/registrations/L02.ts",
+    "../../../web/app/(business)/**/*.tsx",
+    "../../../web/app/(verification)/**/*.tsx"
+  ],
+  "exclude": ["node_modules"]
+}
