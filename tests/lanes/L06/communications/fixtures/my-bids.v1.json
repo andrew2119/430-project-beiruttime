@@ -1,0 +1,35 @@
+{
+  "items": [
+    {
+      "id": "00000000-0000-4000-8000-000000000010",
+      "listing_id": "00000000-0000-4000-8000-000000000011",
+      "currency": "USD",
+      "opening_minor": 400000,
+      "current_minor": 410000,
+      "next_minimum_minor": 420000,
+      "increment_bands": [
+        {
+          "from_minor": 0,
+          "step_minor": 10000
+        }
+      ],
+      "starts_at": "2026-11-04T11:00:00+00:00",
+      "ends_at": "2026-11-04T14:00:00+00:00",
+      "server_time": "2026-11-04T12:00:00+00:00",
+      "revision": 3,
+      "accepted_sequence": 2,
+      "rules_version": "ordinary.v1",
+      "extension_policy": "none.v1",
+      "high_value_minor": 1000000,
+      "reserve_set": true,
+      "leader": "Bidder bed313f1",
+      "status": "live",
+      "auction_id": "00000000-0000-4000-8000-000000000010",
+      "buyer_id": "00000000-0000-4000-8000-000000000001",
+      "current_price_minor": 410000,
+      "my_status": "outbid",
+      "next_action": "review_bid"
+    }
+  ],
+  "next_cursor": null
+}
