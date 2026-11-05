@@ -55,6 +55,8 @@ export type Page = {
   counts: Record<Listing["status"], number>;
 };
 export type FeeQuote = {
+  price_minor?: number;
+  currency?: "USD" | "LBP";
   id: string;
   owner_id: string;
   subject_id: string;
