@@ -2,10 +2,17 @@ import { request, ApiError } from '@/lib/api/client';
 import { authenticatedRequest } from '@/features/identity/session';
 import type { QuoteInput } from '@contracts/contracts-pricing/quotes';
 export const auctionBase = '/api/web/v1/auction/v1';
-export type { AuctionSnapshot as Auction, AuctionOutcome as Outcome } from '@contracts/contracts-auction/core';
-import type { AuctionSnapshot as Auction, AuctionOutcome as Outcome } from '@contracts/contracts-auction/core';
-export const readAuction = (id:string, signal?:AbortSignal) => request<Auction>(`${auctionBase}/auctions/${encodeURIComponent(id)}`,{signal});
-export const readLots = (listingId?:string, signal?:AbortSignal) => request<{items:Auction[]}>(`${auctionBase}/auctions${listingId?`?listing_id=${encodeURIComponent(listingId)}`:''}`,{signal});
+import type { AuctionSnapshot, AuctionOutcome as Outcome } from '@contracts/contracts-auction/core';
+export type { AuctionOutcome as Outcome } from '@contracts/contracts-auction/core';
+export type Auction = AuctionSnapshot & {mode?:'bidding'|'listing_edit_pending'|'first_bid_pending'|'prebid_pending'|'prebid_reserved'|'closed_no_sale'|'closed_winner'};
+// Mode/end-version are an explicit v2 projection; strict v1 DTOs intentionally omit them.
+async function readCurrent<T>(suffix:string,signal?:AbortSignal):Promise<T>{
+  try{return await request<T>(`/api/web/v1/auction/v2/auctions${suffix}`,{signal});}
+  catch(error){if(!(error instanceof ApiError)||error.status!==404||signal?.aborted)throw error;
+    return request<T>(`${auctionBase}/auctions${suffix}`,{signal});}
+}
+export const readAuction = (id:string, signal?:AbortSignal) => readCurrent<Auction>(`/${encodeURIComponent(id)}`,signal);
+export const readLots = (listingId?:string, signal?:AbortSignal) => readCurrent<{items:Auction[]}>(listingId?`?listing_id=${encodeURIComponent(listingId)}`:'',signal);
 // CP F-24: keep the exact logical command and key during uncertain reconciliation.
 export async function command(path:string, body:unknown, key:string, signal?:AbortSignal, accessFingerprint?:string):Promise<Outcome> {
   try {

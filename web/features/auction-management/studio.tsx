@@ -3,6 +3,8 @@ import { useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatedList, Button, ButtonLink, BidiReference, Card, Input, State, StatusBadge } from '@beirut-time/ui';
 import { PageHeader, PageLayout } from '@/shell/page-header';
+import { PolicyPanel } from '@/features/auction-policy/panel';
+import { readPolicy } from '@/features/auction-policy/api';
 import { Select, RowSkeleton } from '@beirut-time/ui';
 import { useLocale } from '@/shell/locale-context';
 import { useSession, useSessionState, refreshSession, authenticatedRequest, signInHref } from '@/features/identity/session';
@@ -84,15 +86,19 @@ function AuctionStudioView({session,locale,organization,organizationControl,sess
         </fieldset><div className="auction-span auction-submit"><Button disabled={pending}>{pending?t.pending:uncertain?t.retry:t.open}</Button></div>
       </form><p role="status" aria-live="polite">{message}</p>{outcome&&<p>{t.auctionId}: <BidiReference>{outcome.auction_id}</BidiReference></p>}</Card>
       <section className="auction-list" aria-busy={lots.isFetching}>
-        {lots.isError?<State kind="error" title={t.title} body={errorCopy(lots.error,t)}><Button onClick={()=>lots.refetch()}>{t.retry}</Button></State>:lots.isPending?<div role="status" aria-label={t.pending}><RowSkeleton media="cover"/><span className="sr-only">{t.pending}</span></div>:!lots.data?.items.length?<State title={t.empty} body={t.emptyBody}/>:<AnimatedList items={lots.data.items} getKey={lot=>lot.id}>{lot=><AuctionSummary lot={lot} locale={locale}/>}</AnimatedList>}
+        {lots.isError?<State kind="error" title={t.title} body={errorCopy(lots.error,t)}><Button onClick={()=>lots.refetch()}>{t.retry}</Button></State>:lots.isPending?<div role="status" aria-label={t.pending}><RowSkeleton media="cover"/><span className="sr-only">{t.pending}</span></div>:!lots.data?.items.length?<State title={t.empty} body={t.emptyBody}/>:<AnimatedList items={lots.data.items} getKey={lot=>lot.id}>{lot=><div className="auction-list"><AuctionSummary lot={lot} locale={locale} organization={organization}/><PolicyPanel id={lot.id} locale={locale} editable organization={organization} currency={lot.currency}/></div>}</AnimatedList>}
       </section></div>}
   </div></PageLayout>;
 }
-export function AuctionSummary({lot,locale}:{lot:Auction&{reserve_minor?:number|null};locale:'en'|'ar'}) {
-  const t=locale==='ar'?ar:en;
-  return <Card className="auction-summary"><div className="auction-row"><StatusBadge hue={lot.status==='live'?'green':lot.status==='scheduled'?'blue':'neutral'}>{t[lot.status]}</StatusBadge><BidiReference>{lot.rules_version}</BidiReference></div>
+export function AuctionSummary({lot,locale,organization=''}:{lot:Auction&{reserve_minor?:number|null};locale:'en'|'ar';organization?:string}) {
+  const session=useSession();
+  // Share PolicyPanel's current projection, since seller v1 intentionally has no mode field.
+  const policy=useQuery({queryKey:['auction-policy',lot.id,session?.access_fingerprint,organization],queryFn:({signal})=>readPolicy(lot.id,signal),retry:false,refetchInterval:5000});
+  const mode=policy.data?.mode??lot.mode;
+  const t=locale==='ar'?ar:en; const held=!!mode&&mode!=='bidding';
+  return <Card className="auction-summary"><div className="auction-row"><StatusBadge hue={held?'orange':lot.status==='live'?'green':lot.status==='scheduled'?'blue':'neutral'}>{held?t.heldStatus:t[lot.status]}</StatusBadge><BidiReference>{lot.rules_version}</BidiReference></div>
     <h2><a href={`/${locale}/watches/${lot.listing_id}`}>{displayMinor(lot.current_minor||lot.opening_minor,lot.currency,locale)}</a></h2>
     <dl><div><dt>{t.next}</dt><dd>{displayMinor(lot.next_minimum_minor,lot.currency,locale)}</dd></div><div><dt>{t.starts}</dt><dd><BidiReference>{lot.starts_at}</BidiReference></dd></div><div><dt>{t.ends}</dt><dd><BidiReference>{lot.ends_at}</BidiReference></dd></div><div><dt>{t.server}</dt><dd><BidiReference>{lot.server_time}</BidiReference></dd></div></dl>
-    <p className="muted">{lot.reserve_minor?`${t.reserveSet}: ${displayMinor(lot.reserve_minor,lot.currency,locale)}`:lot.reserve_set?t.reserveSet:t.reserveNone} · {t.extension}</p><ul>{lot.increment_bands.map(b=><li key={b.from_minor}>{displayMinor(b.from_minor,lot.currency,locale)} + {displayMinor(b.step_minor,lot.currency,locale)}</li>)}</ul>
+    <p className="muted">{lot.reserve_minor?`${t.reserveSet}: ${displayMinor(lot.reserve_minor,lot.currency,locale)}`:lot.reserve_set?t.reserveSet:t.reserveNone}</p><ul>{lot.increment_bands.map(b=><li key={b.from_minor}>{displayMinor(b.from_minor,lot.currency,locale)} + {displayMinor(b.step_minor,lot.currency,locale)}</li>)}</ul>
   </Card>;
 }

@@ -1,0 +1,11 @@
+.auction-policy-page,.auction-policy-panel,.auction-policy-item { min-inline-size:0; }
+.auction-policy-page .pg-list,.auction-policy-item,.auction-policy-form { display:grid; gap:var(--ds-space-3); }
+.auction-policy-panel { display:grid; gap:var(--ds-space-3); overflow-wrap:anywhere; }
+.auction-policy-row,.auction-policy-actions { display:flex; align-items:center; justify-content:space-between; gap:var(--ds-space-3); flex-wrap:wrap; }
+.auction-policy-panel h2,.auction-policy-panel p { margin:0; }
+.auction-policy-panel dl { display:grid; gap:var(--ds-space-2); }
+.auction-policy-panel dl>div { display:flex; flex-wrap:wrap; gap:var(--ds-space-2); justify-content:space-between; }
+.auction-policy-panel dd { margin:0; }
+.auction-policy-form fieldset { border:0; padding:0; margin:0; display:grid; gap:var(--ds-space-3); grid-template-columns:repeat(2,minmax(0,1fr)); }
+.auction-policy-form label { display:grid; min-inline-size:0; gap:var(--ds-space-2); }
+@media(max-width:850px) { .auction-policy-form fieldset { grid-template-columns:minmax(0,1fr); } }

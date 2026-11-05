@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "policy": "last-two-minutes.v1",
+  "cases": [
+    {
+      "remaining_seconds": 120.001,
+      "extended": false,
+      "added_seconds": 0
+    },
+    {
+      "remaining_seconds": 120,
+      "extended": true,
+      "added_seconds": 120
+    },
+    {
+      "remaining_seconds": 0.001,
+      "extended": true,
+      "added_seconds": 120
+    },
+    {
+      "remaining_seconds": 0,
+      "denied": "auction_ended"
+    },
+    {
+      "remaining_seconds": -0.001,
+      "denied": "auction_ended"
+    }
+  ],
+  "replay": {
+    "accepted_sequence": 1,
+    "end_version": 2,
+    "duplicate_operation_adds_seconds": 0
+  },
+  "proxy": {
+    "emitted_bid_rows": 2,
+    "admitted_commands": 1,
+    "end_version_delta": 1
+  },
+  "reserve": {
+    "current_minor": 10000,
+    "reserve_minor": 11000,
+    "private_maximum_minor": 20000,
+    "sale": false
+  },
+  "prebid": {
+    "mode_before_http": "prebid_pending",
+    "unknown_reservation": "pending",
+    "lost_response_reopens_bidding": false,
+    "first_bid_and_prebid_success_count": 1
+  },
+  "prebid_basis": {
+    "admission_revision": 2,
+    "prebid_pending_revision": 3,
+    "prebid_reserved_revision": 4,
+    "allowed_services": [
+      "pricing",
+      "orders"
+    ],
+    "audience": "auction",
+    "user_access_token": "denied",
+    "wrong_buyer_or_quote": "not_found",
+    "unknown_legacy_admission": "source_changed"
+  }
+}
