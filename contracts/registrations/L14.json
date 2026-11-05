@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "lane": "L14",
+  "contracts": [
+    {
+      "namespace": "auction.kernel.v2",
+      "path": "packages/contracts-auction/core",
+      "fixtures": []
+    },
+    {
+      "namespace": "pricing.current.v2",
+      "path": "packages/contracts-pricing/quotes",
+      "fixtures": [
+        "packages/contracts-pricing/quotes/fixtures/current.v2.json"
+      ]
+    },
+    {
+      "namespace": "pricing.offers.v1",
+      "path": "packages/contracts-pricing/offers",
+      "fixtures": [
+        "packages/contracts-pricing/offers/fixtures/offer.v1.json"
+      ]
+    },
+    {
+      "namespace": "pricing.brand-quotes.v1",
+      "path": "packages/contracts-pricing/brand-quotes",
+      "fixtures": [
+        "packages/contracts-pricing/brand-quotes/fixtures/assessed.v1.json"
+      ]
+    },
+    {
+      "namespace": "pricing.repair-quotes.v1",
+      "path": "packages/contracts-pricing/repair-quotes",
+      "fixtures": [
+        "packages/contracts-pricing/repair-quotes/fixtures/assessed.v1.json"
+      ]
+    }
+  ]
+}
