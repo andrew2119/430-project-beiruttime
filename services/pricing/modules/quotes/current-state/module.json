@@ -1,0 +1,1 @@
+{"version":1,"id":"L14.a-current","dependencies":["asyncpg"],"migrations":["migrations/L14_0001_current.sql","migrations/L14_0002_auction_quotes.sql","migrations/L14_0003_retention.sql"]}
