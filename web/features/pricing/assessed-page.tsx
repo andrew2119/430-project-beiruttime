@@ -1,0 +1,50 @@
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { authenticatedRequest, useSession } from '@/features/identity/session';
+import { BidiReference, Button, Card, Checkbox, Input, LoadingRows, SectionState, StatusBadge, Textarea } from '@beirut-time/ui';
+import { normalizeDigits } from '@beirut-time/i18n';
+import type { AssessedQuote, Amounts, QuoteContext } from '@contracts/contracts-pricing/quotes/assessed';
+import { money, parseMinor } from './money';
+import { selectedAmounts } from './assessed-amounts';
+import { QuoteDesk, QuoteGate, QuoteScope, QuoteFailure, SamplePolicy, useQuoteCopy, useQuoteScope, quoteBase, post, expiry } from './s2-shared';
+
+type Kind='brand'|'repair';
+export function AmountReview({amounts,currency}:{amounts:Amounts;currency:'USD'|'LBP'}){
+ const {locale,t}=useQuoteCopy();return <dl className="l14-fees">{([['parts_minor',t.parts],['labor_minor',t.labor],['assessment_fee_minor',t.assessment],['platform_fee_minor',t.platformFee],['payable_minor',t.total],['seller_commission_minor',t.commission],['seller_net_minor',t.net]] as const).map(([field,label])=><div key={field} className={field==='payable_minor'?'l14-total':''}><dt>{label}</dt><dd><BidiReference>{money(amounts[field],currency,locale)}</BidiReference></dd></div>)}</dl>;
+}
+function Review({quote,personal,suffix,onSaved}:{quote:AssessedQuote;personal:boolean;suffix:string;onSaved:()=>void}){
+ const {locale,t}=useQuoteCopy(),[selected,setSelected]=useState(quote.decision?.selected_line_ids??quote.lines.filter(line=>line.mandatory).map(line=>line.id)),[consent,setConsent]=useState(false),keys=useRef(new Map<string,string>());
+ const [expired,setExpired]=useState(()=>Date.now()>=Date.parse(quote.expires_at));
+ useEffect(()=>{const timer=setTimeout(()=>setExpired(true),Math.max(0,Date.parse(quote.expires_at)-Date.now()));return()=>clearTimeout(timer);},[quote.expires_at]);
+ const totals=selectedAmounts(quote,selected),canDecide=personal&&quote.state==='issued'&&!expired;
+ const save=useMutation({mutationFn:async(action:'accept'|'decline')=>{
+  const body={quote_revision:quote.revision,terms_digest:quote.terms_digest,...(action==='accept'?{selected_line_ids:selected,payable_minor:totals.payable_minor}:{})};
+  const fingerprint=JSON.stringify([action,body]);if(!keys.current.has(fingerprint))keys.current.set(fingerprint,crypto.randomUUID());
+  return authenticatedRequest(`${quoteBase}/${quote.kind}-quotes/${quote.id}/${action}${suffix}`,post(body,keys.current.get(fingerprint)!));
+ },onSuccess:()=>{setConsent(false);onSaved();},onError:onSaved});
+ const status=expired&&quote.state==='issued'?'expired_return_held':quote.state;
+ return <Card className="l14-stack"><div className="l14-row"><h2>{quote.kind==='brand'?t.brandQuotes:t.repairQuotes} · {t.revision} {quote.revision}</h2><StatusBadge hue={status==='accepted'?'green':status==='issued'?'blue':'orange'}>{t[status]}</StatusBadge></div><p className="l14-terms">{quote.diagnosis}</p><ul className="l14-lines">{quote.lines.map(line=><li className="l14-line" key={line.id}><Checkbox checked={selected.includes(line.id)} disabled={!canDecide||line.mandatory||save.isPending} onChange={event=>{setConsent(false);setSelected(current=>event.target.checked?[...current,line.id]:current.filter(id=>id!==line.id));}}>{line.label} · {line.mandatory?t.mandatory:t.optional}</Checkbox><div className="l14-row"><span>{line.kind==='part'?t.parts:t.labor}</span><BidiReference>{money(line.amount_minor,quote.currency,locale)}</BidiReference></div>{line.part_reference&&<BidiReference>{line.part_reference}</BidiReference>}</li>)}</ul><AmountReview amounts={quote.decision?.amounts&&status==='accepted'?quote.decision.amounts:totals} currency={quote.currency}/><p>{t.returnFee}: <BidiReference>{money(quote.return_fee_minor,quote.currency,locale)}</BidiReference></p><h3>{t.warranty}</h3><p className="l14-terms">{quote.warranty_terms}</p><h3>{t.modifications}</h3><p className="l14-terms">{quote.modification_terms}</p><p>{t.indicative}: <BidiReference>{money(quote.indicative_min_minor,quote.currency,locale)} – {money(quote.indicative_max_minor,quote.currency,locale)}</BidiReference></p><p className="l14-terms">{quote.indicative_basis}</p><p>{t.days}: {quote.lead_time_days}</p><p>{t.expires}: <BidiReference>{expiry(quote.expires_at,locale)}</BidiReference></p><p className="l14-copy">{t.noExecution}</p>{canDecide&&<><Checkbox checked={consent} onChange={event=>setConsent(event.target.checked)}>{t.termsConsent}</Checkbox><div className="l14-row"><Button disabled={!consent||!selected.length||save.isPending} onClick={()=>save.mutate('accept')}>{save.isPending?t.working:t.accept}</Button><Button variant="outline" disabled={save.isPending} onClick={()=>save.mutate('decline')}>{t.decline}</Button></div></>}<QuoteFailure error={save.error} retry={onSaved}/></Card>;
+}
+const zeroMinor=(value:string,currency:'USD'|'LBP')=>/^0(?:\.0{1,2})?$/.test(normalizeDigits(value).trim())?0:parseMinor(value,currency);
+function Issue({kind,contextQuery,suffix,onSaved}:{kind:Kind;contextQuery:string;suffix:string;onSaved:()=>void}){
+ const {t}=useQuoteCopy(),[fields,setFields]=useState<Record<string,string>>({assessment:'0',returnFee:'0',days:'7',lead:'0',min:'0',max:'0',warranty:'',modifications:'',basis:''}),keys=useRef(new Map<string,string>());
+ const context=useQuery({queryKey:['l14',kind,'context',contextQuery,suffix],queryFn:({signal})=>authenticatedRequest<QuoteContext>(`${quoteBase}/${kind}-quotes/context?${contextQuery}${suffix?'&'+suffix.slice(1):''}`,{signal})});
+ const save=useMutation({mutationFn:async()=>{
+  const c=context.data!;const days=Number(normalizeDigits(fields.days)),lead=Number(normalizeDigits(fields.lead));
+  if(!Number.isInteger(days)||days<1||days>30||!Number.isInteger(lead)||lead<0||lead>730)throw new Error('invalidFields');
+  const body={source_id:c.source_id,source_revision:c.source_revision,assessment_id:c.assessment_id,assessment_revision:c.assessment_revision,currency:c.currency,lines:c.lines.map(line=>({...line,amount_minor:zeroMinor(fields[line.id]??'',c.currency)})),assessment_fee_minor:zeroMinor(fields.assessment,c.currency),return_fee_minor:zeroMinor(fields.returnFee,c.currency),warranty_terms:fields.warranty,modification_terms:fields.modifications,indicative_min_minor:zeroMinor(fields.min,c.currency),indicative_max_minor:zeroMinor(fields.max,c.currency),indicative_basis:fields.basis,lead_time_days:lead,expires_at:new Date(Date.now()+days*86400000).toISOString(),schedule_id:'sample-v1'};
+  // Keep a retry's authoritative expiry and key, not a new operation on each click.
+  const fingerprint=JSON.stringify({...body,expires_at:null,validity_days:days});let entry=keys.current.get(fingerprint);if(!entry){entry=JSON.stringify({key:crypto.randomUUID(),expires:body.expires_at});keys.current.set(fingerprint,entry);}const operation=JSON.parse(entry) as {key:string;expires:string};body.expires_at=operation.expires;
+  return authenticatedRequest(`${quoteBase}/${kind}-quotes${suffix}`,post(body,operation.key));
+ },onSuccess:onSaved});
+ const field=(id:string,label:string,area=false)=><label key={id}>{label}{area?<Textarea required maxLength={id==='basis'?1000:2000} value={fields[id]??''} onChange={event=>setFields(current=>({...current,[id]:event.target.value}))}/>:<Input required maxLength={20} inputMode="decimal" dir="ltr" value={fields[id]??''} onChange={event=>setFields(current=>({...current,[id]:event.target.value}))}/>}</label>;
+ return <Card className="l14-stack"><h2>{t.issue}</h2>{context.isPending?<LoadingRows label={t.loading}/>:context.data&&<form className="l14-form" onSubmit={event=>{event.preventDefault();save.mutate();}}><p className="l14-terms">{context.data.diagnosis}</p>{context.data.lines.map(line=>field(line.id,line.label))}<div className="l14-pair">{field('assessment',t.assessment)}{field('returnFee',t.returnFee)}{field('min',t.indicative+' · '+t.minimum)}{field('max',t.indicative+' · '+t.maximum)}{field('lead',t.days)}{field('days',t.validFor)}</div>{field('warranty',t.warranty,true)}{field('modifications',t.modifications,true)}{field('basis',t.indicative,true)}<Button type="submit" disabled={save.isPending}>{save.isPending?t.working:t.issue}</Button></form>}{save.isSuccess&&<p role="status">{t.quoteSaved}</p>}<QuoteFailure error={context.error||save.error}/></Card>;
+}
+function Workspace({kind,contextQuery}:{kind:Kind;contextQuery?:string}){
+ const {scope,organization,setOrganization,suffix}=useQuoteScope(),{t}=useQuoteCopy(),cache=useQueryClient();
+ const rows=useQuery({queryKey:['l14',scope,kind],queryFn:({signal})=>authenticatedRequest<{items:AssessedQuote[]}>(`${quoteBase}/${kind}-quotes${suffix}`,{signal})});
+ const refresh=()=>void cache.invalidateQueries({queryKey:['l14',scope,kind]});
+ return <><QuoteScope value={organization} onChange={setOrganization}/><SamplePolicy/>{organization&&(contextQuery?<Issue key={`${scope}:${contextQuery}`} kind={kind} contextQuery={contextQuery} suffix={suffix} onSaved={refresh}/>:<Card><SectionState title={t.assessmentContext} body={t.startAssessment}/></Card>)}<div className="l14-row"><Button variant="outline" onClick={refresh}>{t.refresh}</Button></div><QuoteFailure error={rows.error} retry={refresh}/>{rows.isPending?<Card><LoadingRows label={t.loading}/></Card>:rows.isError?null:rows.data?.items.length===0?<Card><SectionState title={t.empty} body={t.emptyBody}/></Card>:<div className="l14-grid">{rows.data?.items.map(quote=><Review key={`${scope}:${quote.id}:${quote.state}`} quote={quote} personal={!organization} suffix={suffix} onSaved={refresh}/>)}</div>}</>;
+}
+export default function AssessedPage({kind,contextQuery}:{kind:Kind;contextQuery?:string}){const session=useSession();return <QuoteDesk kind={`${kind}-quotes`}><QuoteGate next={`/${kind}-quotes${contextQuery?'?'+contextQuery:''}`}>{session&&<Workspace key={session.access_fingerprint} kind={kind} contextQuery={contextQuery}/>}</QuoteGate></QuoteDesk>;}
