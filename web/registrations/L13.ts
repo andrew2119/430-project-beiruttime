@@ -21,6 +21,8 @@ export default {
     {service:'catalog',path:'/v1/me/withdrawals',methods:['GET'],roles:[...sellers]},
     {service:'catalog',path:'/v1/listings/:id/withdrawals',methods:['POST'],roles:[...sellers]},
     {service:'catalog',path:'/v1/listings/:id/withdrawals/current',methods:['GET'],roles:[...sellers]},
+    {service:'auction',path:'/v1/auctions/:id/result',methods:['GET'],roles:['public']},
+    {service:'auction',path:'/v1/auctions/:id/my-result',methods:['GET'],roles:['buyer']},
   ],
-  slots:[]
+  slots:[{id:'l13-auction-winner',target:'watch.detail',load:()=>import('../features/buy-now/winner-slot')}]
 } satisfies import('../registry-types').Registration;
