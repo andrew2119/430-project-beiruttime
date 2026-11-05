@@ -13,6 +13,8 @@ import { copy, errorText, uuid, requireAcknowledgedOperation } from './copy';
 import type {AllocationOperation} from '@contracts/contracts-orders/allocation';
 import HoldControl from './hold-control';
 import {formatQuotedMoney} from './money';
+import {connectedCopy} from './connected-copy';
+import CheckoutPayment from '@/features/payments/checkout-payment';
 
 export default function OrderDetail({id}:{id:string}) {
   const locale=useLocale(), t=copy(locale), session=useSession();
@@ -74,7 +76,7 @@ function Detail({id,fingerprint}:{id:string;fingerprint:string}) {
   }
 
   return <PageLayout className="checkout-page">
-    <PageHeader title={t.history} count={<BidiReference>{id}</BidiReference>} tag={<span className="hx-tag">{t.eyebrow}</span>} lead={<ButtonLink size="sm" variant="ghost" href={`/${locale}/checkout`}>{t.yourOrders}</ButtonLink>}/>
+    <PageHeader title={t.history} count={<BidiReference>{id}</BidiReference>} tag={<span className="hx-tag">{connectedCopy[locale].title}</span>} lead={<ButtonLink size="sm" variant="ghost" href={`/${locale}/checkout`}>{t.yourOrders}</ButtonLink>}/>
     {!uuid.test(id)&&<p role="alert">{t.invalid}</p>}
     {detail.isPending&&uuid.test(id)&&<Card><LoadingRows label={t.loading}/></Card>}
     {detail.error&&<Card><SectionState title={errorText(detail.error,t)} kind="error"><Button chonk size="sm" onClick={()=>void detail.refetch()}>{t.reload}</Button></SectionState></Card>}
@@ -87,11 +89,12 @@ function Detail({id,fingerprint}:{id:string;fingerprint:string}) {
         </dl><Notice>{t.paymentNotice}</Notice>
       </Card>
       <Card><CardHead title={t.history} icon={History}/><AnimatedList className="checkout-history" items={detail.data?.history??[]} getKey={entry=>`${entry.action}-${entry.revision}-${entry.occurred_at}`}>{entry=><div className="checkout-history-row">
-        <strong>{entry.action==='reserve'?t.saved:entry.action==='expiry-fence'?t.expired_fenced:entry.action==='payment-hold'?t.payment_unknown:t.intake}</strong>
+        <strong>{entry.action==='reserve'?t.saved:entry.action==='expiry-fence'?t.expired_fenced:entry.action==='payment-hold'?t.payment_unknown:entry.action==='allocate'?t.allocated:entry.action==='payment-attempt'?t.attemptCreated:entry.action==='payment-confirmed'?t.confirmedPayment:entry.action==='pre-release-intake'?t.intake:t.history}</strong>
         <time dateTime={entry.occurred_at}>{new Date(entry.occurred_at).toLocaleString(locale,{timeZone:'Asia/Beirut'})}</time>
         <span>{t.revision} {entry.revision.toLocaleString(locale)}</span>
       </div>}</AnimatedList></Card>
     </div>}
+    {record&&principal?.actor.subject_id===record.buyer_id&&<CheckoutPayment orderId={record.id} onRefresh={()=>void detail.refetch()}/>}
     {record&&canManage&&record.state==='awaiting_payment'&&<HoldControl record={record} onRefresh={()=>void detail.refetch()}/>}
     {record&&canIntake&&<Card><CardHead title={t.intake} icon={ClipboardCheck}/><p className="checkout-note">{t.intakeNote}</p>
       <form className="checkout-form" method="post" autoComplete="off" onSubmit={intake}>

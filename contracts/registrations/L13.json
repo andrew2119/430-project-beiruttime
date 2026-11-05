@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "lane": "L13",
+  "contracts": [
+    {
+      "namespace": "orders.commitment.v2",
+      "path": "packages/contracts-orders/allocation",
+      "fixtures": [
+        "packages/contracts-orders/allocation/fixtures/commitment.v2.json"
+      ]
+    },
+    {
+      "namespace": "orders.payments.v1",
+      "path": "packages/contracts-orders/payments",
+      "fixtures": [
+        "packages/contracts-orders/payments/fixtures/simulated.v1.json"
+      ]
+    },
+    {
+      "namespace": "orders.journal.v1",
+      "path": "packages/contracts-orders/journal",
+      "fixtures": [
+        "packages/contracts-orders/journal/fixtures/balanced.v1.json"
+      ]
+    }
+  ]
+}

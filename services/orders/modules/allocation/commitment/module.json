@@ -1,0 +1,1 @@
+{"version":1,"id":"L13.allocation","dependencies":["fastapi","asyncpg","httpx","PyJWT"],"routes":["routes.py:router"],"migrations":["migrations/L13_0001_commitment.sql","migrations/L13_0002_edit_resolution.sql"]}

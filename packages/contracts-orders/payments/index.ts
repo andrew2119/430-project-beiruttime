@@ -1,0 +1,5 @@
+export type PaymentRoute='card'|'whish'|'omt';
+export type PaymentAttempt={id:string;order_id:string;buyer_id:string;quote_id:string;quote_revision:number;route:PaymentRoute;reference:string;currency:'USD'|'LBP';total_minor:number;state:'pending'|'declined'|'confirmed'|'held';sequence:number;simulated:true};
+export type PaymentOperation={id:string;request_id:string;status:'succeeded'|'denied'|'pending';code?:string;attempt?:PaymentAttempt;paid?:boolean};
+export type ExactQuote={id:string;revision:number;subject_id:string;subject_revision:number;purpose:'purchase'|'offer'|'business_quote';currency:'USD'|'LBP';price_minor:number;buyer_fee_minor:number;shipping_minor:number;tax_minor:number;payable_minor:number;sample:boolean;source:'listing'|'auction'|'offer'|'brand'|'repair'|'sample';source_verified:boolean;schedule_id:'sample-v1';expires_at:string;reviewed_at:string|null;owner_id:string};
+export type CheckoutContext={order:{id:string;revision:number;state:string;currency:'USD'|'LBP';total_minor:number;deadline:string};quote:ExactQuote|null;attempts:PaymentAttempt[];simulated:true;payable:boolean;requires_current_quote:boolean;server_time:string};

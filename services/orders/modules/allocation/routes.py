@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Query
 from bt_contracts.orders.allocation import RegisterWatch, ReserveWatch, FenceWatch, CustodyFact, Transition
@@ -23,8 +23,12 @@ def scoped(actor, row, permission):
 
 
 def readable(actor, row):
-    if actor.actor.subject_id not in (row["buyer_id"], row["seller_id"]):
-        scoped(actor, row, "orders.read")
+    if actor.actor.organization_id is None and (
+        actor.actor.subject_id == row["buyer_id"]
+        or (row["organization_id"] is None and actor.actor.subject_id == row["seller_id"])
+    ):
+        return
+    scoped(actor, row, "orders.read")
 
 
 @router.post("/internal/v1/watches/register")
@@ -108,16 +112,20 @@ async def service_operation(operation_id: UUID, request: Request):
 async def reserve(
     body: ReserveWatch, request: Request, actor=Depends(principal), idempotency_key: str = Header(default="")
 ):
-    if "buyer" not in actor.roles:
-        raise AccessDenied("Buyer permission required")
+    if "buyer" not in actor.roles or actor.actor.organization_id is not None:
+        raise AccessDenied("Individual buyer permission required")
     actor_key = user_key(actor)
+    # Known outcomes reconcile before bounded preflight; no remote call holds a watch lock.
+    known = await request.app.state.pool.fetchval(
+        "SELECT 1 FROM l08_operations WHERE actor_key=$1 AND idempotency_key=$2", actor_key, idempotency_key
+    )
+    validated = None if known else await quote(request, body.quote_id)
 
     async def apply(tx):
-        validated = await quote(request, body.quote_id)
         row = await tx.fetchrow("SELECT * FROM l08_watches WHERE id=$1 FOR UPDATE", body.watch_id)
         if not row:
             return denied("watch_unknown")
-        if row["seller_id"] == actor.actor.subject_id:
+        if row["seller_id"] == actor.actor.subject_id or row["organization_id"] in actor.organizations:
             return denied("self_purchase")
         if row["status"] != "available":
             return denied("watch_unavailable")
@@ -133,7 +141,9 @@ async def reserve(
             or validated.listing_revision != row["listing_revision"]
         ):
             return denied("quote_mismatch")
-        if now >= validated.expires_at:
+        # Refuse expiry on either server clock: a slightly lagging database
+        # host must not extend a Pricing UTC deadline already elapsed here.
+        if max(now, datetime.now(timezone.utc)) >= validated.expires_at:
             return denied("quote_expired")
         ttl = max(60, min(86400, int(os.environ.get("BT_UNPAID_FIXED_SECONDS", "900"))))
         deadline = min(validated.expires_at, now + timedelta(seconds=ttl))
@@ -261,11 +271,17 @@ async def buyer_reservations(
 
 @router.get("/v1/orders")
 async def orders(request: Request, actor=Depends(principal)):
-    # Only own buyer/seller records. Operator access is resource-scoped, never a global bypass.
+    # Current selected organization is verified, never inferred from an old seller id.
+    selected = actor.actor.organization_id
+    if selected is not None:
+        require_scope(actor, "orders.read", selected)
     rows = await request.app.state.pool.fetch(
-        """SELECT * FROM l08_orders WHERE buyer_id=$1 OR seller_id=$1
+        """SELECT * FROM l08_orders WHERE
+        ($2::uuid IS NULL AND (buyer_id=$1 OR (seller_id=$1 AND organization_id IS NULL)))
+        OR ($2::uuid IS NOT NULL AND organization_id=$2)
         ORDER BY created_at DESC,id LIMIT 100""",
         actor.actor.subject_id,
+        selected,
     )
     return {"items": [order_view(row) for row in rows]}
 
@@ -277,7 +293,7 @@ async def order(order_id: UUID, request: Request, actor=Depends(principal)):
         raise HTTPException(404)
     readable(actor, row)
     records = await request.app.state.pool.fetch(
-        "SELECT action,reason,revision,occurred_at FROM l08_audit WHERE resource_id=$1 AND action IN ('reserve','payment-hold','expiry-fence','pre-release-intake') ORDER BY id",
+        "SELECT action,reason,revision,occurred_at FROM l08_audit WHERE resource_id=$1 AND action IN ('reserve','allocate','payment-attempt','payment-confirmed','payment-hold','expiry-fence','pre-release-intake') ORDER BY id",
         order_id,
     )
     return {"order": order_view(row), "history": [dict(r) for r in records]}
