@@ -6,11 +6,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 def discover(root: Path = ROOT):
+    root = root.resolve()
     found = []
     namespaces = set()
-    for registration in sorted((root/'contracts/registrations').glob('L[0-1][0-9].json')):
+    for registration in sorted((root/'contracts/registrations').glob('L[0-9][0-9].json')):
         item = json.loads(registration.read_text())
-        if item.get('version') != 1 or registration.stem != item.get('lane') or not re.fullmatch(r'L(0[0-9]|1[01])', item.get('lane', '')):
+        if item.get('version') != 1 or registration.stem != item.get('lane') or not re.fullmatch(r'L(0[0-9]|1[0-9]|2[0-5])', item.get('lane', '')):
             raise ValueError('Invalid contract registration')
         for contract in item.get('contracts', []):
             namespace = contract['namespace']

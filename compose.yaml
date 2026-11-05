@@ -15,4 +15,18 @@ include:
       - ${BT_COMPOSE_L09:-infra/foundation/empty.yaml}
       - ${BT_COMPOSE_L10:-infra/foundation/empty.yaml}
       - ${BT_COMPOSE_L11:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L12:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L13:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L14:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L15:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L16:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L17:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L18:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L19:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L20:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L21:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L22:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L23:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L24:-infra/foundation/empty.yaml}
+      - ${BT_COMPOSE_L25:-infra/foundation/empty.yaml}
     project_directory: .

@@ -4,7 +4,7 @@ Each lane changes only its registration, fragment, module/feature subtree and te
 
 ## 1. Compose and runtime ownership
 
-`infra/foundation/compose.sh` discovers existing `infra/compose/L00.yaml` … `L11.yaml` files and selects them into `compose.yaml`’s **one merged include list**. Later fragments override earlier definitions. Missing lanes use `infra/foundation/empty.yaml`: L00 never creates or commits another lane’s fragment, registration or test placeholder. Use the launcher for all lane-aware Compose commands, e.g. `./infra/foundation/compose.sh config` or `./infra/foundation/compose.sh ps`. `L00` supplies PostgreSQL, web and nine **generic health-only fallback runtimes**, all built from `services/_template/`. It does not implement domain services. A runtime-owning lane replaces the same named runtime and migration image in its fragment; it must not introduce another authoritative process for that domain.
+`infra/foundation/compose.sh` discovers existing `infra/compose/L00.yaml` … `L25.yaml` files and selects them into `compose.yaml`’s **one merged include list**. Later fragments override earlier definitions. Missing lanes use `infra/foundation/empty.yaml`: L00 never creates or commits another lane’s fragment, registration or test placeholder. Use the launcher for all lane-aware Compose commands, e.g. `./infra/foundation/compose.sh config` or `./infra/foundation/compose.sh ps`. `L00` supplies PostgreSQL, web and nine **generic health-only fallback runtimes**, all built from `services/_template/`. It does not implement domain services. A runtime-owning lane replaces the same named runtime and migration image in its fragment; it must not introduce another authoritative process for that domain.
 
 | Lane | Runtime(s) |
 |---|---|
