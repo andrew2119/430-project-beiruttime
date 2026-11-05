@@ -1,0 +1,10 @@
+/* Shared CP rows and stacked form translation; no feature-owned palette. */
+.withdrawal-page { min-inline-size:0; }
+.withdrawal-page > :not(.hx-onpage) + :not(.hx-onpage) { margin-block-start:var(--ds-space-4); }
+.withdrawal-stack { display:grid; gap:var(--ds-space-4); min-inline-size:0; }
+.withdrawal-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:var(--ds-space-3); padding-block:var(--ds-space-3); border-block-start:1px solid var(--border); min-inline-size:0; }
+.withdrawal-row > div { min-inline-size:0; }
+.withdrawal-row bdi { overflow-wrap:anywhere; }
+.withdrawal-row h2 { font-size:.9375rem; font-weight:var(--ds-weight-strong); }
+.withdrawal-row p { color:var(--muted-foreground); font-size:.8125rem; }
+@media(max-width:850px){.withdrawal-row { align-items:start; flex-direction:column; }}

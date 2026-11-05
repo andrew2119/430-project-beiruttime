@@ -1,0 +1,9 @@
+{
+  "available": "succeeded",
+  "bid_committed": "denied",
+  "reserved": "denied",
+  "wrong_seller": "forbidden",
+  "stale_revision": "denied",
+  "lost_http": "withdrawal_pending",
+  "history_retained": true
+}

@@ -22,6 +22,13 @@
       "fixtures": [
         "packages/contracts-orders/journal/fixtures/balanced.v1.json"
       ]
+    },
+    {
+      "namespace": "catalog.withdrawal.v1",
+      "path": "packages/contracts-catalog/withdrawal",
+      "fixtures": [
+        "packages/contracts-catalog/withdrawal/fixtures/withdrawal.v1.json"
+      ]
     }
   ]
 }
