@@ -10,6 +10,13 @@ export default {
     {service:'auction',path:'/v2/auctions',methods:['GET'],roles:['public']},
     {service:'auction',path:'/v2/auctions/:id',methods:['GET'],roles:['public']},
     {service:'auction',path:'/v1/auctions/:id/policy',methods:['GET'],roles:['public']},
-    {service:'auction',path:'/v1/auctions/:id/policy',methods:['PATCH'],roles:['private_seller','dealer','brand']}
-  ]
+    {service:'auction',path:'/v1/auctions/:id/policy',methods:['PATCH'],roles:['private_seller','dealer','brand']},
+    {service:'auction',path:'/v1/auctions/:id/prebid-buy-now',methods:['POST'],roles:['buyer']},
+    {service:'auction',path:'/v1/prebid-operations/:key',methods:['GET'],roles:['buyer']},
+    {service:'auction',path:'/v1/auctions/:id/my-prebid',methods:['GET'],roles:['buyer']},
+    {service:'pricing',path:'/v1/auction-quotes',methods:['POST'],roles:['buyer']},
+    {service:'pricing',path:'/v1/auction-quotes/:id',methods:['GET'],roles:['buyer']},
+    {service:'pricing',path:'/v1/auction-quotes/:id/review',methods:['POST'],roles:['buyer']}
+  ],
+  slots:[{id:'prebid-buy-now',target:'watch.detail',load:()=>import('../features/auction-policy/prebid-slot')}]
 } satisfies import('../registry-types').Registration;
