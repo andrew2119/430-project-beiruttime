@@ -24,7 +24,7 @@ class IssueQuote(Contract):
     source_revision: StrictInt = Field(ge=1)
     assessment_id: UUID
     assessment_revision: StrictInt = Field(ge=1)
-    currency: Literal['USD', 'LBP']
+    currency: Literal['USD']
     lines: list[AssessedLine] = Field(min_length=1, max_length=40)
     assessment_fee_minor: StrictInt = Field(ge=0, le=MAX_MINOR)
     return_fee_minor: StrictInt = Field(ge=0, le=MAX_MINOR)
@@ -34,14 +34,14 @@ class IssueQuote(Contract):
     indicative_max_minor: StrictInt = Field(ge=0, le=MAX_MINOR)
     indicative_basis: str = Field(min_length=1, max_length=1000)
     lead_time_days: StrictInt = Field(ge=0, le=730)
-    expires_at: AwareDatetime
-    schedule_id: Literal['sample-v1']
+    expires_at: AwareDatetime | None = None
+    schedule_id: Literal['usd-job-v2']
 
     @model_validator(mode='after')
     def valid_scope(self):
         if len({line.id for line in self.lines}) != len(self.lines):
             raise ValueError('Duplicate line')
-        if sum(line.amount_minor for line in self.lines) + self.assessment_fee_minor > MAX_MINOR:
+        if sum(line.amount_minor for line in self.lines) + self.assessment_fee_minor + self.return_fee_minor > MAX_MINOR:
             raise ValueError('Quote exceeds supported range')
         if self.indicative_max_minor < self.indicative_min_minor:
             raise ValueError('Invalid indicative range')
@@ -53,6 +53,8 @@ class AcceptQuote(Contract):
     selected_line_ids: list[UUID] = Field(min_length=1, max_length=40)
     payable_minor: StrictInt = Field(gt=0, le=MAX_MINOR * 2)
     terms_digest: str = Field(pattern=r'^[a-f0-9]{64}$')
+    accept_assessment_fee: StrictBool = False
+    accept_return_fee: StrictBool = False
 
     @model_validator(mode='after')
     def unique_lines(self):
@@ -64,3 +66,5 @@ class AcceptQuote(Contract):
 class DeclineQuote(Contract):
     quote_revision: StrictInt = Field(ge=1)
     terms_digest: str = Field(pattern=r'^[a-f0-9]{64}$')
+    accept_assessment_fee: StrictBool = False
+    accept_return_fee: StrictBool = False

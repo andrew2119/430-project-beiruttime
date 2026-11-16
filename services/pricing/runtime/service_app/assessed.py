@@ -12,7 +12,7 @@ from bt_runtime.app.db import unit_of_work
 from bt_runtime.principal import require_scope
 from bt_events import enqueue
 from . import peers
-from .current import POLICY, amounts, buyer, decoded, digest, replay, remember, current_time
+from .current import JOB_POLICY, amounts, buyer, decoded, digest, replay, remember, current_time, require_usd
 from .security import idempotency
 
 
@@ -52,11 +52,19 @@ async def current_source(request, kind, snapshot):
                   'diagnosis': assessment['diagnosis'] if kind == 'repair' else assessment['technical_summary']}
         if not isinstance(result['diagnosis'], str) or not 1 <= len(result['diagnosis']) <= 2000:
             raise ValueError()
-        if ({line['id'] for line in lines} != result['line_ids'] or result['currency'] not in ('USD', 'LBP')
+        if ({line['id'] for line in lines} != result['line_ids'] or result['currency'] != 'USD'
                 or len(assessment['line_ids']) != len(lines)):
             raise ValueError()
     except (KeyError, ValueError, TypeError, ValidationError):
         raise PublicError('dependency_unavailable', 'Current assessed scope cannot be verified.', status=503) from None
+    business = await peers.call(request, 'identity', 'GET', f"/v1/businesses/{result['organization_id']}")
+    if (business.get('id') != result['organization_id'] or business.get('state') != 'active'
+            or business.get('authenticated_business') is not True or business.get('platform_onboarded') is not True
+            or (kind == 'brand' and business.get('kind') != 'brand')
+            or ('customization' if kind == 'brand' else 'servicing') not in business.get('capabilities', [])):
+        raise PublicError('authority_revoked', 'The business no longer has the required current authority.', status=409)
+    if kind == 'brand' and source.get('consent_effective') is False:
+        raise PublicError('consent_withdrawn', 'Consent is ineffective; accepted economics remain historical.', status=409)
     return result
 
 
@@ -65,12 +73,14 @@ def project(row, decision=None):
     state = row['state']
     if state == 'issued' and datetime.now(timezone.utc) >= row['expires_at']:
         state = 'expired_return_held'
-    result = {**snapshot, 'state': state, 'decision': None}
+    result = {**snapshot, 'state': state, 'decision': None,
+              'economics_expires_at': None if state == 'accepted' else row['expires_at'].isoformat()}
     if decision:
         result['decision'] = {'state': decision['decision'], 'actor_id': str(decision['actor_id']),
             'accepted_at': decision['decided_at'].isoformat() if decision['decision'] == 'accepted' else None,
             'decided_at': decision['decided_at'].isoformat(), 'selected_line_ids': decoded(decision['selected_line_ids']),
-            'amounts': decoded(decision['amounts']), 'terms_digest': decision['terms_digest']}
+            'amounts': decoded(decision['amounts']), 'terms_digest': decision['terms_digest'],
+            'accepted_fee_lines': decoded(decision['accepted_fee_lines'])}
     return result
 
 
@@ -113,11 +123,17 @@ async def decide(kind, quote_id, body, request, p, key, *, accepting):
     if prior:
         return prior
     snapshot = decoded(row['snapshot'])
+    require_usd(snapshot)
+    if snapshot.get('policy', {}).get('revision') != 2:
+        raise PublicError('legacy_reconciliation', 'Review a reissued USD job quote; old terms remain unchanged.', status=409)
     source = await current_source(request, kind, snapshot)
     if source['buyer_id'] != str(row['buyer_id']) or source['organization_id'] != str(row['organization_id']):
         raise PublicError('source_changed', 'The current quote parties changed.', status=409)
     selected = sorted(str(value) for value in body.selected_line_ids) if accepting else []
+    if accepting and snapshot['assessment_fee_minor'] and not body.accept_assessment_fee:
+        raise PublicError('fee_consent_required', 'Explicitly accept the itemized assessment fee.', status=409)
     totals = amounts(snapshot['lines'], selected, snapshot['assessment_fee_minor']) if accepting else {}
+    fee_lines = {'assessment': body.accept_assessment_fee, 'return_transport': body.accept_return_fee}
     if (body.quote_revision != row['revision'] or body.terms_digest != snapshot['terms_digest']
             or (accepting and body.payable_minor != totals['payable_minor'])):
         raise PublicError('quote_binding_mismatch', 'Review and explicitly accept the exact current lines, total and terms.', status=409)
@@ -132,9 +148,9 @@ async def decide(kind, quote_id, body, request, p, key, *, accepting):
         if row['state'] != 'issued':
             raise PublicError('quote_not_current', 'Quote expired, changed or was already decided. Review a current quote.', status=409)
         state = 'accepted' if accepting else 'declined_return_held'
-        await tx.execute('''INSERT INTO l14_quote_decisions(quote_id,actor_id,decision,selected_line_ids,amounts,terms_digest,decided_at)
-            VALUES($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7)''', quote_id, p.actor.subject_id, state,
-            json.dumps(selected), json.dumps(totals), body.terms_digest, now)
+        await tx.execute('''INSERT INTO l14_quote_decisions(quote_id,actor_id,decision,selected_line_ids,amounts,terms_digest,decided_at,accepted_fee_lines)
+            VALUES($1,$2,$3,$4::jsonb,$5::jsonb,$6,$7,$8::jsonb)''', quote_id, p.actor.subject_id, state,
+            json.dumps(selected), json.dumps(totals), body.terms_digest, now, json.dumps(fee_lines))
         row = await tx.fetchrow('UPDATE l14_assessed_quotes SET state=$2 WHERE id=$1 RETURNING *', quote_id, state)
         decision = await tx.fetchrow('SELECT * FROM l14_quote_decisions WHERE quote_id=$1', quote_id)
         await event(tx, request, row, 'accepted' if accepting else 'declined',
@@ -191,19 +207,21 @@ def build_router(kind):
                 return prior
             await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', f'assessed:{kind}:{body.source_id}')
             now = await tx.fetchval('SELECT clock_timestamp()')
-            if not now < body.expires_at <= now + timedelta(days=30):
-                raise PublicError('invalid_expiry', 'Quote expiry must be within thirty days.', status=409)
+            expires_at = min(body.expires_at, now + timedelta(minutes=15)) if body.expires_at else now + timedelta(minutes=15)
+            if expires_at <= now:
+                raise PublicError('invalid_expiry', 'Review an unexpired fifteen-minute quote.', status=409)
+            snapshot['expires_at'] = expires_at.isoformat()
             revision = 1 + (await tx.fetchval('SELECT max(revision) FROM l14_assessed_quotes WHERE kind=$1 AND source_id=$2', kind, body.source_id) or 0)
             quote_id = uuid4()
             snapshot.update(id=str(quote_id), revision=revision, kind=kind, buyer_id=source['buyer_id'],
-                organization_id=str(org), author_id=str(p.actor.subject_id), diagnosis=source['diagnosis'], policy=POLICY, created_at=now.isoformat())
+                organization_id=str(org), author_id=str(p.actor.subject_id), diagnosis=source['diagnosis'], policy=JOB_POLICY, created_at=now.isoformat())
             snapshot['terms_digest'] = digest(snapshot)
             snapshot['full_total'] = amounts(snapshot['lines'], [str(line.id) for line in body.lines], body.assessment_fee_minor)
             await tx.execute("UPDATE l14_assessed_quotes SET state='superseded' WHERE kind=$1 AND source_id=$2 AND state IN ('issued','accepted')", kind, body.source_id)
             row = await tx.fetchrow('''INSERT INTO l14_assessed_quotes(id,kind,source_id,source_revision,buyer_id,organization_id,author_id,
                 revision,snapshot,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10) RETURNING *''', quote_id, kind,
                 body.source_id, body.source_revision, UUID(source['buyer_id']), org, p.actor.subject_id,
-                revision, json.dumps(snapshot), body.expires_at)
+                revision, json.dumps(snapshot), expires_at)
             await event(tx, request, row, 'issued')
             return await remember(tx, p, key, fingerprint, {'status': 'succeeded', 'quote': project(row)})
 
@@ -216,7 +234,7 @@ def build_router(kind):
             buyer(p)
         async with request.app.state.pool.acquire() as tx:
             rows = await tx.fetch('''SELECT * FROM l14_assessed_quotes WHERE kind=$1 AND
-                (($3::uuid IS NULL AND buyer_id=$2) OR organization_id=$3) ORDER BY created_at DESC,id DESC LIMIT 50''',
+                (($3::uuid IS NULL AND buyer_id=$2) OR organization_id=$3) AND snapshot->>'currency'='USD' ORDER BY created_at DESC,id DESC LIMIT 50''',
                 kind, p.actor.subject_id, org)
             decisions = await tx.fetch('SELECT * FROM l14_quote_decisions WHERE quote_id=ANY($1::uuid[])', [row['id'] for row in rows])
         by_id = {d['quote_id']: d for d in decisions}

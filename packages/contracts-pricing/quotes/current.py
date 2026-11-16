@@ -29,6 +29,15 @@ class CurrentQuote(Contract):
     status: Literal['valid']
 
 
+class CurrentQuoteV3(CurrentQuote):
+    currency: Literal['USD']
+    expires_at: AwareDatetime | None
+    schedule_id: Literal['usd-v2', 'usd-job-v2']
+    policy_revision: Literal[2]
+    economics: Literal['preview', 'committed']
+    execution_authority: Literal['not_granted'] = 'not_granted'
+
+
 class RetainedFinancialQuote(Contract):
     quote_id: UUID
     quote_revision: StrictInt = Field(ge=1)
@@ -43,13 +52,13 @@ class RetainedFinancialQuote(Contract):
     shipping_minor: StrictInt = Field(ge=0)
     tax_minor: StrictInt = Field(ge=0)
     payable_minor: StrictInt = Field(gt=0, le=18_000_000_000_000)
-    schedule_id: Literal['sample-v1']
-    policy_revision: Literal[1]
+    schedule_id: Literal['sample-v1', 'usd-v2', 'usd-job-v2']
+    policy_revision: Literal[1, 2]
     rounding: Literal['half_up']
     minor_unit_exponent: Literal[2]
     sample: StrictBool
     policy: dict
-    expires_at: AwareDatetime
+    expires_at: AwareDatetime | None
     reviewed_at: AwareDatetime | None
     selected_line_ids: list[UUID] = Field(default_factory=list, max_length=40)
     terms_digest: str | None = None

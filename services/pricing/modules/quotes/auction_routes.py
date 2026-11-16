@@ -1,6 +1,5 @@
-"""Authoritative prebid preview and closed-winner exact quote, without payment."""
+"""Retained closed-winner economics. New auction purchases are refused."""
 import json
-from datetime import datetime, timedelta
 from uuid import UUID, NAMESPACE_URL, uuid5
 from fastapi import APIRouter, Depends, Request
 from pydantic import Field, StrictInt, ValidationError
@@ -46,6 +45,8 @@ async def source(request, auction_id, kind, buyer_id):
 
 
 async def create(request, p, key, body, kind, *, fingerprint=None):
+    if kind != 'winner':
+        raise PublicError('auction_purchase_disabled', 'Buy Now is available only for fixed-price listings.', status=409)
     fingerprint = fingerprint or digest([kind, body.model_dump(mode='json')])
     async with unit_of_work(request.app.state.pool) as tx:
         prior = await replay(tx, p, key, fingerprint)
@@ -60,7 +61,7 @@ async def create(request, p, key, body, kind, *, fingerprint=None):
                 UUID(context['seller_organization_id']) in p.organizations):
             raise AccessDenied('Self purchase is not permitted')
         price = context['price_minor']
-        if type(price) is not int or not 0 < price <= 9_000_000_000_000 or context['currency'] not in ('USD', 'LBP'):
+        if type(price) is not int or not 0 < price <= 9_000_000_000_000 or context['currency'] != 'USD':
             raise ValueError()
     except (KeyError, TypeError, ValueError):
         raise PublicError('dependency_unavailable', 'The exact auction source cannot be verified.', status=503) from None
@@ -71,11 +72,7 @@ async def create(request, p, key, body, kind, *, fingerprint=None):
         now = await tx.fetchval('SELECT clock_timestamp()')
         quote_id = uuid5(NAMESPACE_URL, f'pricing-auction:{p.actor.subject_id}:{key}')
         fee, commission = percentage(price, POLICY['buyer_fee_bps']), percentage(price, POLICY['seller_commission_bps'])
-        expires = now + timedelta(minutes=15)
-        if kind == 'prebid':
-            expires = min(expires, datetime.fromisoformat(context['ends_at']))
-            if expires <= now:
-                raise PublicError('source_changed', 'The auction preview window ended.', status=409)
+        expires = None
         snapshot = {**context, 'id': str(quote_id), 'owner_id': str(p.actor.subject_id), 'kind': kind,
             'subject_id': str(body.auction_id), 'subject_revision': body.expected_revision,
             'revision': 1, 'purpose': 'purchase', 'source': 'auction', 'source_verified': True,
@@ -83,7 +80,7 @@ async def create(request, p, key, body, kind, *, fingerprint=None):
             'seller_net_minor': price - commission, 'shipping_minor': 0, 'tax_minor': 0,
             'payable_minor': price + fee, 'policy': POLICY, 'sample': True, 'schedule_id': POLICY['schedule_id'],
             'rounding': POLICY['rounding'], 'minor_unit_exponent': 2,
-            'created_at': now.isoformat(), 'expires_at': expires.isoformat(), 'reviewed_at': None}
+            'created_at': now.isoformat(), 'expires_at': None, 'reviewed_at': None}
         await tx.execute('''INSERT INTO l14_auction_quotes(id,auction_id,buyer_id,kind,snapshot,expires_at)
             VALUES($1,$2,$3,$4,$5::jsonb,$6)''', quote_id, body.auction_id, p.actor.subject_id, kind, json.dumps(snapshot), expires)
         return await remember(tx, p, key, fingerprint, {'status': 'succeeded', 'quote': snapshot})
@@ -163,7 +160,7 @@ async def review(quote_id: UUID, body: AuctionReview, request: Request, p=Depend
             raise PublicError('not_found', 'Quote not found.', status=404)
         q = decoded(row['snapshot'])
         now = await tx.fetchval('SELECT clock_timestamp()')
-        if now >= row['expires_at'] or body.quote_revision != row['revision'] or body.payable_minor != q['payable_minor']:
+        if (row['expires_at'] is not None and now >= row['expires_at']) or body.quote_revision != row['revision'] or body.payable_minor != q['payable_minor']:
             raise PublicError('quote_binding_mismatch', 'Review the exact current auction quote.', status=409)
         await tx.execute('UPDATE l14_auction_quotes SET reviewed_at=coalesce(reviewed_at,$2) WHERE id=$1', quote_id, now)
         return await remember(tx, p, key, fingerprint, {'status': 'succeeded', 'quote': {**q, 'reviewed_at': (row['reviewed_at'] or now).isoformat()}})

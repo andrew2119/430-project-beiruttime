@@ -1,9 +1,11 @@
-"""Pricing current/v2 policy and transactional operation helpers (CP B-09)."""
+"""Versioned USD fee policy and transactional operation helpers."""
 import hashlib
 import json
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 from bt_contracts_core.errors import AccessDenied, PublicError
+
+MAX_MINOR = 9_000_000_000_000
 
 
 def decoded(value):
@@ -15,33 +17,47 @@ def digest(value):
 
 
 def percentage(amount, bps):
+    if type(amount) is not int or not 0 <= amount <= MAX_MINOR or type(bps) is not int or not 0 <= bps <= 10000:
+        raise PublicError('invalid_money', 'Use exact bounded USD cents.', status=422)
     return (amount * bps + 5000) // 10000
 
 
-# Same Pricing-owned schedule as Q01. Always disclosed as sample policy, not
-# silently substituted for a real approved commercial commission schedule.
-POLICY = {'schedule_id': 'sample-v1', 'revision': 1, 'buyer_fee_bps': 300,
+POLICY = {'schedule_id': 'usd-v2', 'revision': 2, 'buyer_fee_bps': 300,
           'seller_commission_bps': 500, 'rounding': 'half_up', 'minor_unit_exponent': 2,
           'sample': True}
+JOB_POLICY = {**POLICY, 'schedule_id': 'usd-job-v2', 'buyer_fee_bps': 0,
+              'business_fee_bps': 500, 'fee_refundable': False,
+              'full_refund_fee_funding': 'business_saved_simulated_method',
+              'fee_deducted_from_customer_refund': False}
+
+
+def require_usd(snapshot):
+    if snapshot.get('currency') != 'USD':
+        raise PublicError('legacy_reconciliation', 'Historic currency is read-only; reconcile before payment or release.', status=409)
 
 
 def amounts(lines, selected, assessment_fee):
     known = {line['id']: line for line in lines}
-    if not set(selected) <= set(known) or not {k for k, v in known.items() if v['mandatory']} <= set(selected):
+    if (len(set(selected)) != len(selected) or not set(selected) <= set(known)
+            or not {k for k, v in known.items() if v['mandatory']} <= set(selected)):
         raise PublicError('scope_mismatch', 'Select every mandatory line and only assessed optional lines.', status=409)
+    values = [known[k]['amount_minor'] for k in selected] + [assessment_fee]
+    if any(type(value) is not int or not 0 <= value <= MAX_MINOR for value in values):
+        raise PublicError('invalid_money', 'Use exact bounded USD cents.', status=422)
     parts = sum(known[k]['amount_minor'] for k in selected if known[k]['kind'] == 'part')
     labor = sum(known[k]['amount_minor'] for k in selected if known[k]['kind'] == 'labor')
     base = parts + labor + assessment_fee
-    fee = percentage(base, POLICY['buyer_fee_bps'])
-    commission = percentage(base, POLICY['seller_commission_bps'])
-    if base <= 0:
-        raise PublicError('invalid_total', 'The accepted quote must have a positive total.', status=409)
+    if not 0 < base <= MAX_MINOR:
+        raise PublicError('invalid_total', 'The accepted quote must have a positive bounded total.', status=409)
+    commission = percentage(base, JOB_POLICY['business_fee_bps'])
     return {'parts_minor': parts, 'labor_minor': labor, 'assessment_fee_minor': assessment_fee,
-            'platform_fee_minor': fee, 'seller_commission_minor': commission,
-            'seller_net_minor': base - commission, 'payable_minor': base + fee}
+            'platform_fee_minor': commission, 'seller_commission_minor': commission,
+            'seller_net_minor': base - commission, 'payable_minor': base}
 
 
 def current_time(row, now=None):
+    if row.get('state') == 'accepted':
+        return  # Only uncommitted economics expire; execution is checked separately.
     if (now or datetime.now(timezone.utc)) >= row['expires_at']:
         raise PublicError('quote_expired', 'Review a current quote and explicitly accept it.', status=409)
 
