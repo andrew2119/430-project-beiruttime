@@ -10,7 +10,9 @@ from bt_runtime.app.db import unit_of_work
 from service_app.kernel import lock_lot, server_now, transition
 
 
-def public(row, currency=None):
+def public(row, currency=None, *, version=1):
+    if version == 1 and row["state"] == "ended_legacy_review":
+        raise PublicError("contract_upgrade_required", "Use the fixed-end result contract.", status=409)
     return {
         "auction_id": str(row["auction_id"]),
         "end_version": row["end_version"],
@@ -23,8 +25,8 @@ def public(row, currency=None):
         ).hexdigest()[:8]
         if row["winner_id"]
         else None,
-        "closing_minor": row["closing_minor"],
-        "currency": currency or row.get("currency"),
+        "closing_minor": row["closing_minor"] if (currency or row.get("currency")) == "USD" else None,
+        "currency": "USD" if (currency or row.get("currency")) == "USD" else None,
         "order_available": row["order_id"] is not None,
     }
 
@@ -36,7 +38,7 @@ async def close(app, auction_id, expected_end_version, request_id):
             "SELECT * FROM l13_auction_closes WHERE auction_id=$1", auction_id
         )
         if prior:
-            return public(prior, lot["currency"])
+            return public(prior, lot["currency"], version=2)
         if lot["end_version"] != expected_end_version:
             raise PublicError(
                 "stale_end_version",
@@ -44,12 +46,33 @@ async def close(app, auction_id, expected_end_version, request_id):
                 status=409,
             )
         now = await server_now(tx)
-        if now < lot["ends_at"]:
+        scheduled_end = lot.get("scheduled_ends_at")
+        if scheduled_end is None:
+            raise PublicError("kernel_upgrade_required", "The fixed scheduled end is unavailable.", status=503)
+        if now < scheduled_end:
             raise PublicError(
                 "auction_not_ended",
                 "The current authoritative end has not passed.",
                 status=409,
             )
+        if lot["mode"] in {"prebid_pending", "prebid_reserved"} or lot["currency"] != "USD":
+            # Ending is temporal; it does not decide legacy money or release a
+            # canonical financial mode. Its owner must reconcile the old intent.
+            row = await tx.fetchrow(
+                """INSERT INTO l13_auction_closes(auction_id,id,end_version,close_version,winner_id,closing_minor,state,reason,quote_request,scheduled_ends_at)
+                VALUES($1,$2,$3,$4,NULL,$5,'ended_legacy_review',$6,NULL,$7) RETURNING *""",
+                auction_id, uuid4(), lot["end_version"], lot["close_version"], lot["current_minor"],
+                "legacy_currency" if lot["currency"] != "USD" else "legacy_purchase_outcome_under_review", scheduled_end,
+            )
+            await enqueue(tx, EventEnvelope(
+                type="auction.ended-legacy-review.v2", source="auction", subject=str(auction_id), request_id=request_id,
+                data={"auction_id": str(auction_id), "listing_id": str(lot["listing_id"]),
+                      "end_version": lot["end_version"], "scheduled_ends_at": scheduled_end.isoformat(),
+                      "outcome": "ended_legacy_review", "financial_hold_retained": True,
+                      "automatic_runner_up": False, "automatic_resume": False,
+                      "next_action": "legacy_operation_reconciliation", "follow_up_hours": 24},
+            ), ["communications-auction-results"])
+            return public(row, lot["currency"], version=2)
         if lot["mode"] != "bidding":
             raise PublicError(
                 "auction_committed", "A competing auction mode is held.", status=409
@@ -95,8 +118,8 @@ async def close(app, auction_id, expected_end_version, request_id):
             else None
         )
         row = await tx.fetchrow(
-            """INSERT INTO l13_auction_closes(auction_id,id,end_version,close_version,winner_id,closing_minor,state,reason,quote_request)
-            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb) RETURNING *""",
+            """INSERT INTO l13_auction_closes(auction_id,id,end_version,close_version,winner_id,closing_minor,state,reason,quote_request,scheduled_ends_at)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10) RETURNING *""",
             auction_id,
             uuid4(),
             lot["end_version"],
@@ -106,6 +129,7 @@ async def close(app, auction_id, expected_end_version, request_id):
             "allocation_pending" if winner else "no_sale",
             reason,
             json.dumps(quote_request),
+            scheduled_end,
         )
         await enqueue(
             tx,
@@ -127,4 +151,4 @@ async def close(app, auction_id, expected_end_version, request_id):
             ),
             ["communications-auction-results"],
         )
-        return public(row, lot["currency"])
+        return public(row, lot["currency"], version=2)

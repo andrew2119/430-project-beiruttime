@@ -19,6 +19,7 @@ def lane_modules(monkeypatch):
 
     namespace("bt_contracts", "packages")
     namespace("bt_contracts.orders", "packages/contracts-orders")
+    namespace("bt_contracts.auction", "packages/contracts-auction")
     namespace("bt_contracts.pricing", "packages/contracts-pricing")
     namespace("service_app", "services/orders/runtime/service_app")
     namespace("l13_payment_module", "services/orders/modules/payments")

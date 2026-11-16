@@ -96,6 +96,8 @@ async def reconcile(app, source, auction_id):
         )
         if payload is None:
             q = json.loads(row["quote_request"])
+            if q["currency"] != "USD":
+                raise PublicError("legacy_currency_reconciliation_required", "The retained historical outcome needs reconciliation.", status=409)
             quote_key = "winner-quote:" + str(auction_id)
             quoted = await source.json(
                 "pricing",

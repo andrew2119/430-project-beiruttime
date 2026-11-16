@@ -2,6 +2,7 @@ from uuid import UUID
 import jwt
 from fastapi import APIRouter, Request
 from bt_contracts.auction.closing import CloseAuction
+from bt_contracts.auction.closing.v2 import CloseResultV2
 from bt_contracts_core.errors import PublicError, AccessDenied
 from .service import close, public
 
@@ -41,19 +42,35 @@ def service(request, allowed):
 @router.post("/internal/v1/auctions/{auction_id}/close")
 async def command(auction_id: UUID, body: CloseAuction, request: Request):
     service(request, {"auction"})
-    return await close(
-        request.app, auction_id, body.expected_end_version, request.state.request_id
-    )
+    value = await close(request.app, auction_id, body.expected_end_version, request.state.request_id)
+    if value["status"] == "ended_legacy_review":
+        raise PublicError("contract_upgrade_required", "The fixed end is retained; use the v2 result contract.", status=409)
+    return value
+
+
+@router.post("/internal/v2/auctions/{auction_id}/close")
+async def command_v2(auction_id: UUID, body: CloseAuction, request: Request):
+    service(request, {"auction"})
+    return await close(request.app, auction_id, body.expected_end_version, request.state.request_id)
 
 
 @router.get("/v1/auctions/{auction_id}/result")
 async def result(auction_id: UUID, request: Request):
+    return await read_result(auction_id, request, version=1)
+
+
+@router.get("/v1/auctions/{auction_id}/fixed-end-result", response_model=CloseResultV2)
+async def result_v2(auction_id: UUID, request: Request):
+    return await read_result(auction_id, request, version=2)
+
+
+async def read_result(auction_id, request, *, version):
     row = await request.app.state.pool.fetchrow(
         "SELECT c.*,l.currency FROM l13_auction_closes c JOIN auction_lots l ON l.id=c.auction_id WHERE c.auction_id=$1",
         auction_id,
     )
     if row:
-        return public(row)
+        return public(row, version=version)
     lot = await request.app.state.pool.fetchrow(
         "SELECT end_version,mode,currency FROM auction_lots WHERE id=$1", auction_id
     )
@@ -72,8 +89,17 @@ async def result(auction_id: UUID, request: Request):
 
 @router.get("/v1/auctions/{auction_id}/my-result")
 async def mine(auction_id: UUID, request: Request):
+    return await read_mine(auction_id, request, version=1)
+
+
+@router.get("/v1/auctions/{auction_id}/my-fixed-end-result", response_model=CloseResultV2)
+async def mine_v2(auction_id: UUID, request: Request):
+    return await read_mine(auction_id, request, version=2)
+
+
+async def read_mine(auction_id, request, *, version):
     actor = await request.app.state.auction.dependencies.principal(request)
-    if actor.actor.organization_id:
+    if actor.actor.organization_id or "buyer" not in actor.roles:
         raise AccessDenied("Use an individual buyer account")
     row = await request.app.state.pool.fetchrow(
         "SELECT c.*,l.currency FROM l13_auction_closes c JOIN auction_lots l ON l.id=c.auction_id WHERE c.auction_id=$1",
@@ -87,7 +113,7 @@ async def mine(auction_id: UUID, request: Request):
             "order_id": None,
         }
     won = row["winner_id"] == actor.actor.subject_id
-    return public(row) | {
+    return public(row, version=version) | {
         "won": won,
         "order_id": str(row["order_id"]) if won and row["order_id"] else None,
     }

@@ -1,1 +1,1 @@
-{"version":1,"id":"L13.closing","dependencies":["fastapi","asyncpg","httpx","PyJWT"],"routes":["routes.py:router"],"migrations":["migrations/L13_0001_closing.sql"],"workers":["workers.py:run"]}
+{"version":1,"id":"L13.closing","dependencies":["fastapi","asyncpg","httpx","PyJWT"],"routes":["routes.py:router"],"migrations":["migrations/L13_0001_closing.sql","migrations/L13_0002_fixed_end_review.sql"],"workers":["workers.py:run"]}

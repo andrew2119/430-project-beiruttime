@@ -5,9 +5,12 @@ from .reconcile import Sources, reconcile
 
 
 async def tick(app, sources):
-    # Missing/unmerged v2 schema is a real unavailable prerequisite, never a replacement engine.
-    rows = await app.state.pool.fetch("""SELECT id,end_version FROM auction_lots WHERE mode='bidding'
-        AND ends_at<=clock_timestamp() ORDER BY ends_at,id LIMIT 10""")
+    # Missing fixed-end kernel schema is unavailable, never a replacement engine.
+    rows = await app.state.pool.fetch("""SELECT id,end_version FROM auction_lots l
+        WHERE mode IN ('bidding','prebid_pending','prebid_reserved')
+        AND scheduled_ends_at<=clock_timestamp()
+        AND NOT EXISTS (SELECT 1 FROM l13_auction_closes c WHERE c.auction_id=l.id)
+        ORDER BY scheduled_ends_at,id LIMIT 10""")
     for row in rows:
         try:
             await close(app, row["id"], row["end_version"], "close-worker")
