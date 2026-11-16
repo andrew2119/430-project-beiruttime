@@ -8,6 +8,7 @@ from .communications import InboxDestination
 from service_app.orders_kernel import lock_watch
 from service_app.payment_clock import expiry_decision
 from service_app.payment_notices import ensure_payment_notice
+from service_app.quote_commitments import relay_commitments
 
 
 async def recover_notices(pool):
@@ -74,6 +75,7 @@ async def run(app, stop):
         while not stop.is_set():
             await recover_notices(app.state.pool)
             await expire(app.state.pool)
+            await relay_commitments(app.state.pool, dependencies["pricing"])
             await relay.tick()
             try:
                 await asyncio.wait_for(stop.wait(), timeout=2)

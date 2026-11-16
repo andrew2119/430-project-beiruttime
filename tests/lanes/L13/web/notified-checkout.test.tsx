@@ -49,6 +49,27 @@ for(const locale of ['en','ar'] as const){
 }
 
 for(const locale of ['en','ar'] as const){
+  for(const pricing of ['pending','reconciliation']){
+    it(`${locale}: pricing ${pricing} never claims payment confirmation`,()=>{
+      setSessionFixture({access_fingerprint:owner,principal:{actor:{subject_id:id},permissions:[],organization_grants:[]}});
+      const t=locale==='ar'?ar:en;
+      const client=new QueryClient({defaultOptions:{queries:{retry:false,retryOnMount:false}}});
+      client.setQueryData(['l13-checkout',owner,id],{
+        order:{id,revision:1,state:'awaiting_payment',order_kind:'sale',currency:'USD',total_minor:515000,
+          deadline:'2026-11-18T12:00:00Z',notified_at:'2026-11-16T12:00:00Z',initiation_extended_until:null,payment_method:null},
+        quote:{id,revision:2,currency:'USD',price_minor:500000,buyer_fee_minor:15000,shipping_minor:0,tax_minor:0,
+          payable_minor:515000,sample:false,reviewed_at:'2026-11-16T12:00:00Z'},
+        attempts:[],pricing_commit_state:pricing,simulated:true,payable:pricing==='pending',server_time:'2026-11-16T12:01:00Z',
+        method_deadlines:{card:'2026-11-17T12:00:00Z',whish:'2026-11-18T12:00:00Z',omt:'2026-11-18T12:00:00Z'},
+      });
+      const html=renderToStaticMarkup(<QueryClientProvider client={client}><LocaleContext.Provider value={locale}><CheckoutPayment orderId={id} onRefresh={()=>{}}/></LocaleContext.Provider></QueryClientProvider>);
+      expect(html).toContain(pricing==='pending'?t.sourceSync:t.sourceHold);
+      expect(html).not.toContain(t.paid);
+    });
+  }
+}
+
+for(const locale of ['en','ar'] as const){
   for(const state of ['awaiting_payment','paid_held']){
     it(`${locale}: ${state} keeps job principal and business fee separate`,()=>{
       setSessionFixture({access_fingerprint:owner,principal:{actor:{subject_id:id},permissions:[],organization_grants:[]}});

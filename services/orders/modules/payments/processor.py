@@ -145,7 +145,8 @@ async def process(tx, body, request_id):
     else:
         state = body.outcome
         now = await tx.fetchval("SELECT clock_timestamp()")
-        if order["currency"] != "USD" or (
+        pricing_state = await tx.fetchval("SELECT state FROM l13_quote_commitments WHERE order_id=$1", order["id"])
+        if order["currency"] != "USD" or (state != "declined" and pricing_state == "reconciliation") or (
             state != "declined"
             and (order["state"] == "expired_fenced" or order["deadline"] is None or now >= order["deadline"])
         ):

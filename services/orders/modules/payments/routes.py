@@ -37,16 +37,19 @@ async def checkout(order_id: UUID, request: Request, actor=Depends(principal)):
             order_id,
         )
         now = await tx.fetchval("SELECT clock_timestamp()")
+        pricing_state = await tx.fetchval("SELECT state FROM l13_quote_commitments WHERE order_id=$1", order_id)
         return {
             "order": order_fact(order),
             "quote": decoded(quote["snapshot"]) if quote else None,
             "attempts": [project(a) for a in attempts],
             "simulated": True,
+            "pricing_commit_state": pricing_state,
             "method_deadlines": {
                 route: deadline_for(order.get("notified_at"), route, order.get("initiation_extended_until"))
                 for route in ("card", "whish", "omt")
             },
             "payable": quote is not None
+            and pricing_state != "reconciliation"
             and (
                 order["state"] == "awaiting_payment"
                 or (
@@ -77,6 +80,8 @@ async def select_method(
         owner(actor, order)
         if order["revision"] != body.expected_revision:
             return {"status": "denied", "code": "stale_revision"}
+        if await tx.fetchval("SELECT state FROM l13_quote_commitments WHERE order_id=$1", order_id) == "reconciliation":
+            return {"status": "denied", "code": "quote_reconciliation_required"}
         if order["state"] not in {"awaiting_payment", "payment_unknown"} or not order["notified_at"]:
             return {"status": "denied", "code": "order_not_payable"}
         now = await tx.fetchval("SELECT clock_timestamp()")
@@ -125,6 +130,8 @@ async def start(
             }
         if order["revision"] != body.expected_revision:
             return {"status": "denied", "code": "stale_revision"}
+        if await tx.fetchval("SELECT state FROM l13_quote_commitments WHERE order_id=$1", order_id) == "reconciliation":
+            return {"status": "denied", "code": "quote_reconciliation_required"}
         if order["state"] not in {"awaiting_payment", "payment_unknown"}:
             return {"status": "denied", "code": "order_not_payable"}
         latest = await tx.fetchrow(

@@ -29,7 +29,8 @@ def checkout_route(lane_modules):
             return quote
         raise AssertionError(sql)
 
-    tx = SimpleNamespace(fetchrow=fetchrow, fetch=AsyncMock(return_value=attempts), fetchval=AsyncMock(return_value=now))
+    tx = SimpleNamespace(fetchrow=fetchrow, fetch=AsyncMock(return_value=attempts),
+                         fetchval=AsyncMock(side_effect=lambda sql, *args: now if sql == "SELECT clock_timestamp()" else None))
 
     @asynccontextmanager
     async def acquire():
@@ -71,6 +72,16 @@ async def test_uncertain_attempt_is_not_another_payable_checkout(checkout_route,
                      "quote_revision": 2, "route": "omt", "reference": "SIM-test", "currency": "USD",
                      "total_minor": 515000, "state": attempt_state, "sequence": 1})
     assert not (await route.checkout(row["id"], request, actor))["payable"]
+
+
+@pytest.mark.asyncio
+async def test_known_pricing_refusal_is_not_payable(checkout_route):
+    route, request, actor, row, _, now = checkout_route
+    row.update(state="awaiting_payment", notified_at=now, deadline=now + timedelta(hours=48))
+    request.app.state.pool.isolated_tx.fetchval = AsyncMock(
+        side_effect=lambda sql, *args: now if sql == "SELECT clock_timestamp()" else "reconciliation")
+    result = await route.checkout(row["id"], request, actor)
+    assert result["pricing_commit_state"] == "reconciliation" and not result["payable"]
 
 
 @pytest.mark.asyncio

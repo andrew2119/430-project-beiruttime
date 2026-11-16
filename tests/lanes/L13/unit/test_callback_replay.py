@@ -22,7 +22,7 @@ def payment_processor(lane_modules, monkeypatch):
         "id": uuid4(), "order_id": order["id"], "quote_revision": 1, "route": "card",
         "reference": "SIM-synthetic", "state": "pending", "sequence": 0, "created_at": now,
     }
-    state = {"newer": False, "callbacks": {}, "journals": [], "entries": [], "events": [], "locks": []}
+    state = {"pricing_state": None, "newer": False, "callbacks": {}, "journals": [], "entries": [], "events": [], "locks": []}
 
     async def fetchrow(sql, *args):
         if sql.startswith("SELECT * FROM l13_payment_callbacks"):
@@ -46,6 +46,8 @@ def payment_processor(lane_modules, monkeypatch):
     async def fetchval(sql, *args):
         if sql == "SELECT clock_timestamp()":
             return now
+        if sql.startswith("SELECT state FROM l13_quote_commitments"):
+            return state["pricing_state"]
         if sql.startswith("SELECT 1 FROM l13_payment_attempts"):
             return state["newer"]
         raise AssertionError(sql)
@@ -144,6 +146,16 @@ async def test_unknown_or_late_money_cannot_create_second_sale(payment_processor
     assert result["code"] == "reconciliation_required"
     assert not result["paid"] and not state["journals"]
     assert len(state["callbacks"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_known_pricing_refusal_holds_signed_money_without_posting(payment_processor):
+    module, tx, order, attempt, state, body, _ = payment_processor
+    state["pricing_state"] = "reconciliation"
+    result = await module.process(tx, body(), "pricing-hold")
+    assert result["code"] == "reconciliation_required"
+    assert not result["paid"] and not state["journals"]
+    assert attempt["state"] == "held" and order["state"] == "payment_unknown"
 
 
 def test_signed_bytes_are_required_and_unknown_fields_rejected(payment_processor):

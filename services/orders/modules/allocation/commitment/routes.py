@@ -19,6 +19,7 @@ from service_app.orders_kernel import (
     record_fact,
 )
 from service_app.payment_notices import payment_notice
+from service_app.quote_commitments import retain_commitment
 from service_app.exact_quote import (
     upstream,
     exact_snapshot,
@@ -360,6 +361,7 @@ async def reserve_exact(
             order["id"],
             listing["seller_type"],
         )
+        await retain_commitment(tx, order, snapshot, now)
         await audit(
             tx,
             order["id"],
