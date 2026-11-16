@@ -40,7 +40,7 @@ for(const [size,viewport] of [['desktop','1440x1000x1'],['phone','390x844x1,mobi
   const filename=`${shots}/${name}-${locale}-${size}-${theme}.png`;
   await screenshot(url,filename);console.log(JSON.stringify({name,locale,size,theme,filename}));
  }
- for(const theme of ['light','dark']){
+ if(process.env.BT_CAPTURE_GALLERY==='1')for(const theme of ['light','dark']){
   const url=`http://127.0.0.1:${theme==='dark'?3353:3352}/bt-business-reference`;
   await run(`await page.open(${JSON.stringify(url)});await page.wait('.proto-set-card');await page.eval(async()=>{await document.fonts.ready;return true;});await page.wait(350);`);
   await screenshot(url,`${shots}/reference-controls-${size}-${theme}.png`);

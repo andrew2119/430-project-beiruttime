@@ -23,7 +23,7 @@ try {
   const waitFor=async expression=>{for(let n=0;n<200;n++){if(await evaluate(expression))return;await new Promise(resolve=>setTimeout(resolve,100));}throw new Error(`Capture readiness timed out: ${expression}`);};
   await call('Page.enable');await call('Network.enable');
   const routes={buyer:['buyer','.buyer-activity-row'],bidding:['buyer/auctions/00000000-0000-4000-8000-000000000003','.proxy-panel input'],checkout:['checkout?watch=00000000-0000-4000-8000-000000000006&quote=00000000-0000-4000-8000-000000000004','input[name="watch_id"]'],order:['checkout/00000000-0000-4000-8000-000000000005','.checkout-result'],prices:['prices?quote_id=00000000-0000-4000-8000-000000000004','input[name="subject"]'],buying:['buying?reservation_id=00000000-0000-4000-8000-000000000005&quote_id=00000000-0000-4000-8000-000000000004','input[name="draft_subject"]'],inbox:['inbox','.l07-inbox-row']};
-  for(const reference of [true,false])for(const theme of ['light','dark'])for(const [device,width,height] of [['desktop',1440,1000],['phone',390,844]]) {
+  for(const reference of process.env.BT_CAPTURE_GALLERY==='1'?[false,true]:[false])for(const theme of ['light','dark'])for(const [device,width,height] of [['desktop',1440,1000],['phone',390,844]]) {
     await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});
     await call('Network.setCookie',{name:'bt-theme',value:theme,url:'http://127.0.0.1',path:'/'});
     const cases=reference?[['reference','en','buyer-reference','.ph-card-title']]:['en','ar'].flatMap(locale=>Object.entries(routes).map(([name,[path,selector]])=>[name,locale,`${locale}/${path}`,selector]));

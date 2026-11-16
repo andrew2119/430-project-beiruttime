@@ -55,10 +55,11 @@ All API browser data is **explicitly synthetic** and confined to a loopback-only
 
 - `browser-fixture.mjs`: loopback-only fixture on 33516; screenshot-only theme-cookie transport on 33519.
 - Application proof server: 33517, with identity/communications/pricing/orders/auction upstreams pointed to 33516 and public origins including 33517 and 33519.
-- Optional shared-control gallery: 33515.
+- Optional shared-control gallery: independently supplied on 33515 at `/buyer-reference`; no gallery implementation is included here. It must read the `bt-theme=light|dark` cookie, set `document.documentElement.dataset.theme` to that value, and render `.ph-card-title` when ready.
 - `browser-matrix.js`, `browser-interactions.js`, `browser-states.js`: run with the isolated `chrome-devtools-axi ... run` command. Explicitly emulate `1440x1000x1` or `390x844x1,mobile,touch`; resize alone clamps to 500px on this Mac.
-- `browser-control-states.sh`: gallery/page shared-control comparison.
-- `capture-shots.sh` / `capture-shots.mjs`: set `BT_BUYER_SHOTS` to the evidence directory.
+- `browser-control-states.sh`: gallery/page shared-control comparison, requiring that gallery. Its additional selector contract is `main .hx-actions button`, with an accessible name of `Refresh` and an inner `span` for press-motion measurements.
+- `capture-shots.sh` / `capture-shots.mjs`: set `BT_BUYER_SHOTS` to the evidence directory. By default all 56 app screenshots are captured without contacting gallery ports. Only `BT_CAPTURE_GALLERY=1` adds the four gallery comparison cases, after the app captures.
+- Bounded regression: `pnpm --filter beirut-time-web exec vitest run tests/capture-gallery.test.ts --maxWorkers=1 --no-file-parallelism` checks both drivers with in-memory doubles, including default-off gallery navigation and the four opt-in cases. No browser or server is started.
 
 The isolated browser session and local proof servers were stopped after verification.
 

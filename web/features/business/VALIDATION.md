@@ -39,8 +39,12 @@ The scripts in `proof/` are isolated, loopback-only browser fixtures, never app 
 3. Launch an isolated headless Chrome on remote-debugging port 3360; keep its generated profile under the ignored `proof/node_modules/.runtime/` directory so browser-downloaded JavaScript is not linted as application code.
 4. Set `CHROME_DEVTOOLS_AXI_SESSION=bt-business` and `CHROME_DEVTOOLS_AXI_BROWSER_URL=http://127.0.0.1:3360`. Use `chrome-devtools-axi emulate --viewport '1440x1000x1'` and `'390x844x1,mobile,touch'`, running `chrome-devtools-axi run < .../proof/browser-matrix.js` at each size. The other proof scripts use the same runner.
 5. `state-matrix.js` uses fixture modes `/__proof?mode=empty|slow|error`; set the current body's `dataset.proofMode` to the same value before each run. Return the fixture to `ready` afterward.
-6. Set `BT_BUSINESS_SHOTS` to a local evidence directory; `capture.mjs` writes the screenshot matrix. Its optional controls-gallery captures expect a separate gallery on 3356 and `screenshot-proxy.mjs` on 3352/3353 for theme cookies.
+6. Set `BT_BUSINESS_SHOTS` to a local evidence directory; `capture.mjs` writes all 72 app screenshots without contacting gallery ports. Gallery capture is off by default; only `BT_CAPTURE_GALLERY=1` adds four comparison screenshots. This opt-in requires an independently supplied gallery on 3356 serving `/bt-business-reference`, plus `screenshot-proxy.mjs` on 3352/3353. The gallery must read the `bt-theme=light|dark` request cookie, stamp the selected theme on the document, and render `.proto-set-card` when ready. No gallery implementation is included here.
 7. Stop these local proof processes and the named browser session when finished.
+
+### Bounded capture regression
+
+`pnpm --filter beirut-time-web exec vitest run tests/capture-gallery.test.ts --maxWorkers=1 --no-file-parallelism` evaluates only the capture loops with in-memory navigation, screenshot, timer and file doubles. It checks the 72 business and 56 buyer app screenshots, no gallery-port visits by default, and four extra gallery cases per driver only when explicitly enabled. It starts no browser or server.
 
 ## Exact committed path manifest
 
