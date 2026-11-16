@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import ts from 'typescript';
 import nextVitals from 'eslint-config-next/core-web-vitals';
@@ -19,10 +20,33 @@ export const INTERFACE_CHECKS = Object.freeze({
   'bt-viewport-unit': 'BT-UI-43', 'bt-boundary-quiet': 'BT-UI-49', 'bt-state-alert-gap': 'BT-UI-49',
   'bt-focus-lost': 'BT-UI-50', 'bt-title-absent': 'BT-UI-51', 'jsx-a11y': 'BT-UI-52',
   'bt-title-format': 'BT-UI-54', 'bt-modal-detour': 'BT-UI-55', 'bt-choice-detour': 'BT-UI-56',
-  'bt-control-detour': 'BT-UI-57', 'bt-style-opaque': 'BT-UI-63',
+  'bt-control-detour': 'BT-UI-57', 'bt-style-opaque': 'BT-UI-63', 'bt-motion-legacy': 'BT-UI-14',
 });
 export const TOKEN_OWNER = 'web/styles/tokens.css';
-export const MOTION_OWNER = 'web/styles/motion.css';
+export const MOTION_OWNER = 'web/styles/bt-motion.css';
+export const LEGACY_MOTION_OWNER = 'web/styles/motion.css';
+export const LEGACY_MOTION_HASH = '020d59936efcd46cfc0c76ccc41cb64684f94721e7ba9065035e6c789614ae43';
+const legacyMotionClasses = new Set(['pg-boot-shimmer', 'pg-card', 'pg-chonk', 'pg-dept-card', 'pg-dept-card-go', 'pg-dept-link', 'pg-detail-arrive', 'pg-iconbtn', 'pg-list-grid', 'pg-list-item', 'pg-modal', 'pg-nav-icon', 'pg-nav-icon-glyph', 'pg-nav-item', 'pg-overlay', 'pg-popover', 'pg-row', 'pg-seg-thumb', 'pg-skeleton', 'pg-skeleton-copy', 'pg-skeleton-row-composed', 'ui-image-frame-glyph', 'ui-image-frame-img', 'ui-image-frame-placeholder']);
+const legacyMotionFrames = new Set([
+  'pg-slideUpAndFade', 'pg-fadeOut', 'pg-overlayIn', 'pg-overlayOut', 'pg-modalIn', 'pg-modalOut',
+  'pg-listIn', 'pg-contentIn', 'pg-listOut', 'pg-shimmer', 'pg-skeleton-pulse', 'share-fade-up',
+  'bt-drawer-in-rtl', 'bt-drawer-out-rtl', 'pg-face-in', 'proto-set-flash',
+  'pg-icon-wave', 'pg-icon-announce', 'pg-icon-shuffle', 'pg-icon-spin', 'pg-icon-open', 'pg-icon-drop',
+  'pg-icon-rev', 'pg-icon-stamp', 'pg-icon-bounce', 'pg-icon-settle', 'pg-icon-pulse', 'pg-icon-breathe',
+  'psb-drawer-in', 'psb-drawer-out', 'psb-scrim-in', 'psb-scrim-out',
+  'sx-progress', 'sx-slide', 'sx-clip', 'sx-fade', 'sx-tb-slide', 'sx-tb-edge',
+]);
+// Validation-only compatibility facts, not another runtime pacing table.
+const legacyPacing = Object.freeze({
+  '--ease-standard': 'cubic-bezier(0.4,0,0.2,1)', '--ease-out-soft': 'cubic-bezier(0,0,0.2,1)',
+  '--ease-in-hard': 'cubic-bezier(0.4,0,1,1)', '--ease-overshoot': 'cubic-bezier(0.175,0.885,0.32,1.1)',
+  '--ease-settle': 'cubic-bezier(0.17,0.03,0.04,1.02)', '--ease-expressive': 'cubic-bezier(0.31,0.1,0.08,0.96)',
+  '--ds-motion-fast': '0.15s', '--ds-motion-popover': '0.2s', '--ds-motion-overlay': '0.3s',
+  '--ds-motion-theme': '0.45s', '--ds-motion-reduced': '0.001ms', '--ds-motion-nav-pending': '0.12s',
+  '--ds-motion-loader-safety': '5s', '--ds-motion-expressive': '0.6s', '--ds-motion-press': '0.13s',
+  '--ds-motion-shimmer': '1.6s', '--ds-motion-image-reveal': '0.18s',
+  '--motion-fast': 'var(--ds-motion-fast)', '--motion-overlay': 'var(--ds-motion-overlay)', '--ease': 'var(--ease-standard)',
+});
 export const LONG_TIMES = Object.freeze({
   '--bt-motion-theme': 'Occasional whole-document theme crossfade.',
   '--bt-motion-icon': 'Occasional single-play navigation icon arc.',
@@ -264,14 +288,23 @@ function defaultFunction(tree, constants) {
   }
 }
 
-export function inspectSource(file, source, { layers = new Set() } = {}) {
+export function inspectSource(file, source, { layers = new Set(), legacyMotionAllowed = false } = {}) {
   const issues = {};
   const add = (name, amount = 1) => { if (amount) issues[name] = (issues[name] ?? 0) + amount; };
   const count = (name, value, pattern) => add(name, [...value.matchAll(pattern)].length);
-  const tokens = file === TOKEN_OWNER;
-  const declaration = (prop, value, context = [], keyframe = false) => {
+  const tokens = file === TOKEN_OWNER, motion = file === MOTION_OWNER;
+  const frozenMotion = file === LEGACY_MOTION_OWNER && createHash('sha256').update(source).digest('hex') === LEGACY_MOTION_HASH;
+  const legacyAllowed = legacyMotionAllowed || frozenMotion;
+  if (file === LEGACY_MOTION_OWNER && !frozenMotion) add('bt-motion-legacy');
+  const declaration = (prop, value, context = [], keyframe = false, sharedFold = false) => {
     value = cleanValue(value);
     const plain = withoutVariables(value);
+    const kept = ['--bt-motion-kept-animation', '--bt-motion-kept-transition', '--bt-motion-kept-iterations'].includes(prop);
+    if (/^--(?:(?:bt|ds)-motion-|bt-ease-|ease(?:-|$)|motion(?:-|$))/.test(prop) && !kept) {
+      const legacyContext = prop.startsWith('--ease-') ? '@theme' : ':root';
+      const exactLegacy = tokens && context.join('\n') === legacyContext && legacyPacing[prop] === value.replace(/\s+/g, '');
+      if (!(motion && prop.startsWith('--bt-')) && !exactLegacy) add('bt-motion-owner');
+    }
     const colourText = plain.replace(/\burl\([^)]*\)|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/gi, ''), lower = colourText.toLowerCase();
     if (!tokens) {
       count('bt-palette-inline', colourText, /#[\da-f]{3,8}\b/gi);
@@ -280,20 +313,24 @@ export function inspectSource(file, source, { layers = new Set() } = {}) {
         for (const word of lower.match(/[a-z]+/g) ?? []) if (colourNames.has(word)) add('bt-palette-inline');
       }
       if (isMotion(prop) || prop.startsWith('--')) {
-        count('bt-motion-literal', plain, new RegExp(`(?<![\\w.-])${numberText}(?:ms|s)\\b`, 'gi'));
-        count('bt-motion-literal', plain, /\b(?:cubic-bezier|steps|linear)\(|(?<![\w-])(?:ease(?:-in-out|-in|-out)?|linear|step-start|step-end)(?![\w-])/gi);
+        // Owning literal pacing does not permit a prohibited response curve.
+        if (!(motion && /^--bt-(?:motion|ease)-/.test(prop))) {
+          count('bt-motion-literal', plain, new RegExp(`(?<![\\w.-])${numberText}(?:ms|s)\\b`, 'gi'));
+          count('bt-motion-literal', plain, /\b(?:cubic-bezier|steps|linear)\(|(?<![\w-])(?:ease(?:-in-out|-in|-out)?|linear|step-start|step-end)(?![\w-])/gi);
+        }
         count('bt-slow-start', plain, /(?<![\w-])ease-in(?![\w-])/gi);
         if (/var\(\s*--ease-in-hard\s*\)/.test(value)) add('bt-slow-start');
       }
     }
+    if (!legacyAllowed && (isMotion(prop) || prop.startsWith('--'))) for (const name of value.match(/[\w-]+/g) ?? []) if (legacyMotionFrames.has(name)) add('bt-motion-legacy');
     if (/^transition(?:-property)?$/.test(prop)) for (const part of commaParts(value)) {
       const words = transitionProperties(part);
       if (words.includes('all') || (prop === 'transition' && !words.length)) add('bt-property-sweep');
       if (prop === 'transition-property' && !words.length) add('bt-style-opaque');
-      for (const name of words) if (reflowProperty.test(name) && !(file === MOTION_OWNER && name === 'grid-template-rows')) add('bt-reflow-motion');
+      for (const name of words) if (reflowProperty.test(name) && !(sharedFold && name === 'grid-template-rows')) add('bt-reflow-motion');
     }
     if (keyframe && reflowProperty.test(prop)) add('bt-reflow-motion');
-    if (prop === 'grid-template-rows' && /\b0fr\b/i.test(value) && file !== MOTION_OWNER) add('bt-fold-detour');
+    if (prop === 'grid-template-rows' && /\b0fr\b/i.test(value) && !sharedFold) add('bt-fold-detour');
     if (/\b100vh\b/i.test(plain)) add('bt-viewport-unit');
     if (isLayer(prop) && (file !== TOKEN_OWNER || !LAYER_SLOTS.includes(prop))) add('bt-stack-escape');
     if (prop === 'z-index') {
@@ -318,14 +355,31 @@ export function inspectSource(file, source, { layers = new Set() } = {}) {
     try { tree = cssParser.parse(text); } catch { add('bt-style-opaque'); return; }
     const entries = cssDeclarations(text), timeTokens = {};
     for (const { prop, value } of entries) if (prop.startsWith('--') && !(prop in timeTokens)) timeTokens[prop] = value;
+    tree.walkRules(node => {
+      if (!legacyAllowed) for (const [, name] of node.selector.matchAll(/\.([\w-]+)/g)) if (legacyMotionClasses.has(name)) add('bt-motion-legacy');
+    });
     tree.walkAtRules(node => {
-      if (/^(?:-webkit-)?keyframes$/i.test(node.name) && file !== MOTION_OWNER) add('bt-motion-owner');
+      if (/^(?:-webkit-)?keyframes$/i.test(node.name)) {
+        if (!motion && !frozenMotion) add('bt-motion-owner');
+        if (!legacyAllowed && legacyMotionFrames.has(node.params.trim())) add('bt-motion-legacy');
+      }
       if (node.name.toLowerCase() === 'apply') classes(node.params);
       if (/fonts\.googleapis|material-symbols/i.test(node.params)) add('bt-runtime-weight');
     });
+    const foldBase = '@layer components\n:where(:where(.bt-fold))';
+    const foldOpen = '@layer components\n:where(:where(.bt-fold)[data-state="open"])';
+    const foldPair = motion && [[foldBase, '0fr'], [foldOpen, '1fr']].every(([context, value]) => {
+      const rows = entries.filter(entry => entry.prop === 'grid-template-rows' && entry.context.join('\n') === context);
+      return rows.length === 1 && cleanValue(rows[0].value).trim() === value;
+    });
     for (const entry of entries) {
-      declaration(entry.prop, entry.value, entry.context, entry.context.some(part => /^@(?:-webkit-)?keyframes\b/i.test(part)));
-      if (tokens && /^--(?:bt|ds)-motion-/.test(entry.prop)) {
+      const context = entry.context.join('\n');
+      const sharedFold = foldPair && (
+        (entry.prop === 'grid-template-rows' && [foldBase, foldOpen].includes(context)) ||
+        (context === foldBase && entry.prop === 'transition' && cleanValue(entry.value).trim().replace(/\s+/g, ' ') === 'grid-template-rows var(--bt-motion-menu) var(--bt-ease-out)')
+      );
+      declaration(entry.prop, entry.value, entry.context, entry.context.some(part => /^@(?:-webkit-)?keyframes\b/i.test(part)), sharedFold);
+      if ((tokens || motion) && /^--(?:bt|ds)-motion-/.test(entry.prop) && entry.prop !== '--bt-motion-kept-iterations') {
         const time = motionTokenMs(entry.value, timeTokens, new Set([entry.prop]));
         if (time === null || (time > 300 && !(entry.prop in LONG_TIMES))) add('bt-time-budget');
       }
@@ -357,6 +411,7 @@ export function inspectSource(file, source, { layers = new Set() } = {}) {
     const list = text.split(/\s+/).filter(Boolean);
     for (const item of list) {
       const base = item.split(/:(?![^\[]*\])/).at(-1);
+      if (!legacyAllowed && legacyMotionClasses.has(base)) add('bt-motion-legacy');
       if (paletteClass.test(base)) add('bt-palette-inline');
       const arbitrary = /^\[([\w-]+):([\s\S]*)\]$/.exec(base);
       if (arbitrary) declaration(arbitrary[1], arbitrary[2].replace(/_/g, ' '), /(?:^|:)hover:/.test(item) ? [':hover'] : []);
@@ -389,7 +444,7 @@ export function inspectSource(file, source, { layers = new Set() } = {}) {
     if (/^(?:chart\.js|three|gsap|next\/font\/google)(?:\/|$)|fonts\.googleapis|material-symbols/.test(specifier)) add('bt-runtime-weight');
     const target = specifier.startsWith('.') ? resolve('/', dirname(file), specifier) : '';
     const internal = /(?:^@beirut-time\/ui\/|(?:^|\/)alternate-ui(?:\/|$)|(?:^|\/)ui-private(?:\/|$))/.test(specifier) || target.startsWith('/packages/ui/src/');
-    const publicBarrel = target === '/packages/ui/src/index' || target === '/packages/ui/src/index.tsx';
+    const publicBarrel = target === '/packages/ui/src/index' || target === '/packages/ui/src/index.tsx' || ['@beirut-time/ui/motion', '@beirut-time/ui/motion-easing'].includes(specifier);
     if (internal && !publicBarrel && !file.startsWith('packages/ui/src/')) add('bt-control-detour');
   };
   for (const node of tree.statements) if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
@@ -514,6 +569,10 @@ export function inspectSource(file, source, { layers = new Set() } = {}) {
     return ts.isJsxElement(node) && node.children.some(child => rendered(ts.isJsxExpression(child) ? child.expression : child, kind, env, seen));
   }
   const visit = node => {
+    if (!legacyAllowed) {
+      const literals = ts.isStringLiteralLike(node) ? [node.text] : ts.isTemplateExpression(node) ? [node.head.text, ...node.templateSpans.map(part => part.literal.text)] : [];
+      for (const text of literals) for (const name of text.match(/[\w-]+/g) ?? []) if (legacyMotionClasses.has(name) || legacyMotionFrames.has(name)) add('bt-motion-legacy');
+    }
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
       const target = unwrap(node.left);
       if (ts.isPropertyAccessExpression(target) && styleTarget(target.expression)) cssWrite(kebab(target.name.text), node.right);

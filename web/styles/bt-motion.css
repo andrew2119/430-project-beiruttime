@@ -1,0 +1,223 @@
+/* Beirut Time's canonical motion owner. The frozen compatibility sheet is
+   separate; no new component consumes its names. All new pacing lives here. */
+:root {
+  --bt-motion-none: 0ms;
+  --bt-motion-reduced: 0.001ms;
+  --bt-motion-press: 130ms;
+  --bt-motion-fast: 150ms;
+  --bt-motion-popover: 180ms;
+  --bt-motion-menu: 200ms;
+  --bt-motion-overlay: 250ms;
+  --bt-motion-exit: 120ms;
+  --bt-motion-image: 180ms;
+  --bt-motion-gentle: 120ms;
+  /* Occasional document crossfade, never a delay before accepting input. */
+  --bt-motion-theme: 450ms;
+  /* Opt-in, occasional pointer arrival only; never keyboard or hover replay. */
+  --bt-motion-icon: 600ms;
+  /* Loading-placeholder/unfinished-wait period, not interaction latency. */
+  --bt-motion-pulse: 1600ms;
+  --bt-motion-safety: 5000ms;
+  --bt-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --bt-ease-travel: cubic-bezier(0.77, 0, 0.175, 1);
+  --bt-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --bt-ease-colour: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --bt-ease-constant: linear;
+}
+
+/* Stateful surfaces use retargetable transitions below. One-shot answer/row
+   arrivals alone use frames, and every settled transform returns to none. */
+@keyframes bt-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bt-row-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes bt-section-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes bt-placeholder-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+@keyframes bt-icon-greet {
+  0% { transform: none; }
+  25% { transform: rotate(-9deg) translateY(-1px); }
+  55% { transform: rotate(8deg) translateY(-1px); }
+  80% { transform: rotate(-4deg); }
+  100% { transform: none; }
+}
+@keyframes bt-icon-notice {
+  0%, 100% { transform: none; }
+  30% { transform: rotate(-12deg) scale(1.1); }
+  60% { transform: rotate(7deg) scale(1.06); }
+}
+@keyframes bt-icon-adjust {
+  0%, 100% { transform: none; }
+  30% { transform: translateY(-2.5px); }
+  60% { transform: translateY(1.5px); }
+}
+@keyframes bt-icon-wind { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@keyframes bt-icon-reveal {
+  0%, 100% { transform: none; }
+  40% { transform: perspective(60px) rotateX(-28deg) translateY(-1px); }
+}
+@keyframes bt-icon-arrive {
+  0% { transform: translateY(-3px); opacity: 0.85; }
+  55% { transform: translateY(1.5px); opacity: 1; }
+  80% { transform: translateY(-0.5px); }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes bt-icon-hands {
+  0%, 100% { transform: none; }
+  35% { transform: rotate(-16deg); }
+  65% { transform: rotate(18deg); }
+}
+@keyframes bt-icon-strike {
+  0%, 100% { transform: none; }
+  40% { transform: scale(1.22) rotate(-8deg); }
+  70% { transform: scale(0.96) rotate(3deg); }
+}
+@keyframes bt-icon-lift {
+  0%, 100% { transform: none; }
+  35% { transform: translateY(-3px) rotate(-8deg); }
+  65% { transform: rotate(6deg); }
+}
+@keyframes bt-icon-balance {
+  0%, 100% { transform: none; }
+  35% { transform: scaleY(0.86) translateY(1px); }
+  70% { transform: scaleY(1.06) translateY(-1px); }
+}
+@keyframes bt-icon-confirm { 0%, 100% { transform: none; } 45% { transform: scale(1.14); } }
+@keyframes bt-icon-wait { 0%, 100% { opacity: 1; } 50% { opacity: 0.72; } }
+
+@layer components {
+  /* F3 keeps an exiting surface mounted until transition completion and cancels
+     that exit hold on reopen. No restart-from-zero surface keyframes. */
+  :where(.bt-popover, .bt-menu, .bt-window) { opacity: 0; transition: opacity var(--bt-motion-overlay) var(--bt-ease-out), transform var(--bt-motion-overlay) var(--bt-ease-out); }
+  :where(.bt-popover, .bt-menu) { transform: translateY(4px) scale(0.96); transform-origin: var(--radix-popper-transform-origin); transition-duration: var(--bt-motion-popover); }
+  :where(.bt-window) { transform: scale(0.96); transform-origin: center; }
+  :where(.bt-popover[data-state="open"], .bt-menu[data-state="open"], .bt-window[data-state="open"]) { opacity: 1; transform: none; }
+  :where(.bt-popover[data-state="closed"], .bt-menu[data-state="closed"], .bt-window[data-state="closed"]) { opacity: 0; transition-duration: var(--bt-motion-exit); pointer-events: none; }
+  :where(.bt-window[data-state="closed"]) { transform: scale(0.975); }
+  :where(.bt-shade) { opacity: 0; transition: opacity var(--bt-motion-overlay) var(--bt-ease-out); }
+  :where(.bt-shade[data-state="open"]) { opacity: 1; }
+  :where(.bt-shade[data-state="closed"]) { opacity: 0; transition-duration: var(--bt-motion-exit); pointer-events: none; }
+  :where(.bt-sheet-bottom, .bt-sheet-responsive, .bt-sheet-phone) { --bt-sheet-from: translateY(1.5rem); --bt-sheet-to: translateY(1rem); }
+  :where(.bt-sheet-end) { --bt-sheet-from: translateX(1.5rem); --bt-sheet-to: translateX(1rem); }
+  :where(.bt-sheet-end:dir(rtl)) { --bt-sheet-from: translateX(-1.5rem); --bt-sheet-to: translateX(-1rem); }
+  @media (min-width: 851px) {
+    :where(.bt-sheet-responsive) { --bt-sheet-from: translateX(1.5rem); --bt-sheet-to: translateX(1rem); }
+    :where(.bt-sheet-responsive:dir(rtl)) { --bt-sheet-from: translateX(-1.5rem); --bt-sheet-to: translateX(-1rem); }
+  }
+  :where(.bt-sheet-bottom, .bt-sheet-end, .bt-sheet-responsive) { opacity: 0; transform: var(--bt-sheet-from); transition: opacity var(--bt-motion-overlay) var(--bt-ease-out), transform var(--bt-motion-overlay) var(--bt-ease-out); }
+  :where(.bt-sheet-bottom[data-state="open"], .bt-sheet-end[data-state="open"], .bt-sheet-responsive[data-state="open"]) { opacity: 1; transform: none; }
+  :where(.bt-sheet-bottom[data-state="closed"], .bt-sheet-end[data-state="closed"], .bt-sheet-responsive[data-state="closed"]) { opacity: 0; transform: var(--bt-sheet-to); transition-duration: var(--bt-motion-exit); pointer-events: none; }
+  @media (max-width: 850px) {
+    :where(.bt-sheet-phone) { opacity: 0; transform: var(--bt-sheet-from); transition: opacity var(--bt-motion-overlay) var(--bt-ease-out), transform var(--bt-motion-overlay) var(--bt-ease-out); }
+    :where(.bt-sheet-phone[data-state="open"]) { opacity: 1; transform: none; }
+    :where(.bt-sheet-phone[data-state="closed"]) { opacity: 0; transform: var(--bt-sheet-to); transition-duration: var(--bt-motion-exit); pointer-events: none; }
+  }
+  @starting-style {
+    :where(.bt-popover[data-state="open"], .bt-menu[data-state="open"]) { opacity: 0; transform: translateY(4px) scale(0.96); }
+    :where(.bt-window[data-state="open"]) { opacity: 0; transform: scale(0.96); }
+    :where(.bt-shade[data-state="open"]) { opacity: 0; }
+    :where(.bt-sheet-bottom[data-state="open"], .bt-sheet-end[data-state="open"], .bt-sheet-responsive[data-state="open"]) { opacity: 0; transform: var(--bt-sheet-from); }
+  }
+  @media (max-width: 850px) {
+    @starting-style { :where(.bt-sheet-phone[data-state="open"]) { opacity: 0; transform: var(--bt-sheet-from); } }
+  }
+  /* First-frame fallback for an engine without starting-style; set/remove once,
+     never as a per-frame animation driver. */
+  :where(.bt-popover[data-starting], .bt-menu[data-starting]) { opacity: 0; transform: translateY(4px) scale(0.96); }
+  :where(.bt-window[data-starting]) { opacity: 0; transform: scale(0.96); }
+  :where(.bt-shade[data-starting]) { opacity: 0; }
+  :where(.bt-sheet-bottom[data-starting], .bt-sheet-end[data-starting], .bt-sheet-responsive[data-starting]) { opacity: 0; transform: var(--bt-sheet-from); }
+  @media (max-width: 850px) { :where(.bt-sheet-phone[data-starting]) { opacity: 0; transform: var(--bt-sheet-from); } }
+  :where(.bt-sheet-bottom[data-drag-leave][data-state="closed"], .bt-sheet-end[data-drag-leave][data-state="closed"], .bt-sheet-responsive[data-drag-leave][data-state="closed"], .bt-sheet-phone[data-drag-leave][data-state="closed"], .bt-shade[data-drag-leave][data-state="closed"]) { transition-duration: var(--bt-motion-overlay); transition-timing-function: var(--bt-ease-drawer); }
+
+  /* The sole layout-motion exception: a reversible 0fr/1fr fold, never auto. */
+  :where(:where(.bt-fold)) { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--bt-motion-menu) var(--bt-ease-out); }
+  :where(:where(.bt-fold)[data-state="open"]) { grid-template-rows: 1fr; }
+  :where(:where(.bt-fold) > :where(.bt-fold-content)) { min-block-size: 0; overflow: hidden; }
+  :where(:where(.bt-pressable)) { transition: transform var(--bt-motion-press) var(--bt-ease-out); }
+  :where(:where(.bt-pressable):active:not(:focus-visible)) { transform: scale(0.97); }
+  :where(:where(.bt-pressable):focus-visible) { transition-duration: var(--bt-motion-none); transform: none; }
+  /* Arrival is opt-in and plays once per real answer, never on every render. */
+  :where(:where(.bt-arrive)[data-bt-arrival]) { animation: bt-fade-in var(--bt-motion-fast) var(--bt-ease-out) backwards; }
+  :where(:where(.bt-section-arrive)[data-bt-arrival]) { animation: bt-section-in var(--bt-motion-overlay) var(--bt-ease-out) backwards; }
+  :where(.bt-row-motion) { display: block; min-inline-size: 0; opacity: 1; transition: opacity var(--bt-motion-fast) var(--bt-ease-out); }
+  :where(.bt-row-grid > .bt-row-motion) { display: grid; }
+  :where(.bt-row-motion[data-enter]) { animation: bt-row-in var(--bt-motion-image) var(--bt-ease-out) backwards; }
+  :where(.bt-row-motion[data-exit]) { opacity: 0; transition-duration: var(--bt-motion-exit); pointer-events: none; }
+  :where(.bt-row-motion[data-reorder]) { transition: transform var(--bt-motion-popover) var(--bt-ease-travel), opacity var(--bt-motion-fast) var(--bt-ease-out); }
+  :where(:where(.bt-image-pixels, .bt-image-placeholder)) { transition: opacity var(--bt-motion-image) var(--bt-ease-out); }
+  :where(:where(.bt-placeholder)) { background: var(--bt-muted); animation: bt-placeholder-pulse var(--bt-motion-pulse) var(--bt-ease-colour) infinite; }
+
+  :where(:where(.bt-nav-icon)) { position: relative; display: inline-grid; place-items: center; inline-size: 1.25rem; block-size: 1.25rem; flex: none; }
+  :where(:where(.bt-nav-icon))::before { content: ""; position: absolute; inset: -0.25rem; border-radius: var(--bt-radius-pill); background: color-mix(in oklab, var(--bt-primary) 11%, transparent); opacity: 0; transition: opacity var(--bt-motion-fast) var(--bt-ease-colour); pointer-events: none; }
+  :where(:where(.bt-nav-icon)[data-active])::before { opacity: 1; }
+  :where(.bt-nav-icon[data-pending])::before { opacity: 0.6; }
+  :where(:where(.bt-nav-glyph)) { inline-size: 1rem; block-size: 1rem; color: var(--bt-primary-ink); transform-origin: center; }
+  :where(:where(.bt-nav-icon)[data-motion="greet"]) { --bt-icon-frame: bt-icon-greet; }
+  :where(:where(.bt-nav-icon)[data-motion="notice"]) { --bt-icon-frame: bt-icon-notice; }
+  :where(:where(.bt-nav-icon)[data-motion="adjust"]) { --bt-icon-frame: bt-icon-adjust; }
+  :where(:where(.bt-nav-icon)[data-motion="wind"]) { --bt-icon-frame: bt-icon-wind; }
+  :where(:where(.bt-nav-icon)[data-motion="reveal"]) { --bt-icon-frame: bt-icon-reveal; }
+  :where(:where(.bt-nav-icon)[data-motion="arrive"]) { --bt-icon-frame: bt-icon-arrive; }
+  :where(:where(.bt-nav-icon)[data-motion="hands"]) { --bt-icon-frame: bt-icon-hands; }
+  :where(:where(.bt-nav-icon)[data-motion="strike"]) { --bt-icon-frame: bt-icon-strike; }
+  :where(:where(.bt-nav-icon)[data-motion="lift"]) { --bt-icon-frame: bt-icon-lift; }
+  :where(:where(.bt-nav-icon)[data-motion="balance"]) { --bt-icon-frame: bt-icon-balance; }
+  :where(:where(.bt-nav-icon)[data-motion="confirm"]) { --bt-icon-frame: bt-icon-confirm; }
+  :where(:where(.bt-nav-icon)[data-motion="notice"] :where(.bt-nav-glyph)) { transform-origin: 20% 80%; }
+  :where(:where(.bt-nav-icon)[data-active][data-bt-animate="pointer"] :where(.bt-nav-glyph)) { animation: var(--bt-icon-frame) var(--bt-motion-icon) var(--bt-ease-out) 1; }
+  :where(:where(.bt-nav-icon)[data-pending][data-bt-animate="pointer"] :where(.bt-nav-glyph)) { animation: bt-icon-wait var(--bt-motion-pulse) var(--bt-ease-colour) infinite; }
+  @media (hover: hover) and (pointer: fine) {
+    :where(:where(.bt-nav-icon):hover)::before { opacity: 0.6; }
+    :where(:where(.bt-nav-icon)[data-active]:hover)::before { opacity: 1; }
+  }
+  :where(:where(.bt-theme-switch)) { position: relative; }
+  :where(:where(.bt-theme-switch-glyph)) { inline-size: 1rem; block-size: 1rem; }
+}
+
+/* Only the new switch opts into this snapshot pacing. Existing controls retain
+   their original provider path and do not acquire this attribute. */
+:root[data-bt-theme-transition]::view-transition-old(root),
+:root[data-bt-theme-transition]::view-transition-new(root) {
+  animation-duration: var(--bt-motion-theme);
+  animation-timing-function: var(--bt-ease-colour);
+}
+:root[data-bt-theme-transition] * { transition: none; }
+
+/* Each named gentle exception belongs to that part, never its descendants. */
+@property --bt-motion-kept-animation { syntax: "*"; inherits: false; }
+@property --bt-motion-kept-transition { syntax: "*"; inherits: false; }
+@property --bt-motion-kept-iterations { syntax: "*"; inherits: false; }
+@media (prefers-reduced-motion: reduce) {
+  /* The default matches the frozen sheet exactly; only new named parts opt in. */
+  *, *::before, *::after {
+    animation-duration: var(--bt-motion-kept-animation, var(--bt-motion-reduced));
+    animation-delay: var(--bt-motion-none);
+    animation-iteration-count: var(--bt-motion-kept-iterations, 1);
+    transition-duration: var(--bt-motion-kept-transition, var(--bt-motion-reduced));
+    transition-delay: var(--bt-motion-none);
+    scroll-behavior: auto;
+  }
+  :where(.bt-popover, .bt-menu, .bt-window, .bt-shade, .bt-sheet-bottom, .bt-sheet-end, .bt-sheet-responsive, .bt-sheet-phone, .bt-row-motion) { --bt-motion-kept-transition: var(--bt-motion-gentle); transition-property: opacity; transform: none; }
+  :where(.bt-arrive[data-bt-arrival], .bt-section-arrive[data-bt-arrival], .bt-row-motion[data-enter]) { --bt-motion-kept-animation: var(--bt-motion-gentle); animation-name: bt-fade-in; transform: none; }
+  :where(.bt-fold) { transition: none; }
+  :where(.bt-pressable) { transform: none; }
+  :where(.bt-placeholder, .bt-nav-glyph) { animation: none; transform: none; opacity: 1; }
+  :where(.bt-nav-icon)::before { transition: none; }
+  :where(.bt-row-motion)[data-reorder] { transition: none; transform: none; }
+  :where(.bt-image-pixels, .bt-image-placeholder) { transition: none; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none; }
+}
+/* Keyboard/high-frequency entry points opt out without changing geometry. */
+:where([data-bt-motion-input="keyboard"], [data-bt-motion="off"]),
+:where([data-bt-motion-input="keyboard"], [data-bt-motion="off"])::before,
+:where([data-bt-motion-input="keyboard"], [data-bt-motion="off"])::after,
+:where([data-bt-motion-input="keyboard"], [data-bt-motion="off"]) *,
+:where([data-bt-motion-input="keyboard"], [data-bt-motion="off"]) *::before,
+:where([data-bt-motion-input="keyboard"], [data-bt-motion="off"]) *::after {
+  animation: none;
+  transition-duration: var(--bt-motion-none);
+}

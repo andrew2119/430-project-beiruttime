@@ -23,6 +23,12 @@ const pairedRing = '.review { outline:0 solid transparent; } .review:focus-visib
 const explicitTransitions = '.review { transition:transform var(--ds-motion-fast) var(--ease-out-soft), opacity var(--ds-motion-fast) var(--ease-out-soft); }';
 const bulkPaint = 'export function paint(el:HTMLElement){Object.assign(el.style,{color:"#fff",transition:"all 200ms ease-in",transform:"scale(0)",zIndex:"999"});}';
 const bulkTokens = 'export function paint(el:HTMLElement){Object.assign(el.style,{color:"var(--foreground)",transition:"transform var(--ds-motion-fast) var(--ease-out-soft), opacity var(--ds-motion-fast) var(--ease-out-soft)",transform:"translateY(4px)",opacity:"1",zIndex:"var(--z-skip-link)"});}';
+const canonicalMotion = readFileSync(join(ROOT, 'web/styles/bt-motion.css'), 'utf8');
+const foldStart = canonicalMotion.indexOf('  :where(:where(.bt-fold)) {');
+const foldEnd = canonicalMotion.indexOf('  :where(:where(.bt-pressable)) {', foldStart);
+assert.ok(foldStart >= 0 && foldEnd > foldStart, 'The real shared fold must exist.');
+const canonicalFold = `@layer components {\n${canonicalMotion.slice(foldStart, foldEnd)}}`;
+const validCurve = ':root { --bt-ease-response: cubic-bezier(.23,1,.32,1); } @layer components { :where(.bt-menu) { transition-timing-function: var(--bt-ease-response); } }';
 
 /** Every accepted evasive form from the independent review, plus canonical cases.
  * Each record is physically measured as both a new file and a changed legacy file;
@@ -159,6 +165,19 @@ const probes = [
   ['bulk later literal source', 'ts', 'Object.assign(el.style,{opacity:"1"},{color:"#fff"});', 'bt-palette-inline', undefined, bulkTokens],
   ['bulk element style access', 'ts', 'Object.assign(el["style"],{color:"#fff"});', 'bt-palette-inline', undefined, bulkTokens],
   ['bulk implicit all', 'ts', 'Object.assign(el.style,{transition:"var(--ds-motion-fast) var(--ease-out-soft)"});', 'bt-property-sweep', undefined, bulkTokens],
+  ['legacy motion selector', 'css', '.pg-popover { opacity:1; }', 'bt-motion-legacy'],
+  ['legacy motion class variant', 'tsx', view('<span className="hover:pg-nav-icon"/>'), 'bt-motion-legacy'],
+  ['legacy frame consumer', 'css', '.review { animation:pg-fadeOut var(--bt-motion-fast) var(--bt-ease-out); }', 'bt-motion-legacy'],
+  ['legacy frame definition', 'css', '@keyframes pg-fadeOut { to { opacity:0; } }', 'bt-motion-legacy', 'web/styles/bt-motion.css'],
+  ['legacy frame alias', 'css', '.review { --bt-local-frame:pg-fadeOut; animation:var(--bt-local-frame) var(--bt-motion-fast) var(--bt-ease-out); }', 'bt-motion-legacy'],
+  ['canonical slow-start token', 'css', ':root { --bt-ease-delayed: ease-in; } @layer components { :where(.bt-menu) { transition-timing-function: var(--bt-ease-delayed); } }', 'bt-slow-start', 'web/styles/bt-motion.css', validCurve],
+  ['owner private row transition', 'css', '@layer components { :where(.bt-private-panel) { grid-template-rows:20px; transition:grid-template-rows var(--bt-motion-menu) var(--bt-ease-out); } }', 'bt-reflow-motion', 'web/styles/bt-motion.css', canonicalFold],
+  ['owner broader fold selector', 'css', canonicalFold.replace(':where(:where(.bt-fold)) {', ':where(:where(.bt-fold), .bt-private-panel) {'), 'bt-reflow-motion', 'web/styles/bt-motion.css', canonicalFold],
+  ['owner wrong fold value', 'css', canonicalFold.replace('grid-template-rows: 0fr', 'grid-template-rows: 20px'), 'bt-reflow-motion', 'web/styles/bt-motion.css', canonicalFold],
+  ['owner wrong open fold value', 'css', canonicalFold.replace('grid-template-rows: 1fr', 'grid-template-rows: auto'), 'bt-reflow-motion', 'web/styles/bt-motion.css', canonicalFold],
+  ['owner broader fold transition', 'css', canonicalFold.replace('grid-template-rows var(--bt-motion-menu) var(--bt-ease-out)', 'grid-template-rows var(--bt-motion-menu) var(--bt-ease-out), opacity var(--bt-motion-fast) var(--bt-ease-out)'), 'bt-reflow-motion', 'web/styles/bt-motion.css', canonicalFold],
+  ['owner wrong fold context', 'css', canonicalFold.replace('@layer components {', '@layer utilities {'), 'bt-reflow-motion', 'web/styles/bt-motion.css', canonicalFold],
+  ['copied fold row transition', 'css', canonicalFold, 'bt-reflow-motion'],
 ];
 function controlFor(file, extension) {
   if (file === 'packages/ui/src/index.tsx') return 'export function State({kind}) { return <div role={kind === "error" ? "alert" : "status"}>Review</div>; }';
@@ -220,8 +239,8 @@ test('tokens, semantic utilities, local literals outside styling, and comments d
   assert.ok(css('.a { --z-skip-link: 400; }')['bt-stack-escape']);
   assert.deepEqual(css('@media (hover: hover) and (pointer: fine) { .a:hover { transform: translateY(-1px); } }'), {});
   assert.deepEqual(jsx('const kind = "save"; export default () => <button className={kind === "save" ? "outline-none focus-visible:ring-2" : "outline-none focus-visible:outline-2"}>Save</button>;'), {});
-  assert.deepEqual(css('@keyframes reveal { from { opacity: 0; transform: scale(.95); } to { opacity: 1; transform: none; } }', 'web/styles/motion.css'), {});
-  assert.deepEqual(css('.fold { grid-template-rows: 0fr; transition: grid-template-rows var(--bt-motion-fast); }', 'web/styles/motion.css'), {});
+  assert.deepEqual(css('@keyframes reveal { from { opacity: 0; transform: scale(.95); } to { opacity: 1; transform: none; } }', 'web/styles/bt-motion.css'), {});
+  assert.deepEqual(css(canonicalFold, 'web/styles/bt-motion.css'), {});
   assert.deepEqual(jsx(view('<div className="fixed inset-0" />'), 'packages/ui/src/dialog.tsx'), {});
   assert.ok(jsx(view('<div className="fixed inset-0" />'), 'packages/ui/src/anything.tsx')['bt-modal-detour']);
   assert.ok(jsx('export default function Wrapped({className}) { return <span className={unknownClass(className)} />; }', 'packages/ui/src/anything.tsx')['bt-style-opaque']);

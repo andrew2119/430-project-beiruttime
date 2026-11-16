@@ -6,6 +6,7 @@
 @import "../styles/base.css";
 @import "../styles/typography.css";
 @import "../styles/motion.css";
+@import "../styles/bt-motion.css";
 @import "../styles/ui.css";
 @import "../styles/skeletons.css";
 @import "../styles/auth.css" layer(components);

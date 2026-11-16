@@ -4,8 +4,8 @@ import { join, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
-import { INTERFACE_CHECKS, SEMANTIC_PLUGIN, SEMANTIC_RULES, TOKEN_OWNER, declaredLayers, inspectSource } from './ui-source.mjs';
-export { INTERFACE_CHECKS, LONG_TIMES, LAYER_SLOTS, cssDeclarations, declaredLayers, inspectSource } from './ui-source.mjs';
+import { INTERFACE_CHECKS, SEMANTIC_PLUGIN, SEMANTIC_RULES, TOKEN_OWNER, LEGACY_MOTION_OWNER, declaredLayers, inspectSource } from './ui-source.mjs';
+export { INTERFACE_CHECKS, LONG_TIMES, LAYER_SLOTS, MOTION_OWNER, LEGACY_MOTION_OWNER, LEGACY_MOTION_HASH, cssDeclarations, declaredLayers, inspectSource } from './ui-source.mjs';
 export { metadataIssues, motionTokenMs } from './ui-syntax.mjs';
 
 export const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -38,10 +38,12 @@ function linter(root = ROOT) {
   });
 }
 export function census(root = ROOT) {
+  const head = headSources();
   const layers = existsSync(join(root, TOKEN_OWNER)) ? declaredLayers(readFileSync(join(root, TOKEN_OWNER), 'utf8')) : new Set();
   return Object.fromEntries(sourceFiles(root).map(file => {
     const source = readFileSync(join(root, file), 'utf8');
-    return [file, { sha256: hashSource(source), counts: inspectSource(file, source, { layers }) }];
+    const blob = createHash(head.algorithm).update(`blob ${Buffer.byteLength(source)}\0`).update(source).digest('hex');
+    return [file, { sha256: hashSource(source), counts: inspectSource(file, source, { layers, legacyMotionAllowed:head.files.get(file) === blob }) }];
   }));
 }
 export async function semanticCensus(root = ROOT) {
@@ -60,6 +62,16 @@ export async function measure(root = ROOT) {
   return result;
 }
 const git = (root, args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+let cachedHead;
+function headSources() {
+  const revision = git(ROOT, ['rev-parse', 'HEAD']).trim();
+  if (cachedHead?.revision === revision) return cachedHead;
+  const files = new Map(git(ROOT, ['ls-tree', '-r', revision, '--', 'web', 'packages/ui/src']).trim().split('\n').filter(Boolean).map(line => {
+    const [, hash, file] = /^\d+ blob ([\da-f]+)\t(.+)$/.exec(line);
+    return [file, hash];
+  }));
+  return cachedHead = { revision, files, algorithm:git(ROOT, ['rev-parse', '--show-object-format']).trim() };
+}
 /** Read source bytes from main itself, not from changed/untracked files. Semantic
  * lint uses the proposed census policy while preserving those exact main bytes. */
 export async function measureReference(ref = 'main', root = ROOT) {
@@ -68,7 +80,8 @@ export async function measureReference(ref = 'main', root = ROOT) {
   const layers = declaredLayers(tokenSource), result = {}, semantic = linter(root);
   for (const file of files) {
     const source = git(root, ['show', `${ref}:${file}`]);
-    const counts = inspectSource(file, source, { layers });
+    // Exact reference bytes describe existing consumers, never a new proposal.
+    const counts = inspectSource(file, source, { layers, legacyMotionAllowed:true });
     if (/\.[cm]?[jt]sx?$/.test(file)) {
       const [linted] = await semantic.lintText(source, { filePath: join(root, file) });
       const number = linted.messages.filter(message => message.ruleId?.startsWith('jsx-a11y/')).length;
@@ -124,6 +137,17 @@ export function rulebookIssues(law, emitted = []) {
   for (const name of emitted) if (!(name in INTERFACE_CHECKS)) problems.push(`Unregistered emitted check ${name}`);
   return problems;
 }
+export function motionRetirementIssues(root = ROOT) {
+  if (existsSync(join(root, LEGACY_MOTION_OWNER))) return [];
+  const problems = [];
+  for (const file of sourceFiles(root)) {
+    const source = readFileSync(join(root, file), 'utf8');
+    if (inspectSource(file, source)['bt-motion-legacy']) problems.push(`${file}: bt-motion-legacy remove the last consumer before deleting the frozen sheet`);
+  }
+  const entry = join(root, 'web/app/globals.css');
+  if (existsSync(entry) && /@import\s+["'][^"']*\/motion\.css["']/.test(readFileSync(entry, 'utf8'))) problems.push('web/app/globals.css: bt-motion-legacy remove the retired stylesheet import');
+  return problems;
+}
 export async function run(args = process.argv.slice(2)) {
   if (args.some(arg => !['--report', '--strict'].includes(arg))) throw new Error('Use --report or --strict; the baseline is never regenerated.');
   const current = await measure();
@@ -132,6 +156,7 @@ export async function run(args = process.argv.slice(2)) {
   // Before the first commit, main is the only permitted bootstrap source.
   const history = committedHistory() ?? await measureReference().then(initial => ({ initial, accepted: initial }));
   const failures = verifyMeasurements(current, ledger, history, args.includes('--strict'));
+  failures.push(...motionRetirementIssues());
   failures.push(...rulebookIssues(readFileSync(join(ROOT, 'docs/frontend-rules.md'), 'utf8'), Object.values(current).flatMap(entry => Object.keys(entry.counts))));
   for (const file of ['web/package.json', 'packages/ui/package.json']) {
     const manifest = JSON.parse(readFileSync(join(ROOT, file), 'utf8'));
