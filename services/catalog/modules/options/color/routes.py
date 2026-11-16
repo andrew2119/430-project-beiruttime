@@ -1,4 +1,4 @@
-"""CP B-08/B-09/B-18: guarded writes, stored first outcomes and atomic event intent."""
+"""Guarded writes, stored first outcomes and atomic event intent."""
 
 import hashlib
 import json

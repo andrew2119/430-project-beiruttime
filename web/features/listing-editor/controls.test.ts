@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { HeaderTabs, Select } from '@beirut-time/ui';
 import { ListingSkeleton } from './row-skeleton';
 
-describe("Creator Pipeline seller controls", () => {
+describe("Shared seller controls", () => {
   it.each(["Watch details", "تفاصيل الساعة"])('keeps the translated "%s" tab and locked Pane anatomy', label => {
     const html = renderToStaticMarkup(createElement(HeaderTabs, {
       items: [{ id: "facts", label, icon: ClipboardList }, { id: "review", label: "Review", icon: ClipboardList }],

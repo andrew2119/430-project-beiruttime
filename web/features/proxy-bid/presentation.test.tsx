@@ -19,7 +19,7 @@ beforeEach(()=>{client=new QueryClient({defaultOptions:{queries:{retry:false,sta
 function render(children:React.ReactNode,locale:'en'|'ar'='en') {
   return renderToStaticMarkup(<LocaleContext value={locale}><QueryClientProvider client={client}>{children}</QueryClientProvider></LocaleContext>);
 }
-describe('Creator Pipeline buyer-area presentation contract',()=>{
+describe('Buyer-area presentation contract',()=>{
   it.each(['en','ar'] as const)('uses shared page headers, true navigation links and menu-backed selects in %s',locale=>{
     client.setQueryData(['l07','visual-owner','quotes'],{items:[]});
     const html=render(<PricingPage/>,locale);
@@ -46,7 +46,7 @@ describe('Creator Pipeline buyer-area presentation contract',()=>{
     expect(html).toContain('Send offer');
     expect(html).toContain('ui-select');
   });
-  it.each(['en','ar'] as const)('renders the CP switch, unread dot and independent notice actions in %s',locale=>{
+  it.each(['en','ar'] as const)('renders the shared switch, unread dot and independent notice actions in %s',locale=>{
     client.setQueryData(['l07','visual-owner','notice-preferences'],{optional_enabled:true,revision:2});
     client.setQueryData(['l07','visual-owner','inbox'],{pages:[{items:[{id:'notice-A',kind:'outbid',required:true,read_at:null,event_time:'2030-01-01T00:00:00Z',resource_id:id,resource_revision:1,sample:true,destination:'/buyer'}],unread_count:1,next_cursor:null}],pageParams:[null]});
     const html=render(<InboxPage/>,locale);

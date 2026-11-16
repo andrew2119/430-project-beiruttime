@@ -8,12 +8,12 @@ import { canScrollBoxMove } from '../../packages/ui/src/scroll-box';
 import { areaForPath, permittedEntries } from '@/shell/navigation';
 vi.mock('next/navigation',()=>({usePathname:()=>'/en/watches'}));
 const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
-describe('Creator Pipeline foundation contract',()=>{
+describe('Shared design-system contract',()=>{
  it('keeps the existing SSR cookie with a two-theme cycle and safe defaults',()=>{
   expect(parseTheme(undefined)).toBe('light');expect(parseTheme('classic')).toBe('light');expect(parseTheme('dark')).toBe('dark');expect(nextTheme('dark')).toBe('light');
   expect(themeCookieString('dark',true)).toBe('bt-theme=dark; Path=/; Max-Age=31536000; SameSite=Lax; Secure');
  });
- it('retains native button/form/label semantics and CP variants',()=>{
+ it('retains native button/form/label semantics and shared variants',()=>{
   const button=renderToStaticMarkup(h(Button,{type:'submit',disabled:true,chonk:true},'Save'));
   expect(button).toContain('type="submit"');expect(button).toContain('disabled');expect(button).toContain('pg-chonk-primary');
   expect(renderToStaticMarkup(h(Button,{className:'button-secondary'},'Cancel'))).toContain('ui-btn-outline');
@@ -44,6 +44,14 @@ describe('Creator Pipeline foundation contract',()=>{
    expect(canScrollBoxMove(area,[0,-80])).toBe(false);
    expect(canScrollBoxMove(area,[0,80])).toBe(true);
   } finally {vi.unstubAllGlobals();}
+ });
+ it('keeps the bordeaux ramp and brand-mark references aligned',()=>{
+  const tokens=read('../styles/tokens.css');
+  const ramp={50:'97% 0.012 27',100:'91.4% 0.028 28.5',200:'85% 0.055 28',300:'76% 0.09 27.5',400:'66% 0.135 27.5',500:'58% 0.19 27.5',600:'50.6% 0.193 27.7',700:'41.6% 0.148 26.6',800:'35.6% 0.124 26.2',900:'29% 0.1 26',950:'23.3% 0.079 25.8'};
+  for(const [step,value] of Object.entries(ramp))expect(tokens).toContain(`--color-bordeaux-${step}: oklch(${value});`);
+  const foundation=read('../styles/foundation.css');
+  expect(foundation).toContain('color: var(--color-bordeaux-700)');
+  expect(foundation).toContain('[data-theme="dark"] .bt-brand-mark { color: var(--color-bordeaux-400); }');
  });
  it('has one token owner, faithful motion steps, reduced motion and an exact 850px boundary',()=>{
   const tokens=read('../styles/tokens.css'), motion=read('../styles/motion.css');

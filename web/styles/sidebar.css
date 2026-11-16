@@ -1,4 +1,4 @@
-/* Creator Pipeline phone menu and drawer motion, with Beirut Time branding. */
+/* Shared phone menu and drawer motion, with Beirut Time branding. */
 /* The phone top bar: the mark before the wordmark, the same gap as the sidebar's. */
 .psb-top-brand { gap: 0.5rem; color: var(--foreground); text-decoration: none; }
 
@@ -37,7 +37,7 @@
     box-shadow: inset 0 -2px var(--primary-ink);
   }
   /* Five tabs beside the chat button's room leave 55 px each on a 390 px phone, and
-     "Campaigns" (60 px) and "Draft Board" (63 px) would lose letters. Every label stays
+     long navigation labels would lose letters. Every label stays
      whole on one line: a tab never shrinks below its label, and the short ones (Home,
      Inbox, Menu) share the rest equally. mobile.css (unlayered) sets the links'
      min-inline-size to 0, hence the mark on the override. Narrower phones end a label

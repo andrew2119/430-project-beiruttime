@@ -6,9 +6,6 @@
 
 @media (max-width: 850px) {
   .pg-list-page { padding: var(--ds-phone-gutter); }
-  .pg-bulk-creator-row { flex-wrap: wrap; }
-  .pg-bulk-creator-row > .pg-bulk-creator-handle { flex: 1; max-inline-size: none; }
-  .pg-bulk-creator-niche { order: 2; flex-basis: 100%; justify-content: flex-start; }
   .pg-approval-summary { grid-template-columns: minmax(0, 1fr); }
   :is(main, [role="dialog"]) label:has(input:is([type="checkbox"], [type="radio"])) { min-block-size: 44px; min-inline-size: 44px; }
   :is(main, [role="dialog"]) label input:is([type="checkbox"], [type="radio"]) {
@@ -23,11 +20,11 @@
   .ar-number-stepper > div { min-inline-size: 135px; }
   .ar-add-deal-sheet { scroll-padding-block: 100px 96px; }
   .ar-board-actions { flex-wrap: wrap; inline-size: 100%; }
-  .pg-network-row, .pg-micro-creator-row { flex-wrap: wrap; gap: 10px 12px; padding: 12px; }
-  .pg-network-identity, .pg-micro-creator-identity { flex: 1 1 0%; inline-size: auto; min-inline-size: 0; }
-  .pg-network-stats, .pg-micro-creator-stats { flex: 1 1 100%; min-inline-size: 0; flex-wrap: wrap; }
-  .pg-network-email, .pg-micro-creator-source { flex: 1 1 100%; min-inline-size: 0; }
-  .pg-network-email .truncate, .pg-micro-creator-source .truncate { white-space: normal; overflow-wrap: anywhere; }
+  .pg-network-row { flex-wrap: wrap; gap: 10px 12px; padding: 12px; }
+  .pg-network-identity { flex: 1 1 0%; inline-size: auto; min-inline-size: 0; }
+  .pg-network-stats { flex: 1 1 100%; min-inline-size: 0; flex-wrap: wrap; }
+  .pg-network-email { flex: 1 1 100%; min-inline-size: 0; }
+  .pg-network-email .truncate { white-space: normal; overflow-wrap: anywhere; }
   .ar-scout-row { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px 12px; padding: 12px; }
   .ar-scout-identity { min-inline-size: 0; }
   .ar-scout-stats, .ar-scout-social, .ar-scout-actions { grid-column: 1 / -1; }
@@ -83,10 +80,10 @@
     align-items: center;
   }
   /* The menu-backed select trigger keeps the 44 px target on its own; in a
-     header row only 36 px of it is drawn (phone scale below, captain Q7). */
+     header row only 36 px of it is drawn (phone scale below). */
   :is(main, [role="dialog"]) .ui-select { min-block-size: 44px; }
   /* A search field's text is 16 px on a phone: iOS zooms the page into any
-     field with smaller text (captain Q7). Unlayered, so a size utility at the
+     field with smaller text. Unlayered, so a size utility at the
      call site cannot bring the zoom back. */
   :is(main, [role="dialog"]) .pg-search-field { font-size: 1rem; }
   .pg-shell {
@@ -180,7 +177,7 @@
     gap: 2px;
     border-radius: var(--radius-md);
     /* Five tabs share a 390px bar: the narrow inline padding and the single
-       line keep "Draft Board" on one row, so every tab stays 48px tall and the
+       line keep long labels on one row, so every tab stays 48px tall and the
        bar keeps the height its reserved slot holds below. */
     padding: 4px 2px;
     color: var(--muted-foreground);
@@ -191,14 +188,14 @@
     white-space: nowrap;
   }
   .pg-mobile-dock button { cursor: pointer; }
-  /* On the narrowest phones five 11px labels would touch ("Campaigns" beside
-     "Draft Board"); one step down keeps a gap between them. */
+  /* On the narrowest phones five 11px labels would touch;
+     one step down keeps a gap between them. */
   @media (max-width: 340px) {
     .pg-mobile-dock :is(a, button) { font-size: 10px; }
   }
   /* While the bar keeps its room for the round buttons (.psb-dock-room, drawn once a
      round button is in the dock), 11px labels leave Home and Menu under the 44px
-     target; the captain's pick PT-1 a (2026-10-09) steps them down to 10px there and
+     target; smaller 10px labels keep them within the target and
      the bar keeps the room. */
   .pg-mobile-dock:has(> .psb-dock-room) > :is(a, button) { font-size: 10px; }
   .pg-mobile-dock svg { inline-size: 20px; block-size: 20px; flex-shrink: 0; }
@@ -215,19 +212,11 @@
     box-shadow: var(--ds-shadow-small);
   }
   .pg-mobile-dock a[aria-current="page"] { background: var(--accent); color: var(--foreground); box-shadow: inset 0 -2px var(--primary-ink); }
-  /* The tab bar's Menu tab when it is the current place (the lab's
-     styles/proto-sidebar.css .psb-dock-menu[data-current]): that layered rule's
-     ink loses to the unlayered label colour above, which leaves the label at
-     4.07:1 on its accent fill; this states the lab's own ink where it wins. */
+  /* The current Menu tab needs foreground ink: the layered rule loses to
+     the unlayered label colour above, which reads only 4.07:1 on accent. */
   .pg-mobile-dock .psb-dock-menu[data-current] { color: var(--foreground); }
   html[data-keyboard="open"] .pg-mobile-dock { display: none; }
-  /* The bell stacks above the round chat button's place, clear of the tab bar,
-     as the approved lab draws it (lab 48721958). Until cp-staff-chat lists that
-     button in the dock, the bell's piece marks the place as held
-     (components/notifications/inbox/dock-bell.tsx), and the dock rises by the
-     button and the dock's gap and centres the bell on the button's column, so
-     nothing of the dock lies over a tab and the bell stays put when the button
-     lands. */
+  /* A reserved dock slot keeps floating controls above the tab bar. */
   .proto-dock:has(> .pg-dock-chat-place) {
     inset-block-end: calc(1.5rem + 3.25rem + 0.625rem);
     inset-inline-end: calc(1.75rem + (3.25rem - 2.75rem) / 2);
@@ -237,14 +226,12 @@
      the companion 2.75, 0.625, the bell 2.75) and the tray ends 60px plus the safe
      area (at least 8px) above it (the tab bar's 48 + 4, the shell's 8 gap). */
   .pg-tray { --dock-room: calc(11.5rem - 60px - max(8px, env(safe-area-inset-bottom)) + var(--ds-space-2)); }
-  /* The drafts pagers (the Draft Board's and a campaign's Drafts tab) centre their
-     buttons clear of the dock's column (3.25rem wide), so the page ends at the pager
-     with no room lifted under it (captain, click-test 2026-10-20, finding 19). */
+  /* Draft pagers centre their buttons clear of the dock's 3.25rem column,
+     so the page ends at the pager without extra room below. */
   nav.pg-card.pg-empty-card { padding-inline-end: calc(3.25rem + var(--ds-space-4)); }
   /* A phone held upright draws its toasts across the screen (the toast library's own
-     phone lane, up to 600px wide), resting 0.625rem above the dock (styles/proto.css),
-     so a control stopped just above the dock lay under a resting toast (the Draft
-     Board's pager under a note-save failure, update 23). The shell copies the height
+     phone lane, up to 600px wide), resting 0.625rem above the dock,
+     so a control stopped just above the dock can lie under a resting toast. The shell copies the height
      of the resting toasts here (the front toast and any queued behind it, measured);
      without one, the page keeps only dock room, and a page already at its end when a
      toast arrives is kept at its end. The stop may take up to 40% of the
@@ -263,7 +250,7 @@
      utilities at the call site). A filter-chip group is ONE row that scrolls
      sideways, instead of wrapping into a stack of full-height rows that pushed
      the list below the fold. The row stops on a clean hard edge with no
-     see-through fade (captain 2026-09-30); the half-shown last pill says there
+     see-through fade; the half-shown last pill says there
      is more. */
   :is(.pg-tray, [role="dialog"]) .pg-pill-strip {
     flex-wrap: nowrap;
@@ -305,7 +292,7 @@
 }
 
 /* ============================================================================
-   Phone scale (captain staging review round 1, 2026-09-24). The phone layout
+   Phone scale. The phone layout
    fitted, but kept the desktop's visual scale: every control inflated to its
    44 px target, header actions stretched to half the screen, chip groups
    wrapped into stacks, and frames kept desktop padding, corners and glow.
@@ -313,8 +300,7 @@
    tests/a11y/phone-targets.spec.ts), but only the part that is drawn follows
    the phone scale in tokens.css: a pressable is drawn --ds-phone-control
    (36 px) and a chip --ds-phone-chip (32 px) tall, centred in the target.
-   Header-row fields follow the same rule (captain Q7, 2026-09-30, replacing
-   the painted 44 px field of 2026-09-24): a list header's search field and
+   Header-row fields follow the same rule: a list header's search field and
    sort dropdown are drawn 36 px inside the 44 px target, and the search text
    is 16 px so an iPhone never zooms into it. Fields inside a form keep their
    painted boundary. The target's remainder is a transparent border (background-clip
@@ -342,7 +328,6 @@
     .pg-dept-link,
     .pg-dept-card { border-radius: var(--radius-xl); }
     .pg-mk-row { gap: 0.75rem; padding: 0.75rem 0.875rem; }
-    .pg-creator-row { gap: 0.75rem; padding-inline: 0.875rem; }
     .pg-dept-grid { gap: 0.625rem; }
     /* One floor for the loaded card and its skeleton: a two-line description
        fills it exactly, so the route skeleton never shifts the grid. */
@@ -430,7 +415,7 @@
 
     /* ---- Header-row search: drawn 36 px in a 44 px target ----------------
        The field's ring becomes an inset hairline. Every search field shows
-       one focus outline that hugs the drawn shape, including the campaign
+       one focus outline that hugs the drawn shape, including detail
        toolbars' fields, whose desktop cue is a coloured border (it would
        paint the transparent target margin here). */
     :is(.pg-tray, [role="dialog"]) .pg-search-field {
@@ -447,13 +432,6 @@
       outline: 0.125rem solid var(--ring);
       outline-offset: -2px;
     }
-    /* A sort dropdown that carries a set filter keeps its tint; its coloured
-       border becomes an inset ring at the drawn edge. */
-    :is(.pg-tray, [role="dialog"]) .pg-creator-niche-active { border-inline-color: transparent; }
-    :is(.pg-tray, [role="dialog"]) .pg-creator-niche-active:not(:focus-visible) {
-      box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 40%, transparent);
-    }
-
     /* ---- Filter chips: drawn 32 px in a 44 px target --------------------- */
     :is(.pg-tray, [role="dialog"]) :is(.pg-filter-pill, .pg-pill-strip > button, .pg-status-pill-trigger, .pg-phone-chip) {
       --_slop: calc((var(--ds-hit-target) - var(--ds-phone-chip)) / 2);
@@ -463,10 +441,10 @@
       padding-block: 0;
     }
     :is(.pg-tray, [role="dialog"]) .pg-filter-pill { padding-inline: 0.875rem; }
-    :is(.pg-tray, [role="dialog"]) .pg-filter-pill:not([aria-pressed="true"], .pg-creator-filter-active) {
+    :is(.pg-tray, [role="dialog"]) .pg-filter-pill:not([aria-pressed="true"]) {
       box-shadow: inset 0 0 0 1px var(--ds-hairline);
     }
-    :is(.pg-tray, [role="dialog"]) .pg-filter-pill:is([aria-pressed="true"], .pg-creator-filter-active) {
+    :is(.pg-tray, [role="dialog"]) .pg-filter-pill:is([aria-pressed="true"]) {
       box-shadow: none;
     }
     :is(.pg-tray, [role="dialog"]) :is(.pg-filter-pill, .pg-pill-strip > button, .pg-status-pill-trigger, .pg-phone-chip):focus-visible {
@@ -491,25 +469,10 @@
     :is(.pg-tray, [role="dialog"]) .pg-toggle .pg-toggle-item:focus-visible {
       outline-offset: calc(0.125rem - var(--_seg-slop));
     }
-    :is(.pg-tray, [role="dialog"]) .pg-toggle:not(.pg-creator-view-bar) > .pg-seg-thumb {
+    :is(.pg-tray, [role="dialog"]) .pg-toggle > .pg-seg-thumb {
       border-radius: var(--radius-lg);
       transform: translate(var(--pg-seg-x), calc(var(--pg-seg-y) + var(--_seg-slop)));
       block-size: calc(var(--pg-seg-h) - 2 * var(--_seg-slop));
-    }
-    /* The campaign creator view bar measures a wrapper around each option
-       (the option plus its edit control), whose box is already the drawn
-       area once both overhang the track; its dashed New View option redraws
-       its boundary as an inset outline at the drawn edge. */
-    :is(.pg-tray, [role="dialog"]) .pg-creator-view-bar .pg-creator-view-edit {
-      margin-block: calc(-1 * var(--_seg-slop));
-    }
-    :is(.pg-tray, [role="dialog"]) .pg-creator-view-bar .pg-creator-view-add {
-      border: var(--_seg-slop) solid transparent;
-      border-radius: calc(var(--radius-lg) + var(--_seg-slop));
-    }
-    :is(.pg-tray, [role="dialog"]) .pg-creator-view-bar .pg-creator-view-add:not(:focus-visible) {
-      outline: 0.0625rem dashed var(--border);
-      outline-offset: calc(-1 * var(--_seg-slop) - 0.0625rem);
     }
   }
 }

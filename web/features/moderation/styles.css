@@ -1,4 +1,4 @@
-/* CP Approvals Focus + Settings section layout. Shared primitives own control
+/* Shared review queue and settings section layout. Shared primitives own control
    paint, state transitions, typography family and all animation keyframes. */
 .ops-page { container-type: inline-size; min-inline-size: 0; }
 .ops-content { display: grid; gap: var(--ds-gap-content); min-inline-size: 0; animation: pg-contentIn var(--ds-motion-overlay) var(--ease-out-soft) both; }
@@ -17,7 +17,7 @@
 .ops-muted,.ops-status { color: var(--muted-foreground); font-size: var(--ds-control-text); }
 .ops-status:empty { display: none; }
 .ops-status:not(:empty) { padding: var(--ds-space-2) var(--ds-space-3); border-radius: var(--radius-lg); background: var(--muted); }
-/* CP notes sit on soft surfaces, never invented coloured edge stripes. */
+/* Notes sit on soft surfaces, never invented coloured edge stripes. */
 .ops-policy { border-radius: var(--radius-lg); background: var(--muted); color: var(--muted-foreground); padding: var(--ds-space-3) var(--ds-space-4); font-size: var(--ds-control-text); line-height: 1.5; }
 .ops-private { border-radius: var(--radius-xl); background: var(--muted); padding: var(--ds-space-4); display: grid; gap: var(--ds-space-2); }
 .ops-private p { white-space: pre-wrap; overflow-wrap: anywhere; }

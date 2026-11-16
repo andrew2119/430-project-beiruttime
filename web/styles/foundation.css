@@ -1,4 +1,4 @@
-/* Beirut Time adapters around Creator Pipeline's shared recipes. */
+/* Beirut Time adapters around the shared design recipes. */
 @layer base {
   html, body { margin: 0; min-block-size: 100%; }
   body { font-size: 16px; line-height: 1.5; }
@@ -13,9 +13,9 @@
 @layer components {
   .pg-rail { display: flex; flex-direction: column; gap: 16px; padding: 12px; min-block-size: 0; overflow: hidden; }
   .pg-brand { display: flex; align-items: center; gap: 8px; padding: 4px 6px 0; min-block-size: 32px; font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: -.025em; }
-  .bt-brand-mark { inline-size: 43px; block-size: 32px; margin-block: -2px; flex: none; color: var(--color-rebellion-700); }
+  .bt-brand-mark { inline-size: 43px; block-size: 32px; margin-block: -2px; flex: none; color: var(--color-bordeaux-700); }
   .pg-rail .bt-brand-mark { margin-inline: -8px -2px; }
-  [data-theme="dark"] .bt-brand-mark { color: var(--color-rebellion-400); }
+  [data-theme="dark"] .bt-brand-mark { color: var(--color-bordeaux-400); }
   .pg-nav-heading { padding: 0 8px 6px; font-size: 10px; line-height: 15px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-foreground); }
   .pg-nav-group { display: flex; flex-direction: column; gap: 2px; }
   .pg-nav-row { display: flex; inline-size: 100%; align-items: center; gap: 10px; border-radius: var(--radius-md); padding: 8px 10px; font-size: 14px; line-height: 20px; color: var(--muted-foreground); }
@@ -54,7 +54,7 @@
   .pg-tray { --dock-room: var(--toast-room, 0px); }
   .pg-tray::after { block-size: var(--toast-room, 0px); }
   .ui-card, .card { padding: var(--ds-pad-card-block) var(--ds-pad-card-inline); border-radius: var(--radius-2xl); background: var(--card); color: var(--card-foreground); box-shadow: var(--ds-shadow-border); }
-  /* Compatibility names at existing call sites; same CP outline/icon recipe. */
+  /* Compatibility names at existing call sites; shared outline/icon recipe. */
   .button-secondary { background: var(--card); color: var(--foreground); box-shadow: var(--ds-shadow-border); }
   .button-secondary:hover { background: var(--accent); }
   .icon-button { inline-size: 36px; block-size: 36px; padding: 0; background: transparent; color: var(--foreground); box-shadow: none; }
@@ -96,6 +96,6 @@
   .ui-filter-chip-x { min-inline-size: 44px; min-block-size: 44px; }
   .skeleton-page { padding: var(--ds-phone-gutter); }
 }
-/* CP's toast outlet, without reserving an absent product-specific floating dock. */
+/* The shared toast outlet, without reserving an absent product-specific floating dock. */
 [data-sonner-toaster] { font-family: var(--font-active), sans-serif; }
 @media (max-width:850px) { [data-sonner-toaster][data-y-position="bottom"] { bottom: calc(76px + env(safe-area-inset-bottom)); } }

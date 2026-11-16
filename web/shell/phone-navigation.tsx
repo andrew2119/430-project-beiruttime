@@ -10,7 +10,7 @@ import { useAccessContext } from './access-context';
 import { localizePath } from './paths';
 import { areaForPath, permittedEntries, type RouteEntry } from './navigation';
 import { RouteIcon } from './route-icon';
-// One drawer, two doors, with the same SSR-safe external-store pattern as CP.
+// One drawer, two doors, with one SSR-safe external store.
 let drawer = { open: false, path: '' };
 let drawerInvoker: HTMLButtonElement | null = null;
 function openDrawer(path: string, invoker: HTMLButtonElement) {

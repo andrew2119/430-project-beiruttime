@@ -6,7 +6,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/ar/business", useRouter
 import { FormSelect } from "./form-select";
 import { Field, Select, Submit, Workspace } from "./components";
 
-describe("CP form adapters", () => {
+describe("Shared form adapters", () => {
   it("keeps a real named native select for FormData and existing draft recovery", () => {
     const html = renderToStaticMarkup(<FormSelect id="kind" name="kind" defaultValue="brand">
       <option value="dealer">Dealer</option><option value="brand">Brand</option>

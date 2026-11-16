@@ -1,24 +1,16 @@
 "use client";
-/* LAB PROTOTYPE ONLY (sticky lane, 2026-10-03). Never committed.
- *
- * The captain: "the tabs that have a top header, that header should be sticky ...
- * when scrolling down in the campaigns, the top header should stay sticky and not
- * disappear with the scroll ... Same thing for everything else where this applies."
+/* Shared sticky page headers stay visible while their content scrolls.
  *
  * One small observer per page header (mounted by PageHeader and PageToolbar). It finds
  * the box that can stick (the header's outermost wrapper inside the page), marks it,
  * and measures the header once per layout change into a few CSS custom properties.
- * Everything that moves is CSS (styles/proto-sticky.css): sticky positioning plus one
+ * Everything that moves is CSS (web/styles/sticky.css): sticky positioning plus one
  * scroll-linked timeline on the tray, so scrolling never runs script and the page
  * never reflows (the header keeps its full height in the page at all times).
  *
- * B "Condense" is LOCKED by the captain 2026-10-03 ("I like the condense option ...
- * their upper parts are getting faded in to the top and absorbed. That should not
- * happen."). The lab bar switch is gone. Round 2 rebuilt B as a solid fold (the card
- * pinned where it sits, its top edge crisp, the page's paint above it and a clean
- * edge below it; the title, its actions and the tabs never fade). Round 3 (captain:
- * "There's this delay ... it's not really in sync"): the fold is tied to the scroll
- * position again, frame by frame. Progress p = how far the page has scrolled / how
+ * B "Condense" is fixed: a solid fold with a crisp top and clean lower edge.
+ * The title, actions and tabs never fade. The fold follows scroll position
+ * frame by frame. Progress p = how far the page has scrolled / how
  * much the card can shrink, so the card's bottom edge rides on the page and it opens
  * exactly as you scroll back up. Browsers with scroll-driven animations run p on the
  * tray's scroll timeline (no script while scrolling); elsewhere one passive scroll
@@ -27,8 +19,8 @@
  * reflows.
  *
  * A "Whole card" and C "Controls only" (C: the title area slides away under the
- * card's top edge, the controls stay, a campaign tab's toolbar pins under them) stay
- * in the code, unused: locked by the captain 2026-10-03.
+ * card's top edge, the controls stay, a detail tab's toolbar pins under them) stay
+ * in the code, unused.
  *
  * Measured, never guessed: both states are read from the layout in one synchronous
  * pass with motion switched off. Its precise natural height stays reserved for the
@@ -42,7 +34,7 @@ export const STICKY_OPTIONS: [StickyOption, string][] = [
   ["B", "Condense"],
   ["C", "Controls only"],
 ];
-/** Locked by the captain 2026-10-03: B "Condense". A and C stay in the code, unused. */
+/** B "Condense" is fixed. A and C remain unused. */
 const LOCKED: StickyOption = "B";
 
 /* ── one lab-bar switch however many headers are on screen ─────────────────── */
@@ -212,7 +204,7 @@ function naturalTop(root: HTMLElement, host: HTMLElement, tray: HTMLElement) {
   return at.y + host.clientTop + (parseFloat(getComputedStyle(host).paddingTop) || 0) + mt(root);
 }
 
-/** A campaign tab's toolbar (C): it pins under the header's bar with the body card's
+/** A detail tab's toolbar (C): it pins under the header's bar with the body card's
  *  own top padding above it, on a strip of the card's paint. */
 function measureToolbar(root: HTMLElement, host: HTMLElement, wrap: HTMLElement, tray: HTMLElement): Vars | null {
   const card = wrap.closest<HTMLElement>(".hx-detail-body");
@@ -328,7 +320,7 @@ function setVars(el: HTMLElement, vars: Vars) {
 
 /** Mounted inside the header's `.hx-wrap`. Renders the solid strip that covers the
  *  tray above a pinned card, and (once per screen) the lab-bar switch. `toolbar` = a
- *  campaign tab's own toolbar, which pins under the header in C only. */
+ *  detail tab's own toolbar, which pins under the header in C only. */
 export function StickyHeader({ wrap, toolbar = false }: { wrap: React.RefObject<HTMLDivElement | null>; toolbar?: boolean }) {
   const option = LOCKED;
   const first = useIsFirst(!toolbar);
@@ -440,7 +432,7 @@ export function StickyHeader({ wrap, toolbar = false }: { wrap: React.RefObject<
       const shut = r.offsetHeight;
       r.style.setProperty("--sx-h", `${openBox}px`);
       release?.();
-      // A campaign page: the body card is joined under the header, so the strip under
+      // A detail page: the body card is joined under the header, so the strip under
       // the card is the body card's own top padding, in the card's paint.
       const body = r.nextElementSibling;
       const joined = body instanceof HTMLElement && body.matches(".hx-detail-body");
@@ -504,7 +496,7 @@ export function StickyHeader({ wrap, toolbar = false }: { wrap: React.RefObject<
       const { root: found, host } = findRoot(w, tray, toolbar);
       const tall = !!host && host.offsetHeight >= Math.min(tray.scrollHeight * 0.5, tray.clientHeight) - 1;
       const grid = !!host && getComputedStyle(host).display.includes("grid");
-      // A toolbar pins only in C, only on a campaign tab, under a pinned header.
+      // A toolbar pins only in C, only on a detail tab, under a pinned header.
       const toolbarOk = opt === "C" && !!w.closest(".hx-detail-body") && tray.getAttribute("data-sx-on") === "C";
       if (!host || !tall || grid || (toolbar && !toolbarOk)) return release();
       if (root && root !== found) release();

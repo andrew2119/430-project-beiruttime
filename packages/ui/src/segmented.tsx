@@ -12,7 +12,7 @@ import { useSegmentedThumb } from "./segmented-thumb";
  * as the view-switch knob. Every single-choice toggle in the app renders
  * through this file so the product has one behaviour and one timing.
  *
- * The thumb is CSS-driven (styles/campaigns.css `.pg-seg-thumb`): the group
+ * The thumb is CSS-driven (web/styles/controls.css `.pg-seg-thumb`): the group
  * measures the active option after layout and hands the geometry over as
  * custom properties, the transform transition does the rest. No animation
  * runtime ships with a list route (the bundle lever the previous spring thumb
@@ -25,14 +25,11 @@ import { useSegmentedThumb } from "./segmented-thumb";
  * Two shapes:
  * - `Segmented` - the options API used by almost every call site.
  * - `SegmentedGroup` + `SegmentedItem` - the composable pair for a bar that
- *   carries extra controls next to its options (the campaign creator view
- *   bar). Exactly one descendant carries `data-seg-active`; the group
+ *   carries extra controls next to its options (a saved-view
+ *   toolbar). Exactly one descendant carries `data-seg-active`; the group
  *   measures it.
  *
- * A switch with a twin on the page it opens (UGC / Fan Accounts) is marked
- * `data-arrive="within"`: pressing it marks the move as within the section,
- * and the twin's thumb slides over from where this one stood
- * (components/shell/tray-memory.tsx), as if the page had stayed.
+ * Callers own route transitions and any cross-page selection state.
  */
 
 export function SegmentedGroup({

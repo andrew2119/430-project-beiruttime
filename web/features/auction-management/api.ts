@@ -6,7 +6,7 @@ export type { AuctionSnapshot as Auction, AuctionOutcome as Outcome } from '@con
 import type { AuctionSnapshot as Auction, AuctionOutcome as Outcome } from '@contracts/contracts-auction/core';
 export const readAuction = (id:string, signal?:AbortSignal) => request<Auction>(`${auctionBase}/auctions/${encodeURIComponent(id)}`,{signal});
 export const readLots = (listingId?:string, signal?:AbortSignal) => request<{items:Auction[]}>(`${auctionBase}/auctions${listingId?`?listing_id=${encodeURIComponent(listingId)}`:''}`,{signal});
-// CP F-24: keep the exact logical command and key during uncertain reconciliation.
+// Keep the exact logical command and key during uncertain reconciliation.
 export async function command(path:string, body:unknown, key:string, signal?:AbortSignal, accessFingerprint?:string):Promise<Outcome> {
   try {
     return await authenticatedRequest<Outcome>(`${auctionBase}${path}`,{method:'POST',signal,accessFingerprint,headers:{'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify(body)});

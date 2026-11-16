@@ -1,4 +1,4 @@
-"""CP B-12: lifespan-owned, bounded worker supervision and shutdown."""
+"""Lifespan-owned, bounded worker supervision and shutdown."""
 import asyncio
 import logging
 from typing import Awaitable, Callable

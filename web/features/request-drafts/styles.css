@@ -1,4 +1,4 @@
-/* CP Settings cards and Requests metadata rows; shared form recipe is in identity/styles.css. */
+/* Shared settings cards and request metadata rows; shared form recipe is in identity/styles.css. */
 .request-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,18rem);gap:var(--ds-space-4);align-items:start;margin-block-start:var(--ds-gap-content)}
 .request-grid>div,.request-grid>aside{display:grid;gap:var(--ds-space-4);min-inline-size:0}
 .request-form small,.request-support{color:var(--muted-foreground);font-size:0.75rem;line-height:1.625;overflow-wrap:anywhere}

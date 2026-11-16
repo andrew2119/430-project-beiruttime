@@ -15,7 +15,7 @@ for(const locale of ['en','ar']){
  if(await page.eval(()=>document.querySelector('select[name="kind"]').value)!=='brand'){await page.click('form:has(input[name="legal_name"]) .ui-select');await page.wait('[role="menuitemradio"]');await page.click('[role="menuitemradio"][data-state="unchecked"]');}
  if(await page.eval(()=>new FormData(document.querySelector('form:has(input[name="legal_name"])')).get('kind'))!=='brand')throw Error('Business type FormData failed');
  await page.eval(()=>document.querySelector('form:has(input[name="legal_name"])').reset());await page.wait(50);
- if(await page.eval(()=>document.querySelector('form:has(input[name="legal_name"]) .ui-select').dataset.value)!=='dealer')throw Error('Native reset did not reset the CP trigger');
+ if(await page.eval(()=>document.querySelector('form:has(input[name="legal_name"]) .ui-select').dataset.value)!=='dealer')throw Error('Native reset did not reset the shared trigger');
  proof.push({locale,formReset:true});
  await page.open(`${root}/${locale}/operations/moderation`);await page.wait('.ops-form .ui-select');
  await page.fill('.ops-form input','00000000-0000-4000-8000-000000000008');await page.fill('.ops-form textarea','Sample report context for the browser proof only.');
