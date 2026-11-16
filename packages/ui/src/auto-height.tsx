@@ -1,6 +1,6 @@
 'use client';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-/** CP Settings AutoHeight: measurement follows the real content, never a guessed form height. */
+/** Settings AutoHeight: measurement follows the real content, never a guessed form height. */
 export function AutoHeight({ children, className = '' }: { children: ReactNode; className?: string }) {
   const inner=useRef<HTMLDivElement>(null);
   const [height,setHeight]=useState<number|null>(null);

@@ -15,7 +15,7 @@ export function proxy(request: NextRequest) {
   const headers = new Headers(request.headers);
   headers.set('x-bt-locale', locale);
   headers.set('x-bt-path', internalPath);
-  // CP F-50: forward the same nonce into rendering and the response policy.
+  // Forward the same nonce into rendering and the response policy.
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   headers.set('x-nonce', nonce);
   const dev = process.env.NODE_ENV !== 'production';

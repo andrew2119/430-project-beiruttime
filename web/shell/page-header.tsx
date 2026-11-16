@@ -8,7 +8,7 @@ import { TipBubble, useHeaderTips, useTitleFit } from './header-tips';
 export { HeaderTabs } from '@beirut-time/ui';
 export type HeaderAction = { id: string; label: string; icon: LucideIcon; primary?: boolean; disabled?: boolean; busy?: boolean; onSelect?: () => void; phoneLabel?: string };
 export type PageHeaderProps = { title: ReactNode; count?: ReactNode; lead?: ReactNode; media?: ReactNode; tag?: ReactNode; actions?: HeaderAction[]; tools?: ReactNode; views?: ReactNode; nav?: ReactNode; status?: ReactNode; notice?: ReactNode; search?: { label: string; placeholder: string; value: string; onChange: (value: string) => void } };
-/** CP Calm card DOM and recipe. Domain queries and actions remain page-owned. */
+/** Shared Calm card DOM and recipe. Domain queries and actions remain page-owned. */
 export function PageHeader(p: PageHeaderProps) {
   const wrap=useRef<HTMLDivElement>(null);
   const tip=useHeaderTips(wrap);

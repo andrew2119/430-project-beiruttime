@@ -1,4 +1,4 @@
-"""CP P-15: source-owned sections fail independently, never invented balances."""
+"""Source-owned sections fail independently, never invented balances."""
 
 import asyncio
 import os

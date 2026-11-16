@@ -1,12 +1,12 @@
-# Creator Pipeline interface verification
+# Shared interface verification
 
-## Reference and scope
+## Foundation and scope
 
-The foundation uses Creator Pipeline's original Lexend Deca files, four-tier tokens, Light/Dark palettes, shared controls, Calm headers, Pane tabs, sticky condensation, motion, sidebar/profile footer and mobile shell. All page areas now consume that foundation. The root is a dashboard; Settings is a real profile/account, language and appearance screen.
+The foundation uses local Lexend Deca files, four-tier tokens, Light/Dark palettes, shared controls, Calm headers, Pane tabs, sticky condensation, motion, sidebar/profile footer and mobile shell. All page areas now consume that foundation. The root is a dashboard; Settings is a real profile/account, language and appearance screen.
 
-Creator Pipeline was inspected read-only, then run from a disposable source copy for comparison. Its authenticated reference used explicitly synthetic loopback identity/settings data. Its source directory was never modified. [The inventory](creator-pipeline-inventory.md) accounts for every requested stylesheet, shared component and CSS keyframe, including deliberate product-boundary exclusions.
+[The design contract](design-system.md) records shared stylesheet, component and motion ownership.
 
-At a 1280×900 viewport, both applications' Settings screens measured the same rail (x16/y16, 224×868), tray (x254/y16, 1010×868), and header (x282/y40, 954×132). At actual 390px phone width, both trays measured x8/y64, 374×712. Settings content differs intentionally: Beirut Time does not expose nonexistent profile-photo, timezone, chat or notification APIs. CP has no desktop manual-collapse control, and its `ar` folder means A&R, not Arabic. Beirut Time adds RTL adapters and local Noto Sans Arabic glyph coverage without claiming a source Arabic implementation.
+At a 1280×900 viewport, Settings measured rail x16/y16, 224×868; tray x254/y16, 1010×868; header x282/y40, 954×132. At actual 390px phone width, the tray measured x8/y64, 374×712. Settings does not expose nonexistent profile-photo, timezone, chat or notification APIs. The desktop rail has no manual-collapse control. Arabic uses logical-property adapters and local Noto Sans Arabic glyph coverage.
 
 ## Automated checks
 
@@ -37,12 +37,12 @@ git diff --check
 An isolated Chrome session, driven through chrome-devtools-axi, checked English and Arabic, Light and Dark, 1280/1440px desktop and **asserted `innerWidth === 390`** phone emulation (390×844, DPR 3, mobile/touch).
 
 - **264 baseline cases:** 33 route shapes × two languages × two themes × desktop/phone. Covers dashboard, Settings, public discovery/detail/search, account/consent, seller listing/edit/auction/verification, private buying/checkout/inbox, customization/services, business and operations routes. Unavailable dependencies and signed-out boundaries remain truthful, navigable states.
-- **128 populated cases:** seven buyer-area and nine business/operator pages × the same language/theme/viewport combinations. Checks include overflow, visible content fit, keyboard focus, selected tabs, source header geometry, phone text fields ≥16px and applicable enabled phone targets ≥44px.
-- **12 persisted shell regressions:** source one-column phone home cards, Escape focus restoration for both drawer doors, navigation focus handoff, asynchronous theme-radio keyboard focus/cookie retention, and language route/direction changes in both languages. Reproduction lives in `web/scripts/design-browser.js`.
+- **128 populated cases:** seven buyer-area and nine business/operator pages × the same language/theme/viewport combinations. Checks include overflow, visible content fit, keyboard focus, selected tabs, shared header geometry, phone text fields ≥16px and applicable enabled phone targets ≥44px.
+- **12 persisted shell regressions:** one-column phone dashboard cards, Escape focus restoration for both drawer doors, navigation focus handoff, asynchronous theme-radio keyboard focus/cookie retention, and language route/direction changes in both languages. Reproduction lives in `web/scripts/design-browser.js`.
 - **20 role/locale/viewport probes:** buyer, private seller, dealer, brand and operator. Every sidebar/drawer destination exactly matched the existing registration's public-or-role permission filter. Guest/unavailable-session browsing was included in baseline checks. These are presentation probes, not backend authorization proofs.
 - Buyer interactions passed in both languages: keyboard currency switching/focus return, retained quote review, draft save/edit, unreleased-control disabling, preference switch keyboard behavior, inbox read/exit/navigation, maximum preview/acknowledgement, reservation acknowledgement and restricted intake/hold wiring.
 - Business interactions passed on desktop and phone in both languages: native FormData/reset synchronization, contact verification, Arabic digit normalization, moderation/intake controls and draft locale recovery without persisting private fields.
-- Source menu reveal measured 200ms; runtime theme changes called the actual View Transition API with the source 450ms duration. Input focus rings and Escape focus return were verified. Populated buyer/business phone pages had no console errors.
+- Menu reveal measured 200ms; runtime theme changes called the actual View Transition API with the shared 450ms duration. Input focus rings and Escape focus return were verified. Populated buyer/business phone pages had no console errors.
 
 The integration review caught and repaired missing home phone-layout scoping, drawer invoker restoration and theme-radio focus racing the asynchronous View Transition update. Regression coverage remains in the repository.
 
@@ -62,14 +62,11 @@ Assert the returned `passed` value. Area mapping/validation documents contain th
 
 ## Screenshot evidence
 
-Durable evidence directory:
-
-`/Users/andrew/.harness/homes/430-project/firstmate/data/bt-cp-design/shots/`
+The historical screenshot matrix includes:
 
 - `before-en-desktop.png`: actual original interface.
 - `after-{dashboard,settings,prices,account,seller,business,operator}-{en,ar}-{light,dark}-{desktop,phone}.png`: 56 final captures. Seller/account captures intentionally show real unavailable boundaries; buyer/business/operator captures use the labeled synthetic transports above.
 - `after-drawer-ar-dark-phone.png`: mirrored Arabic drawer and profile footer.
-- `cp-settings-{light,dark}-{desktop,phone}.png`: actual source application comparisons.
 - `checks/`: final route, populated, role, focus and geometry records plus automated results.
 
 Phone captures use actual device emulation and headless Page.captureScreenshot. A plain 390px headless window was found to lay out at 500px and crop; the historical `before-en-cropped500.png` is retained only as a labeled crop, **not** as 390px evidence. The CLI screenshot writer could report success without writing a file, so saved PNGs were checked directly.

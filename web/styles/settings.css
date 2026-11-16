@@ -17,7 +17,7 @@
   animation: pg-icon-spin var(--ds-motion-expressive) var(--ease-settle) 1;
 }
 
-/* ---- Page frame: the full tray width, like Campaigns and Creators. The room
+/* ---- Page frame: the full tray width, like the shared list pages. The room
    below the last card for the dock is the shell's, on every page (styles/shell.css
    .pg-tray, the dock's room). ---- */
 .proto-set-layout {
@@ -26,7 +26,7 @@
   gap: 1rem;
   align-items: start;
 }
-/* Phones: the header's tiles (proto-tabs.css) for six sections need about 373px
+/* Phones: the header's tiles (tabs.css) for six sections need about 373px
    and the row has 318 at 390, and six 44px targets alone outgrow a 320 phone, so
    the tiles stand in two rows of three that share the width, each column at
    least as wide as its longest label: no sideways slide, every label whole (the
@@ -44,7 +44,7 @@
   gap: 1rem;
 }
 /* C3: the section cards' placeholder while the settings read runs, and the
-   index's in the route's loading face (components/proto/settings/settings-waiting.tsx). */
+   index's in the route's loading face (the settings loading state). */
 .proto-set-wait { block-size: 18rem; }
 .proto-set-index.pg-skeleton { block-size: 13.6875rem; }
 /* The face's lead row stands as tall as the back link it waits for (.hx-back). */
@@ -124,7 +124,7 @@
   scroll-margin-block-start: 4.5rem;
 }
 /* Under the shell's pinned header a section lands below it, by the measure
- * proto-sticky.css gives the page's own pinned pieces (the captain's pick F-6 a). */
+ * sticky.css positions the page's own pinned pieces. */
 .pg-tray[data-sx-on] :is(.proto-set-card, .proto-set-more) {
   scroll-margin-block-start: calc(var(--sx-gap) + var(--sx-lift, 0px) + var(--sx-hs, 0px) + var(--sx-tb-h, 0px) + var(--ds-space-4));
 }
@@ -136,7 +136,7 @@
   35% { box-shadow: var(--ds-shadow-border), 0 0 0 0.1875rem color-mix(in oklab, var(--ring) 30%, transparent); }
 }
 
-/* Header: the save status sits where Campaigns keeps its actions. */
+/* Header: the save status sits where the shared header keeps its actions. */
 .proto-set-status {
   display: inline-grid;
   align-items: center;
@@ -612,7 +612,7 @@
   transition: opacity var(--ds-motion-popover) var(--ease-standard);
 }
 .proto-set-grid-cell[data-dim] { opacity: 0.45; }
-/* View only (the captain's pick N-1, look 1): a card the person may see but not
+/* View only: a card the person may see but not
  * change shows its choices dimmed from the start, as the Alert column is while
  * alerts are off (0.45), and its other controls as a disabled button looks (0.5). */
 .proto-set-card[data-readonly] .proto-set-grid-cell { opacity: 0.45; pointer-events: none; }

@@ -1,4 +1,4 @@
-"""CP S-14/F-47: measured bytes, decoded pixels, metadata-free variants."""
+"""Measured bytes, decoded pixels, metadata-free variants."""
 
 import io
 import warnings

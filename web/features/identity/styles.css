@@ -1,4 +1,4 @@
-/* Layout and form vocabulary from CP Settings and campaigns.css. Shared kit owns tokens/motion. */
+/* Shared account layout and form vocabulary. Shared kit owns tokens/motion. */
 .identity-page,.bo-page,.request-page,.directory-page{container-type:inline-size}
 .identity-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:var(--ds-space-4);align-items:start;margin-block-start:var(--ds-gap-content)}
 .identity-stack{display:grid;gap:var(--ds-space-4);min-inline-size:0}
@@ -24,7 +24,7 @@
 :is(.identity-page,.bo-page,.directory-page) .notice{display:grid;gap:var(--ds-space-2);padding:0.4375rem 0.75rem;border-radius:var(--radius-lg);background:var(--muted);color:var(--foreground);font-size:0.75rem}
 .identity-status{font-weight:var(--ds-weight-strong);font-size:0.8125rem}
 :is(.identity-page,.request-page,.directory-page,.bo-page) bdi{overflow-wrap:anywhere}
-/* Port: CP auth.css / AuthCard. Product mark only is changed. */
+/* Shared AuthCard with the marketplace mark. */
 .pg-auth-card .identity-form{gap:0.875rem}
 .pg-auth-card .identity-form .ui-input{min-block-size:2.5rem}
 @container(max-width:44rem){.identity-grid{grid-template-columns:minmax(0,1fr)}}

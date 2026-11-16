@@ -1,4 +1,4 @@
-"""CP S-08/S-09: fresh authority; CP B-18: durable identifiers-only intent."""
+"""Fresh authority; durable identifiers-only intent."""
 import asyncio
 import os
 from datetime import datetime, timedelta, timezone
