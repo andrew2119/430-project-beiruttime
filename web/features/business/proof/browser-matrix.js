@@ -1,4 +1,4 @@
-// Run through CHROME_DEVTOOLS_AXI_SESSION=bt-cp-business chrome-devtools-axi run.
+// Run through CHROME_DEVTOOLS_AXI_SESSION=bt-business chrome-devtools-axi run.
 // Set the real viewport with `emulate` before each run (1440x1000 or 390x844).
 const root='http://127.0.0.1:3357';
 const org='00000000-0000-4000-8000-000000000003';

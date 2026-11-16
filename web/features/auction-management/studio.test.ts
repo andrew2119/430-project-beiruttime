@@ -7,7 +7,7 @@ import AuctionStudio from './studio';
 import en from './en.json';
 import ar from './ar.json';
 const state=vi.hoisted(()=>({locale:'en' as 'en'|'ar',session:null as Session|null,status:'signed-out',selectOptions:[] as string[]}));
-// CP Select lazily mounts its menu after engagement. Verify the same authorized
+// The shared Select lazily mounts its menu after engagement. Verify the same authorized
 // options supplied to that primitive rather than expecting closed-menu DOM.
 vi.mock('@beirut-time/ui',async importOriginal=>({
   ...await importOriginal<typeof import('@beirut-time/ui')>(),

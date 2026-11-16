@@ -18,7 +18,7 @@ Published copies and deterministic positive/negative fixtures live under the cor
 
 `/checkout` is still registered once by L08. Its L13-owned implementation now receives listing context from the watch action instead of asking users to copy internal IDs. It reads the real listing and availability, creates a Pricing quote, displays exact fee lines, requires explicit acceptance and reserves through `/v1/exact-reservations`. `/checkout/:id` composes the simulated payment panel. `/seller/withdrawals` is a complete additional tab with current personal/business stock, guarded confirmation, durable pending/retry and history. The winner slot is a uniquely named contribution, not another watch page.
 
-All views compose the shared Creator Pipeline PageLayout/PageHeader, Card, SectionState, Dialog, Select and Segmented controls. Feature styles contain layout only; EN/AR, RTL/LTR references, shared light/dark tokens and the existing phone shell remain authoritative. Current navigation roles are display only; every private endpoint rechecks Identity and record scope.
+All views compose the shared PageLayout/PageHeader, Card, SectionState, Dialog, Select and Segmented controls. Feature styles contain layout only; EN/AR, RTL/LTR references, shared light/dark tokens and the existing phone shell remain authoritative. Current navigation roles are display only; every private endpoint rechecks Identity and record scope.
 
 ## Checks
 

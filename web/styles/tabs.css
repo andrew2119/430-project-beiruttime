@@ -1,9 +1,6 @@
-/* LAB PROTOTYPE ONLY (2026-10-02 evening; round 2 liquid glass at the end). Tabs and mode switches: three options replacing the red underline. Imported last. */
+/* Shared tabs and mode switches. Pane is active; alternate looks remain unused. */
 
-/* The captain (round 7): "I don't like the design you added where there's this line
-   in red below ... it just doesn't fit with the design that I'm looking for." The
-   header's tabs (components/proto/tabs/header-tabs.tsx, rendered by the shared page
-   header wherever it shows tabs) come in three looks on the lab bar's "Tabs" switch:
+/* HeaderTabs (packages/ui/src/header-tabs.tsx) retains three alternate looks:
 
      A "Tray"   - one recessed track; a raised key glides between the tabs (the same
                   language as the site's Segmented mode switches).
@@ -16,7 +13,7 @@
    No underline, no tint on the current tab, no gradients. Every size, colour, radius
    and duration comes from the tokens; the motion is one measured piece per look and
    is instant under reduced motion. These rules override the round 6 hx-tab* rules
-   in proto-page-header.css (left untouched). */
+   in page-header.css. */
 
 /* ============================================================================
    Shared anatomy (all looks)
@@ -77,8 +74,7 @@
     background-color var(--tabs-move) var(--ease-standard);
 }
 
-/* The captain's readability rule (2026-10-10; A-3 b), each count in its failing look
-   only (measured on the campaign header): a tab that is not current read 4.38:1 in
+/* Count readability, adjusted only in each failing look: a tab that is not current read 4.38:1 in
    Classic (3.83 under the pointer) and 2.92 in Dark (3.41), its quiet text on its own chip.
    The smallest steps toward the normal text colour that read 4.5:1 are Classic 96%
    (4.51), 76% under the pointer (4.53), and Dark 55% (4.50, which also holds under
@@ -282,9 +278,8 @@
   .hx-tabs[data-look="B"] > .hx-tab:not([data-on]):hover { color: var(--foreground); }
 }
 
-/* B's mode switches: every Segmented in a page header card (UGC / Fan Accounts, My
-   day / Team, By campaign / By marketer) and the sub-campaign switcher take the ink
-   key. A campaign tab's own toolbar (its saved views) keeps the quiet key. */
+/* B's mode switches: header Segmented controls and the detail switcher use
+   the ink key. A detail tab's saved-view toolbar keeps the quiet key. */
 :root[data-lab-tabs="B"] .hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) > .pg-seg-thumb {
   background: var(--foreground);
   box-shadow: var(--ds-shadow-small);
@@ -312,7 +307,7 @@
 :root[data-theme="dark"] .hx-head[data-opt="A"] > .hx-navrow:has(> .hx-tabs[data-look="C"]) {
   --tabs-band: color-mix(in oklab, var(--background) 65%, var(--card));
 }
-/* On a campaign page the header and the tab's body are one card: the band sits on
+/* On a detail page the header and the tab's body are one card: the band sits on
    the seam and the sheet runs into the body below. */
 .hx-detail-page .hx-head[data-opt="A"] > .hx-navrow:has(> .hx-tabs[data-look="C"]) {
   border-radius: 0;
@@ -440,12 +435,9 @@
 }
 
 /* ############################################################################
-   ROUND 2 (2026-10-02 night): LIQUID GLASS
-   The captain locked Ink, then: "I'm having second thoughts on the ink part ...
-   make it maybe liquid glass as that would be better and would avoid this
-   unnecessary contrast." Three takes on the lab bar's "Tabs" switch (the looks
-   above stay, unused): A Frost (data-look="frost"), B Lens ("lens"), C Pane
-   ("pane"). Glass = translucency + backdrop blur and saturation + a thin light
+   LIQUID GLASS
+   Glass reduces unnecessary contrast. Three looks remain:
+   A Frost (data-look="frost"), B Lens ("lens"), C Pane ("pane"). Glass = translucency + backdrop blur and saturation + a thin light
    inner edge + a soft shadow. No gradients: the specular light is an inset line.
    ############################################################################ */
 
@@ -618,9 +610,7 @@
 /* ============================================================================
    C "Pane": the row is a floating glass bar; the current tab is a pane of smoked
    glass that glides and settles with a small give.
-   LOCKED by the captain 2026-10-02 ("I chose option C pane. It looks amazing. but
-   make it less circular. Rounded edges but less round in itself."): the bar and
-   the key are rounded rectangles on the radius tokens (the bar 12, the key and the
+   The bar and key use rounded rectangles on the radius tokens (the bar 12, the key and the
    tabs 8 inside its 4 px padding, so the corners run parallel), no capsules.
    ========================================================================== */
 .hx-tabs[data-look="pane"] {
@@ -649,9 +639,8 @@
 }
 
 /* ============================================================================
-   The header's mode switches (UGC / Fan Accounts, My day / Team, By campaign /
-   By marketer) and the sub-campaign switcher, in the same glass. A campaign tab's
-   own toolbar keeps its quiet key.
+   Header mode switches and the detail switcher use the same glass.
+   A detail tab's own toolbar keeps its quiet key.
    ========================================================================== */
 :root[data-lab-tabs="frost"] .hx-zone > .hx-head :is(.pg-seg, .proto-fam-track) {
   background: var(--glass-track);
@@ -688,11 +677,10 @@
 }
 
 /* ============================================================================
-   Finding 28 (captain, 2026-10-20; approved prototype data/cp-proto-liquid-glass-
-   switch, round 6): every in-tab mode switch is the glass switch.
+   Every in-tab mode switch uses the shared glass recipe.
    1. Each Segmented is the glass bar wherever it sits (report item 2: one switch
       look everywhere), except the Settings index, which is navigation. The pane
-      rule above stays for the header and the sub-campaign switcher.
+      rule above stays for the header and the detail switcher.
    2. The header's view pills (PageHeader / PageToolbar `views`) are separate round
       glass pills with one round smoke key gliding from pill to pill; only the label
       sits above the key, so the key passes over the pills between.
@@ -806,7 +794,6 @@
   [data-hue="blue"],
   [data-label="Completed"],
   [data-label="Drafted"],
-  [data-label="For a campaign"],
   [data-label="Access"],
   [data-label="Open"],
   [data-label="For me"],

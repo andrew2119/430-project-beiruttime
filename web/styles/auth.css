@@ -23,7 +23,7 @@
   padding: 1rem;
 }
 
-/* The card is flat (no gradients outside the login, captain 2026-09-30);
+/* The card is flat (no gradients outside the login);
    shell depth and the gloss lines keep the lift. */
 .pg-auth-card {
   position: relative;
@@ -67,7 +67,7 @@
   color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
-/* Field recipe inside the card: the Campaigns form control, applied without
+/* Field recipe inside the card: the shared form control, applied without
    touching the seven forms (base recipe is :where(), so this wins; call-site
    utilities such as pr-16 / font-mono / h-11 still win over this). */
 .pg-auth-card .ui-input {

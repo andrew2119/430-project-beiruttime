@@ -1,4 +1,4 @@
-/* Shared CP rows and stacked form translation; no feature-owned palette. */
+/* Shared rows and stacked form translation; no feature-owned palette. */
 .withdrawal-page { min-inline-size:0; }
 .withdrawal-page > :not(.hx-onpage) + :not(.hx-onpage) { margin-block-start:var(--ds-space-4); }
 .withdrawal-stack { display:grid; gap:var(--ds-space-4); min-inline-size:0; }

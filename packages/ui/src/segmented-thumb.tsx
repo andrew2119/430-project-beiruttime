@@ -12,7 +12,7 @@ const sameRect = (a: ThumbRect | null, b: ThumbRect) =>
  * returned ref is measured after layout, and again when fonts, a resize or a
  * re-flow move it. `thumb` is the key to render first inside that element (null
  * until measured). SegmentedGroup (segmented.tsx) draws through it, and so do the
- * page header's round view pills (components/proto/page-header/page-header.tsx). It
+ * page header's round view pills (web/shell/page-header.tsx). It
  * is its own module so the header takes the measuring without the whole Segmented.
  */
 export function useSegmentedThumb(activeKey: string | number | null, deps: unknown) {

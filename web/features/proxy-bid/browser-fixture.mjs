@@ -50,7 +50,7 @@ let shotTheme='light',reference=false;
 http.createServer((req,res)=>{
   const url=new URL(req.url,'http://127.0.0.1');
   if(url.pathname==='/__shot'){shotTheme=url.searchParams.get('theme')==='dark'?'dark':'light';reference=url.searchParams.get('reference')==='1';res.end('Screenshot transport configured');return;}
-  const headers={...req.headers,cookie:`${req.headers.cookie??''}; bt-theme=${shotTheme}; crpipe_theme=${shotTheme}`};
+  const headers={...req.headers,cookie:`${req.headers.cookie??''}; bt-theme=${shotTheme}`};
   const upstream=http.request({host:'127.0.0.1',port:reference?33515:33517,path:req.url,method:req.method,headers},response=>{res.writeHead(response.statusCode,response.headers);response.pipe(res);});
   upstream.on('error',()=>{res.writeHead(503);res.end('Visual server unavailable');});req.pipe(upstream);
 }).listen(33519,'127.0.0.1');

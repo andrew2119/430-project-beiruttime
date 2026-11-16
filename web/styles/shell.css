@@ -138,7 +138,7 @@
     isolation: isolate;
     overflow-y: auto;
   }
-  /* No gradients (captain 2026-09-30): the rail has no top sheen; the flat top
+  /* No gradients: the rail has no top sheen; the flat top
      gloss line in its box-shadow above keeps the lit edge. */
   .pg-rail > * {
     position: relative;
@@ -148,7 +148,7 @@
     position: relative;
     block-size: 100%;
     border-radius: var(--ds-radius-tray);
-    /* No gradients (captain 2026-09-30): the tray has no top sheen, and its
+    /* No gradients: the tray has no top sheen, and its
        flat recessed fill paints on the frame below. A scroller with a single
        opaque fill is composited by Chromium without its rounded clip after an
        in-app navigation (a dark square showed in the tray's top-left corner);
@@ -182,7 +182,7 @@
       inset 0 -1px 0 var(--ds-gloss-under);
   }
   /* The dock's room: the bottom-right dock (the bell, the companion's spot and
-     the chat button, styles/proto.css .proto-dock) floats over the tray's foot,
+     the reserved control, .proto-dock) floats over the tray's foot,
      so every page keeps the dock's reach and a step as room below its end, and a
      control brought into view (focus, find) stops above the dock, so the dock
      never covers one (staging update 22, 2026-10-18). The approved lab keeps the
@@ -199,8 +199,7 @@
   }
   /* Below the page's end the shell keeps only the room the end needs (the dock's
      measure, components/shell/dock-room.tsx, writes --end-room): none when nothing
-     at the end sits under the dock or a resting toast, so pages end flush (captain,
-     click-test 2026-10-20). Until measured, the dock's whole reach. */
+     at the end sits under the dock or a resting toast, so pages end flush. Until measured, the dock's whole reach. */
   .pg-tray::after {
     content: "";
     display: block;

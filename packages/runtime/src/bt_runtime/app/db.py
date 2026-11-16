@@ -1,4 +1,4 @@
-"""CP 4A/4B/4C: async SQL, checksummed ledger and connection-bound UoW."""
+"""Async SQL, checksummed ledger and connection-bound UoW."""
 import hashlib
 import os
 from contextlib import asynccontextmanager

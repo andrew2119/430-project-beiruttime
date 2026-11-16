@@ -1,4 +1,4 @@
-/* CP notification panel's soft cards, fixed unread slot and Settings Switch. */
+/* Shared notification cards, fixed unread slot and settings Switch. */
 .l07-inbox-list { display:flex; flex-direction:column; gap:var(--ds-space-2); padding:var(--ds-space-3); border-radius:var(--radius-2xl); background:color-mix(in oklab,var(--background) 72%,var(--card)); }
 .l07-inbox-list:empty { display:none; }
 .l07-inbox-row { position:relative; display:grid; grid-template-columns:2rem minmax(0,1fr) .5rem; align-items:start; gap:var(--ds-space-3); padding:var(--ds-space-3) var(--ds-space-4); min-inline-size:0; overflow:hidden; border-radius:var(--radius-2xl); background:var(--card); box-shadow:var(--ds-shadow-small); transition:background-color var(--ds-motion-overlay) var(--ease-standard),box-shadow var(--ds-motion-fast) var(--ease-standard); }

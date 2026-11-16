@@ -1,4 +1,4 @@
-/* Movement form uses CP Settings panels and shared Card/Input controls. */
+/* Movement form uses shared settings panels and shared Card/Input controls. */
 .movement-panel{display:grid;gap:var(--ds-space-4);min-inline-size:0}
 .movement-panel>p{color:var(--muted-foreground);font-size:0.75rem;line-height:1.625}
 .movement-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ds-space-3);font-size:0.75rem;color:var(--muted-foreground)}

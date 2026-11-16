@@ -1,7 +1,6 @@
-/* Arabic adaptation of CP's logical-property recipes. CP's source ar.css is
-   A&R department styling, not Arabic; no source RTL implementation exists. */
+/* Arabic typography and logical-property layout adapters. */
 [lang="ar"] { --font-active: var(--font-lexend-deca), var(--font-arabic); }
-/* The dashboard keeps CP's left rail; the contents still read RTL. */
+/* The dashboard keeps the left rail; the contents still read RTL. */
 @media (min-width:851px) {
   [dir="rtl"] .pg-shell { direction: ltr; }
   [dir="rtl"] .pg-shell > * { direction: rtl; }

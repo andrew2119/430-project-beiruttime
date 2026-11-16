@@ -1,4 +1,4 @@
-/* CP detail/Settings stacked field adapter; paint and phone targets stay in shared kit. */
+/* Shared detail and settings field adapter; paint and phone targets stay in shared kit. */
 .payment-fees { display:grid; gap:var(--ds-space-3); margin:0; }
 .payment-fees > div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:var(--ds-space-2); padding-block:var(--ds-space-2); border-block-end:1px solid var(--border); }
 .payment-fees dt { color:var(--muted-foreground); }

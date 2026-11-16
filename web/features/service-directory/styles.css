@@ -1,4 +1,4 @@
-/* CP page header, Settings section cards and list/detail layout. No feature palette. */
+/* Shared page header, settings section cards and list/detail layout. No feature palette. */
 .directory-tabs .pg-toggle{max-inline-size:100%;flex-wrap:wrap}
 .directory-notice{padding:var(--ds-space-3) var(--ds-space-4);font-size:0.75rem;color:var(--muted-foreground)}
 .directory-restored{padding-block:var(--ds-space-3);font-size:0.8125rem}

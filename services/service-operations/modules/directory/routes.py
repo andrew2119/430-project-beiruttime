@@ -97,7 +97,7 @@ async def publish(organization_id: UUID, body: Profile, request: Request, idempo
 
 @router.get('/businesses')
 async def businesses(request: Request, purpose: Purpose = 'servicing', limit: int = Query(default=20, ge=1, le=20), after: UUID | None = None):
-    # CP P-01: a bounded scan page carries a cursor even if fresh verification filters every row.
+    # A bounded scan page carries a cursor even if fresh verification filters every row.
     async with request.app.state.pool.acquire() as tx:
         rows = await tx.fetch('''SELECT * FROM directory_profiles WHERE published AND ($1::uuid IS NULL OR organization_id>$1)
             AND (($2::text='customization' AND 'customization'=ANY(capabilities)) OR
@@ -113,7 +113,7 @@ async def businesses(request: Request, purpose: Purpose = 'servicing', limit: in
         return public_profile(row, business)
     items = []
     try:
-        # CP P-03: bounded waves fit the gateway deadline; no unbounded fan-out or N serial waits.
+        # Bounded waves fit the gateway deadline; no unbounded fan-out or N serial waits.
         async with asyncio.timeout(0.95):
             for start in range(0, min(len(rows), limit), 4):
                 batch = await asyncio.gather(*(verified(row) for row in rows[start:min(start + 4, limit)]))

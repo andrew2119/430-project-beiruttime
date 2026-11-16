@@ -1,4 +1,4 @@
-// CP F-17 / mobile §6.13: revoke delayed writers synchronously before the cache purge.
+// Revoke delayed writers synchronously before the cache purge.
 export function fencePrivateState(alive: {current:boolean}, target: EventTarget, onRevoke: () => void = () => {}) {
   alive.current = true;
   const revoke = () => {alive.current=false;onRevoke();};

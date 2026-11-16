@@ -27,7 +27,6 @@ The browser fixture uses the frozen real public-view and HTTP DTO contracts, a d
 With the integrated Catalog runtime present:
 
 ```sh
-export PATH=/Users/andrew/.harness/homes/430-project/firstmate/data/bt-tools/bin:$PATH
 BT_TEST_LANE=L04 python3 scripts/test-services.py catalog
 pnpm --filter beirut-time-web typecheck
 pnpm --filter beirut-time-web lint

@@ -6,7 +6,7 @@ import { DirectionProvider } from '@beirut-time/ui';
 import { InstallPromptProvider } from './install-prompt-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from '@/lib/api/client';
-// CP F-16: no private cache persistence. Identity must clear this cache on principal changes.
+// No private cache persistence. Identity must clear this cache on principal changes.
 export function Providers({ children, locale }: { children: React.ReactNode; locale: Locale }) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: {
     staleTime: 30000, refetchOnWindowFocus: false,

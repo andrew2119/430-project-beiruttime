@@ -10,7 +10,6 @@
 ## Checks
 
 ```sh
-export PATH=/Users/andrew/.harness/homes/430-project/firstmate/data/bt-tools/bin:$PATH
 # Reuse a previously validated dependency image when available:
 # BT_L09_TEST_IMAGE=<existing-image> python3 tests/lanes/L09/check.py
 python3 tests/lanes/L09/check.py

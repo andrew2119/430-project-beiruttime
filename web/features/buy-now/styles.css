@@ -1,4 +1,4 @@
-/* Creator Pipeline detail, form and activity recipes. No feature-owned paint. */
+/* Shared detail, form and activity recipes. No feature-owned paint. */
 .checkout-page { display:flex; flex-direction:column; container-type:inline-size; }
 /* PageHeader owns its gap; only subsequent feature blocks add their own rhythm. */
 .checkout-page > :not(.hx-onpage) + :not(.hx-onpage) { margin-block-start:var(--ds-gap-content); }
