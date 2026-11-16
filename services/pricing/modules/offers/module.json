@@ -1,1 +1,1 @@
-{"version":1,"id":"L14.offers","dependencies":["fastapi","asyncpg","pydantic"],"routes":["routes.py:router"],"migrations":["migrations/L14_0001_offers.sql","migrations/L14_0002_reconciliation.sql"],"workers":["workers.py:run"]}
+{"version":1,"id":"L14.offers","dependencies":["fastapi","asyncpg","pydantic"],"routes":["routes.py:router"],"migrations":["migrations/L14_0001_offers.sql","migrations/L14_0002_reconciliation.sql","migrations/L14_0003_offer_terms.sql"],"workers":["workers.py:run"]}

@@ -81,7 +81,8 @@ class Dependencies:
                     or publication['revision'] < 1 or UUID(registration['watch_id']) != watch_id
                     or UUID(registration['listing_id']) != listing_id
                     or registration['sale_mode'] != 'auction'
-                    or publication['facts']['sale_mode'] != 'auction'):
+                    or publication['facts']['sale_mode'] != 'auction'
+                    or publication['facts']['currency'] != 'USD'):
                 raise ValueError()
             return {'id':str(listing_id), 'watch_id':str(watch_id),
                 'seller_id':str(seller_id), 'seller_organization_id':organization,

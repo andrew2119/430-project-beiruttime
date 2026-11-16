@@ -10,7 +10,7 @@ from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from service_app import peers
-from service_app.current import buyer, decoded, digest, replay, remember
+from service_app.current import buyer, decoded, digest, replay, remember, require_usd
 from service_app.security import idempotency
 
 router = APIRouter(prefix='/v1/offers', tags=['offers'])
@@ -32,6 +32,7 @@ def project(row):
     state = row['state']
     if state == 'open' and datetime.now(timezone.utc) >= row['expires_at']:
         state = 'expired'
+    require_usd(decoded(row['snapshot']))
     remote = decoded(row['orders_result']) if row['orders_result'] else None
     return {'id': str(row['id']), 'listing_id': str(row['listing_id']), 'listing_revision': row['listing_revision'],
             'revision': row['revision'], 'buyer_id': str(row['buyer_id']), 'seller_id': str(row['seller_id']),
@@ -78,22 +79,23 @@ async def make(body: MakeOffer, request: Request, p=Depends(peers.principal), ke
     if source['facts']['currency'] != body.currency:
         raise PublicError('currency_mismatch', 'Use the listing currency.', status=409)
     availability = await peers.call(request, 'orders', 'GET', f"/internal/v2/watches/{source['physical_watch_id']}", internal=True)
-    if availability.get('status') != 'available' or availability.get('listing_revision') != body.listing_revision:
+    if (availability.get('status') != 'available' or availability.get('listing_revision') != body.listing_revision
+            or availability.get('watch_id') != source['physical_watch_id'] or availability.get('listing_id') != str(body.listing_id)):
         raise PublicError('watch_committed', 'This current watch is unavailable for offers.', status=409)
     async with unit_of_work(request.app.state.pool) as tx:
         prior = await replay(tx, p, key, fingerprint)
         if prior:
             return prior
         now = await tx.fetchval('SELECT clock_timestamp()')
-        if not now < body.expires_at <= now + timedelta(days=7):
-            raise PublicError('invalid_expiry', 'Offer expiry must be within seven days.', status=409)
+        expires_at = now + timedelta(hours=48)
         q = await tx.fetchrow('SELECT * FROM l07_quotes WHERE id=$1 AND owner_id=$2', body.fee_quote_id, p.actor.subject_id)
         if q is None:
             raise PublicError('fee_review_required', 'Review the exact offer fees first.', status=409)
         quote = decoded(q['snapshot'])
         if (not q['reviewed_at'] or q['expires_at'] <= now or quote['purpose'] != 'offer'
                 or quote['subject_id'] != str(body.listing_id) or quote['subject_revision'] != body.listing_revision
-                or quote['price_minor'] != body.amount_minor or quote['currency'] != body.currency):
+                or quote['price_minor'] != body.amount_minor or quote['currency'] != body.currency
+                or quote['schedule_id'] != body.schedule_id or quote['policy'].get('revision') != 2):
             raise PublicError('fee_review_required', 'Review the exact current offer and fees first.', status=409)
         row_scope = {'seller_id': source['seller_id'], 'seller_organization_id': source['organization_id'], 'buyer_id': p.actor.subject_id}
         await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'offer-listing:' + str(body.listing_id))
@@ -106,7 +108,7 @@ async def make(body: MakeOffer, request: Request, p=Depends(peers.principal), ke
             seller_organization_id,quote_id,snapshot,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10) RETURNING *''',
             uuid4(), body.listing_id, body.listing_revision, UUID(source['physical_watch_id']), p.actor.subject_id,
             UUID(source['seller_id']), UUID(source['organization_id']) if source['organization_id'] else None,
-            body.fee_quote_id, json.dumps(quote), body.expires_at)
+            body.fee_quote_id, json.dumps(quote), expires_at)
         await notice(tx, request, row, 'made')
         return await remember(tx, p, key, fingerprint, {'status': 'succeeded', 'offer': project(row)})
 
@@ -119,8 +121,8 @@ async def listing(request: Request, p=Depends(peers.principal)):
         require_scope(p, 'identity.listings.publish', org)
     async with request.app.state.pool.acquire() as tx:
         rows = await tx.fetch('''SELECT * FROM l14_offers WHERE
-            ($2::uuid IS NULL AND (buyer_id=$1 OR (seller_id=$1 AND seller_organization_id IS NULL)))
-            OR ($2::uuid IS NOT NULL AND seller_organization_id=$2) ORDER BY created_at DESC,id DESC LIMIT 50''',
+            (($2::uuid IS NULL AND (buyer_id=$1 OR (seller_id=$1 AND seller_organization_id IS NULL)))
+            OR ($2::uuid IS NOT NULL AND seller_organization_id=$2)) AND snapshot->>'currency'='USD' ORDER BY created_at DESC,id DESC LIMIT 50''',
             p.actor.subject_id, org)
     for row in rows:
         party(row, p)
@@ -225,8 +227,7 @@ async def answer(offer_id: UUID, body: AnswerOffer, request: Request, p=Depends(
             await notice(tx, request, row, 'rejected')
             return await remember(tx, p, key, fingerprint, {'status': 'succeeded', 'offer': project(row)})
         quote = decoded(row['snapshot'])
-        if datetime.fromisoformat(quote['expires_at']) <= now:
-            raise PublicError('quote_expired', 'The buyer must review a fresh offer and fees.', status=409)
+        require_usd(quote)
         command = {'operation_key': 'offer:' + str(offer_id), 'watch_id': str(row['watch_id']),
                    'listing_id': str(row['listing_id']), 'listing_revision': row['listing_revision'],
                    'expected_revision': remote['revision'], 'source_id': str(offer_id), 'kind': 'offer',
@@ -234,7 +235,7 @@ async def answer(offer_id: UUID, body: AnswerOffer, request: Request, p=Depends(
                    'currency': quote['currency'], 'total_minor': quote['payable_minor']}
         outcome = await remember(tx, p, key, fingerprint, {'status': 'pending', 'offer': project(row)})
         row = await tx.fetchrow("""UPDATE l14_offers SET state='acceptance_pending',accepted_by=$2,
-            acceptance_operation_id=$3,orders_command=$4::jsonb,revision=revision+1 WHERE id=$1 RETURNING *""",
+            acceptance_operation_id=$3,orders_command=$4::jsonb,accepted_at=clock_timestamp(),accepted_revision=revision+1,revision=revision+1 WHERE id=$1 RETURNING *""",
             offer_id, p.actor.subject_id, UUID(outcome['operation_id']), json.dumps(command))
         await tx.execute('UPDATE l14_pricing_operations SET result=$2::jsonb WHERE id=$1', UUID(outcome['operation_id']),
                          json.dumps({**outcome, 'offer': project(row)}))
@@ -251,7 +252,16 @@ async def recover(offer_id: UUID, request: Request, p=Depends(peers.principal)):
 
 @router.post('/{offer_id}/block')
 async def block(offer_id: UUID, request: Request, p=Depends(peers.principal), key=Depends(idempotency)):
-    fingerprint = digest(['block', str(offer_id)])
+    return await set_block(offer_id, request, p, key, remove=False)
+
+
+@router.post('/{offer_id}/unblock')
+async def unblock(offer_id: UUID, request: Request, p=Depends(peers.principal), key=Depends(idempotency)):
+    return await set_block(offer_id, request, p, key, remove=True)
+
+
+async def set_block(offer_id, request, p, key, *, remove):
+    fingerprint = digest(['unblock' if remove else 'block', str(offer_id)])
     async with unit_of_work(request.app.state.pool) as tx:
         prior = await replay(tx, p, key, fingerprint)
         if prior:
@@ -260,6 +270,10 @@ async def block(offer_id: UUID, request: Request, p=Depends(peers.principal), ke
         side = party(row, p)
         await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'offer-listing:' + str(row['listing_id']))
         scope = str(p.actor.subject_id) if side == 'buyer' else seller_scope(row)
-        await tx.execute('INSERT INTO l14_offer_blocks(seller_scope,buyer_id,blocker_scope) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',
-                         seller_scope(row), row['buyer_id'], scope)
-        return await remember(tx, p, key, fingerprint, {'status': 'succeeded', 'code': 'offers_blocked'})
+        if remove:
+            await tx.execute('DELETE FROM l14_offer_blocks WHERE seller_scope=$1 AND buyer_id=$2 AND blocker_scope=$3',
+                             seller_scope(row), row['buyer_id'], scope)
+        else:
+            await tx.execute('INSERT INTO l14_offer_blocks(seller_scope,buyer_id,blocker_scope) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',
+                             seller_scope(row), row['buyer_id'], scope)
+        return await remember(tx, p, key, fingerprint, {'status': 'succeeded', 'code': 'own_block_removed' if remove else 'offers_blocked'})

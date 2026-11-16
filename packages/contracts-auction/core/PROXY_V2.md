@@ -27,7 +27,9 @@ only be deactivated. An immediately beaten challenger is also outbid.
 
 Migration freezes the canonical tables, activates only the existing leader's
 ceiling, marks all others inactive, and retains historical public rows unchanged.
-New admissions use rules version full-step.v2. Unresolved legacy commitments stay
+New admissions use private_state_version full-step.v2, exposed as bidding_version
+in the public v2 projection. Each v2 public history row retains its own
+rules_version (ordinary.v1 for old rows, full-step.v2 for new ones). Unresolved legacy commitments stay
 held; no new auction purchase is allowed. Canonical transition refuses new prebid
 intents. Bid admission never calls a timing extension hook: scheduled_ends_at is
 the authoritative end, and accepted bids cannot change it. Old modes remain

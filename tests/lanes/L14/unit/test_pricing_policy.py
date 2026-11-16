@@ -1,4 +1,5 @@
 import asyncio
+import importlib
 import sys
 import types
 from datetime import datetime, timezone, timedelta
@@ -113,6 +114,36 @@ def test_accepted_job_validation_has_no_old_expiry_and_scope_rechecks(monkeypatc
     with pytest.raises(PublicError):
         asyncio.run(routes.validation(QUOTE, BUYER, request))
     assert quote['snapshot'] == q  # Current denial never rewrites history.
+
+
+def test_winner_economics_survive_delayed_allocation_revision(monkeypatch):
+    q = {'id': str(QUOTE), 'revision': 1, 'subject_revision': 7, 'currency': 'USD', 'price_minor': 500000,
+         'payable_minor': 515000, 'listing_id': str(LINE), 'listing_revision': 1, 'watch_id': str(ASSESSMENT),
+         'end_version': 1, 'close_version': 1, 'schedule_id': 'usd-v2', 'policy': current.POLICY}
+    auction = {'buyer_id': BUYER, 'auction_id': SOURCE, 'kind': 'winner', 'snapshot': q, 'created_at': NOW,
+               'expires_at': NOW - timedelta(days=7)}
+    request = request_for({'l14_auction_quotes': auction})
+    monkeypatch.setattr(routes.peers, 'service', lambda *a: 'orders')
+    auction_routes = importlib.import_module('l14quotes.auction_routes')
+    async def source(*args):
+        return {**q, 'revision': 9}
+    monkeypatch.setattr(auction_routes, 'source', source)
+    result = asyncio.run(routes.validation(QUOTE, BUYER, request))
+    assert result['source_revision'] == 7 and result['expires_at'] is None
+
+
+def test_accepted_offer_uses_admission_revision_not_later_receipt_revision(monkeypatch):
+    q = {'revision': 1, 'currency': 'USD', 'payable_minor': 515000, 'schedule_id': 'usd-v2',
+         'rounding': 'half_up', 'policy': current.POLICY, 'expires_at': (NOW-timedelta(days=7)).isoformat()}
+    offer = {'id': SOURCE, 'buyer_id': BUYER, 'listing_id': LINE, 'listing_revision': 1, 'state': 'accepted',
+             'revision': 3, 'accepted_revision': 2, 'accepted_at': NOW, 'snapshot': q, 'expires_at': NOW}
+    request = request_for({'l14_offers': offer})
+    monkeypatch.setattr(routes.peers, 'service', lambda *a: 'orders')
+    async def listing(*args):
+        return {}
+    monkeypatch.setattr(routes.peers, 'listing', listing)
+    result = asyncio.run(routes.validation(QUOTE, BUYER, request))
+    assert result['source_revision'] == 2 and result['expires_at'] is None
 
 
 @pytest.mark.parametrize('change', ['revoked', 'withdrawn', 'changed', 'nonusd'])

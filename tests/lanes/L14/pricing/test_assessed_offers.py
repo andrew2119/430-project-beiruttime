@@ -22,6 +22,9 @@ def headers(who='buyer', key=None):
 
 
 def identity(request):
+    if request.url.path.startswith('/v1/businesses/'):
+        return httpx.Response(200, json={'id': str(ORG), 'state': 'active', 'kind': 'brand',
+            'platform_onboarded': True, 'authenticated_business': True, 'capabilities': ['customization', 'servicing']})
     who = request.headers.get('authorization', '').replace('Bearer ', '')
     people = {'buyer': BUYER, 'other': OTHER, 'seller': SELLER, 'staff': STAFF}
     if who not in people:
@@ -119,7 +122,7 @@ def issue_body(lines, kind='repair'):
         'currency': 'USD', 'lines': quoted, 'assessment_fee_minor': 1000, 'return_fee_minor': 2000,
         'warranty_terms': 'Seal only, 90 days', 'modification_terms': 'No polishing or unassessed parts',
         'indicative_min_minor': 10000, 'indicative_max_minor': 20000, 'indicative_basis': 'Current diagnosed parts and labor',
-        'lead_time_days': 4, 'expires_at': (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(), 'schedule_id': 'sample-v1'}
+        'lead_time_days': 4, 'expires_at': (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat(), 'schedule_id': 'usd-job-v2'}
 
 
 async def issue(api):
@@ -133,7 +136,7 @@ def accept_body(q, selected=None):
     selected = selected or [str(REQUIRED)]
     base = 11000 + (5000 if str(OPTIONAL) in selected else 0)
     return {'quote_revision': q['revision'], 'selected_line_ids': selected,
-            'payable_minor': base + (base * 300 + 5000) // 10000, 'terms_digest': q['terms_digest']}
+            'payable_minor': base, 'terms_digest': q['terms_digest'], 'accept_assessment_fee': True, 'accept_return_fee': False}
 
 
 @pytest.mark.asyncio
@@ -148,7 +151,7 @@ async def test_repair_exact_selected_scope_attribution_replay_and_outbox(api):
     decision = first.json()['quote']['decision']
     assert decision['actor_id'] == str(BUYER)
     assert decision['selected_line_ids'] == [str(REQUIRED)]
-    assert decision['amounts']['payable_minor'] == 11330
+    assert decision['amounts']['payable_minor'] == 11000
     assert (await client.post(path, json={**body, 'payable_minor': 1}, headers=h)).status_code == 409
     async with app.state.pool.acquire() as tx:
         assert await tx.fetchval('SELECT count(*) FROM l14_quote_decisions') == 1
@@ -169,7 +172,7 @@ async def test_optional_line_exact_total_mandatory_denial_and_wrong_actor(api):
     body = accept_body(q, [str(REQUIRED), str(OPTIONAL)])
     assert (await client.post(path, json={**body, 'terms_digest': '0' * 64}, headers=headers())).status_code == 409
     accepted = await client.post(path, json=body, headers=headers())
-    assert accepted.status_code == 200 and accepted.json()['quote']['decision']['amounts']['payable_minor'] == 16480
+    assert accepted.status_code == 200 and accepted.json()['quote']['decision']['amounts']['payable_minor'] == 16000
 
 
 @pytest.mark.asyncio
@@ -186,7 +189,7 @@ async def test_assessment_revision_unavailable_and_supersession_require_reaccept
     assert newer.status_code == 201 and newer.json()['quote']['revision'] == 2
     assert (await client.post('/v1/repair-quotes/' + q['id'] + '/accept', json=accept_body(q), headers=headers())).status_code == 409
     retained = (await client.get('/v1/repair-quotes/' + q['id'], headers=headers())).json()
-    assert retained['state'] == 'superseded' and retained['full_total']['payable_minor'] == 16480
+    assert retained['state'] == 'superseded' and retained['full_total']['payable_minor'] == 16000
 
 
 @pytest.mark.asyncio
@@ -205,13 +208,13 @@ async def test_decline_is_held_return_no_work_and_private_read(api):
 
 async def offer_command(client, who='buyer', *, reviewed=True):
     body = {'subject_id': str(LISTING), 'subject_revision': 1, 'purpose': 'offer', 'currency': 'USD', 'price_minor': 10000,
-            'schedule_id': 'sample-v1', 'source': 'sample'}
+            'schedule_id': 'usd-v2', 'source': 'sample'}
     q = (await client.post('/v1/quotes', json=body, headers=headers(who))).json()
     if reviewed:
         review = await client.post('/v1/quotes/' + q['id'] + '/review', json={**body, 'quote_revision': 1, 'payable_minor': 10300}, headers=headers(who))
         assert review.status_code == 200
     return {'listing_id': str(LISTING), 'listing_revision': 1, 'amount_minor': 10000,
-        'currency': 'USD', 'expires_at': q['expires_at'], 'schedule_id': 'sample-v1', 'fee_quote_id': q['id']}
+        'currency': 'USD', 'schedule_id': 'usd-v2', 'fee_quote_id': q['id']}
 
 
 async def make_offer(client, who='buyer'):
@@ -269,13 +272,13 @@ async def test_service_validation_exact_buyer_and_current_acceptance(api):
     now = int(time.time())
     token = jwt.encode({'sub': 'eligibility', 'type': 'service', 'iss': 'beirut-time-identity', 'aud': 'pricing', 'iat': now, 'exp': now + 60}, private, algorithm='RS256')
     h = {'Authorization': 'Bearer ' + token}
-    path = f"/internal/v2/quotes/{q['id']}/validation?buyer_id={BUYER}"
+    path = f"/internal/v3/quotes/{q['id']}/validation?buyer_id={BUYER}"
     assert (await client.get(path, headers=h)).status_code == 409
     assert (await client.post('/v1/repair-quotes/' + q['id'] + '/accept', json=accept_body(q), headers=headers())).status_code == 200
     validated = await client.get(path, headers=h)
     assert validated.status_code == 200, validated.text
     result = validated.json()
-    assert result['selected_line_ids'] == [str(REQUIRED)] and result['total_minor'] == 11330
+    assert result['selected_line_ids'] == [str(REQUIRED)] and result['total_minor'] == 11000
     assert result['buyer_id'] == str(BUYER) and result['assessment_revision'] == 1
     assert (await client.get(path.replace(str(BUYER), str(OTHER)), headers=h)).status_code == 403
     state['source_revision'] = 2
@@ -313,29 +316,18 @@ def test_expiry_before_equal_after(delta, denied):
 
 
 @pytest.mark.asyncio
-async def test_exact_prebid_preview_requires_review_and_winner_quote_is_service_scoped(api):
+async def test_auction_purchase_is_refused_and_winner_quote_is_service_scoped(api):
     _, client, state, private, _ = api
     preview = await client.post('/v1/auction-quotes', json={'auction_id': str(SOURCE), 'expected_revision': 1}, headers=headers())
-    assert preview.status_code == 201, preview.text
-    q = preview.json()['quote']
-    assert (q['price_minor'], q['buyer_fee_minor'], q['payable_minor']) == (10000, 300, 10300)
+    assert preview.status_code == 409 and preview.json()['error']['code'] == 'auction_purchase_disabled'
     now = int(time.time())
-    def token(subject):
-        return {'Authorization': 'Bearer ' + jwt.encode({'sub': subject, 'type': 'service', 'iss': 'beirut-time-identity',
-            'aud': 'pricing', 'iat': now, 'exp': now + 60}, private, algorithm='RS256')}
-    path = f"/internal/v2/quotes/{q['id']}/validation?buyer_id={BUYER}"
-    assert (await client.get(path, headers=token('orders'))).status_code == 409
-    review = await client.post('/v1/auction-quotes/' + q['id'] + '/review', json={'quote_revision': 1, 'payable_minor': 10300}, headers=headers())
-    assert review.status_code == 200
-    state['basis_current'] = 3  # R+2 remains bound to immutable admission R=1.
-    valid = await client.get(path, headers=token('orders'))
-    assert valid.status_code == 200 and valid.json()['kind'] == 'prebid'
-    state['source_revision'] = 2
-    assert (await client.get(path, headers=token('orders'))).status_code == 409
-    body = {'auction_id': str(SOURCE), 'expected_revision': 2, 'buyer_id': str(BUYER), 'operation_key': 'winner-quote-once'}
-    h = {**token('auction'), 'Idempotency-Key': body['operation_key']}
+    token = {'Authorization': 'Bearer ' + jwt.encode({'sub': 'auction', 'type': 'service', 'iss': 'beirut-time-identity',
+        'aud': 'pricing', 'iat': now, 'exp': now + 60}, private, algorithm='RS256')}
+    body = {'auction_id': str(SOURCE), 'expected_revision': 1, 'buyer_id': str(BUYER), 'operation_key': 'winner-quote-once'}
+    h = {**token, 'Idempotency-Key': body['operation_key']}
     winner = await client.post('/internal/v2/auction-quotes', json=body, headers=h)
     assert winner.status_code == 201 and winner.json()['quote']['kind'] == 'winner'
+    assert winner.json()['quote']['expires_at'] is None
     assert (await client.post('/internal/v2/auction-quotes', json=body, headers=h)).json() == winner.json()
     assert (await client.post('/internal/v2/auction-quotes', json=body, headers=headers())).status_code in (401, 403)
 
@@ -365,11 +357,11 @@ async def test_retained_economics_balance_without_becoming_current_authority(api
     token = jwt.encode({'sub': 'orders', 'type': 'service', 'iss': 'beirut-time-identity', 'aud': 'pricing',
         'iat': now, 'exp': now + 60}, private, algorithm='RS256')
     h = {'Authorization': 'Bearer ' + token}
-    path = f"/internal/v2/quotes/{q['id']}/retained?buyer_id={BUYER}"
+    path = f"/internal/v3/quotes/{q['id']}/retained?buyer_id={BUYER}"
     retained = await client.get(path, headers=h)
     assert retained.status_code == 200, retained.text
     money = retained.json()
-    assert money['price_minor'] + money['buyer_fee_minor'] == money['payable_minor'] == 11330
+    assert money['price_minor'] + money['buyer_fee_minor'] == money['payable_minor'] == 11000
     assert money['seller_net_minor'] + money['seller_commission_minor'] == money['price_minor']
     assert money['authority'] == 'retained_read_only' and 'diagnosis' not in money and 'warranty_terms' not in money
     state['unavailable'] = True
@@ -384,7 +376,7 @@ async def test_self_expired_unreviewed_and_sold_offers_are_refused(api):
     assert (await client.post('/v1/offers', json=await offer_command(client, 'seller'), headers=headers('seller'))).status_code == 409
     command = await offer_command(client)
     expired = {**command, 'expires_at': (datetime.now(timezone.utc) - timedelta(seconds=1)).isoformat()}
-    assert (await client.post('/v1/offers', json=expired, headers=headers())).status_code == 409
+    assert (await client.post('/v1/offers', json=expired, headers=headers())).status_code == 422
     assert (await client.post('/v1/offers', json=await offer_command(client, reviewed=False), headers=headers())).status_code == 409
     state['winner'] = 'other-physical-reservation'
     assert (await client.post('/v1/offers', json=command, headers=headers())).status_code == 409
@@ -402,18 +394,18 @@ async def test_buy_now_wins_offer_acceptance_without_any_losing_charge(api):
 
 
 @pytest.mark.asyncio
-async def test_malformed_auction_source_never_becomes_authoritative_preview(api):
-    app, client, state, _, _ = api
-    body = {'auction_id': str(SOURCE), 'expected_revision': 1}
+async def test_malformed_winner_source_never_becomes_authoritative_economics(api):
+    app, client, state, private, _ = api
+    now = int(time.time())
+    token = {'Authorization': 'Bearer ' + jwt.encode({'sub': 'auction', 'type': 'service', 'iss': 'beirut-time-identity',
+        'aud': 'pricing', 'iat': now, 'exp': now + 60}, private, algorithm='RS256')}
+    body = {'auction_id': str(SOURCE), 'expected_revision': 1, 'buyer_id': str(BUYER), 'operation_key': 'malformed-winner'}
     for override in [{'revision': True}, {'price_minor': '10000'}, {'ends_at': '2026-11-05T00:00:00'},
                      {'seller_id': 'unbound'}, {'listing_revision': False}]:
         state['auction_override'] = override
-        response = await client.post('/v1/auction-quotes', json=body, headers=headers())
+        response = await client.post('/internal/v2/auction-quotes', json=body,
+            headers={**token, 'Idempotency-Key': body['operation_key']})
         assert response.status_code == 503, (override, response.text)
-    for override in [{'buyer_id': str(OTHER)}, {'mode': 'closed_winner'},
-                     {'ends_at': (datetime.now(timezone.utc) - timedelta(seconds=1)).isoformat()}]:
-        state['auction_override'] = override
-        assert (await client.post('/v1/auction-quotes', json=body, headers=headers())).status_code == 409
     async with app.state.pool.acquire() as tx:
         assert await tx.fetchval('SELECT count(*) FROM l14_auction_quotes') == 0
 
@@ -455,7 +447,7 @@ async def test_close_command_adapter_reproves_all_bindings_and_replays_retained_
                          ('source_id', str(uuid4())), ('listing_id', str(uuid4())), ('watch_id', str(uuid4())),
                          ('seller_id', str(uuid4())), ('organization_id', str(uuid4()))]:
         changed = await client.post(path, json={**body, field: value}, headers=h)
-        assert changed.status_code == 409, (field, changed.text)
+        assert changed.status_code == (422 if field == 'currency' else 409), (field, changed.text)
     success = await client.post(path, json=body, headers=h)
     assert success.status_code == 201, success.text
     q = success.json()
@@ -465,6 +457,6 @@ async def test_close_command_adapter_reproves_all_bindings_and_replays_retained_
     assert (await client.post(path, json={**body, 'price_minor': 2}, headers=h)).status_code == 409
     async with app.state.pool.acquire() as tx:
         assert await tx.fetchval('SELECT count(*) FROM l14_auction_quotes') == 1
-    retained = await client.get(f"/internal/v2/quotes/{q['quote_id']}/retained?buyer_id={BUYER}", headers=token('orders'))
+    retained = await client.get(f"/internal/v3/quotes/{q['quote_id']}/retained?buyer_id={BUYER}", headers=token('orders'))
     assert retained.status_code == 200 and retained.json()['payable_minor'] == q['total_minor']
-    assert (await client.get(f"/internal/v2/quotes/{q['quote_id']}/validation?buyer_id={BUYER}", headers=token('orders'))).status_code == 503
+    assert (await client.get(f"/internal/v3/quotes/{q['quote_id']}/validation?buyer_id={BUYER}", headers=token('orders'))).status_code == 503

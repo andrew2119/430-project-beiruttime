@@ -80,8 +80,8 @@ async def validation(quote_id: UUID, buyer_id: UUID, request: Request):
             raise PublicError('legacy_reconciliation', 'Legacy auction purchases require recorded reconciliation.', status=409)
         from .auction_routes import source
         context = await source(request, auction['auction_id'], 'winner', buyer_id)
-        for key in ('revision', 'price_minor', 'currency', 'listing_id', 'listing_revision', 'watch_id'):
-            if context.get(key) != q.get('subject_revision' if key == 'revision' else key):
+        for key in ('close_version', 'end_version', 'price_minor', 'currency', 'listing_id', 'listing_revision', 'watch_id'):
+            if context.get(key) != q.get(key):
                 raise PublicError('source_changed', 'The retained auction winner scope changed.', status=409)
         result = {'source_id': auction['auction_id'], 'source_revision': q['subject_revision'], 'kind': 'winner',
                   'listing_id': q['listing_id'], 'listing_revision': q['listing_revision'], 'expires_at': None,
@@ -93,7 +93,7 @@ async def validation(quote_id: UUID, buyer_id: UUID, request: Request):
         if offer['state'] not in ('acceptance_pending', 'accepted'):
             raise PublicError('quote_not_current', 'An admitted accepted offer intent is required.', status=409)
         await peers.listing(request, offer['listing_id'], offer['listing_revision'])
-        result = {'source_id': offer['id'], 'source_revision': offer['revision'], 'kind': 'offer',
+        result = {'source_id': offer['id'], 'source_revision': offer['accepted_revision'], 'kind': 'offer',
                   'listing_id': offer['listing_id'], 'listing_revision': offer['listing_revision'],
                   'total_minor': q['payable_minor'], 'expires_at': None, 'economics': 'committed',
                   'accepted_at': offer['accepted_at']}
@@ -128,7 +128,7 @@ async def validation(quote_id: UUID, buyer_id: UUID, request: Request):
             await current_listing(request, UUID(q['subject_id']), q['subject_revision'], q['price_minor'], q['currency'])
         result = {'source_id': q['subject_id'], 'source_revision': q['subject_revision'], 'kind': 'purchase',
                   'listing_id': q['subject_id'], 'listing_revision': q['subject_revision'], 'total_minor': q['payable_minor'],
-                  'expires_at': None if commitment else row['expires_at'], 'accepted_at': row['reviewed_at'],
+                  'expires_at': None if commitment else row['expires_at'], 'accepted_at': commitment['committed_at'] if commitment else row['reviewed_at'],
                   'economics': 'committed' if commitment else 'preview'}
     require_usd(q)
     policy = q['policy']

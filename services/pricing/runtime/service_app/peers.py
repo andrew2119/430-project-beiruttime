@@ -89,8 +89,9 @@ async def listing(request, listing_id, revision):
     record = await call(request, 'catalog', 'GET', f'/v1/listings/{listing_id}/publication')
     try:
         if (UUID(record['id']) != listing_id or record['status'] != 'published'
-                or type(record['revision']) is not int or record['revision'] != revision or record['facts']['sale_mode'] != 'fixed_price'):
-            raise PublicError('listing_changed', 'Review the current available fixed-price listing.', status=409)
+                or type(record['revision']) is not int or record['revision'] != revision
+                or record['facts']['sale_mode'] not in ('fixed_price', 'offer') or record['facts']['currency'] != 'USD'):
+            raise PublicError('listing_changed', 'Review the current fixed-price or offers-only listing.', status=409)
         record['physical_watch_id'] = str(UUID(record['physical_watch_id']))
         record['seller_id'] = str(UUID(record['seller_id']))
         org = record.get('organization_id') or record.get('seller_organization_id')

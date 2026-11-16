@@ -17,7 +17,7 @@ class AuctionQuoteContext(Contract):
     end_version: StrictInt = Field(ge=1)
     close_version: StrictInt = Field(ge=0)
     mode: Literal['bidding', 'closed_winner']
-    currency: Literal['USD', 'LBP']
+    currency: Literal['USD']
     price_minor: StrictInt = Field(gt=0, le=9_000_000_000_000)
     ends_at: AwareDatetime
 
@@ -30,7 +30,7 @@ class AuctionWinnerSource(Contract):
     buyer_id: UUID
     seller_id: UUID
     organization_id: UUID | None
-    currency: Literal['USD', 'LBP']
+    currency: Literal['USD']
     price_minor: StrictInt = Field(gt=0, le=9_000_000_000_000)
     end_version: StrictInt = Field(ge=1)
     close_version: StrictInt = Field(ge=1)
@@ -43,6 +43,6 @@ class AuctionWinnerReceipt(Contract):
     buyer_id: UUID
     listing_id: UUID
     source_id: UUID
-    currency: Literal['USD', 'LBP']
+    currency: Literal['USD']
     price_minor: StrictInt = Field(gt=0, le=9_000_000_000_000)
     total_minor: StrictInt = Field(gt=0, le=18_000_000_000_000)

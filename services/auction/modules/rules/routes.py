@@ -22,7 +22,7 @@ async def list_auctions(request: Request, listing_id: UUID | None = None,
                         limit: int = Query(default=30, ge=1, le=100)):
     async with request.app.state.pool.acquire() as tx:
         now = await tx.fetchval('SELECT clock_timestamp()')
-        rows = await tx.fetch('''SELECT * FROM auction_lots WHERE ($1::uuid IS NULL OR listing_id=$1)
+        rows = await tx.fetch('''SELECT * FROM auction_lots WHERE ($1::uuid IS NULL OR listing_id=$1) AND currency='USD'
             ORDER BY created_at DESC,id LIMIT $2''', listing_id, limit)
         return {'items': [public_lot(row, now) for row in rows], 'server_time': now.isoformat()}
 
@@ -35,8 +35,8 @@ async def seller_auctions(request: Request, limit: int = Query(default=30, ge=1,
     async with request.app.state.pool.acquire() as tx:
         now = await tx.fetchval('SELECT clock_timestamp()')
         rows = await tx.fetch('''SELECT * FROM auction_lots WHERE
-            (seller_organization_id IS NULL AND seller_id=$1 AND $2::uuid IS NULL)
-            OR (seller_organization_id=$2) ORDER BY created_at DESC,id LIMIT $3''',
+            ((seller_organization_id IS NULL AND seller_id=$1 AND $2::uuid IS NULL)
+            OR (seller_organization_id=$2)) AND currency='USD' ORDER BY created_at DESC,id LIMIT $3''',
             principal.actor.subject_id, principal.actor.organization_id, limit)
         return {'items': [{**public_lot(row, now), 'reserve_minor': row['reserve_minor']} for row in rows],
             'server_time': now.isoformat()}

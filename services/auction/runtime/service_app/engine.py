@@ -33,6 +33,8 @@ def fingerprint(kind, resource, command):
 
 
 def public_lot(lot, now, *, version=1):
+    if lot['currency'] != 'USD':
+        raise PublicError('legacy_reconciliation', 'Historic currency is restricted to reconciliation.', status=409)
     bands = decoded(lot['increment_bands'])
     result = {'id': str(lot['id']), 'listing_id': str(lot['listing_id']), 'currency': lot['currency'],
         'opening_minor': lot['opening_minor'], 'current_minor': lot['current_minor'],
@@ -46,6 +48,7 @@ def public_lot(lot, now, *, version=1):
         'status': 'scheduled' if now < lot['starts_at'] else 'ended' if now >= lot['ends_at'] else 'live'}
     if version == 2:
         result.update(end_version=lot['end_version'], close_version=lot['close_version'], mode=lot['mode'],
+                      bidding_version=lot.get('private_state_version', 'ordinary.v1'),
                       first_bid_committed=lot['first_bid_confirmed'],
                       listing_revision=lot['listing_revision'], scheduled_ends_at=lot['scheduled_ends_at'].isoformat())
     return result
