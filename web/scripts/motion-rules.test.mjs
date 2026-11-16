@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, w
 import { dirname, join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import ts from 'typescript';
-import { ROOT, LEDGER, MOTION_OWNER, LEGACY_MOTION_OWNER, LEGACY_MOTION_HASH, census, cssDeclarations, hashSource, inspectSource, measureReference, motionRetirementIssues, motionTokenMs } from './check-ui-rules.mjs';
+import { ROOT, LEDGER, MOTION_OWNER, LEGACY_MOTION_OWNER, LEGACY_MOTION_HASH, census, cssDeclarations, hashSource, inspectSource, measureReference, committedHistory, ledgerRegressions, motionRetirementIssues, motionTokenMs } from './check-ui-rules.mjs';
 import { splitOutside } from './token-cascade.mjs';
 
 const css = readFileSync(join(ROOT,MOTION_OWNER),'utf8');
@@ -197,5 +197,8 @@ test('old pacing and persistence statements stay exact alongside explicit supers
 });
 
 test('the owner migration does not increase or rehash any accepted main debt', async () => {
-  assert.deepEqual(await measureReference(),JSON.parse(readFileSync(join(ROOT,LEDGER),'utf8')));
+  const {initial} = committedHistory(ROOT), active = JSON.parse(readFileSync(join(ROOT,LEDGER),'utf8'));
+  assert.deepEqual(await measureReference(),initial);
+  assert.deepEqual(ledgerRegressions(active,initial),[]);
+  const retiredRoot = {...initial};delete retiredRoot['web/app/layout.tsx'];assert.deepEqual(active,retiredRoot);
 });

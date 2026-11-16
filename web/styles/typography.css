@@ -1,7 +1,7 @@
 /* Opt-in type recipes outrank element resets, below composition/utilities.
    Existing pages keep their current typography. */
 @layer components {
-  :where(.bt-text, .bt-heading, .bt-caption) {
+  :where(.bt-text, .bt-heading, .bt-display, .bt-caption) {
     min-inline-size: 0;
     font-family: var(--bt-font-body), ui-sans-serif, system-ui, sans-serif;
     overflow-wrap: anywhere;
@@ -17,6 +17,12 @@
     font-weight: var(--bt-weight-heavy);
     line-height: var(--bt-leading-heading);
   }
+  :where(.bt-display) {
+    font-size: var(--bt-text-display);
+    font-weight: var(--bt-weight-display);
+    line-height: var(--bt-leading-heading);
+  }
+  @media (max-width: 850px) { :where(.bt-display) { font-size: var(--bt-text-heading); } }
   :where(.bt-caption) {
     font-size: var(--bt-text-caption);
     font-weight: var(--bt-weight-medium);

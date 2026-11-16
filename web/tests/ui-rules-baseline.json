@@ -353,13 +353,6 @@
       "bt-boundary-quiet": 1
     }
   },
-  "web/app/layout.tsx": {
-    "sha256": "09f20a574f69e3876d91536bb22122287e3f733bf1c321445c0e009d6687ed69",
-    "counts": {
-      "bt-style-opaque": 1,
-      "bt-title-format": 2
-    }
-  },
   "web/features/auction-management/bid-slot.tsx": {
     "sha256": "3950ec3be4c83aaf44d7e995c0e610fed756f18ede387130dc01869600e8f886",
     "counts": {

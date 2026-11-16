@@ -9,7 +9,10 @@
     "typecheck": "node scripts/generate-nav.mjs && tsc --noEmit",
     "lint": "cd .. && web/node_modules/.bin/eslint --config web/eslint.config.mjs web packages/ui/src --max-warnings 0",
     "test": "vitest run && node scripts/test-features.mjs",
-    "ui:rules": "node scripts/check-ui-rules.mjs",
+    "ui:rules": "node scripts/check-ui-rules.mjs && node scripts/check-page-contract.mjs",
+    "new:page": "node scripts/new-page.mjs",
+    "size:measure": "node scripts/check-page-size.mjs measure",
+    "size:compare": "node scripts/check-page-size.mjs compare",
     "test:ui-rules": "node --test scripts/check-ui-rules.test.mjs && vitest run tests/worst-case.test.ts --maxWorkers 1"
   },
   "dependencies": {

@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { dirname, join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import ts from 'typescript';
-import { ROOT, LEDGER, census, cssDeclarations, declaredLayers, hashSource, inspectSource, measureReference } from './check-ui-rules.mjs';
+import { ROOT, LEDGER, census, cssDeclarations, declaredLayers, hashSource, inspectSource, measureReference, committedHistory } from './check-ui-rules.mjs';
 import { LEGACY_UI_INVENTORY, legacyUiIssues } from './check-foundation-boundary.mjs';
 import { FOUNDATION_ENTRY } from './foundation-boundary.mjs';
 import { splitOutside } from './token-cascade.mjs';
@@ -67,9 +67,12 @@ test('canonical State announces errors without pretending the unchanged legacy g
   assert.deepEqual(inspectSource(canonical, readFileSync(join(ROOT,canonical),'utf8')), {});
   assert.equal(inspectSource('packages/ui/src/index.tsx', git('show','main:packages/ui/src/index.tsx'), {legacyMotionAllowed:true})['bt-state-alert-gap'], 1);
   const ledger = JSON.parse(readFileSync(join(ROOT,LEDGER),'utf8'));
-  assert.equal(Object.keys(ledger).length,92);
-  assert.equal(Object.values(ledger).flatMap(entry => Object.values(entry.counts)).reduce((a,b)=>a+b,0),324);
-  assert.deepEqual(await measureReference(),ledger);
+  assert.equal(Object.keys(ledger).length,91);
+  assert.equal(Object.values(ledger).flatMap(entry => Object.values(entry.counts)).reduce((a,b)=>a+b,0),321);
+  const {initial} = committedHistory(ROOT);
+  assert.deepEqual(await measureReference(),initial);
+  const retiredRoot = {...initial};delete retiredRoot['web/app/layout.tsx'];assert.deepEqual(ledger,retiredRoot);
+  assert.equal(ledger['packages/ui/src/index.tsx'].counts['bt-state-alert-gap'],1);
 });
 
 

@@ -1,0 +1,6 @@
+@layer components {
+  :where(.bt-page-example-stack) { display: grid; gap: var(--bt-space-4); min-inline-size: 0; }
+  :where(.bt-page-example-grid) { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--bt-space-4); min-inline-size: 0; }
+  :where(.bt-page-example-grid > *) { min-inline-size: 0; overflow-wrap: anywhere; }
+  :where(.bt-page-methods) { display: grid; gap: var(--bt-space-2); padding-inline-start: var(--bt-space-6); list-style: disc; }
+}

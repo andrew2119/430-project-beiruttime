@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import ts from 'typescript';
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import { metadataIssues, motionTokenMs, propertyName, unwrap } from './ui-syntax.mjs';
+import { ownedRootFontClasses } from './ui-bootstrap.mjs';
 import { FOUNDATION_CONTROLS, FOUNDATION_ENTRY, LEGACY_ENTRIES } from './foundation-boundary.mjs';
 
 // Use the parser and semantic plugin already owned by the pinned framework.
@@ -635,7 +636,8 @@ export function inspectSource(file, source, { layers = new Set(), legacyMotionAl
         const rawClass = classAttr.initializer && ts.isJsxExpression(classAttr.initializer) ? unwrap(classAttr.initializer.expression) : undefined;
         const isForwardedName = part => ts.isIdentifier(part) && part.text === 'className';
         const forwarding = file.startsWith('packages/ui/src/') && rawClass && (isForwardedName(rawClass) || (ts.isCallExpression(rawClass) && /^(?:cn|clsx|classNames)$/.test(rawClass.expression.getText(tree)) && rawClass.arguments.some(isForwardedName) && rawClass.arguments.every(part => isForwardedName(part) || !values(part).opaque)));
-        if (result.opaque && !forwarding) add('bt-style-opaque');
+        const documentFonts = node.tagName.getText(tree) === 'html' && ownedRootFontClasses(file,rawClass,tree);
+        if (result.opaque && !forwarding && !documentFonts) add('bt-style-opaque');
         for (const text of result.words) {
           classes(text);
           if (/(?:^|[\s:])outline-(?:none|0)(?:\s|$)/.test(text) && !actualFocus(text)) add('bt-focus-lost');

@@ -9,6 +9,8 @@
   --bt-motion-menu: 200ms;
   --bt-motion-overlay: 250ms;
   --bt-motion-exit: 120ms;
+  /* Feedback waits, never navigation. Commit cancels this pending indication. */
+  --bt-motion-pending: 120ms;
   --bt-motion-image: 180ms;
   --bt-motion-gentle: 120ms;
   /* Occasional document crossfade, never a delay before accepting input. */

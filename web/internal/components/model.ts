@@ -1,3 +1,4 @@
+import { replacePageQuery } from '@/lib/page-speed/address';
 import { reviewWatches, type ReviewDataMode } from '../../tests/fixtures/worst-case';
 export type BoardLocale = 'en'|'ar';
 export const DATA_MODES = ['demo','worst','empty','one','thousand'] as const;
@@ -21,4 +22,4 @@ export function pageOf<T>(items:readonly T[],requested:number) {
   return {items:items.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE),total:items.length,page,pages};
 }
 export const boardData = (mode:ReviewDataMode) => reviewWatches(mode).items;
-export function persistBoard(mode:ReviewDataMode,locale:BoardLocale) {const url = new URL(window.location.href);url.searchParams.set('data',mode);url.searchParams.set('locale',locale);window.history.replaceState(null,'',url);document.title = locale === 'ar' ? 'مكوّنات الواجهة · بيروت تايم' : 'Interface components · Beirut Time';}
+export function persistBoard(mode:ReviewDataMode,locale:BoardLocale) {replacePageQuery({data:mode,locale});document.title = locale === 'ar' ? 'مكوّنات الواجهة · بيروت تايم' : 'Interface components · Beirut Time';}
