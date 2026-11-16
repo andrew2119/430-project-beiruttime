@@ -28,7 +28,7 @@ async def expire(pool):
     async with unit_of_work(pool) as tx:
         # Start/callback/expiry all take the order lock before inspecting attempts.
         rows = await tx.fetch(
-            """SELECT * FROM l08_orders WHERE state IN ('awaiting_payment','payment_unknown')
+            """SELECT * FROM l08_orders WHERE currency='USD' AND state IN ('awaiting_payment','payment_unknown')
             AND deadline<=clock_timestamp() ORDER BY deadline LIMIT 25 FOR UPDATE SKIP LOCKED"""
         )
         for row in rows:

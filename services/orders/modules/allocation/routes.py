@@ -246,7 +246,7 @@ async def buyer_reservations(
     ):
         raise PublicError("invalid_cursor", "Reload the first reservations page.", status=422)
     rows = await request.app.state.pool.fetch(
-        """SELECT * FROM l08_orders o WHERE buyer_id=$1 AND (state='awaiting_notification' OR (state IN ('awaiting_payment','payment_unknown') AND deadline>clock_timestamp()))
+        """SELECT * FROM l08_orders o WHERE buyer_id=$1 AND currency='USD' AND (state='awaiting_notification' OR (state IN ('awaiting_payment','payment_unknown') AND deadline>clock_timestamp()))
         AND ($2::uuid IS NULL OR (o.created_at,o.id)<(SELECT created_at,id FROM l08_orders WHERE id=$2 AND buyer_id=$1))
         ORDER BY created_at DESC,id DESC LIMIT $3""",
         actor.actor.subject_id,
@@ -277,9 +277,9 @@ async def orders(request: Request, actor=Depends(principal)):
     if selected is not None:
         require_scope(actor, "orders.read", selected)
     rows = await request.app.state.pool.fetch(
-        """SELECT * FROM l08_orders WHERE
+        """SELECT * FROM l08_orders WHERE currency='USD' AND (
         ($2::uuid IS NULL AND (buyer_id=$1 OR (seller_id=$1 AND organization_id IS NULL)))
-        OR ($2::uuid IS NOT NULL AND organization_id=$2)
+        OR ($2::uuid IS NOT NULL AND organization_id=$2))
         ORDER BY created_at DESC,id LIMIT 100""",
         actor.actor.subject_id,
         selected,
@@ -293,8 +293,10 @@ async def order(order_id: UUID, request: Request, actor=Depends(principal)):
     if not row:
         raise HTTPException(404)
     readable(actor, row)
+    if row["currency"] != "USD":
+        raise PublicError("legacy_currency_reconciliation_required", "This archived order needs recorded reconciliation.", status=409)
     records = await request.app.state.pool.fetch(
-        "SELECT action,reason,revision,occurred_at FROM l08_audit WHERE resource_id=$1 AND action IN ('reserve','allocate','payment-attempt','payment-confirmed','payment-hold','expiry-fence','pre-release-intake') ORDER BY id",
+        "SELECT action,reason,revision,occurred_at FROM l08_audit WHERE resource_id=$1 AND action IN ('reserve','allocate','payment-attempt','payment-confirmed','payment-notified','payment-hold','expiry-fence','expiry-release','pre-release-intake') ORDER BY id",
         order_id,
     )
     return {"order": order_view(row), "history": [dict(r) for r in records]}

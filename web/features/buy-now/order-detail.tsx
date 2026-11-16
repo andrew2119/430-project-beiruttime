@@ -34,7 +34,6 @@ function Detail({id,fingerprint}:{id:string;fingerprint:string}) {
   const[receiptId,setReceiptId]=useState<string|null>(null);
   const op=useRef<{body:string;key:string}|null>(null), alive=useRef(true);
   useEffect(()=>{alive.current=true;const revoke=()=>{alive.current=false;};window.addEventListener('bt:access-change',revoke);return()=>{alive.current=false;window.removeEventListener('bt:access-change',revoke);};},[]);
-  useEffect(()=>{const retain=(event:MouseEvent)=>{if((busy||uncertain)&&event.target instanceof Element&&event.target.closest('a.locale-control')){event.preventDefault();event.stopPropagation();}};document.addEventListener('click',retain,true);return()=>document.removeEventListener('click',retain,true);},[busy,uncertain]);
   const record=detail.data?.order, principal=session?.principal;
   const canIntake=record?.organization_id
     ?principal?.organization_grants?.some(g=>g.organization_id===record.organization_id&&g.permissions.includes('orders.intake'))
@@ -84,12 +83,13 @@ function Detail({id,fingerprint}:{id:string;fingerprint:string}) {
       <Card className="checkout-result"><CardHead title={t[record.state]} icon={ShoppingBag}/>{record.is_demo&&<p>{t.sample}</p>}
         <dl><dt>{t.watch}</dt><dd><BidiReference>{record.watch_id}</BidiReference></dd>
           <dt>{t.total}</dt><dd><BidiReference>{formatQuotedMoney(record.total_minor,record.currency,locale)}</BidiReference></dd>
-          <dt>{t.deadline}</dt><dd><time dateTime={record.deadline}>{new Date(record.deadline).toLocaleString(locale,{timeZone:'Asia/Beirut'})}</time></dd>
+          <dt>{t.deadline}</dt><dd>{record.deadline?<time dateTime={record.deadline}>{new Date(record.deadline).toLocaleString(locale,{timeZone:'Asia/Beirut'})}</time>:t.notificationPending}</dd>
+          {record.notified_at&&<><dt>{t.notifiedAt}</dt><dd><time dateTime={record.notified_at}>{new Date(record.notified_at).toLocaleString(locale,{timeZone:'Asia/Beirut'})}</time></dd></>}
           <dt>{t.revision}</dt><dd>{record.revision.toLocaleString(locale)}</dd>
         </dl><Notice>{t.paymentNotice}</Notice>
       </Card>
       <Card><CardHead title={t.history} icon={History}/><AnimatedList className="checkout-history" items={detail.data?.history??[]} getKey={entry=>`${entry.action}-${entry.revision}-${entry.occurred_at}`}>{entry=><div className="checkout-history-row">
-        <strong>{entry.action==='reserve'?t.saved:entry.action==='expiry-fence'?t.expired_fenced:entry.action==='payment-hold'?t.payment_unknown:entry.action==='allocate'?t.allocated:entry.action==='payment-attempt'?t.attemptCreated:entry.action==='payment-confirmed'?t.confirmedPayment:entry.action==='pre-release-intake'?t.intake:t.history}</strong>
+        <strong>{entry.action==='reserve'?t.saved:entry.action==='expiry-fence'?t.expired_fenced:entry.action==='expiry-release'?t.expired_released:entry.action==='payment-notified'?t.notifiedAt:entry.action==='payment-hold'?t.payment_unknown:entry.action==='allocate'?t.allocated:entry.action==='payment-attempt'?t.attemptCreated:entry.action==='payment-confirmed'?t.confirmedPayment:entry.action==='pre-release-intake'?t.intake:t.history}</strong>
         <time dateTime={entry.occurred_at}>{new Date(entry.occurred_at).toLocaleString(locale,{timeZone:'Asia/Beirut'})}</time>
         <span>{t.revision} {entry.revision.toLocaleString(locale)}</span>
       </div>}</AnimatedList></Card>

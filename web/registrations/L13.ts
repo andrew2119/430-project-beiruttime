@@ -15,6 +15,7 @@ export default {
     {service:'orders',path:'/v1/checkout-context',methods:['GET'],roles:['buyer']},
     {service:'orders',path:'/v1/exact-reservations',methods:['POST'],roles:['buyer']},
     {service:'orders',path:'/v1/orders/:id/checkout',methods:['GET'],roles:['buyer']},
+    {service:'orders',path:'/v1/orders/:id/payment-method',methods:['POST'],roles:['buyer']},
     {service:'orders',path:'/v1/orders/:id/payment-attempts',methods:['POST'],roles:['buyer']},
     {service:'orders',path:'/v1/payment-attempts/:id/simulate',methods:['POST'],roles:['buyer']},
     {service:'orders',path:'/v1/orders/:id/journal',methods:['GET'],roles:['buyer',...sellers]},
@@ -23,6 +24,8 @@ export default {
     {service:'catalog',path:'/v1/listings/:id/withdrawals/current',methods:['GET'],roles:[...sellers]},
     {service:'auction',path:'/v1/auctions/:id/result',methods:['GET'],roles:['public']},
     {service:'auction',path:'/v1/auctions/:id/my-result',methods:['GET'],roles:['buyer']},
+    {service:'auction',path:'/v1/auctions/:id/fixed-end-result',methods:['GET'],roles:['public']},
+    {service:'auction',path:'/v1/auctions/:id/my-fixed-end-result',methods:['GET'],roles:['buyer']},
   ],
   slots:[{id:'l13-auction-winner',target:'watch.detail',load:()=>import('../features/buy-now/winner-slot')}]
 } satisfies import('../registry-types').Registration;

@@ -27,6 +27,8 @@ async def checkout(order_id: UUID, request: Request, actor=Depends(principal)):
         if order is None:
             raise PublicError("order_unknown", "Order not found.", status=404)
         owner(actor, order)
+        if order["currency"] != "USD":
+            raise PublicError("legacy_currency_reconciliation_required", "This archived order needs recorded reconciliation.", status=409)
         quote = await tx.fetchrow(
             "SELECT * FROM l13_order_quotes WHERE order_id=$1", order_id
         )
@@ -40,6 +42,10 @@ async def checkout(order_id: UUID, request: Request, actor=Depends(principal)):
             "quote": decoded(quote["snapshot"]) if quote else None,
             "attempts": [project(a) for a in attempts],
             "simulated": True,
+            "method_deadlines": {
+                route: deadline_for(order.get("notified_at"), route, order.get("initiation_extended_until"))
+                for route in ("card", "whish", "omt")
+            },
             "payable": quote is not None
             and (
                 order["state"] == "awaiting_payment"

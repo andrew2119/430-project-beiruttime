@@ -40,7 +40,8 @@ function Body({owner,listingId,watchId}:{owner:string;listingId:string;watchId:s
   const orders=useQuery({queryKey:['l08-orders',owner],queryFn:({signal})=>buyNowApi.orders(signal),retry:false});
   const retained=useQuery({queryKey:['l13-selected-quote',owner,selection?.quoteId],queryFn:({signal})=>authenticatedRequest<ExactQuote>(`${pricing}/${selection!.quoteId}`,{signal,accessFingerprint:owner}),enabled:!!context.data&&!context.isFetching&&!!selection&&!ignoreSelection&&selection.listingId===id,retry:false});
   const[createdQuote,setQuote]=useState<ExactQuote|null>(null),[accepted,setAccepted]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState<unknown>(null),[pending,setPending]=useState<Intent|null>(initial),[result,setResult]=useState<Order|null>(null);
-  const quote=createdQuote??(!ignoreSelection&&selection?.listingId===id?retained.data:null);
+  const candidate=createdQuote??(!ignoreSelection&&selection?.listingId===id?retained.data:null);
+  const quote=candidate?.currency==='USD'?candidate:null;
   const createKey=useRef(crypto.randomUUID()),reviewKey=useRef(crypto.randomUUID()),alive=useRef(true),inflight=useRef(false);
   useEffect(()=>{alive.current=true;const purge=()=>{alive.current=false;persistIntent(owner,null);clearQuoteSelection(owner);};window.addEventListener('bt:access-change',purge);return()=>{alive.current=false;window.removeEventListener('bt:access-change',purge);};},[owner]);
   async function getQuote(){
@@ -48,8 +49,8 @@ function Body({owner,listingId,watchId}:{owner:string;listingId:string;watchId:s
     inflight.current=true;setBusy(true);setError(null);
     const listing=context.data.listing;
     try{
-      const value=await authenticatedRequest<ExactQuote>(pricing,post({subject_id:listing.id,subject_revision:listing.revision,purpose:'purchase',source:'listing',currency:listing.facts.currency,price_minor:listing.facts.price_minor,schedule_id:'sample-v1'},createKey.current));
-      if(value.subject_id!==listing.id||value.subject_revision!==listing.revision||value.source_verified!==true||!Number.isSafeInteger(value.payable_minor))throw new ApiError(503,'quote_binding_mismatch','');
+      const value=await authenticatedRequest<ExactQuote>(pricing,post({subject_id:listing.id,subject_revision:listing.revision,purpose:'purchase',source:'listing',currency:listing.facts.currency,price_minor:listing.facts.price_minor,schedule_id:'usd-v2'},createKey.current));
+      if(value.currency!=='USD'||value.subject_id!==listing.id||value.subject_revision!==listing.revision||value.source_verified!==true||!Number.isSafeInteger(value.payable_minor))throw new ApiError(503,'quote_binding_mismatch','');
       if(alive.current){setQuote(value);setAccepted(false);rememberQuoteSelection({owner,listingId:listing.id,quoteId:value.id});}
     }catch(reason){if(alive.current)setError(reason);}finally{inflight.current=false;if(alive.current)setBusy(false);}
   }
@@ -74,7 +75,7 @@ function Body({owner,listingId,watchId}:{owner:string;listingId:string;watchId:s
   }
   const c=context.data,allowed=c?.watch.status==='available'&&c.watch.sale_mode==='fixed';
   const quoteMatches=quote&&c&&quote.subject_id===c.listing.id&&quote.subject_revision===c.listing.revision&&quote.source==='listing'&&quote.source_verified===true&&quote.purpose==='purchase';
-  const failure=error??(!createdQuote?retained.error:null);
+  const failure=error??(candidate&&candidate.currency!=='USD'?new ApiError(409,'legacy_currency_reconciliation_required',''):!createdQuote?retained.error:null);
   function resetQuote(){if(busy||pending)return;clearQuoteSelection(owner);setIgnoreSelection(true);setQuote(null);setAccepted(false);setError(null);createKey.current=crypto.randomUUID();reviewKey.current=crypto.randomUUID();}
   return <><div className="checkout-grid"><Card className="checkout-slot"><CardHead title={t.selected} icon={ShoppingBag}/>
     {!id&&!watchId&&<SectionState title={t.empty} icon={ShoppingBag}><ButtonLink href={`/${locale}/watches`}>{t.browse}</ButtonLink></SectionState>}
