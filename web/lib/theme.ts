@@ -1,4 +1,4 @@
-/** Cookie-only SSR preference, following Creator Pipeline's theme contract. */
+/** The server and client share one cookie-backed, two-theme preference. */
 export const THEMES = ['light', 'dark'] as const;
 export type Theme = typeof THEMES[number];
 export const THEME_COOKIE = 'bt-theme';
