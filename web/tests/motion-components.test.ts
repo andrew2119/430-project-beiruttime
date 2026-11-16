@@ -8,8 +8,8 @@ import { ThemeSwitch } from '../shell/theme-switch';
 const state = vi.hoisted(() => ({theme:'light' as 'light'|'dark', apply:vi.fn(), transition:vi.fn(), click:undefined as ((detail:number)=>void)|undefined, key:undefined as (()=>void)|undefined, pointer:undefined as (()=>void)|undefined, focus:undefined as (()=>void)|undefined, target:{dataset:{} as Record<string,string>,matches:():boolean=>true}, pending:false}));
 vi.mock('next/link', () => ({useLinkStatus:() => ({pending:state.pending})}));
 vi.mock('@/shell/theme-provider', () => ({useTheme:() => ({theme:state.theme, applyTheme:state.apply})}));
-vi.mock('@/lib/theme-transition', () => ({changeTheme:(theme:string,apply:(theme:string)=>void,animate:boolean) => {state.transition(theme,animate);apply(theme);}}));
-vi.mock('@beirut-time/ui', async () => {
+vi.mock('@/lib/theme-request', () => ({warmThemeTransition:()=>{},requestTheme:(theme:string,apply:(theme:string)=>void,animate:boolean) => {state.transition(theme,animate);apply(theme);}}));
+vi.mock('@beirut-time/ui/foundation', async () => {
   const {createElement:element}=await import('react');
   return {Button:({children,variant,size,onClick,onKeyDown,onPointerDown,onFocus,...props}:ComponentProps<'button'> & {variant?:string;size?:string}) => {
     void variant;void size;
