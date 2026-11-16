@@ -4,6 +4,7 @@ from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_runtime.principal import require_scope
 from service_app.orders_dependencies import principal, service
 from service_app.orders_kernel import paid_fact
+from bt_contracts.orders.journal.v2 import PaidOrderFactV2
 
 router = APIRouter(tags=["payment-journal-v1"])
 
@@ -32,6 +33,13 @@ async def paid(order_id: UUID, request: Request):
         return await paid_fact(tx, order_id)
 
 
+@router.get("/internal/v2/orders/{order_id}/paid-fact", response_model=PaidOrderFactV2)
+async def paid_v2(order_id: UUID, request: Request):
+    service(request, {"trust", "communications", "eligibility", "catalog", "service-operations"})
+    async with request.app.state.pool.acquire() as tx:
+        return await paid_fact(tx, order_id, version=2)
+
+
 @router.get("/v1/orders/{order_id}/journal")
 async def journal(order_id: UUID, request: Request, actor=Depends(principal)):
     async with request.app.state.pool.acquire() as tx:
@@ -39,6 +47,8 @@ async def journal(order_id: UUID, request: Request, actor=Depends(principal)):
         if row is None:
             raise PublicError("order_unknown", "Order not found.", status=404)
         readable(actor, row)
+        if row["currency"] != "USD":
+            raise PublicError("legacy_currency_reconciliation_required", "This archived order needs recorded reconciliation.", status=409)
         group = await tx.fetchrow(
             "SELECT * FROM l13_journal_groups WHERE order_id=$1", order_id
         )

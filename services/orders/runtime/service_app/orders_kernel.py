@@ -99,9 +99,9 @@ async def transition_order(tx, order_id, expected_revision, allowed_states, stat
     )
 
 
-async def paid_fact(tx, order_id):
+async def paid_fact(tx, order_id, *, version=1):
     row = await tx.fetchrow(
-        """SELECT o.*,q.quote_revision,q.listing_revision,q.seller_type,
+        """SELECT o.*,q.quote_revision,q.listing_revision,q.seller_type,q.snapshot,
         j.id AS journal_group_id FROM l08_orders o
         LEFT JOIN l13_order_quotes q ON q.order_id=o.id
         LEFT JOIN l13_journal_groups j ON j.order_id=o.id WHERE o.id=$1""",
@@ -109,7 +109,7 @@ async def paid_fact(tx, order_id):
     )
     if row is None:
         raise PublicError("order_unknown", "Order not found.", status=404)
-    return (
+    fact = (
         order_fact(row)
         | {
             k: str(row[k]) if isinstance(row[k], UUID) else row[k]
@@ -117,11 +117,24 @@ async def paid_fact(tx, order_id):
         }
         | {
             "order_id": str(row["id"]),
-            "paid": row["state"] == "paid_held" and row["journal_group_id"] is not None,
+            "paid": row["state"] == "paid_held" and row["journal_group_id"] is not None
+            and row["quote_revision"] is not None and row["currency"] == "USD",
             "simulated": True,
             "payout_authorized": False,
         }
     )
+    if version == 1:
+        # Old readers cannot represent a clock that has not started. Preserve the
+        # exact v1 shape for representable states; never manufacture a deadline.
+        from bt_contracts.orders.journal.facts import PaidOrderFact
+
+        if row["deadline"] is None or row["state"] not in {"awaiting_payment", "payment_unknown", "expired_fenced", "paid_held"}:
+            raise PublicError("contract_upgrade_required", "Use the notified-payment facts contract.", status=409)
+        return {key: fact[key] for key in PaidOrderFact.model_fields}
+    from .retained_money import retained_money
+
+    return fact | {"retained_economics": retained_money(decoded(row["snapshot"]), row.get("order_kind", "sale"))
+                   if row["snapshot"] is not None and row["currency"] == "USD" else None}
 
 
 async def audit(tx, resource_id, actor_key, action, reason, revision):

@@ -165,6 +165,9 @@ async def retain(tx, order, snapshot, listing_revision, seller_type):
         or snapshot.get("currency") != order["currency"]
     ):
         raise PublicError("quote_binding_mismatch", "The retained exact fee lines do not match the order.", status=409)
+    from .retained_money import retained_money
+
+    retained_money(snapshot, order.get("order_kind", "sale"))
     await tx.execute(
         """INSERT INTO l13_order_quotes(order_id,quote_id,quote_revision,listing_revision,seller_type,snapshot)
         VALUES($1,$2,$3,$4,$5,$6::jsonb)""",
