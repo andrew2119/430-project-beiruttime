@@ -21,16 +21,15 @@ volumes, or read another service's SQL. Each run creates restricted, uniquely
 named service-local databases against the shared local PostgreSQL and drops only
 its own databases/roles at completion.
 
+Set `BT_L14_PRICING_TEST_IMAGE` and `BT_L14_AUCTION_TEST_IMAGE` to existing
+local test-stage image tags. Run connected, build and browser checks only on an
+authorized proof host, not as part of the lightweight unit checks.
+
 ```sh
-H=/Users/andrew/.harness/homes/430-project/firstmate
-export PATH="$H/data/bt-tools/bin:$PATH"
-export BT_L14_PRICING_TEST_IMAGE=beirut-time/pricing:test-aa853aba-31767
-export BT_L14_AUCTION_TEST_IMAGE=beirut-time/auction:test-aa853aba-31767
-"$H/data/bt-tools/bt-heavy.sh" python3 tests/lanes/L14/run-existing-checks.py pricing auction
+python3 tests/lanes/L14/run-existing-checks.py pricing auction
 ```
 
-Use locally available equivalent test-stage tags on a different machine. The
-images must supply the Python/runtime dependencies. The runner packages the
+The images must supply the Python/runtime dependencies. The runner packages the
 current registered domain contracts first. It includes the service's original
 runtime/foundation/module tests as well as this directory's domain tests.
 
@@ -68,7 +67,7 @@ After copying the published Orders v2.1 preview into its owned paths (or merging
 that provider), run:
 
 ```sh
-"$H/data/bt-tools/bt-heavy.sh" python3 tests/lanes/L14/connected-edit-recovery.py
+python3 tests/lanes/L14/connected-edit-recovery.py
 ```
 
 This reuses local Orders/Auction test-stage images, mounts current source and the
@@ -95,9 +94,9 @@ build, named volume, shared container change or generic operation-read widening.
 
 ```sh
 # No build: reuses four existing service images and current read-only source.
-"$H/data/bt-tools/bt-heavy.sh" python3 tests/lanes/L14/q02-connected.py
+python3 tests/lanes/L14/q02-connected.py
 # After a successful current web production build:
-"$H/data/bt-tools/bt-heavy.sh" python3 tests/lanes/L14/q02-connected.py --browser
+python3 tests/lanes/L14/q02-connected.py --browser
 ```
 
 The no-build API check has passed against actual Identity/Catalog/Pricing/Orders
@@ -135,17 +134,14 @@ or fabricate a successful redirect. `browser-compose.json` explicitly records
 ## Web tests and build
 
 ```sh
-"$H/data/bt-tools/bt-heavy.sh" --build bash -c '
-  export PATH=/Users/andrew/.harness/homes/430-project/firstmate/data/bt-tools/bin:$PATH
-  (cd web && pnpm typecheck && pnpm lint && pnpm test) &&
+(cd web && pnpm typecheck && pnpm lint && pnpm test) &&
   web/node_modules/.bin/vitest run --config tests/lanes/L14/vitest.config.ts &&
   (cd web && pnpm build)
-'
 ```
 
 The lane Vitest config is rooted at the repository root, not `web/`. It checks
 EN/AR parity, registration/gateway bounds, no browser financial persistence, and
-exact BigInt selected-line fee rounding. Screens use shared Creator Pipeline
+exact BigInt selected-line fee rounding. Screens use the shared design system's
 PageLayout/PageHeader/HeaderTabs/Card/SectionState/form controls and tokens.
 
 ## Actual empty/private browser matrix
@@ -154,7 +150,7 @@ After a successful production web build:
 
 ```sh
 BT_L14_IDENTITY_IMAGE=beirut-time/accept-identity:local \
-  "$H/data/bt-tools/bt-heavy.sh" python3 tests/lanes/L14/proof-shell.py
+  python3 tests/lanes/L14/proof-shell.py
 ```
 
 This reuses local Identity/Auction/Pricing runtime images; alternate image tags
