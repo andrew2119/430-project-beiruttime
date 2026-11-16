@@ -6,17 +6,15 @@ import {
   nextTheme,
   themeCookieString,
 } from "@/lib/theme";
+import { beginThemeIntent } from '@/lib/theme-intent';
 
-/**
- * Client half of the theme system (doc 05 §1.2). The server layout stamps the
- * SSR value; this provider owns the runtime cycle. Theme switching is pure
- * CSS (tokens react to [data-theme]) — no force-rerender bridge like the
- * monolith's useTheme() (doc 05 §1.6 kills that pattern deliberately).
- */
+/** The server stamps the initial preference. Existing controls keep their
+ * transition path; new controls may commit an atomic, externally paced change. */
 
 type ThemeContextValue = {
   theme: Theme;
   cycleTheme: () => void;
+  applyTheme: (theme: Theme) => void;
 };
 
 const ThemeContext = React.createContext<ThemeContextValue | null>(null);
@@ -48,29 +46,39 @@ export function ThemeProvider({
   }, [theme]);
 
   const cycleTheme = React.useCallback(() => {
+    let transition: {finished?: Promise<void>; skipTransition?: () => void} | undefined;
+    const intent = beginThemeIntent(() => transition?.skipTransition?.());
     const next = nextTheme(theme);
     // Soft cross-fade between token sets (globals.css paces the snapshots).
     // The attribute is stamped inside the transition callback so the API
     // captures old → new; the effect above re-stamps the same value (no-op).
     const doc = document as Document & {
-      startViewTransition?: (update: () => void) => unknown;
+      startViewTransition?: (update: () => void) => {finished?: Promise<void>; skipTransition?: () => void};
     };
     if (
       typeof doc.startViewTransition === "function" &&
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
-      doc.startViewTransition(() => {
+      transition = doc.startViewTransition(() => {
+        if (!intent.isCurrent()) return;
         document.documentElement.dataset.theme = next;
         setTheme(next);
       });
+      void transition.finished?.catch(() => {}).finally(() => intent.release());
     } else {
       setTheme(next);
+      intent.release();
     }
   }, [theme]);
 
+  const applyTheme = React.useCallback((next: Theme) => {
+    document.documentElement.dataset.theme = next;
+    setTheme(next);
+  }, []);
+
   const value = React.useMemo(
-    () => ({ theme, cycleTheme }),
-    [theme, cycleTheme],
+    () => ({ theme, cycleTheme, applyTheme }),
+    [theme, cycleTheme, applyTheme],
   );
 
   return (
