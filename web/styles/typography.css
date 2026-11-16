@@ -1,0 +1,36 @@
+/* Opt-in type recipes; existing pages keep their current typography. */
+@layer base {
+  :where(.bt-text, .bt-heading, .bt-caption) {
+    min-inline-size: 0;
+    font-family: var(--bt-font-body), ui-sans-serif, system-ui, sans-serif;
+    overflow-wrap: anywhere;
+    text-align: start;
+  }
+  :where(.bt-text) {
+    font-size: var(--bt-text-body);
+    font-weight: var(--bt-weight-regular);
+    line-height: var(--bt-leading-body);
+  }
+  :where(.bt-heading) {
+    font-size: var(--bt-text-heading);
+    font-weight: var(--bt-weight-heavy);
+    line-height: var(--bt-leading-heading);
+  }
+  :where(.bt-caption) {
+    font-size: var(--bt-text-caption);
+    font-weight: var(--bt-weight-medium);
+    line-height: var(--bt-leading-body);
+  }
+  /* The local display face has proportional digits. Numeric columns use a
+     tabular system face rather than pretending that a feature flag changes it. */
+  :where(.bt-number) {
+    font-family: var(--bt-font-numeric);
+    font-variant-numeric: tabular-nums;
+    unicode-bidi: isolate;
+  }
+  /* References, URLs and money remain readable inside an Arabic sentence. */
+  :where(.bt-ltr) {
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+}

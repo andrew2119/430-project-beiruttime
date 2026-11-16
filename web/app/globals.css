@@ -4,6 +4,7 @@
 /* One ordered entry point; feature sheets consume, never redefine, these tokens. */
 @import "../styles/tokens.css";
 @import "../styles/base.css";
+@import "../styles/typography.css";
 @import "../styles/motion.css";
 @import "../styles/ui.css";
 @import "../styles/skeletons.css";

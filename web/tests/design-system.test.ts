@@ -8,12 +8,12 @@ import { canScrollBoxMove } from '../../packages/ui/src/scroll-box';
 import { areaForPath, permittedEntries } from '@/shell/navigation';
 vi.mock('next/navigation',()=>({usePathname:()=>'/en/watches'}));
 const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
-describe('Creator Pipeline foundation contract',()=>{
+describe('Beirut Time foundation contract',()=>{
  it('keeps the existing SSR cookie with a two-theme cycle and safe defaults',()=>{
   expect(parseTheme(undefined)).toBe('light');expect(parseTheme('classic')).toBe('light');expect(parseTheme('dark')).toBe('dark');expect(nextTheme('dark')).toBe('light');
   expect(themeCookieString('dark',true)).toBe('bt-theme=dark; Path=/; Max-Age=31536000; SameSite=Lax; Secure');
  });
- it('retains native button/form/label semantics and CP variants',()=>{
+ it('retains native button/form/label semantics and existing variants',()=>{
   const button=renderToStaticMarkup(h(Button,{type:'submit',disabled:true,chonk:true},'Save'));
   expect(button).toContain('type="submit"');expect(button).toContain('disabled');expect(button).toContain('pg-chonk-primary');
   expect(renderToStaticMarkup(h(Button,{className:'button-secondary'},'Cancel'))).toContain('ui-btn-outline');
@@ -47,7 +47,7 @@ describe('Creator Pipeline foundation contract',()=>{
  });
  it('has one token owner, faithful motion steps, reduced motion and an exact 850px boundary',()=>{
   const tokens=read('../styles/tokens.css'), motion=read('../styles/motion.css');
-  expect(tokens).toContain('--ds-motion-theme: 0.45s');expect(tokens).toContain('--ds-motion-image-reveal: 0.18s');expect(tokens).toContain('--ds-hit-target: 44px');expect(tokens).toContain('--ds-phone-control: 36px');
+  expect(tokens).toContain('--ds-motion-theme: 0.45s');expect(tokens).toContain('--ds-motion-image-reveal: 0.18s');expect(tokens).toContain('--bt-touch-target: 44px');expect(tokens).toContain('--bt-phone-control: 36px');
   expect(motion).toContain('@media (prefers-reduced-motion: reduce)');expect(motion).toContain('::view-transition-new(*)');
   expect(read('../shell/theme-provider.tsx')).toContain('doc.startViewTransition(() =>');
   expect(read('../shell/phone-navigation.tsx')).toContain('(max-width: 850px)');expect(read('../styles/mobile.css')).toContain('(max-width: 850px)');

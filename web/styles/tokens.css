@@ -1,63 +1,79 @@
-/* ============================================================================
-   styles/tokens.css - the ONE token file (Tiers 1-4 + Tier 3 scales).
-   Imported first from app/globals.css. `@theme` blocks stay at top level (they
-   are Tailwind v4 theme declarations, never layered). Every later token
-   addition lands here with a decision trail; feature files consume, never
-   define, tokens.
-   ========================================================================== */
+/* Beirut Time's only global design-token owner.
+ * Primitive values, theme roles, scales, then exact-value migration bridges.
+ * Tailwind theme exports stay top-level; features only consume these contracts.
+ * Old selectors and aliases remain until their final Sprint 1 consumer moves.
+ * Motion values are preserved here; their shared recipes belong to motion.css.
+ */
 
-/* ============================================================================
-   PHASE-3 TOKEN SYSTEM - the 4-tier architecture (doc 05 §1.2)
-   Tier 1+4: primitives (OKLCH ramps, radius, easings) - @theme
-   Tier 2:   shadcn contract per theme - :root / [data-theme]
-   Tier 3:   Geist-style scales (spacing / shadows / motion) - :root
-   Values are the REAL anchors computed first-hand in doc 05 §1.3.
-   ========================================================================== */
+:root {
+  --bt-burgundy-50: oklch(97% 0.012 27);
+  --bt-burgundy-100: oklch(91.4% 0.028 28.5);
+  --bt-burgundy-200: oklch(85% 0.055 28);
+  --bt-burgundy-300: oklch(76% 0.09 27.5);
+  --bt-burgundy-400: oklch(66% 0.135 27.5);
+  --bt-burgundy-500: oklch(58% 0.19 27.5);
+  --bt-burgundy-600: oklch(50.6% 0.193 27.7);
+  --bt-burgundy-700: oklch(41.6% 0.148 26.6);
+  --bt-burgundy-800: oklch(35.6% 0.124 26.2);
+  --bt-burgundy-900: oklch(29% 0.1 26);
+  --bt-burgundy-950: oklch(23.3% 0.079 25.8);
+  --bt-sand-50: oklch(99.1% 0.01 87.5);
+  --bt-sand-100: oklch(95.8% 0.015 90.2);
+  --bt-sand-200: oklch(92.4% 0.019 83.1);
+  --bt-sand-300: oklch(88.5% 0.03 85.6);
+  --bt-sand-350: oklch(86.1% 0.032 84.6);
+  --bt-sand-400: oklch(83.5% 0.043 88.8);
+  --bt-sand-500: oklch(66.9% 0.032 78.7);
+  --bt-sand-600: oklch(53.9% 0.039 71.2);
+  --bt-sand-800: oklch(37.6% 0.022 64.3);
+  --bt-brass-500: oklch(61.8% 0.078 65.5);
+  --bt-brass-600: oklch(56% 0.062 68.6);
+  --bt-status-green: oklch(46.8% 0.109 152);
+  --bt-status-orange: oklch(51.7% 0.108 76.3);
+  --bt-status-blue: oklch(54.6% 0.215 262.9);
+  --bt-status-pink: oklch(59.2% 0.218 0.6);
+  --bt-radius-base: 0.5rem;
+  --bt-radius-sm: calc(var(--bt-radius-base) - 4px);
+  --bt-radius-md: calc(var(--bt-radius-base) - 2px);
+  --bt-radius-lg: var(--bt-radius-base);
+  --bt-radius-xl: calc(var(--bt-radius-base) + 4px);
+  --bt-radius-2xl: calc(var(--bt-radius-base) + 8px);
+}
 
+/* Existing utility and consumer spellings resolve to the same owned values. */
 @theme {
-  /* ---- Tier 4: Rebellion bordeaux brand ramp (hue ≈ 26-28) ---- */
-  --color-rebellion-50: oklch(97% 0.012 27);
-  --color-rebellion-100: oklch(91.4% 0.028 28.5);
-  --color-rebellion-200: oklch(85% 0.055 28);
-  --color-rebellion-300: oklch(76% 0.09 27.5);
-  --color-rebellion-400: oklch(66% 0.135 27.5);
-  --color-rebellion-500: oklch(58% 0.19 27.5);
-  --color-rebellion-600: oklch(50.6% 0.193 27.7);
-  --color-rebellion-700: oklch(41.6% 0.148 26.6);
-  --color-rebellion-800: oklch(35.6% 0.124 26.2);
-  --color-rebellion-900: oklch(29% 0.1 26);
-  --color-rebellion-950: oklch(23.3% 0.079 25.8);
-
-  /* ---- Tier 4: sand warm-neutral ramp (hue ≈ 85) ---- */
-  --color-sand-50: oklch(99.1% 0.01 87.5);
-  --color-sand-100: oklch(95.8% 0.015 90.2);
-  --color-sand-200: oklch(92.4% 0.019 83.1);
-  --color-sand-300: oklch(88.5% 0.03 85.6);
-  --color-sand-350: oklch(86.1% 0.032 84.6);
-  --color-sand-400: oklch(83.5% 0.043 88.8);
-  --color-sand-500: oklch(66.9% 0.032 78.7);
-  --color-sand-600: oklch(53.9% 0.039 71.2);
-  --color-sand-800: oklch(37.6% 0.022 64.3);
-
-  /* ---- Tier 4: camel accent ---- */
-  --color-camel-500: oklch(61.8% 0.078 65.5);
-  --color-camel-600: oklch(56% 0.062 68.6);
-
-  /* ---- Status hues (fg anchors; bg/border derived via alpha) ---- */
-  --color-status-green: oklch(46.8% 0.109 152);
-  --color-status-orange: oklch(51.7% 0.108 76.3);
-  --color-status-blue: oklch(54.6% 0.215 262.9);
-  --color-status-pink: oklch(59.2% 0.218 0.6);
-
-  /* ---- Tier 1: derived radius ramp (v0 pattern: one base, calc'd) ---- */
-  --radius: 0.5rem;
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-
-  /* ---- Tier 1: the extracted v0 easing vocabulary ---- */
+  --color-rebellion-50: var(--bt-burgundy-50);
+  --color-rebellion-100: var(--bt-burgundy-100);
+  --color-rebellion-200: var(--bt-burgundy-200);
+  --color-rebellion-300: var(--bt-burgundy-300);
+  --color-rebellion-400: var(--bt-burgundy-400);
+  --color-rebellion-500: var(--bt-burgundy-500);
+  --color-rebellion-600: var(--bt-burgundy-600);
+  --color-rebellion-700: var(--bt-burgundy-700);
+  --color-rebellion-800: var(--bt-burgundy-800);
+  --color-rebellion-900: var(--bt-burgundy-900);
+  --color-rebellion-950: var(--bt-burgundy-950);
+  --color-sand-50: var(--bt-sand-50);
+  --color-sand-100: var(--bt-sand-100);
+  --color-sand-200: var(--bt-sand-200);
+  --color-sand-300: var(--bt-sand-300);
+  --color-sand-350: var(--bt-sand-350);
+  --color-sand-400: var(--bt-sand-400);
+  --color-sand-500: var(--bt-sand-500);
+  --color-sand-600: var(--bt-sand-600);
+  --color-sand-800: var(--bt-sand-800);
+  --color-camel-500: var(--bt-brass-500);
+  --color-camel-600: var(--bt-brass-600);
+  --color-status-green: var(--bt-status-green);
+  --color-status-orange: var(--bt-status-orange);
+  --color-status-blue: var(--bt-status-blue);
+  --color-status-pink: var(--bt-status-pink);
+  --radius: var(--bt-radius-base);
+  --radius-sm: var(--bt-radius-sm);
+  --radius-md: var(--bt-radius-md);
+  --radius-lg: var(--bt-radius-lg);
+  --radius-xl: var(--bt-radius-xl);
+  --radius-2xl: var(--bt-radius-2xl);
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out-soft: cubic-bezier(0, 0, 0.2, 1);
   --ease-in-hard: cubic-bezier(0.4, 0, 1, 1);
@@ -66,183 +82,221 @@
   --ease-expressive: cubic-bezier(0.31, 0.1, 0.08, 0.96);
 }
 
-/* Map the shadcn contract into Tailwind v4 utilities (bg-background etc.) */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary-ink: var(--primary-ink);
-  --color-muted: var(--muted);
+  --color-background: var(--bt-background);
+  --color-foreground: var(--bt-foreground);
+  --color-card: var(--bt-card);
+  --color-card-foreground: var(--bt-card-foreground);
+  --color-popover: var(--bt-popover);
+  --color-popover-foreground: var(--bt-popover-foreground);
+  --color-primary: var(--bt-primary);
+  --color-primary-foreground: var(--bt-primary-foreground);
+  --color-primary-ink: var(--bt-primary-ink);
+  --color-muted: var(--bt-muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --font-sans: var(--font-active);
+  --color-accent: var(--bt-accent);
+  --color-accent-foreground: var(--bt-accent-foreground);
+  --color-destructive: var(--bt-destructive);
+  --color-border: var(--bt-border);
+  --color-input: var(--bt-input);
+  --color-ring: var(--bt-ring);
+  --font-sans: var(--bt-font-body);
 }
 
-/* Font: Lexend Deca (captain 2026-09-30; replaces Geist, OD-17d). One variable
-   face (weights 100 to 900) for titles, body, controls and numbers. It has no
-   tabular figures, so `tabular-nums` does nothing in it: digits in a column
-   are proportional (seen and accepted by the captain with the pick). */
-:root { --font-active: var(--font-lexend-deca); }
+:root {
+  --bt-font-body: var(--font-lexend-deca);
+  --font-active: var(--bt-font-body);
+}
 
-/* ============================================================================
-   Tier 2 — the shadcn contract, mapped per theme.
-   CLASSIC (default): bordeaux + sand — the brand default (THEME_CLASSIC).
-   ========================================================================== */
 :root,
 [data-theme="classic"] {
-  /* Decision 25: ink may lift in Dark; fills and their light labels must not. */
-  --green-ink: var(--color-status-green);
-  --background: var(--color-sand-100);
-  --foreground: var(--color-sand-800);
-  --card: var(--color-sand-50);
-  --card-foreground: var(--color-sand-800);
-  --popover: var(--color-sand-50);
-  --popover-foreground: var(--color-sand-800);
-  --primary: var(--color-rebellion-700);
-  --primary-foreground: var(--color-sand-50);
-  /* Primary ink: the color of primary-tinted text, icons, links and graphic
-     marks (bars, underlines, state borders). Reads through `text-primary`
-     (base.css) and the vocabulary's `color:` rules. Equals --primary here and
-     in Light; Dark lifts it to the readable step of the same ramp. */
-  --primary-ink: var(--primary);
-  --muted: var(--color-sand-200);
-  --muted-foreground: var(--color-sand-600);
-  --accent: var(--color-sand-200);
-  --accent-foreground: var(--color-sand-800);
-  --destructive: var(--color-rebellion-600);
-  /* Destructive ink: the color of destructive-tinted text (form errors, the
-     red label of a quiet danger action). Reads through `text-destructive`
-     (base.css). Equals --destructive here and in Light; Dark lifts it to the
-     readable step of the same ramp. */
-  --destructive-ink: var(--destructive);
-  --border: var(--color-sand-350);
-  --input: var(--color-sand-350);
-  --ring: var(--color-rebellion-700);
-  --ds-canvas: oklch(93.6% 0.016 86);
-  /* The switches' calm colour code (captain, finding 28, 2026-10-20; lib/switch-hue.ts):
-     green done or in, amber waiting, blue new or open, rose stopped, plum a spare fifth;
-     --calm-ink is the plain strong ink of a selected choice with no meaning colour.
-     Lower chroma than the status tokens, 5.9:1 or better on each look's card. */
-  --tone-green: oklch(47% 0.075 150);
-  --tone-amber: oklch(50% 0.085 70);
-  --tone-blue: oklch(47% 0.08 250);
-  --tone-rose: oklch(48% 0.095 22);
-  --tone-plum: oklch(46% 0.07 320);
-  --calm-ink: oklch(30% 0.02 60);
+  --bt-success-ink: var(--bt-status-green);
+  --green-ink: var(--bt-success-ink);
+  --bt-background: var(--bt-sand-100);
+  --background: var(--bt-background);
+  --bt-foreground: var(--bt-sand-800);
+  --foreground: var(--bt-foreground);
+  --bt-card: var(--bt-sand-50);
+  --card: var(--bt-card);
+  --bt-card-foreground: var(--bt-sand-800);
+  --card-foreground: var(--bt-card-foreground);
+  --bt-popover: var(--bt-sand-50);
+  --popover: var(--bt-popover);
+  --bt-popover-foreground: var(--bt-sand-800);
+  --popover-foreground: var(--bt-popover-foreground);
+  --bt-primary: var(--bt-burgundy-700);
+  --primary: var(--bt-primary);
+  --bt-primary-foreground: var(--bt-sand-50);
+  --primary-foreground: var(--bt-primary-foreground);
+  --bt-primary-ink: var(--bt-primary);
+  --primary-ink: var(--bt-primary-ink);
+  --bt-muted: var(--bt-sand-200);
+  --muted: var(--bt-muted);
+  --bt-muted-foreground: var(--bt-sand-600);
+  --bt-compat-muted-foreground: var(--bt-sand-600);
+  --muted-foreground: var(--bt-compat-muted-foreground);
+  --bt-accent: var(--bt-sand-200);
+  --accent: var(--bt-accent);
+  --bt-accent-foreground: var(--bt-sand-800);
+  --accent-foreground: var(--bt-accent-foreground);
+  --bt-destructive: var(--bt-burgundy-600);
+  --destructive: var(--bt-destructive);
+  --bt-destructive-ink: var(--bt-destructive);
+  --destructive-ink: var(--bt-destructive-ink);
+  --bt-border: var(--bt-sand-350);
+  --border: var(--bt-border);
+  --bt-input: var(--bt-sand-350);
+  --input: var(--bt-input);
+  --bt-ring: var(--bt-burgundy-700);
+  --ring: var(--bt-ring);
+  --bt-canvas: oklch(93.6% 0.016 86);
+  --ds-canvas: var(--bt-canvas);
+  --bt-tone-green: oklch(47% 0.075 150);
+  --tone-green: var(--bt-tone-green);
+  --bt-tone-amber: oklch(50% 0.085 70);
+  --tone-amber: var(--bt-tone-amber);
+  --bt-tone-blue: oklch(47% 0.08 250);
+  --tone-blue: var(--bt-tone-blue);
+  --bt-tone-rose: oklch(48% 0.095 22);
+  --tone-rose: var(--bt-tone-rose);
+  --bt-tone-plum: oklch(46% 0.07 320);
+  --tone-plum: var(--bt-tone-plum);
+  --bt-choice-ink: oklch(30% 0.02 60);
+  --calm-ink: var(--bt-choice-ink);
   color-scheme: light;
 }
 
-/* LIGHT — today's light theme keeps a BLUE primary (real existing fact,
-   doc 05 §1.3); RATIFIED OD-17a 2026-07-10: keep the blue primaries (behavior-preserving).
-   The five greys of hue 90 (background, muted, accent, border, input) are
-   written as oklab(L 0 C), which is the same colour as oklch(L C 90). Written
-   with the hue, a browser works the green-red axis out as C times its own
-   cosine of 90 degrees, a rounding leftover near 1e-10 instead of 0, and
-   prints every colour mixed from such a grey with an exponent
-   (oklab(0.955 -1.74846e-10 0.004)). The accessibility scanner cannot read
-   an exponent and stops deciding contrast for the whole page, so every Light
-   contrast check passed without checking anything (2026-10-11). Keep a hue-90
-   grey in this form; lib/theme-tokens.test.ts and
-   tests/a11y/contrast-scan-decides.spec.ts guard it. */
 [data-theme="light"] {
-  --background: oklab(98.5% 0 0.002);
-  --foreground: oklch(24% 0.01 80);
-  --card: oklch(100% 0 0);
-  --card-foreground: oklch(24% 0.01 80);
-  --popover: oklch(100% 0 0);
-  --popover-foreground: oklch(24% 0.01 80);
-  --primary: oklch(53.9% 0.256 262.8);
-  --primary-foreground: oklch(99% 0 0);
-  --primary-ink: var(--primary);
-  --muted: oklab(95.5% 0 0.004);
-  --muted-foreground: oklch(50% 0.012 80);
-  --accent: oklab(94.5% 0 0.006);
-  --accent-foreground: oklch(24% 0.01 80);
-  --destructive: var(--color-rebellion-600);
-  --destructive-ink: var(--destructive);
-  --border: oklab(90% 0 0.006);
-  --input: oklab(90% 0 0.006);
-  --ring: oklch(53.9% 0.256 262.8);
-  --ds-canvas: #eef2f7;
-  --tone-green: oklch(48% 0.085 155);
-  --tone-amber: oklch(51% 0.095 65);
-  --tone-blue: oklch(48% 0.11 258);
-  --tone-rose: oklch(50% 0.11 15);
-  --tone-plum: oklch(47% 0.09 305);
-  --calm-ink: oklch(24% 0.01 260);
+  --bt-background: oklab(98.5% 0 0.002);
+  --background: var(--bt-background);
+  --bt-foreground: oklch(24% 0.01 80);
+  --foreground: var(--bt-foreground);
+  --bt-card: oklch(100% 0 0);
+  --card: var(--bt-card);
+  --bt-card-foreground: oklch(24% 0.01 80);
+  --card-foreground: var(--bt-card-foreground);
+  --bt-popover: oklch(100% 0 0);
+  --popover: var(--bt-popover);
+  --bt-popover-foreground: oklch(24% 0.01 80);
+  --popover-foreground: var(--bt-popover-foreground);
+  --bt-primary: oklch(53.9% 0.256 262.8);
+  --primary: var(--bt-primary);
+  --bt-primary-foreground: oklch(99% 0 0);
+  --primary-foreground: var(--bt-primary-foreground);
+  --bt-primary-ink: var(--bt-primary);
+  --primary-ink: var(--bt-primary-ink);
+  --bt-muted: oklab(95.5% 0 0.004);
+  --muted: var(--bt-muted);
+  --bt-muted-foreground: oklch(50% 0.012 80);
+  --bt-compat-muted-foreground: oklch(50% 0.012 80);
+  --muted-foreground: var(--bt-compat-muted-foreground);
+  --bt-accent: oklab(94.5% 0 0.006);
+  --accent: var(--bt-accent);
+  --bt-accent-foreground: oklch(24% 0.01 80);
+  --accent-foreground: var(--bt-accent-foreground);
+  --bt-destructive: var(--bt-burgundy-600);
+  --destructive: var(--bt-destructive);
+  --bt-destructive-ink: var(--bt-destructive);
+  --destructive-ink: var(--bt-destructive-ink);
+  --bt-border: oklab(90% 0 0.006);
+  --border: var(--bt-border);
+  --bt-input: oklab(90% 0 0.006);
+  --input: var(--bt-input);
+  --bt-ring: oklch(53.9% 0.256 262.8);
+  --ring: var(--bt-ring);
+  --bt-canvas: #eef2f7;
+  --ds-canvas: var(--bt-canvas);
+  --bt-tone-green: oklch(48% 0.085 155);
+  --tone-green: var(--bt-tone-green);
+  --bt-tone-amber: oklch(51% 0.095 65);
+  --tone-amber: var(--bt-tone-amber);
+  --bt-tone-blue: oklch(48% 0.11 258);
+  --tone-blue: var(--bt-tone-blue);
+  --bt-tone-rose: oklch(50% 0.11 15);
+  --tone-rose: var(--bt-tone-rose);
+  --bt-tone-plum: oklch(47% 0.09 305);
+  --tone-plum: var(--bt-tone-plum);
+  --bt-choice-ink: oklch(24% 0.01 260);
+  --calm-ink: var(--bt-choice-ink);
   color-scheme: light;
 }
 
-/* DARK — anchors from THEME_DARK. Captain decision 2026-09-18 (login redesign,
-   propagated site-wide): the primary is the same Rebellion red as Classic, not
-   the former desaturated blue. rebellion-700 fills carry sand-50 labels at
-   9.1:1; primary-tinted text, links, focus rings and graphic marks use the
-   rebellion-400 step through --primary-ink / --ring (5.7:1 on the ground,
-   5.0:1 on cards), because rebellion-700 itself reads at 2:1 on this ground.
-   Light keeps its blue (OD-17a).
-   Destructive follows the same split (2026-10-04): the --destructive fill
-   carries sand-50 labels at 4.6:1 but reads at 3.5:1 as text on a card, so
-   destructive-tinted text uses the rebellion-400 step through
-   --destructive-ink (5.0:1 on cards, 5.7:1 on the ground). */
 [data-theme="dark"] {
-  --background: oklch(18.2% 0 0);
-  --foreground: oklch(90.7% 0 0);
-  --card: oklch(23.5% 0 0);
-  --card-foreground: oklch(90.7% 0 0);
-  --popover: oklch(23.5% 0 0);
-  --popover-foreground: oklch(90.7% 0 0);
-  --primary: var(--color-rebellion-700);
-  --primary-foreground: var(--color-sand-50);
-  --primary-ink: var(--color-rebellion-400);
-  /* First 0.1% lightness step clearing 4.5:1 on muted (the limiting surface). */
-  --green-ink: oklch(64.2% 0.109 152);
-  --muted: oklch(28.5% 0 0);
-  --muted-foreground: oklch(65% 0 0);
-  --accent: oklch(28.5% 0 0);
-  --accent-foreground: oklch(90.7% 0 0);
-  --destructive: oklch(58% 0.19 27.5);
-  --destructive-ink: var(--color-rebellion-400);
-  --border: oklch(34.1% 0 0);
-  --input: oklch(34.1% 0 0);
-  --ring: var(--color-rebellion-400);
-  --ds-canvas: #14161a;
-  --tone-green: oklch(80% 0.075 155);
-  --tone-amber: oklch(83% 0.08 82);
-  --tone-blue: oklch(79% 0.07 250);
-  --tone-rose: oklch(77% 0.075 20);
-  --tone-plum: oklch(78% 0.065 315);
-  --calm-ink: oklch(94% 0.005 80);
+  --bt-background: oklch(18.2% 0 0);
+  --background: var(--bt-background);
+  --bt-foreground: oklch(90.7% 0 0);
+  --foreground: var(--bt-foreground);
+  --bt-card: oklch(23.5% 0 0);
+  --card: var(--bt-card);
+  --bt-card-foreground: oklch(90.7% 0 0);
+  --card-foreground: var(--bt-card-foreground);
+  --bt-popover: oklch(23.5% 0 0);
+  --popover: var(--bt-popover);
+  --bt-popover-foreground: oklch(90.7% 0 0);
+  --popover-foreground: var(--bt-popover-foreground);
+  --bt-primary: var(--bt-burgundy-700);
+  --primary: var(--bt-primary);
+  --bt-primary-foreground: var(--bt-sand-50);
+  --primary-foreground: var(--bt-primary-foreground);
+  --bt-primary-ink: var(--bt-burgundy-400);
+  --primary-ink: var(--bt-primary-ink);
+  --bt-success-ink: oklch(64.2% 0.109 152);
+  --green-ink: var(--bt-success-ink);
+  --bt-muted: oklch(28.5% 0 0);
+  --muted: var(--bt-muted);
+  /* The canonical pair clears ordinary-text contrast on the muted ground.
+     Existing pages keep their exact secondary ink through the separate bridge. */
+  --bt-muted-foreground: oklch(67% 0 0);
+  --bt-compat-muted-foreground: oklch(65% 0 0);
+  --muted-foreground: var(--bt-compat-muted-foreground);
+  --bt-accent: oklch(28.5% 0 0);
+  --accent: var(--bt-accent);
+  --bt-accent-foreground: oklch(90.7% 0 0);
+  --accent-foreground: var(--bt-accent-foreground);
+  --bt-destructive: oklch(58% 0.19 27.5);
+  --destructive: var(--bt-destructive);
+  --bt-destructive-ink: var(--bt-burgundy-400);
+  --destructive-ink: var(--bt-destructive-ink);
+  --bt-border: oklch(34.1% 0 0);
+  --border: var(--bt-border);
+  --bt-input: oklch(34.1% 0 0);
+  --input: var(--bt-input);
+  --bt-ring: var(--bt-burgundy-400);
+  --ring: var(--bt-ring);
+  --bt-canvas: #14161a;
+  --ds-canvas: var(--bt-canvas);
+  --bt-tone-green: oklch(80% 0.075 155);
+  --tone-green: var(--bt-tone-green);
+  --bt-tone-amber: oklch(83% 0.08 82);
+  --tone-amber: var(--bt-tone-amber);
+  --bt-tone-blue: oklch(79% 0.07 250);
+  --tone-blue: var(--bt-tone-blue);
+  --bt-tone-rose: oklch(77% 0.075 20);
+  --tone-rose: var(--bt-tone-rose);
+  --bt-tone-plum: oklch(78% 0.065 315);
+  --tone-plum: var(--bt-tone-plum);
+  --bt-choice-ink: oklch(94% 0.005 80);
+  --calm-ink: var(--bt-choice-ink);
   color-scheme: dark;
 }
 
-/* ============================================================================
-   Tier 3 — Geist-style scales (theme-invariant except dark shadows)
-   ========================================================================== */
 :root {
-  --z-skip-link: 110;
-  --z-loading-overlay: 95;
-  --z-avatar: 1;
-  /* multi-layer elevation: hairline + ambient + directional (the v0 recipe) */
-  --ds-shadow-border: 0 0 0 1px oklch(0% 0 0 / 8%);
-  --ds-shadow-small: 0 0 0 1px oklch(0% 0 0 / 8%), 0 1px 2px oklch(0% 0 0 / 4%);
-  --ds-shadow-medium: 0 0 0 1px oklch(0% 0 0 / 8%), 0 2px 4px oklch(0% 0 0 / 4%),
-    0 6px 12px -3px oklch(0% 0 0 / 6%);
-  --ds-shadow-menu: 0 0 0 1px oklch(0% 0 0 / 8%), 0 1px 1px oklch(0% 0 0 / 2%),
-    0 8px 16px -4px oklch(0% 0 0 / 6%);
-  --ds-shadow-modal: 0 0 0 1px oklch(0% 0 0 / 8%), 0 1px 1px oklch(0% 0 0 / 2%),
-    0 8px 16px -4px oklch(0% 0 0 / 4%), 0 24px 32px -8px oklch(0% 0 0 / 6%);
-
-  /* the extracted v0 duration ladder */
+  --bt-layer-skip: 110;
+  --z-skip-link: var(--bt-layer-skip);
+  --bt-layer-loading: 95;
+  --z-loading-overlay: var(--bt-layer-loading);
+  --bt-layer-content: 1;
+  --z-avatar: var(--bt-layer-content);
+  --bt-shadow-hairline: 0 0 0 1px oklch(0% 0 0 / 8%);
+  --ds-shadow-border: var(--bt-shadow-hairline);
+  --bt-shadow-low: 0 0 0 1px oklch(0% 0 0 / 8%), 0 1px 2px oklch(0% 0 0 / 4%);
+  --ds-shadow-small: var(--bt-shadow-low);
+  --bt-shadow-raised: 0 0 0 1px oklch(0% 0 0 / 8%), 0 2px 4px oklch(0% 0 0 / 4%), 0 6px 12px -3px oklch(0% 0 0 / 6%);
+  --ds-shadow-medium: var(--bt-shadow-raised);
+  --bt-shadow-menu: 0 0 0 1px oklch(0% 0 0 / 8%), 0 1px 1px oklch(0% 0 0 / 2%), 0 8px 16px -4px oklch(0% 0 0 / 6%);
+  --ds-shadow-menu: var(--bt-shadow-menu);
+  --bt-shadow-dialog: 0 0 0 1px oklch(0% 0 0 / 8%), 0 1px 1px oklch(0% 0 0 / 2%), 0 8px 16px -4px oklch(0% 0 0 / 4%), 0 24px 32px -8px oklch(0% 0 0 / 6%);
+  --ds-shadow-modal: var(--bt-shadow-dialog);
   --ds-motion-fast: 0.15s;
   --ds-motion-popover: 0.2s;
   --ds-motion-overlay: 0.3s;
@@ -250,184 +304,197 @@
   --ds-motion-reduced: 0.001ms;
   --ds-motion-nav-pending: 0.12s;
   --ds-motion-loader-safety: 5s;
-
-  /* Shell depth + gloss (design-elevation): the ambient back-glow behind the
-     three shell surfaces (rail · tray · list header) and the top-edge gloss
-     dark mode already shows — tuned per theme so it reads in beige/light. */
-  --ds-shadow-shell: 0 0 0 1px oklch(0% 0 0 / 6%), 0 6px 16px -6px oklch(0% 0 0 / 12%),
-    0 18px 40px -18px oklch(0% 0 0 / 16%);
-  --ds-gloss-line: oklch(100% 0 0 / 95%);
-  --ds-gloss-under: oklch(0% 0 0 / 5%);
-  --ds-sheen: oklch(100% 0 0 / 50%);
-
-  /* Expressive step: the single-play icon-state motions (nav icons,
-     department cards) and, doubled, their pending/loading loops. Sits above
-     the theme step so a wobble or spin can complete its arc and settle. */
+  --bt-shadow-frame: 0 0 0 1px oklch(0% 0 0 / 6%), 0 6px 16px -6px oklch(0% 0 0 / 12%), 0 18px 40px -18px oklch(0% 0 0 / 16%);
+  --ds-shadow-shell: var(--bt-shadow-frame);
+  --bt-gloss-line: oklch(100% 0 0 / 95%);
+  --ds-gloss-line: var(--bt-gloss-line);
+  --bt-gloss-under: oklch(0% 0 0 / 5%);
+  --ds-gloss-under: var(--bt-gloss-under);
+  --bt-sheen: oklch(100% 0 0 / 50%);
+  --ds-sheen: var(--bt-sheen);
   --ds-motion-expressive: 0.6s;
-
-  /* Press-feedback step for the chonk plinth (sits under the fast step by
-     design; the value is the accepted p3 rendering, recorded not retuned). */
   --ds-motion-press: 0.13s;
-  /* Skeleton sweep period. */
   --ds-motion-shimmer: 1.6s;
-  /* Image reveal (ADR-0031): the fully-decoded fade-in of every avatar, cover
-     and thumbnail; inside the 150-200 ms band the captain set, between the
-     fast and popover steps. Reduced motion reveals atomically (motion.css). */
   --ds-motion-image-reveal: 0.18s;
-
-  /* Shell radii: the rail/tray corners and the chonk plinth sit above the
-     --radius ramp; held at their accepted p3 values. */
-  --ds-radius-rail: 22px;
-  --ds-radius-tray: 24px;
-  --ds-radius-chonk: 10px;
-  --ds-radius-chonk-sm: 8px;
-
-  /* Display weights of the p3 vocabulary (Lexend Deca is a variable font, so
-     these exact numbers render; never round them to the 100-step names). */
-  --ds-weight-strong: 680;
-  --ds-weight-heavy: 750;
-  --ds-weight-black: 800;
-  --ds-weight-display: 820;
-
-  /* Keycap inset: the bottom bevel of a <kbd>, theme-aware through the
-     foreground so it reads on both card tones. */
-  --ds-shadow-key: inset 0 -1px 0 color-mix(in oklab, var(--foreground) 8%, transparent);
-
-  /* Third-party brand marks (platform glyphs). Fixed by their owners, so they
-     never follow the theme; kept here so no component carries a literal. */
-  --ds-brand-instagram: #e1306c;
-  --ds-brand-spotify: #1db954;
-
-  /* Ink for text and marks placed on fixed dark scrims (media overlays) or
-     saturated status fills. Theme-invariant on purpose: the surface under it
-     never follows the theme, so --primary-foreground would be wrong in dark. */
-  --ds-ink-on-dark: var(--color-sand-50);
-
-  /* Phone scale (styles/mobile.css, captain staging review round 1,
-     2026-09-24): on a phone every compact action keeps the 44 by 44 touch
-     target, but the part that is DRAWN stays at a phone's visual scale instead
-     of inflating to the target. Full-size form fields, including Select
-     triggers, keep their painted boundary. A pressable (chonk, button,
-     segmented track) is drawn 36 px tall and a filter chip 32 px tall, centred
-     in its 44 px box; the page gutter inside the tray is 12 px. --ds-hairline
-     is the colour of --ds-shadow-border, used as an INSET ring where the drawn
-     shape is smaller than the box (an outer ring would trace the invisible
-     target instead). */
-  --ds-hit-target: 44px;
-  --ds-phone-control: 36px;
-  --ds-phone-chip: 32px;
-  --ds-phone-gutter: 12px;
-  --ds-hairline: oklch(0% 0 0 / 8%);
+  --bt-radius-navigation: 22px;
+  --ds-radius-rail: var(--bt-radius-navigation);
+  --bt-radius-frame: 24px;
+  --ds-radius-tray: var(--bt-radius-frame);
+  --bt-radius-raised: 10px;
+  --ds-radius-chonk: var(--bt-radius-raised);
+  --bt-radius-raised-small: 8px;
+  --ds-radius-chonk-sm: var(--bt-radius-raised-small);
+  --bt-weight-strong: 680;
+  --ds-weight-strong: var(--bt-weight-strong);
+  --bt-weight-heavy: 750;
+  --ds-weight-heavy: var(--bt-weight-heavy);
+  --bt-weight-black: 800;
+  --ds-weight-black: var(--bt-weight-black);
+  --bt-weight-display: 820;
+  --ds-weight-display: var(--bt-weight-display);
+  --bt-shadow-key: inset 0 -1px 0 color-mix(in oklab, var(--bt-foreground) 8%, transparent);
+  --ds-shadow-key: var(--bt-shadow-key);
+  --bt-ink-on-dark: var(--bt-sand-50);
+  --ds-ink-on-dark: var(--bt-ink-on-dark);
+  --bt-touch-target: 44px;
+  --ds-hit-target: var(--bt-touch-target);
+  --bt-phone-control: 36px;
+  --ds-phone-control: var(--bt-phone-control);
+  --bt-phone-chip: 32px;
+  --ds-phone-chip: var(--bt-phone-chip);
+  --bt-phone-gutter: 12px;
+  --ds-phone-gutter: var(--bt-phone-gutter);
+  --bt-hairline: oklch(0% 0 0 / 8%);
+  --ds-hairline: var(--bt-hairline);
 }
+
 [data-theme="dark"] {
-  --ds-shadow-border: 0 0 0 1px oklch(100% 0 0 / 10%);
-  --ds-shadow-small: 0 0 0 1px oklch(100% 0 0 / 10%), 0 1px 2px oklch(0% 0 0 / 40%);
-  --ds-shadow-medium: 0 0 0 1px oklch(100% 0 0 / 10%), 0 2px 4px oklch(0% 0 0 / 40%),
-    0 6px 12px -3px oklch(0% 0 0 / 50%);
-  --ds-shadow-menu: 0 0 0 1px oklch(100% 0 0 / 12%), 0 8px 16px -4px oklch(0% 0 0 / 55%);
-  --ds-shadow-modal: 0 0 0 1px oklch(100% 0 0 / 12%), 0 8px 16px -4px oklch(0% 0 0 / 45%),
-    0 24px 32px -8px oklch(0% 0 0 / 60%);
-  /* Dark keeps its existing glow exactly (the 62% top line + 9% sheen). */
-  --ds-shadow-shell: 0 0 0 1px oklch(100% 0 0 / 12%), 0 6px 16px -6px oklch(0% 0 0 / 50%),
-    0 18px 40px -18px oklch(0% 0 0 / 60%);
-  --ds-gloss-line: oklch(100% 0 0 / 62%);
-  --ds-gloss-under: oklch(0% 0 0 / 0%);
-  --ds-sheen: oklch(100% 0 0 / 9%);
-  --ds-hairline: oklch(100% 0 0 / 10%);
+  --bt-shadow-hairline: 0 0 0 1px oklch(100% 0 0 / 10%);
+  --ds-shadow-border: var(--bt-shadow-hairline);
+  --bt-shadow-low: 0 0 0 1px oklch(100% 0 0 / 10%), 0 1px 2px oklch(0% 0 0 / 40%);
+  --ds-shadow-small: var(--bt-shadow-low);
+  --bt-shadow-raised: 0 0 0 1px oklch(100% 0 0 / 10%), 0 2px 4px oklch(0% 0 0 / 40%), 0 6px 12px -3px oklch(0% 0 0 / 50%);
+  --ds-shadow-medium: var(--bt-shadow-raised);
+  --bt-shadow-menu: 0 0 0 1px oklch(100% 0 0 / 12%), 0 8px 16px -4px oklch(0% 0 0 / 55%);
+  --ds-shadow-menu: var(--bt-shadow-menu);
+  --bt-shadow-dialog: 0 0 0 1px oklch(100% 0 0 / 12%), 0 8px 16px -4px oklch(0% 0 0 / 45%), 0 24px 32px -8px oklch(0% 0 0 / 60%);
+  --ds-shadow-modal: var(--bt-shadow-dialog);
+  --bt-shadow-frame: 0 0 0 1px oklch(100% 0 0 / 12%), 0 6px 16px -6px oklch(0% 0 0 / 50%), 0 18px 40px -18px oklch(0% 0 0 / 60%);
+  --ds-shadow-shell: var(--bt-shadow-frame);
+  --bt-gloss-line: oklch(100% 0 0 / 62%);
+  --ds-gloss-line: var(--bt-gloss-line);
+  --bt-gloss-under: oklch(0% 0 0 / 0%);
+  --ds-gloss-under: var(--bt-gloss-under);
+  --bt-sheen: oklch(100% 0 0 / 9%);
+  --ds-sheen: var(--bt-sheen);
+  --bt-hairline: oklch(100% 0 0 / 10%);
+  --ds-hairline: var(--bt-hairline);
 }
 
-/* Phone shell scale (the ONE phone/tablet breakpoint, 850px; mobile.css and
-   components/mobile/use-media-query.ts carry the same number). The desktop
-   shell glow reaches ~40 px past its surface, but a phone leaves an 8 px
-   gutter, so the glow was cut off at the screen edge and read as a cropped
-   grey band around the tray and every page header. On a phone the shell
-   depth is a hairline plus a short drop that fits inside the gutter, and the
-   rail/tray corners step down with the smaller frame. */
+/* Existing shell scopes retain only their old properties, not canonical roles. */
 @media (max-width: 850px) {
   :is(.pg-shell, .pg-boot-frame, .pg-mobile-drawer) {
     --ds-radius-rail: 20px;
     --ds-radius-tray: 20px;
-    --ds-shadow-shell: 0 0 0 1px oklch(0% 0 0 / 6%), 0 1px 2px oklch(0% 0 0 / 6%),
-      0 2px 6px -2px oklch(0% 0 0 / 8%);
+    --ds-shadow-shell: 0 0 0 1px oklch(0% 0 0 / 6%), 0 1px 2px oklch(0% 0 0 / 6%), 0 2px 6px -2px oklch(0% 0 0 / 8%);
   }
   [data-theme="dark"] :is(.pg-shell, .pg-boot-frame, .pg-mobile-drawer) {
-    --ds-shadow-shell: 0 0 0 1px oklch(100% 0 0 / 12%), 0 1px 2px oklch(0% 0 0 / 40%),
-      0 2px 6px -2px oklch(0% 0 0 / 50%);
+    --ds-shadow-shell: 0 0 0 1px oklch(100% 0 0 / 12%), 0 1px 2px oklch(0% 0 0 / 40%), 0 2px 6px -2px oklch(0% 0 0 / 50%);
   }
 }
 
-/* Shared page-header spacing and control scales, from Creator Pipeline. */
 :root {
-  /* The scale: steps of 4 up to 24, then 8. Nothing on a page uses a value
-     outside it (text line-heights excepted). */
-  --ds-space-1: 4px;
-  --ds-space-2: 8px;
-  --ds-space-3: 12px;
-  --ds-space-4: 16px;
-  --ds-space-5: 20px;
-  --ds-space-6: 24px;
-  --ds-space-8: 32px;
-
-  /* Named gaps: every header and list page uses these names, never a number. */
-  --ds-gap-title: var(--ds-space-1);          /* title to its count line */
-  --ds-gap-block: var(--ds-space-4);          /* title block to the first row of controls */
-  --ds-gap-row: var(--ds-space-3);            /* one row of controls to the next, inside a header */
-  --ds-gap-group: var(--ds-space-2);          /* between controls in one group (buttons, pills, dropdowns) */
-  --ds-gap-cluster: var(--ds-space-4);        /* at least this between two groups on one row */
-  --ds-gap-content: var(--ds-space-4);        /* header (or its status line) to the page content */
-  --ds-pad-header-block: var(--ds-space-5);   /* header card padding, top and bottom */
-  --ds-pad-header-inline: var(--ds-space-6);  /* header card padding, sides */
-  --ds-pad-card-block: var(--ds-space-4);     /* content card padding, top and bottom */
-  --ds-pad-card-inline: var(--ds-space-5);    /* content card padding, sides */
-
-  /* ONE control height for everything that sits in a row: buttons (chonk sm),
-     pills, the Filters button, dropdown triggers, search, segmented tracks.
-     Desktop draws and hits at 32. */
-  --ds-control: 32px;
-  --ds-control-target: 32px;
-  --ds-control-radius: var(--radius-lg);      /* rectangles 8; chips stay fully round */
-  --ds-control-text: 0.75rem;
-  --ds-control-icon: 16px;
-  --ds-tab-height: 40px;                      /* navigation tabs are not row controls */
-  --ds-title-size: 1.5rem;
-  --ds-title-line: 28px;
-  --ds-count-line: 16px;
+  --bt-space-1: 4px;
+  --ds-space-1: var(--bt-space-1);
+  --bt-space-2: 8px;
+  --ds-space-2: var(--bt-space-2);
+  --bt-space-3: 12px;
+  --ds-space-3: var(--bt-space-3);
+  --bt-space-4: 16px;
+  --ds-space-4: var(--bt-space-4);
+  --bt-space-5: 20px;
+  --ds-space-5: var(--bt-space-5);
+  --bt-space-6: 24px;
+  --ds-space-6: var(--bt-space-6);
+  --bt-space-8: 32px;
+  --ds-space-8: var(--bt-space-8);
+  --bt-gap-title: var(--bt-space-1);
+  --ds-gap-title: var(--bt-gap-title);
+  --bt-gap-block: var(--bt-space-4);
+  --ds-gap-block: var(--bt-gap-block);
+  --bt-gap-row: var(--bt-space-3);
+  --ds-gap-row: var(--bt-gap-row);
+  --bt-gap-group: var(--bt-space-2);
+  --ds-gap-group: var(--bt-gap-group);
+  --bt-gap-cluster: var(--bt-space-4);
+  --ds-gap-cluster: var(--bt-gap-cluster);
+  --bt-gap-content: var(--bt-space-4);
+  --ds-gap-content: var(--bt-gap-content);
+  --bt-pad-header-block: var(--bt-space-5);
+  --ds-pad-header-block: var(--bt-pad-header-block);
+  --bt-pad-header-inline: var(--bt-space-6);
+  --ds-pad-header-inline: var(--bt-pad-header-inline);
+  --bt-pad-card-block: var(--bt-space-4);
+  --ds-pad-card-block: var(--bt-pad-card-block);
+  --bt-pad-card-inline: var(--bt-space-5);
+  --ds-pad-card-inline: var(--bt-pad-card-inline);
+  --bt-control-height: 32px;
+  --ds-control: var(--bt-control-height);
+  --bt-control-target: 32px;
+  --ds-control-target: var(--bt-control-target);
+  --bt-control-radius: var(--bt-radius-lg);
+  --ds-control-radius: var(--bt-control-radius);
+  --bt-control-text: 0.75rem;
+  --ds-control-text: var(--bt-control-text);
+  --bt-control-icon: 16px;
+  --ds-control-icon: var(--bt-control-icon);
+  --bt-tab-height: 40px;
+  --ds-tab-height: var(--bt-tab-height);
+  --bt-title-size: 1.5rem;
+  --ds-title-size: var(--bt-title-size);
+  --bt-title-line: 28px;
+  --ds-title-line: var(--bt-title-line);
+  --bt-count-line: 16px;
+  --ds-count-line: var(--bt-count-line);
 }
+
 @media (max-width: 850px) {
-  /* Phone: every row control is DRAWN 36 (--ds-phone-control) inside its 44
-     touch target (--ds-hit-target); the invisible remainder counts toward the
-     gaps, so rows keep the same visible rhythm as desktop. */
   :root {
-    --ds-control: var(--ds-phone-control);
-    --ds-control-target: var(--ds-hit-target);
-    --ds-pad-header-block: var(--ds-space-4);
-    --ds-pad-header-inline: var(--ds-space-4);
-    --ds-pad-card-block: var(--ds-space-3);
-    --ds-pad-card-inline: var(--ds-space-4);
-    --ds-gap-content: var(--ds-space-3);
-    --ds-title-size: 1.25rem;
-    --ds-title-line: 24px;
+    --bt-control-height: var(--bt-phone-control);
+    --ds-control: var(--bt-control-height);
+    --bt-control-target: var(--bt-touch-target);
+    --ds-control-target: var(--bt-control-target);
+    --bt-pad-header-block: var(--bt-space-4);
+    --ds-pad-header-block: var(--bt-pad-header-block);
+    --bt-pad-header-inline: var(--bt-space-4);
+    --ds-pad-header-inline: var(--bt-pad-header-inline);
+    --bt-pad-card-block: var(--bt-space-3);
+    --ds-pad-card-block: var(--bt-pad-card-block);
+    --bt-pad-card-inline: var(--bt-space-4);
+    --ds-pad-card-inline: var(--bt-pad-card-inline);
+    --bt-gap-content: var(--bt-space-3);
+    --ds-gap-content: var(--bt-gap-content);
+    --bt-title-size: 1.25rem;
+    --ds-title-size: var(--bt-title-size);
+    --bt-title-line: 24px;
+    --ds-title-line: var(--bt-title-line);
   }
 }
 
-
-/* Transitional aliases for existing Beirut Time page consumers. No second palette. */
 :root {
-  --surface: var(--card);
-  --brand: var(--primary);
-  --brand-ink: var(--primary-foreground);
-  --accent-soft: color-mix(in oklab, var(--primary) 9%, var(--card));
-  --control-border: var(--input);
-  --success: var(--green-ink);
-  --shadow: var(--ds-shadow-medium);
-  --space-1: var(--ds-space-1); --space-2: var(--ds-space-2);
-  --space-3: var(--ds-space-3); --space-4: var(--ds-space-4);
-  --space-5: var(--ds-space-5); --space-6: var(--ds-space-6); --space-8: var(--ds-space-8);
-  --hit-target: var(--ds-hit-target); --phone-control: var(--ds-phone-control);
-  --phone-chip: var(--ds-phone-chip); --phone-gutter: var(--ds-phone-gutter);
-  --motion-fast: var(--ds-motion-fast); --motion-overlay: var(--ds-motion-overlay); --ease: var(--ease-standard);
+  --bt-surface: var(--bt-card);
+  --surface: var(--bt-surface);
+  --bt-brand: var(--bt-primary);
+  --brand: var(--bt-brand);
+  --bt-brand-ink: var(--bt-primary-foreground);
+  --brand-ink: var(--bt-brand-ink);
+  --bt-accent-soft: color-mix(in oklab, var(--bt-primary) 9%, var(--bt-card));
+  --accent-soft: var(--bt-accent-soft);
+  --bt-control-border: var(--bt-input);
+  --control-border: var(--bt-control-border);
+  --bt-success: var(--bt-success-ink);
+  --success: var(--bt-success);
+  --bt-shadow: var(--bt-shadow-raised);
+  --shadow: var(--bt-shadow);
+  --space-1: var(--bt-space-1);
+  --space-2: var(--bt-space-2);
+  --space-3: var(--bt-space-3);
+  --space-4: var(--bt-space-4);
+  --space-5: var(--bt-space-5);
+  --space-6: var(--bt-space-6);
+  --space-8: var(--bt-space-8);
+  --bt-hit-target: var(--bt-touch-target);
+  --hit-target: var(--bt-hit-target);
+  --phone-control: var(--bt-phone-control);
+  --phone-chip: var(--bt-phone-chip);
+  --phone-gutter: var(--bt-phone-gutter);
+  --motion-fast: var(--ds-motion-fast);
+  --motion-overlay: var(--ds-motion-overlay);
+  --ease: var(--ease-standard);
 }
 
+/* Header compatibility is intentionally confined to legacy properties. It may
+   follow the old root-theme ancestor, but must never own nearest-theme roles. */
 :root,
 .hx-sys {
   --glass-blur: 14px;
@@ -439,13 +506,9 @@
   --glass-rim: color-mix(in oklab, var(--card) 72%, transparent);
   --glass-spec: var(--ds-gloss-line);
   --glass-under: var(--ds-hairline);
-  --glass-drop: 0 1px 2px var(--ds-hairline),
-    0 6px 14px -6px color-mix(in oklab, var(--foreground) 24%, transparent);
-  --glass-edge: inset 0 1px 0 var(--glass-spec), inset 0 0 0 1px var(--glass-rim),
-    inset 0 -1px 0 var(--glass-under);
-  --glass-sunk: inset 0 0 0 1px var(--ds-hairline),
-    inset 0 1px 2px color-mix(in oklab, var(--foreground) 8%, transparent);
-  /* A switch word at rest with no meaning colour (finding 28). */
+  --glass-drop: 0 1px 2px var(--ds-hairline), 0 6px 14px -6px color-mix(in oklab, var(--foreground) 24%, transparent);
+  --glass-edge: inset 0 1px 0 var(--glass-spec), inset 0 0 0 1px var(--glass-rim), inset 0 -1px 0 var(--glass-under);
+  --glass-sunk: inset 0 0 0 1px var(--ds-hairline), inset 0 1px 2px color-mix(in oklab, var(--foreground) 8%, transparent);
   --calm-rest: var(--muted-foreground);
 }
 
@@ -458,17 +521,126 @@
   --glass-rim: color-mix(in oklab, var(--foreground) 16%, transparent);
   --glass-spec: color-mix(in oklab, var(--foreground) 30%, transparent);
   --glass-under: color-mix(in oklab, var(--background) 40%, transparent);
-  --glass-drop: 0 1px 2px color-mix(in oklab, var(--background) 60%, transparent),
-    0 8px 18px -6px color-mix(in oklab, var(--background) 80%, transparent);
-  --glass-sunk: inset 0 0 0 1px var(--ds-hairline),
-    inset 0 1px 2px color-mix(in oklab, var(--background) 50%, transparent);
-  /* The muted ink on the lighter glass falls under 4.5:1, so a plain word at rest is
-     lifted toward the ink (the prototype's own Dark glass step for words). The round
-     pills sit back and their key is a lighter smoke, so the chosen pill reads. */
+  --glass-drop: 0 1px 2px color-mix(in oklab, var(--background) 60%, transparent), 0 8px 18px -6px color-mix(in oklab, var(--background) 80%, transparent);
+  --glass-sunk: inset 0 0 0 1px var(--ds-hairline), inset 0 1px 2px color-mix(in oklab, var(--background) 50%, transparent);
   --calm-rest: color-mix(in oklab, var(--muted-foreground) 55%, var(--foreground));
   --glass-pill: color-mix(in oklab, var(--foreground) 7%, transparent);
   --glass-key: color-mix(in oklab, var(--foreground) 20%, transparent);
-  /* The red focus ring reads under 3:1 on the lighter glass bar, so it is lifted
-     toward the ink there. */
   --glass-ring: color-mix(in oklab, var(--ring) 70%, var(--foreground));
 }
+
+/* Type, geometry and the complete shared layer ladder for new composition. */
+:root {
+  --bt-font-latin: var(--font-lexend-deca);
+  --bt-font-arabic: var(--font-arabic);
+  --bt-font-numeric: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --bt-text-caption: 0.75rem;
+  --bt-text-small: 0.8125rem;
+  --bt-text-body: 1rem;
+  --bt-text-lead: 1.125rem;
+  --bt-text-heading: 1.5rem;
+  --bt-text-display: 2rem;
+  --bt-leading-body: 1.5;
+  --bt-leading-heading: 1.3;
+  --bt-weight-regular: 400;
+  --bt-weight-medium: 500;
+  --bt-space-0: 0px;
+  --bt-space-half: 2px;
+  --bt-space-10: 40px;
+  --bt-space-12: 48px;
+  --bt-space-16: 64px;
+  --bt-radius-pill: 999px;
+  --bt-border-width: 1px;
+  --bt-window-read: 44rem;
+  --bt-window-wide: 60rem;
+  --bt-destructive-foreground: var(--bt-primary-foreground);
+  --bt-layer-pinned: 10;
+  --bt-layer-navigation: 20;
+  --bt-layer-shade: 40;
+  --bt-layer-window: 50;
+  --bt-layer-menu: 60;
+  --bt-layer-toast: 80;
+}
+
+/* Derived roles rebind at a theme boundary instead of inheriting a value that
+   was already computed in the parent's theme. Legacy aliases above stay put. */
+:root,
+[data-theme] {
+  --bt-glass-blur: 14px;
+  --bt-glass-sat: 1.7;
+  --bt-success-ink: var(--bt-status-green);
+  --bt-destructive-foreground: var(--bt-primary-foreground);
+  --bt-surface: var(--bt-card);
+  --bt-brand: var(--bt-primary);
+  --bt-brand-ink: var(--bt-primary-foreground);
+  --bt-accent-soft: color-mix(in oklab, var(--bt-primary) 9%, var(--bt-card));
+  --bt-control-border: var(--bt-input);
+  --bt-success: var(--bt-success-ink);
+  --bt-shadow: var(--bt-shadow-raised);
+  --bt-shadow-key: inset 0 -1px 0 color-mix(in oklab, var(--bt-foreground) 8%, transparent);
+  --bt-choice-rest-ink: var(--bt-muted-foreground);
+  --bt-shadow-hairline: 0 0 0 1px oklch(0% 0 0 / 8%);
+  --bt-shadow-low: 0 0 0 1px oklch(0% 0 0 / 8%), 0 1px 2px oklch(0% 0 0 / 4%);
+  --bt-shadow-raised: 0 0 0 1px oklch(0% 0 0 / 8%), 0 2px 4px oklch(0% 0 0 / 4%), 0 6px 12px -3px oklch(0% 0 0 / 6%);
+  --bt-shadow-menu: 0 0 0 1px oklch(0% 0 0 / 8%), 0 1px 1px oklch(0% 0 0 / 2%), 0 8px 16px -4px oklch(0% 0 0 / 6%);
+  --bt-shadow-dialog: 0 0 0 1px oklch(0% 0 0 / 8%), 0 1px 1px oklch(0% 0 0 / 2%), 0 8px 16px -4px oklch(0% 0 0 / 4%), 0 24px 32px -8px oklch(0% 0 0 / 6%);
+  --bt-shadow-frame: 0 0 0 1px oklch(0% 0 0 / 6%), 0 6px 16px -6px oklch(0% 0 0 / 12%), 0 18px 40px -18px oklch(0% 0 0 / 16%);
+  --bt-gloss-line: oklch(100% 0 0 / 95%);
+  --bt-gloss-under: oklch(0% 0 0 / 5%);
+  --bt-sheen: oklch(100% 0 0 / 50%);
+  --bt-hairline: oklch(0% 0 0 / 8%);
+  --bt-glass-milk: color-mix(in oklab, var(--bt-card) 64%, transparent);
+  --bt-glass-clear: color-mix(in oklab, var(--bt-card) 26%, transparent);
+  --bt-glass-smoke: color-mix(in oklab, var(--bt-foreground) 10%, transparent);
+  --bt-glass-track: color-mix(in oklab, var(--bt-foreground) 6%, transparent);
+  --bt-glass-rim: color-mix(in oklab, var(--bt-card) 72%, transparent);
+  --bt-glass-spec: var(--bt-gloss-line);
+  --bt-glass-under: var(--bt-hairline);
+  --bt-glass-drop: 0 1px 2px var(--bt-hairline), 0 6px 14px -6px color-mix(in oklab, var(--bt-foreground) 24%, transparent);
+  --bt-glass-edge: inset 0 1px 0 var(--bt-glass-spec), inset 0 0 0 1px var(--bt-glass-rim), inset 0 -1px 0 var(--bt-glass-under);
+  --bt-glass-sunk: inset 0 0 0 1px var(--bt-hairline), inset 0 1px 2px color-mix(in oklab, var(--bt-foreground) 8%, transparent);
+  --bt-phone-shadow-frame: 0 0 0 1px oklch(0% 0 0 / 6%), 0 1px 2px oklch(0% 0 0 / 6%), 0 2px 6px -2px oklch(0% 0 0 / 8%);
+  --bt-glass-pill: var(--bt-glass-clear);
+  --bt-glass-key: var(--bt-glass-smoke);
+  --bt-glass-ring: var(--bt-ring);
+}
+[data-theme="dark"] {
+  --bt-success-ink: oklch(64.2% 0.109 152);
+  --bt-choice-rest-ink: color-mix(in oklab, var(--bt-muted-foreground) 55%, var(--bt-foreground));
+  --bt-shadow-hairline: 0 0 0 1px oklch(100% 0 0 / 10%);
+  --bt-shadow-low: 0 0 0 1px oklch(100% 0 0 / 10%), 0 1px 2px oklch(0% 0 0 / 40%);
+  --bt-shadow-raised: 0 0 0 1px oklch(100% 0 0 / 10%), 0 2px 4px oklch(0% 0 0 / 40%), 0 6px 12px -3px oklch(0% 0 0 / 50%);
+  --bt-shadow-menu: 0 0 0 1px oklch(100% 0 0 / 12%), 0 8px 16px -4px oklch(0% 0 0 / 55%);
+  --bt-shadow-dialog: 0 0 0 1px oklch(100% 0 0 / 12%), 0 8px 16px -4px oklch(0% 0 0 / 45%), 0 24px 32px -8px oklch(0% 0 0 / 60%);
+  --bt-shadow-frame: 0 0 0 1px oklch(100% 0 0 / 12%), 0 6px 16px -6px oklch(0% 0 0 / 50%), 0 18px 40px -18px oklch(0% 0 0 / 60%);
+  --bt-gloss-line: oklch(100% 0 0 / 62%);
+  --bt-gloss-under: oklch(0% 0 0 / 0%);
+  --bt-sheen: oklch(100% 0 0 / 9%);
+  --bt-hairline: oklch(100% 0 0 / 10%);
+  --bt-glass-milk: color-mix(in oklab, var(--bt-foreground) 14%, transparent);
+  --bt-glass-clear: color-mix(in oklab, var(--bt-foreground) 7%, transparent);
+  --bt-glass-smoke: color-mix(in oklab, var(--bt-background) 62%, transparent);
+  --bt-glass-track: color-mix(in oklab, var(--bt-background) 45%, transparent);
+  --bt-glass-rim: color-mix(in oklab, var(--bt-foreground) 16%, transparent);
+  --bt-glass-spec: color-mix(in oklab, var(--bt-foreground) 30%, transparent);
+  --bt-glass-under: color-mix(in oklab, var(--bt-background) 40%, transparent);
+  --bt-glass-drop: 0 1px 2px color-mix(in oklab, var(--bt-background) 60%, transparent), 0 8px 18px -6px color-mix(in oklab, var(--bt-background) 80%, transparent);
+  --bt-glass-sunk: inset 0 0 0 1px var(--bt-hairline), inset 0 1px 2px color-mix(in oklab, var(--bt-background) 50%, transparent);
+  --bt-glass-pill: color-mix(in oklab, var(--bt-foreground) 7%, transparent);
+  --bt-glass-key: color-mix(in oklab, var(--bt-foreground) 20%, transparent);
+  --bt-glass-ring: color-mix(in oklab, var(--bt-ring) 70%, var(--bt-foreground));
+  --bt-phone-shadow-frame: 0 0 0 1px oklch(100% 0 0 / 12%), 0 1px 2px oklch(0% 0 0 / 40%), 0 2px 6px -2px oklch(0% 0 0 / 50%);
+}
+/* This is token rebinding, not a component recipe: match theme specificity so
+   the later responsive value wins when a frame is itself the theme boundary. */
+@media (max-width: 850px) {
+  :is(.bt-shell, .bt-first-frame, .bt-navigation-sheet) {
+    --bt-radius-navigation: 20px;
+    --bt-radius-frame: 20px;
+    --bt-shadow-frame: var(--bt-phone-shadow-frame);
+  }
+}
+
+/* Locale changes affect type, not the page tree or the meaning of inline start. */
+[lang="en"] { --bt-font-body: var(--bt-font-latin); }
+[lang="ar"] { --bt-font-body: var(--bt-font-latin), var(--bt-font-arabic); }
