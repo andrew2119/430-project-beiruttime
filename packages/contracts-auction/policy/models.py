@@ -59,6 +59,17 @@ class PrebidOutcome(Contract):
     quote_id: UUID | None = None
 
 
+class LegacyOperationSnapshot(PrebidOutcome):
+    version: Literal[2] = 2
+    financial_state: Literal['held'] = 'held'
+    schedule_state: Literal['within_schedule', 'ended_legacy_review']
+    scheduled_ends_at: AwareDatetime
+
+
+class LegacyOperationRead(Contract):
+    operation: LegacyOperationSnapshot | None
+
+
 class PrebidQuoteBasis(Contract):
     auction_id: UUID
     buyer_id: UUID

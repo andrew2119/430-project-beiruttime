@@ -13,7 +13,7 @@ it('reads current private policy with current identity and business scope',async
 it('reads only the current buyer historical operation and never posts',async()=>{
  call.mockResolvedValueOnce({operation:null});
  await readLegacyOperation('auction','buyer-session');
- expect(call.mock.calls[0][0]).toContain('/v1/auctions/auction/my-prebid');
+ expect(call.mock.calls[0][0]).toContain('/v2/auctions/auction/my-prebid');
  expect(call.mock.calls[0][1]).toMatchObject({accessFingerprint:'buyer-session'});
  expect(call.mock.calls[0][1].method).toBeUndefined();
 });

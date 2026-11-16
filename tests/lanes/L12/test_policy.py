@@ -65,3 +65,5 @@ async def test_public_snapshot_has_no_private_reserve_comparison(monkeypatch):
     assert (await routes(None, lot, private=True))['cancellation_eligible'] is True
     lot['accepted_sequence'] = 1
     assert (await routes(None, lot, private=True))['cancellation_eligible'] is False
+    lot.update(accepted_sequence=0, scheduled_ends_at=now)
+    assert (await routes(None, lot, private=True))['cancellation_eligible'] is False

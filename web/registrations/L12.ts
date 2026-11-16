@@ -12,7 +12,9 @@ export default {
     {service:'auction',path:'/v2/auctions/:id/policy',methods:['GET'],roles:['public']},
     {service:'auction',path:'/v2/seller/auctions/:id/policy',methods:['GET'],roles:['private_seller','dealer','brand']},
     {service:'auction',path:'/v1/prebid-operations/:key',methods:['GET'],roles:['buyer']},
-    {service:'auction',path:'/v1/auctions/:id/my-prebid',methods:['GET'],roles:['buyer']}
+    {service:'auction',path:'/v1/auctions/:id/my-prebid',methods:['GET'],roles:['buyer']},
+    {service:'auction',path:'/v2/prebid-operations/:key',methods:['GET'],roles:['buyer']},
+    {service:'auction',path:'/v2/auctions/:id/my-prebid',methods:['GET'],roles:['buyer']}
   ],
   slots:[{id:'prebid-buy-now',target:'watch.detail',load:()=>import('../features/auction-policy/prebid-slot')}]
 } satisfies import('../registry-types').Registration;

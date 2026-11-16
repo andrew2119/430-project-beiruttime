@@ -1,9 +1,22 @@
 from uuid import UUID
 from fastapi import APIRouter, Request
-from bt_contracts.auction.policy.models import PrebidCommand, PrebidQuoteBasis
+from bt_contracts.auction.policy.models import PrebidCommand, PrebidQuoteBasis, LegacyOperationSnapshot, LegacyOperationRead
 from bt_contracts_core.errors import AccessDenied, PublicError
 from service_app.engine import decoded, fingerprint, key_for
 from .basis import quote_basis
+
+
+async def legacy_view(tx, row):
+    now = await tx.fetchval('SELECT clock_timestamp()')
+    outcome = decoded(row['outcome'])
+    review = row['review_state']
+    if review != 'reservation_recorded':
+        outcome = {**outcome, 'status': 'pending', 'code': row['review_code']}
+    if decoded(row['allocation']).get('currency') != 'USD':
+        outcome = {**outcome, 'status': 'pending', 'code': 'legacy_currency_review'}
+    return {**outcome, 'version': 2, 'financial_state': 'held',
+        'schedule_state': 'ended_legacy_review' if now >= row['scheduled_ends_at'] else 'within_schedule',
+        'scheduled_ends_at': row['scheduled_ends_at'].isoformat()}
 
 router=APIRouter()
 router.add_api_route('/internal/v1/auctions/{auction_id}/prebid-basis',quote_basis,methods=['GET'],response_model=PrebidQuoteBasis)
@@ -39,6 +52,28 @@ async def my_operation(auction_id:UUID,request:Request):
     async with request.app.state.pool.acquire() as tx:
         row=await tx.fetchrow('SELECT outcome FROM auction_prebid_operations WHERE auction_id=$1 AND subject_id=$2',auction_id,principal.actor.subject_id)
         return {'operation':decoded(row['outcome']) if row else None}
+
+
+@router.get('/v2/prebid-operations/{operation_key}', response_model=LegacyOperationSnapshot)
+async def operation_v2(operation_key: str, request: Request):
+    if not 1 <= len(operation_key) <= 128:
+        raise PublicError('invalid_key', 'Invalid operation key.', status=422)
+    principal = await request.app.state.auction.dependencies.principal(request)
+    buyer(principal)
+    async with request.app.state.pool.acquire() as tx:
+        row = await existing(tx, principal.actor.subject_id, operation_key)
+        if not row:
+            raise PublicError('not_found', 'Operation not found.', status=404)
+        return await legacy_view(tx, row)
+
+
+@router.get('/v2/auctions/{auction_id}/my-prebid', response_model=LegacyOperationRead)
+async def my_operation_v2(auction_id: UUID, request: Request):
+    principal = await request.app.state.auction.dependencies.principal(request)
+    buyer(principal)
+    async with request.app.state.pool.acquire() as tx:
+        row = await tx.fetchrow('SELECT * FROM auction_prebid_operations WHERE auction_id=$1 AND subject_id=$2', auction_id, principal.actor.subject_id)
+        return {'operation': await legacy_view(tx, row) if row else None}
 
 
 @router.post('/v1/auctions/{auction_id}/prebid-buy-now')

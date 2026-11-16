@@ -1,1 +1,1 @@
-{"version":1,"id":"L12.prebid-buy-now","dependencies":["fastapi","pydantic","asyncpg","PyJWT"],"routes":["routes.py:router"],"migrations":["migrations/L12_0001_prebid.sql","migrations/L12_0002_quote_basis.sql"],"workers":["workers.py:run"]}
+{"version":1,"id":"L12.prebid-buy-now","dependencies":["fastapi","pydantic","asyncpg","PyJWT"],"routes":["routes.py:router"],"migrations":["migrations/L12_0001_prebid.sql","migrations/L12_0002_quote_basis.sql","migrations/L12_0003_legacy_review.sql"],"workers":["workers.py:run"]}

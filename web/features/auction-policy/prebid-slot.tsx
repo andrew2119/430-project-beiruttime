@@ -20,6 +20,6 @@ export default function PrebidSlot({resourceId,locale,standalone=false}:PrebidPr
   if(!lot)return null;
   const result=mine.data?.operation;
   return <Card className="auction-policy-panel"><h2>{t.title}</h2><p>{t.excluded}</p>
-    {!!owner&&session?.principal.roles.includes('buyer')&&!session.principal.actor.organization_id&&(mine.isPending?<p role="status">{t.loading}</p>:mine.isError?<State kind="error" title={t.history} body={t.unavailable}><Button onClick={()=>mine.refetch()}>{t.retry}</Button></State>:result&&<div role="status"><h3>{t.history}</h3><p>{result.status==='pending'?t.pending:result.status==='denied'?t.reservation_denied:t.reserved}</p></div>)}
+    {!!owner&&session?.principal.roles.includes('buyer')&&!session.principal.actor.organization_id&&(mine.isPending?<p role="status">{t.loading}</p>:mine.isError?<State kind="error" title={t.history} body={t.unavailable}><Button onClick={()=>mine.refetch()}>{t.retry}</Button></State>:result&&<div role="status"><h3>{t.history}</h3>{result.schedule_state==='ended_legacy_review'&&<p>{t.endedReview}</p>}<p>{result.code==='legacy_release_pending'||result.status==='denied'?t.reservation_denied:result.status==='pending'?t.pending:t.reserved}</p></div>)}
   </Card>;
 }
