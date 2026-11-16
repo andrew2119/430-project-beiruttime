@@ -1,14 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, Languages, Palette, UserCircle } from 'lucide-react';
 import { ButtonLink, Card, HeaderTabs, Segmented, SegmentedGroup, SegmentedItem, Skeleton } from '@beirut-time/ui';
 import { useSession, useSessionState } from '@/features/identity/session';
 import { useTheme } from './theme-provider';
-import { useLocale } from './locale-context';
-import { localizePath } from './paths';
+import { useLocale,useChangeLocale } from './locale-context';
 import { PageHeader, PageLayout } from './page-header';
 
 function SettingsCard({ id, title, subtitle, icon: Icon, children }: {
@@ -24,7 +22,7 @@ function SettingsCard({ id, title, subtitle, icon: Icon, children }: {
 }
 
 export function SettingsPage() {
-  const locale = useLocale(), ar = locale === 'ar', path = usePathname();
+  const locale=useLocale(),ar=locale==='ar',changeLocale=useChangeLocale();
   const session = useSession(), sessionState = useSessionState();
   const { theme, cycleTheme } = useTheme();
   const themeOptions = useRef<HTMLDivElement>(null);
@@ -70,10 +68,7 @@ export function SettingsPage() {
     return () => tray.removeEventListener('scroll', spy);
   }, []);
   const chooseLanguage = (next: string) => {
-    if (next === locale) return;
-    window.dispatchEvent(new Event('bt:before-locale-change'));
-    document.cookie = `bt-locale=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
-    window.location.assign(localizePath(path, next === 'ar' ? 'ar' : 'en'));
+    if(next!==locale&&(next==='en'||next==='ar'))changeLocale(next);
   };
 
   return <PageLayout className="proto-set-page">

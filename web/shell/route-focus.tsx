@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-// CP F-39: routing owns destination focus, without stealing first-page input focus.
+import {stripLocale} from './paths';
+// A language-only address change must not reset focus or scroll.
 export function RouteFocus() {
-  const path = usePathname();
+  const path = stripLocale(usePathname());
   const previous = useRef(path);
   useEffect(() => {
     if (previous.current !== path) {
