@@ -12,7 +12,7 @@ from bt_runtime.app.db import unit_of_work
 from bt_runtime.principal import require_scope
 from bt_events import enqueue
 from . import peers
-from .current import JOB_POLICY, amounts, buyer, decoded, digest, replay, remember, current_time, require_usd
+from .current import JOB_POLICY, amounts, buyer, decoded, digest, replay, remember, current_time, require_usd, unchanged_terms
 from .security import idempotency
 
 
@@ -63,13 +63,17 @@ async def current_source(request, kind, snapshot):
             or (kind == 'brand' and business.get('kind') != 'brand')
             or ('customization' if kind == 'brand' else 'servicing') not in business.get('capabilities', [])):
         raise PublicError('authority_revoked', 'The business no longer has the required current authority.', status=409)
-    if kind == 'brand' and source.get('consent_effective') is False:
-        raise PublicError('consent_withdrawn', 'Consent is ineffective; accepted economics remain historical.', status=409)
+    if kind == 'brand' and 'consent_effective' in source:
+        if type(source['consent_effective']) is not bool:
+            raise PublicError('dependency_unavailable', 'Current consent cannot be verified.', status=503)
+        if source['consent_effective'] is False:
+            raise PublicError('consent_withdrawn', 'Consent is ineffective; accepted economics remain historical.', status=409)
     return result
 
 
 def project(row, decision=None):
     snapshot = decoded(row['snapshot'])
+    require_usd(snapshot)
     state = row['state']
     if state == 'issued' and datetime.now(timezone.utc) >= row['expires_at']:
         state = 'expired_return_held'
@@ -207,6 +211,13 @@ def build_router(kind):
                 return prior
             await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', f'assessed:{kind}:{body.source_id}')
             now = await tx.fetchval('SELECT clock_timestamp()')
+            existing = await tx.fetchrow("SELECT * FROM l14_assessed_quotes WHERE kind=$1 AND source_id=$2 AND state IN ('issued','accepted') FOR UPDATE",
+                                         kind, body.source_id)
+            if (existing and existing['buyer_id'] == UUID(source['buyer_id']) and existing['organization_id'] == org
+                    and (existing['state'] == 'accepted' or now < existing['expires_at'])
+                    and unchanged_terms(decoded(existing['snapshot']), snapshot)):
+                decision = await tx.fetchrow('SELECT * FROM l14_quote_decisions WHERE quote_id=$1', existing['id'])
+                return await remember(tx, p, key, fingerprint, {'status': 'succeeded', 'quote': project(existing, decision)})
             expires_at = min(body.expires_at, now + timedelta(minutes=15)) if body.expires_at else now + timedelta(minutes=15)
             if expires_at <= now:
                 raise PublicError('invalid_expiry', 'Review an unexpired fifteen-minute quote.', status=409)

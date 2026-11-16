@@ -111,7 +111,8 @@ async def validation(quote_id: UUID, buyer_id: UUID, request: Request):
                   'assessment_id': q['assessment_id'], 'assessment_revision': q['assessment_revision'],
                   'organization_id': assessed['organization_id'], 'total_minor': totals['payable_minor'],
                   'expires_at': None, 'accepted_at': decision['decided_at'], 'economics': 'committed',
-                  'selected_line_ids': decoded(decision['selected_line_ids']), 'terms_digest': decision['terms_digest']}
+                  'selected_line_ids': decoded(decision['selected_line_ids']), 'terms_digest': decision['terms_digest'],
+                  'accepted_fee_lines': decoded(decision['accepted_fee_lines'])}
     else:
         async with request.app.state.pool.acquire() as tx:
             row = await tx.fetchrow('SELECT * FROM l07_quotes WHERE id=$1 AND owner_id=$2', quote_id, buyer_id)

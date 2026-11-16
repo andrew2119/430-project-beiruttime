@@ -24,7 +24,11 @@
     "selected_line_ids": [
       "00000000-0000-0000-0000-000000000014"
     ],
-    "terms_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "terms_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "accepted_fee_lines": {
+      "assessment": false,
+      "return_transport": false
+    }
   },
   "payment_readiness": {
     "status": "pending",

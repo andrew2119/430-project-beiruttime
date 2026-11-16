@@ -10,7 +10,11 @@ Pricing grants no execution, payment, custody or review authority. The response'
 current consent, identity/eligibility and permissions independently, without any
 capacity scoring or wealth attestation.
 
-Uncommitted watch/assessed previews last fifteen minutes. A winner and an admitted
+Uncommitted watch/assessed previews last fifteen minutes. Active generic watch
+previews use schedule usd-v2 and purpose bid/offer/purchase; job quotes must use
+the assessed route with schedule usd-job-v2, never the old generic business_quote
+watch-fee preview. Reissuing identical current terms reuses the unchanged accepted
+quote/decision (or a still-live issued preview) without new customer acceptance. A winner and an admitted
 accepted offer retain economics without a price deadline. Unchanged accepted job
 quotes remain usable beyond the original preview expiry; a new scope/revision,
 known withdrawn consent or revoked business blocks current validation without
@@ -39,6 +43,9 @@ All percentages round half up to one cent. All amounts are integer USD cents;
 people type and see dollars. Every collection remains simulated.
 
 Assessment and unrepaired-return charges require separate explicit acceptance.
+Current and retained responses expose accepted_fee_lines.assessment and
+accepted_fee_lines.return_transport. A positive disclosed return_fee_minor alone
+is never permission to charge it.
 Assessment, when accepted, is in the job base. Return transport is retained as a
 conditional accepted line, not charged or included twice in the job total.
 The quote records the non-refundable business-fee obligation: on a full job

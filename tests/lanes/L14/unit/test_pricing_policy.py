@@ -2,6 +2,7 @@ import asyncio
 import importlib
 import sys
 import types
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
 from types import SimpleNamespace
 from uuid import UUID
@@ -48,6 +49,11 @@ def test_watch_rates_and_business_only_job_fee_half_up():
     q = calculation.calculate(request, BUYER, NOW)
     assert (q['buyer_fee_minor'], q['seller_commission_minor'], q['payable_minor']) == (15000, 25000, 515000)
     assert datetime.fromisoformat(q['expires_at']) - NOW == timedelta(minutes=15)
+    fee = load('current_bid_fee', 'services/auction/runtime/service_app/fee_quote.py')
+    assert fee.BidFeeSnapshot.model_validate(q).schedule_id == 'usd-v2'
+    with pytest.raises(ValueError):
+        QuoteRequest(subject_id=SOURCE, subject_revision=1, purpose='business_quote', currency='USD',
+                     price_minor=500000, schedule_id='usd-v2')
 
 
 def test_exact_active_money_and_legacy_reconciliation():
@@ -98,7 +104,8 @@ def test_accepted_job_validation_has_no_old_expiry_and_scope_rechecks(monkeypatc
              'organization_id': ORG, 'state': 'accepted', 'revision': 1, 'snapshot': q,
              'expires_at': NOW - timedelta(days=30)}
     decision = {'decision': 'accepted', 'decided_at': NOW - timedelta(days=31), 'terms_digest': q['terms_digest'],
-                'selected_line_ids': [str(LINE)], 'amounts': current.amounts(q['lines'], [str(LINE)], 0)}
+                'selected_line_ids': [str(LINE)], 'amounts': current.amounts(q['lines'], [str(LINE)], 0),
+                'accepted_fee_lines': {'assessment': False, 'return_transport': False}}
     request = request_for({'l14_assessed_quotes': quote, 'l14_quote_decisions': decision})
     monkeypatch.setattr(routes.peers, 'service', lambda *a: 'eligibility')
     async def source(*args):
@@ -114,6 +121,51 @@ def test_accepted_job_validation_has_no_old_expiry_and_scope_rechecks(monkeypatc
     with pytest.raises(PublicError):
         asyncio.run(routes.validation(QUOTE, BUYER, request))
     assert quote['snapshot'] == q  # Current denial never rewrites history.
+
+
+def test_reissue_unchanged_accepted_job_keeps_decision_beyond_old_expiry(monkeypatch):
+    body = IssueQuote(source_id=SOURCE, source_revision=1, assessment_id=ASSESSMENT, assessment_revision=1,
+        currency='USD', lines=snapshot()['lines'], assessment_fee_minor=0, return_fee_minor=1000,
+        warranty_terms='Accepted warranty', modification_terms='Accepted limits', indicative_min_minor=500000,
+        indicative_max_minor=500000, indicative_basis='Accepted basis', lead_time_days=1, schedule_id='usd-job-v2')
+    saved = {**body.model_dump(mode='json'), 'id': str(QUOTE), 'revision': 7, 'kind': 'brand', 'policy': current.JOB_POLICY,
+             'expires_at': (NOW-timedelta(days=20)).isoformat(),
+             'terms_digest': 'a'*64, 'full_total': current.amounts(snapshot()['lines'], [str(LINE)], 0)}
+    existing = {'id': QUOTE, 'revision': 7, 'buyer_id': BUYER, 'organization_id': ORG, 'state': 'accepted',
+                'expires_at': NOW-timedelta(days=20), 'snapshot': saved}
+    decision = {'decision': 'accepted', 'actor_id': BUYER, 'decided_at': NOW-timedelta(days=21),
+                'selected_line_ids': [str(LINE)], 'amounts': saved['full_total'], 'terms_digest': 'a'*64,
+                'accepted_fee_lines': {}}
+    class FrozenDB:
+        async def execute(self, sql, *args):
+            assert 'pg_advisory_xact_lock' in sql, 'Unchanged accepted terms must not be replaced'
+        async def fetchrow(self, sql, *args):
+            return decision if 'l14_quote_decisions' in sql else existing
+        async def fetchval(self, sql, *args):
+            assert 'clock_timestamp' in sql
+            return NOW
+    @asynccontextmanager
+    async def uow(*args, **kwargs):
+        yield FrozenDB()
+    async def replay(*args):
+        return None
+    async def remember(*args):
+        return args[-1]
+    async def source(*args):
+        return {'buyer_id': str(BUYER), 'organization_id': str(ORG), 'line_ids': {str(LINE)},
+                'lines': snapshot()['lines'], 'currency': 'USD', 'diagnosis': 'Current assessment'}
+    monkeypatch.setattr(assessed, 'unit_of_work', uow)
+    monkeypatch.setattr(assessed, 'replay', replay)
+    monkeypatch.setattr(assessed, 'remember', remember)
+    monkeypatch.setattr(assessed, 'current_source', source)
+    staff = CurrentPrincipal(actor={'subject_id': UUID(int=99), 'session_id': 'unit', 'organization_id': ORG},
+        roles=['brand'], organizations=[ORG], organization_grants=[{'organization_id': ORG,
+            'permissions': ['business.jobs.write'], 'roles': ['brand']}])
+    issue = next(route.endpoint for route in assessed.build_router('brand').routes if route.path == '/v1/brand-quotes' and 'POST' in route.methods)
+    result = asyncio.run(issue(body, SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(pool=None))), staff, 'reissue-same-terms'))
+    assert result['quote']['revision'] == 7 and result['quote']['state'] == 'accepted'
+    assert result['quote']['economics_expires_at'] is None
+    assert result['quote']['decision']['selected_line_ids'] == [str(LINE)]
 
 
 def test_winner_economics_survive_delayed_allocation_revision(monkeypatch):

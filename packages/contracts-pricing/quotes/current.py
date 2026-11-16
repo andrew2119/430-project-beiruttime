@@ -29,6 +29,11 @@ class CurrentQuote(Contract):
     status: Literal['valid']
 
 
+class AcceptedFeeLines(Contract):
+    assessment: StrictBool = False
+    return_transport: StrictBool = False
+
+
 class CurrentQuoteV3(CurrentQuote):
     currency: Literal['USD']
     expires_at: AwareDatetime | None
@@ -36,6 +41,7 @@ class CurrentQuoteV3(CurrentQuote):
     policy_revision: Literal[2]
     economics: Literal['preview', 'committed']
     execution_authority: Literal['not_granted'] = 'not_granted'
+    accepted_fee_lines: AcceptedFeeLines = Field(default_factory=AcceptedFeeLines)
 
 
 class RetainedFinancialQuote(Contract):
@@ -64,6 +70,7 @@ class RetainedFinancialQuote(Contract):
     terms_digest: str | None = None
     state: str | None = Field(default=None, max_length=40)
     return_fee_minor: StrictInt | None = Field(default=None, ge=0)
+    accepted_fee_lines: AcceptedFeeLines = Field(default_factory=AcceptedFeeLines)
     authority: Literal['retained_read_only']
 
     @model_validator(mode='after')

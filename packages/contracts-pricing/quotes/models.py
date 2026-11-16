@@ -9,7 +9,7 @@ MAX_MINOR = 9_000_000_000_000
 class QuoteRequest(Contract):
     subject_id: UUID
     subject_revision: StrictInt = Field(ge=1)
-    purpose: Literal['bid', 'offer', 'purchase', 'business_quote']
+    purpose: Literal['bid', 'offer', 'purchase']
     currency: Literal['USD']
     price_minor: StrictInt = Field(gt=0, le=MAX_MINOR)
     # Confirmed rates; collection remains simulated.

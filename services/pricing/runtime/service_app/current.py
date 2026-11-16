@@ -55,6 +55,16 @@ def amounts(lines, selected, assessment_fee):
             'seller_net_minor': base - commission, 'payable_minor': base}
 
 
+def unchanged_terms(snapshot, candidate):
+    """Price expiry and presentation order cannot rewrite an accepted promise."""
+    keys = set(candidate) - {'expires_at'}
+    def terms(value):
+        result = {key: value.get(key) for key in keys}
+        result['lines'] = sorted(result.get('lines') or [], key=lambda line: line['id'])
+        return result
+    return terms(snapshot) == terms(candidate)
+
+
 def current_time(row, now=None):
     if row.get('state') == 'accepted':
         return  # Only uncommitted economics expire; execution is checked separately.

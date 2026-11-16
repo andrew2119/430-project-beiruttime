@@ -55,5 +55,6 @@ async def retained(quote_id: UUID, buyer_id: UUID, request: Request):
             'expires_at': None if accepted else assessed['expires_at'].isoformat(), 'reviewed_at': decision['decided_at'].isoformat() if accepted else None,
             'selected_line_ids': decoded(decision['selected_line_ids']) if accepted else [],
             'terms_digest': q['terms_digest'], 'state': assessed['state'], 'return_fee_minor': q['return_fee_minor'],
+            'accepted_fee_lines': decoded(decision['accepted_fee_lines']) if decision else {},
             'authority': 'retained_read_only'}
     raise PublicError('not_found', 'Retained quote not found.', status=404)

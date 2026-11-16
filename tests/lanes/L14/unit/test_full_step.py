@@ -45,6 +45,15 @@ def test_full_step_response_later_equal_maximum_and_no_inactive_return():
     assert not next(m for m in later['maxima'] if m['bidder_id'] == MAYA)['active']
 
 
+def test_displaced_higher_ceiling_never_returns_on_leader_raise():
+    s = state()
+    command, displaced = calculate(s, 445000)
+    s.update(displaced, sequence=command['sequence'])
+    _, raised = calculate(s, 449000, 'maximum', RAMI)
+    assert raised['leader_id'] == RAMI and raised['current_minor'] == 445000 and raised['bids'] == []
+    assert next(m for m in raised['maxima'] if m['bidder_id'] == MAYA)['active'] is False
+
+
 def test_opening_ceiling_raise_and_challenger_band():
     s = {'opening_minor': 400000, 'current_minor': 400000, 'leader_id': None, 'sequence': 0,
          'increment_bands': [{'from_minor': 0, 'step_minor': 10000}], 'maxima': []}
@@ -94,6 +103,21 @@ def test_new_auction_purchase_denied_before_touching_transaction():
         asyncio.run(kernel.transition(None, UUID(int=1), expected_revision=1, expected_end_version=1,
                                       from_mode='bidding', to_mode='prebid_pending'))
     assert exc.value.code == 'auction_purchase_disabled'
+
+
+def test_first_bid_does_not_permit_close_before_scheduled_end(monkeypatch):
+    now = datetime.now(timezone.utc)
+    async def lock(*args):
+        return {'revision': 1, 'end_version': 1, 'mode': 'bidding', 'accepted_sequence': 1,
+                'first_bid_confirmed': True, 'ends_at': now + timedelta(hours=1)}
+    async def clock(*args):
+        return now
+    monkeypatch.setattr(kernel, 'lock_lot', lock)
+    monkeypatch.setattr(kernel, 'server_now', clock)
+    with pytest.raises(PublicError) as exc:
+        asyncio.run(kernel.transition(None, UUID(int=1), expected_revision=1, expected_end_version=1,
+                                      from_mode='bidding', to_mode='closed_winner'))
+    assert exc.value.code == 'auction_not_ended'
 
 
 def test_active_money_boundaries_and_additive_migration():

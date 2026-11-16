@@ -185,7 +185,9 @@ async def test_assessment_revision_unavailable_and_supersession_require_reaccept
     state['unavailable'] = True
     assert (await client.post('/v1/repair-quotes/' + q['id'] + '/accept', json=accept_body(q), headers=headers())).status_code == 503
     state['unavailable'] = False
-    newer = await client.post('/v1/repair-quotes?organization_id=' + str(ORG), json=issue_body(lines), headers=headers('staff'))
+    replacement = issue_body(lines)
+    replacement['lines'][0]['amount_minor'] += 100
+    newer = await client.post('/v1/repair-quotes?organization_id=' + str(ORG), json=replacement, headers=headers('staff'))
     assert newer.status_code == 201 and newer.json()['quote']['revision'] == 2
     assert (await client.post('/v1/repair-quotes/' + q['id'] + '/accept', json=accept_body(q), headers=headers())).status_code == 409
     retained = (await client.get('/v1/repair-quotes/' + q['id'], headers=headers())).json()
