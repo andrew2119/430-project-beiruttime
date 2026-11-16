@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import ts from 'typescript';
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import { metadataIssues, motionTokenMs, propertyName, unwrap } from './ui-syntax.mjs';
+import { FOUNDATION_CONTROLS, FOUNDATION_ENTRY, LEGACY_ENTRIES } from './foundation-boundary.mjs';
 
 // Use the parser and semantic plugin already owned by the pinned framework.
 const framework = createRequire(import.meta.resolve('next'));
@@ -344,6 +345,8 @@ export function inspectSource(file, source, { layers = new Set(), legacyMotionAl
   };
   const fullScreen = entries => {
     if (surfaceOwners.has(file)) return;
+    const context = entries[0]?.context?.join('\n');
+    if (file === 'web/styles/bt-components.css' && ['@layer components\n:where(.bt-surface-stage)', '@layer components\n:where(.bt-surface-shade)'].includes(context)) return;
     const fixed = entries.some(entry => entry.prop === 'position' && entry.value.trim().toLowerCase() === 'fixed');
     const shorthand = entries.some(entry => entry.prop === 'inset' && entry.value.trim().split(/\s+/).every(isZero));
     const edges = ['top', 'right', 'bottom', 'left'].every(prop => entries.some(entry => entry.prop === prop && isZero(entry.value.trim())));
@@ -440,16 +443,28 @@ export function inspectSource(file, source, { layers = new Set(), legacyMotionAl
   const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, /\.[cm]?jsx?$/.test(file) ? ts.ScriptKind.JSX : /\.tsx$/.test(file) ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   const { values, truth, constants, binding, shadowed } = evaluator(tree);
   const sharedFaces = new Set();
-  const scanSpecifier = specifier => {
+  const legacyEntry = specifier => {
+    const target = specifier.startsWith('.') ? resolve('/',dirname(file),specifier) : specifier.startsWith('@/') ? resolve('/web',specifier.slice(2)) : '';
+    const normalized = target.replace(/\.[cm]?[jt]sx?$/, '').replace(/\/index$/, '');
+    return LEGACY_ENTRIES.has(specifier) || ['/packages/ui/src','/web/shell/primitives'].includes(normalized);
+  };
+  const scanSpecifier = (specifier, dynamic = false) => {
     if (/^(?:chart\.js|three|gsap|next\/font\/google)(?:\/|$)|fonts\.googleapis|material-symbols/.test(specifier)) add('bt-runtime-weight');
     const target = specifier.startsWith('.') ? resolve('/', dirname(file), specifier) : '';
     const internal = /(?:^@beirut-time\/ui\/|(?:^|\/)alternate-ui(?:\/|$)|(?:^|\/)ui-private(?:\/|$))/.test(specifier) || target.startsWith('/packages/ui/src/');
-    const publicBarrel = target === '/packages/ui/src/index' || target === '/packages/ui/src/index.tsx' || ['@beirut-time/ui/motion', '@beirut-time/ui/motion-easing'].includes(specifier);
+    const publicBarrel = target === '/packages/ui/src/index' || target === '/packages/ui/src/index.tsx' || ['@beirut-time/ui/motion', '@beirut-time/ui/motion-easing', FOUNDATION_ENTRY].includes(specifier);
     if (internal && !publicBarrel && !file.startsWith('packages/ui/src/')) add('bt-control-detour');
+    if (dynamic && legacyEntry(specifier) && !legacyMotionAllowed) add('bt-control-detour');
   };
   for (const node of tree.statements) if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
-    scanSpecifier(node.moduleSpecifier.text);
-    if (ts.isImportDeclaration(node) && ['@beirut-time/ui', '@/shell/primitives'].includes(node.moduleSpecifier.text) && node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) for (const name of node.importClause.namedBindings.elements) if ((name.propertyName?.text ?? name.name.text) === 'State') sharedFaces.add(name.name.text);
+    const specifier = node.moduleSpecifier.text;
+    scanSpecifier(specifier);
+    if (legacyEntry(specifier) && !legacyMotionAllowed) {
+      const names = ts.isImportDeclaration(node) ? node.importClause?.namedBindings : node.exportClause;
+      if (!names || ts.isNamespaceImport(names) || ts.isNamespaceExport(names) || (ts.isImportDeclaration(node) && node.importClause?.name)) add('bt-control-detour');
+      else for (const name of names.elements) if (FOUNDATION_CONTROLS.has(name.propertyName?.text ?? name.name.text)) add('bt-control-detour');
+    }
+    if (ts.isImportDeclaration(node) && [...LEGACY_ENTRIES, FOUNDATION_ENTRY].includes(node.moduleSpecifier.text) && node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) for (const name of node.importClause.namedBindings.elements) if ((name.propertyName?.text ?? name.name.text) === 'State') sharedFaces.add(name.name.text);
   }
   const attrs = node => (ts.isJsxElement(node) ? node.openingElement : node).attributes?.properties ?? [];
   const attribute = (node, name) => attrs(node).find(attr => ts.isJsxAttribute(attr) && attr.name.getText(tree) === name);
@@ -609,7 +624,7 @@ export function inspectSource(file, source, { layers = new Set(), legacyMotionAl
       }
     }
     if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || node.expression.getText(tree) === 'require')) {
-      const specifier = values(node.arguments[0]); if (specifier.opaque) add('bt-style-opaque'); else for (const text of specifier.words) scanSpecifier(text);
+      const specifier = values(node.arguments[0]); if (specifier.opaque) add('bt-style-opaque'); else for (const text of specifier.words) scanSpecifier(text, true);
     }
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       for (const spread of attrs(node).filter(ts.isJsxSpreadAttribute)) if (!safeSpread(node, spread)) add('bt-style-opaque');
@@ -670,7 +685,7 @@ export function inspectSource(file, source, { layers = new Set(), legacyMotionAl
     const paths = returnPaths(defaultFunction(tree, constants));
     if (!paths.length || paths.some(path => !rendered(path, rootBoundary ? 'alert' : 'state'))) add('bt-boundary-quiet');
   }
-  if (file === 'packages/ui/src/index.tsx') {
+  if (['packages/ui/src/index.tsx', 'packages/ui/src/foundation/state.tsx'].includes(file)) {
     const state = tree.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'State');
     if (!state || returnPaths(state).some(path => !rendered(path, 'alert', { kind: 'error' }))) add('bt-state-alert-gap');
   }

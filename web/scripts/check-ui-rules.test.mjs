@@ -14,6 +14,8 @@ const css = (source, file = 'web/features/review/styles.css') => inspectSource(f
 const jsx = (source, file = 'web/features/review/view.tsx') => inspectSource(file, source, { layers });
 const view = body => `export default function Review() { return ${body}; }`;
 const faceImport = 'import { State } from "@beirut-time/ui";';
+const canonicalFaceImport = 'import { State } from "@beirut-time/ui/foundation";';
+const canonicalButton = 'import { Button } from "@beirut-time/ui/foundation"; export default () => <Button>Review</Button>;';
 const quietError = `${faceImport} function Unused() { return <State kind="error" />; } export default function Error() { return <p>Could not load</p>; }`;
 const choices = view('<div role="group" aria-label="View">{["one", "two"].map(value => <button key={value} aria-pressed={selected === value} onClick={() => setSelected(value)} className={selected === value ? "bg-primary" : "bg-muted"}>{value}</button>)}</div>');
 const safeCss = '.review { color: var(--foreground); font-weight: var(--ds-weight-black); }';
@@ -178,11 +180,28 @@ const probes = [
   ['owner broader fold transition', 'css', canonicalFold.replace('grid-template-rows var(--bt-motion-menu) var(--bt-ease-out)', 'grid-template-rows var(--bt-motion-menu) var(--bt-ease-out), opacity var(--bt-motion-fast) var(--bt-ease-out)'), 'bt-reflow-motion', 'web/styles/bt-motion.css', canonicalFold],
   ['owner wrong fold context', 'css', canonicalFold.replace('@layer components {', '@layer utilities {'), 'bt-reflow-motion', 'web/styles/bt-motion.css', canonicalFold],
   ['copied fold row transition', 'css', canonicalFold, 'bt-reflow-motion'],
+  ['new root control import', 'tsx', 'import { Button } from "@beirut-time/ui"; export default () => <Button>Review</Button>;', 'bt-control-detour', undefined, canonicalButton],
+  ['aliased root control import', 'tsx', 'import { Button as Action } from "@beirut-time/ui"; export default () => <Action>Review</Action>;', 'bt-control-detour', undefined, canonicalButton],
+  ['root namespace import', 'tsx', 'import * as UI from "@beirut-time/ui"; export default () => <UI.Button>Review</UI.Button>;', 'bt-control-detour', undefined, canonicalButton],
+  ['root control reexport', 'ts', 'export { Button } from "@beirut-time/ui";', 'bt-control-detour', undefined, 'export { Button } from "@beirut-time/ui/foundation";'],
+  ['root wildcard reexport', 'ts', 'export * from "@beirut-time/ui";', 'bt-control-detour', undefined, 'export * from "@beirut-time/ui/foundation";'],
+  ['compatibility control import', 'tsx', 'import { Button } from "@/shell/primitives"; export default () => <Button>Review</Button>;', 'bt-control-detour', undefined, canonicalButton],
+  ['dynamic root control import', 'ts', 'export async function load(){return import("@beirut-time/ui");}', 'bt-control-detour', undefined, 'export async function load(){return import("@beirut-time/ui/foundation");}'],
+  ['relative compatibility import', 'tsx', 'import {Button} from "../shell/primitives"; export default()=> <Button>Review</Button>;', 'bt-control-detour', 'web/features/relative-probe.tsx', canonicalButton],
+  ['same directory compatibility import', 'tsx', 'import {Button} from "./primitives"; export default()=> <Button>Review</Button>;', 'bt-control-detour', 'web/shell/probe.tsx', canonicalButton],
+  ['relative extension compatibility import', 'tsx', 'import {Button as Action} from "../shell/primitives.tsx"; export default()=> <Action>Review</Action>;', 'bt-control-detour', 'web/features/relative-probe.tsx', canonicalButton],
+  ['relative index compatibility import', 'tsx', 'import {Button} from "../shell/primitives/index.tsx"; export default()=> <Button>Review</Button>;', 'bt-control-detour', 'web/features/relative-probe.tsx', canonicalButton],
+  ['relative compatibility namespace', 'tsx', 'import * as UI from "../shell/primitives"; export default()=> <UI.Button>Review</UI.Button>;', 'bt-control-detour', 'web/features/relative-probe.tsx', canonicalButton],
+  ['relative compatibility reexport', 'ts', 'export {Button as Action} from "./primitives.tsx";', 'bt-control-detour', 'web/shell/probe.ts', 'export {Button as Action} from "@beirut-time/ui/foundation";'],
+  ['relative compatibility star reexport', 'ts', 'export * from "./primitives/index";', 'bt-control-detour', 'web/shell/probe.ts', 'export * from "@beirut-time/ui/foundation";'],
+  ['relative compatibility dynamic load', 'ts', 'export async function load(){return import("./primitives");}', 'bt-control-detour', 'web/shell/probe.ts', 'export async function load(){return import("@beirut-time/ui/foundation");}'],
+  ['extension compatibility alias', 'tsx', 'import {Button} from "@/shell/primitives.tsx"; export default()=> <Button>Review</Button>;', 'bt-control-detour', undefined, canonicalButton],
+  ['normalized relative compatibility import', 'tsx', 'import {Button} from "../shell/../shell/primitives"; export default()=> <Button>Review</Button>;', 'bt-control-detour', 'web/features/relative-probe.tsx', canonicalButton],
 ];
 function controlFor(file, extension) {
   if (file === 'packages/ui/src/index.tsx') return 'export function State({kind}) { return <div role={kind === "error" ? "alert" : "status"}>Review</div>; }';
   if (file === 'web/app/global-error.tsx') return view('<html lang="en"><body><p role="alert">Review</p></body></html>');
-  if (file.endsWith('/error.tsx')) return `${faceImport} export default () => <State kind="error" title="Review" body="Review" />;`;
+  if (file.endsWith('/error.tsx')) return `${canonicalFaceImport} export default () => <State kind="error" title="Review" body="Review" />;`;
   if (file.endsWith('/page.tsx')) return 'export const metadata = {title: "J · Beirut Time"}; export default () => <p>Review</p>;';
   if (extension === 'ts') return 'export function review(el:HTMLElement){el.style.color="var(--foreground)";}';
   return extension === 'css' ? safeCss : safeJsx;
@@ -232,8 +251,8 @@ test('tokens, semantic utilities, local literals outside styling, and comments d
   assert.deepEqual(jsx(safeJsx), {});
   assert.deepEqual(jsx(view('<svg aria-hidden="true" fill="currentColor"><path /></svg>')), {});
   assert.deepEqual(jsx('// <div style={{color:"red"}}/>\nconst description = "black; 200ms; !important"; export {};'), {});
-  assert.deepEqual(jsx('export { Button } from "@beirut-time/ui";'), {});
-  assert.deepEqual(jsx('import { Button } from "@beirut-time/ui"; export default () => <Button>Review</Button>;'), {});
+  assert.deepEqual(jsx('export { Button } from "@beirut-time/ui/foundation";'), {});
+  assert.deepEqual(jsx(canonicalButton), {});
   assert.deepEqual(css('.a { z-index: var(--z-skip-link); }'), {});
   assert.ok(css('.a { z-index: var(--bt-layer-missing); }')['bt-stack-escape']);
   assert.ok(css('.a { --z-skip-link: 400; }')['bt-stack-escape']);

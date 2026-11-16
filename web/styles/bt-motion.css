@@ -89,8 +89,8 @@
 @keyframes bt-icon-wait { 0%, 100% { opacity: 1; } 50% { opacity: 0.72; } }
 
 @layer components {
-  /* F3 keeps an exiting surface mounted until transition completion and cancels
-     that exit hold on reopen. No restart-from-zero surface keyframes. */
+  /* Shared presence holds exiting surfaces through completion and cancels the
+     hold on reopen. No restart-from-zero surface keyframes. */
   :where(.bt-popover, .bt-menu, .bt-window) { opacity: 0; transition: opacity var(--bt-motion-overlay) var(--bt-ease-out), transform var(--bt-motion-overlay) var(--bt-ease-out); }
   :where(.bt-popover, .bt-menu) { transform: translateY(4px) scale(0.96); transform-origin: var(--radix-popper-transform-origin); transition-duration: var(--bt-motion-popover); }
   :where(.bt-window) { transform: scale(0.96); transform-origin: center; }
@@ -137,6 +137,7 @@
   :where(:where(.bt-fold)) { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--bt-motion-menu) var(--bt-ease-out); }
   :where(:where(.bt-fold)[data-state="open"]) { grid-template-rows: 1fr; }
   :where(:where(.bt-fold) > :where(.bt-fold-content)) { min-block-size: 0; overflow: hidden; }
+  :where(.bt-segment-thumb) { transition: transform var(--bt-motion-popover) var(--bt-ease-travel); }
   :where(:where(.bt-pressable)) { transition: transform var(--bt-motion-press) var(--bt-ease-out); }
   :where(:where(.bt-pressable):active:not(:focus-visible)) { transform: scale(0.97); }
   :where(:where(.bt-pressable):focus-visible) { transition-duration: var(--bt-motion-none); transform: none; }
@@ -148,7 +149,10 @@
   :where(.bt-row-motion[data-enter]) { animation: bt-row-in var(--bt-motion-image) var(--bt-ease-out) backwards; }
   :where(.bt-row-motion[data-exit]) { opacity: 0; transition-duration: var(--bt-motion-exit); pointer-events: none; }
   :where(.bt-row-motion[data-reorder]) { transition: transform var(--bt-motion-popover) var(--bt-ease-travel), opacity var(--bt-motion-fast) var(--bt-ease-out); }
+  :where(.bt-row-motion[data-resume]) { transition: transform var(--bt-motion-popover) var(--bt-ease-out), opacity var(--bt-motion-fast) var(--bt-ease-out); }
   :where(:where(.bt-image-pixels, .bt-image-placeholder)) { transition: opacity var(--bt-motion-image) var(--bt-ease-out); }
+  :where(.bt-image-pixels[data-instant], .bt-image-placeholder[data-instant]) { transition: none; }
+  :where(.bt-row-motion[data-enter] .bt-image-pixels[data-instant], .bt-row-motion[data-enter] .bt-image-placeholder[data-instant]) { transition: opacity var(--bt-motion-image) var(--bt-ease-out); }
   :where(:where(.bt-placeholder)) { background: var(--bt-muted); animation: bt-placeholder-pulse var(--bt-motion-pulse) var(--bt-ease-colour) infinite; }
 
   :where(:where(.bt-nav-icon)) { position: relative; display: inline-grid; place-items: center; inline-size: 1.25rem; block-size: 1.25rem; flex: none; }
@@ -207,8 +211,8 @@
   :where(.bt-pressable) { transform: none; }
   :where(.bt-placeholder, .bt-nav-glyph) { animation: none; transform: none; opacity: 1; }
   :where(.bt-nav-icon)::before { transition: none; }
-  :where(.bt-row-motion)[data-reorder] { transition: none; transform: none; }
-  :where(.bt-image-pixels, .bt-image-placeholder) { transition: none; }
+  :where(.bt-row-motion[data-reorder], .bt-row-motion[data-resume]) { transition: none; transform: none; }
+  :where(.bt-image-pixels, .bt-image-placeholder, .bt-segment-thumb) { transition: none; }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none; }
 }
 /* Keyboard/high-frequency entry points opt out without changing geometry. */

@@ -4,6 +4,7 @@ import { join, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
+import { legacyUiIssues } from './check-foundation-boundary.mjs';
 import { INTERFACE_CHECKS, SEMANTIC_PLUGIN, SEMANTIC_RULES, TOKEN_OWNER, LEGACY_MOTION_OWNER, declaredLayers, inspectSource } from './ui-source.mjs';
 export { INTERFACE_CHECKS, LONG_TIMES, LAYER_SLOTS, MOTION_OWNER, LEGACY_MOTION_OWNER, LEGACY_MOTION_HASH, cssDeclarations, declaredLayers, inspectSource } from './ui-source.mjs';
 export { metadataIssues, motionTokenMs } from './ui-syntax.mjs';
@@ -156,7 +157,7 @@ export async function run(args = process.argv.slice(2)) {
   // Before the first commit, main is the only permitted bootstrap source.
   const history = committedHistory() ?? await measureReference().then(initial => ({ initial, accepted: initial }));
   const failures = verifyMeasurements(current, ledger, history, args.includes('--strict'));
-  failures.push(...motionRetirementIssues());
+  failures.push(...motionRetirementIssues(), ...legacyUiIssues(ROOT));
   failures.push(...rulebookIssues(readFileSync(join(ROOT, 'docs/frontend-rules.md'), 'utf8'), Object.values(current).flatMap(entry => Object.keys(entry.counts))));
   for (const file of ['web/package.json', 'packages/ui/package.json']) {
     const manifest = JSON.parse(readFileSync(join(ROOT, file), 'utf8'));

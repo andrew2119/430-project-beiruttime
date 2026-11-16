@@ -8,6 +8,8 @@
 @import "../styles/motion.css";
 @import "../styles/bt-motion.css";
 @import "../styles/ui.css";
+@import "../styles/bt-components.css";
+@import "../styles/bt-component-board.css";
 @import "../styles/skeletons.css";
 @import "../styles/auth.css" layer(components);
 @import "../styles/controls.css";

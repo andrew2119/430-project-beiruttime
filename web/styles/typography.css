@@ -1,5 +1,6 @@
-/* Opt-in type recipes; existing pages keep their current typography. */
-@layer base {
+/* Opt-in type recipes outrank element resets, below composition/utilities.
+   Existing pages keep their current typography. */
+@layer components {
   :where(.bt-text, .bt-heading, .bt-caption) {
     min-inline-size: 0;
     font-family: var(--bt-font-body), ui-sans-serif, system-ui, sans-serif;
