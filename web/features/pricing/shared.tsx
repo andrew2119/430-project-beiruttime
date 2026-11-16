@@ -14,7 +14,7 @@ export function Desk({children,title,intro,current}:{children:React.ReactNode;ti
   const {locale,t}=useCopy();
   return <PageLayout className="l07"><PageHeader title={title} count={intro} tag={<span className="hx-tag">{t.eyebrow}</span>} nav={<WorkspaceTabs current={current} locale={locale} labels={{prices:t.allQuotes,inbox:t.inbox,buying:t.buying}} label={t.eyebrow}/>}/>{children}</PageLayout>;
 }
-/** The shared CP Pane tabs retain real locale-aware links and keyboard semantics. */
+/** Shared tabs retain locale-aware links and keyboard semantics. */
 function WorkspaceTabs({current,locale,labels,label}:{current:'prices'|'inbox'|'buying';locale:string;labels:Record<'prices'|'inbox'|'buying',string>;label:string}) {
   const icons={prices:ReceiptText,inbox:Inbox,buying:CreditCard};
   return <HeaderTabs nav label={label} value={current} onChange={()=>{}} items={(['prices','inbox','buying'] as const).map(path=>({id:path,label:labels[path],icon:icons[path],href:`/${locale}/${path}`}))}/>;
