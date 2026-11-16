@@ -7,11 +7,10 @@ from pathlib import Path
 import subprocess
 import tarfile
 import shutil
+from portable_paths import contracts_dir
 
 ROOT = Path(__file__).resolve().parents[3]
-PUBLISHED = Path(
-    "/Users/andrew/.harness/homes/430-project/firstmate/data/bt-build/contracts"
-)
+PUBLISHED = contracts_dir(ROOT)
 OMIT = {"__pycache__", ".pytest_cache", ".ruff_cache", ".DS_Store"}
 
 

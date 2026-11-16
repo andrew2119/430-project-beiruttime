@@ -14,9 +14,10 @@ import httpx
 from PIL import Image
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+from portable_paths import tool_bin
 
 ROOT = Path(__file__).resolve().parents[3]
-TOOLS = Path("/Users/andrew/.harness/homes/430-project/firstmate/data/bt-tools/bin")
+TOOLS = tool_bin(ROOT)
 STATE = ROOT / ".venv/l13-live-proof"
 STATE.mkdir(parents=True, exist_ok=True)
 ORIGIN = "http://127.0.0.1:58130"
