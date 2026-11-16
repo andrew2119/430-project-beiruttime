@@ -1,4 +1,4 @@
-/* Creator Pipeline Calm card header and shared control recipes. */
+/* Shared Calm card header and shared control recipes. */
 /* The same phone values, applied by width instead of by screen: the gallery
    shows a phone frame on a desktop screen (and the header itself is a
    container, so it lays out by its own width). */
@@ -111,7 +111,7 @@
   color: var(--primary-ink);
 }
 
-/* Search: 32, no built-in margin (the Draft Board bug), radius 8 like every
+/* Search: 32, no built-in margin, radius 8 like every
    rectangle in the row, 16 px icon, 13 px text. */
 .hx-search {
   position: relative;
@@ -342,7 +342,7 @@
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
-/* Lead row (the campaign family bar: back link and the member switch). */
+/* Lead row (the detail navigation bar: back link and the member switch). */
 .hx-lead {
   display: flex;
   min-inline-size: 0;
@@ -390,7 +390,7 @@
   gap: var(--hx-group-gap);
 }
 
-/* The campaign tabs as underline tabs on the card's edge, with ONE sliding
+/* Detail navigation as underline tabs on the card's edge, with ONE sliding
    indicator measured from the active tab. */
 .hx-tabs {
   position: relative;
@@ -553,7 +553,7 @@
 .hx-head[data-opt="A"] {
   padding: var(--ds-pad-header-block) var(--ds-pad-header-inline);
   border-radius: var(--radius-2xl);
-  /* Round 5: flat card (no gradients anywhere, captain 2026-09-30); the soft
+  /* Flat card (no gradients); the soft
      shell shadow and the hairline gloss lines keep the lift. */
   background: var(--card);
   box-shadow: var(--ds-shadow-shell), inset 0 1px 0 var(--ds-gloss-line),
@@ -566,12 +566,12 @@
   box-shadow: inset 0 -1px 0 var(--border);
 }
 
-/* A campaign page in the gallery: the campaign header joined to the tab's
+/* A detail page: the header joined to the tab's
    toolbar in one card (like the real header and body). */
 .hx-detail { display: flex; min-inline-size: 0; flex-direction: column; }
 .hx-detail .hx-head[data-opt="A"] { border-radius: var(--radius-2xl) var(--radius-2xl) 0 0; }
 
-/* Toolbar under a detail header (a campaign tab's own tools). */
+/* Toolbar under a detail header (a detail tab's own tools). */
 .hx-toolbar { display: flex; flex-direction: column; gap: var(--ds-gap-row); }
 .hx-toolbar-body {
   padding: var(--ds-pad-header-block) var(--ds-pad-header-inline);
@@ -629,7 +629,7 @@
   .hx-titlerow[data-media] .hx-title { font-size: 1.0625rem; line-height: 22px; }
   .hx-count { white-space: normal; }
   .hx-cover { inline-size: 40px; block-size: 40px; border-radius: var(--radius-lg); }
-  /* Actions (captain Q8): the page's primary action keeps its label; every
+  /* Actions: the page's primary action keeps its label; every
      other action is an icon alone (its name shows on a long press, hover or
      focus), drawn 36 inside its 44 square. */
   :is(.hx-act:not(.hx-act-primary), .hx-filters) :is(.hx-act-label, .hx-act-badge) { display: none; }
@@ -661,7 +661,7 @@
   .hx-pmode .pg-toggle { inline-size: 100%; }
   .hx-pmode .pg-toggle .pg-toggle-item { flex: 1 1 0; }
   .hx-head[data-opt="A"] > .hx-navrow { margin-inline: calc(-1 * var(--ds-pad-header-inline)); padding-inline: 4px; }
-  /* Campaign tabs: all five side by side, icon over label (like the dock),
+  /* Detail tabs: all five side by side, icon over label (like the dock),
      so the current one is never scrolled out of sight. */
   .hx-tabs[data-nav] {
     display: grid;
@@ -952,7 +952,7 @@
 /* ============================================================================
    Round 5 (2026-09-30): the header on the REAL pages
    ========================================================================== */
-/* Real links as tabs (the campaign sub-tabs keep their prefetching links). */
+/* Real links as tabs preserve prefetching. */
 a.hx-tab { text-decoration: none; }
 
 /* A page's own control in an action's place, and a page's own Filters popover
@@ -1025,9 +1025,8 @@ a.hx-tab { text-decoration: none; }
 [data-theme="dark"] .hx-linkbtn-danger { color: color-mix(in oklab, var(--destructive) 70%, var(--foreground)); }
 
 /* ---------------------------------------------------------------------------
-   A campaign page on the real site (campaign-detail-shell.tsx, and the fan
-   page): the shared header, then the tab's body card, joined into one card
-   (today's look, the tabs on the seam).
+   A detail page joins the shared header and tab body into one card,
+   with tabs on the seam.
    ------------------------------------------------------------------------- */
 .hx-detail-page .hx-detail-cover {
   inline-size: 48px;
@@ -1043,7 +1042,7 @@ a.hx-tab { text-decoration: none; }
   padding: var(--ds-pad-header-block) var(--ds-pad-header-inline) var(--ds-space-6);
 }
 /* The tab's body card always reaches the page's foot: a tab with a few rows never
-   leaves the card short over an empty band (captain, click-test 2026-10-20, finding 15). */
+   leaves the card short over an empty band. */
 .pg-tray > .hx-detail-page { display: flex; flex-direction: column; min-block-size: 100%; }
 .pg-tray > .hx-detail-page > .hx-detail-body { flex: 1 0 auto; }
 .hx-lead .proto-fam-bar { flex: 1 1 auto; min-inline-size: 0; margin: 0; }
@@ -1082,19 +1081,11 @@ a.hx-tab { text-decoration: none; }
   .hx-detail-page .hx-detail-body { padding: var(--ds-space-4); }
 }
 
-/* The campaign creator view bar measures a wrapper around each option (its
-   drawn area), so its thumb is not inset like the plain Segmented's. */
-:is(.hx-sys) .pg-toggle.pg-seg.pg-creator-view-bar > .pg-seg-thumb {
-  transform: translate(var(--pg-seg-x), var(--pg-seg-y));
-  block-size: var(--pg-seg-h);
-}
-.hx-sys .pg-creator-view-bar { inline-size: max-content; max-inline-size: 100%; }
 .hx-tb-lead > .pg-filter-bar { margin: 0; gap: var(--ds-gap-group); }
 .hx-cc-selection { flex-wrap: nowrap; }
-.hx-cc-selection > .pg-sort-button,
-.hx-cc-selection .pg-creator-delete { block-size: var(--ds-control); min-block-size: 0; }
+.hx-cc-selection > .pg-sort-button { block-size: var(--ds-control); min-block-size: 0; }
 .hx-status .pd-lede { margin: 0; color: var(--muted-foreground); font-size: 0.75rem; }
-/* The Creators tab's saved views and filter chips share one line. */
+/* Saved views and filter chips share one line. */
 .hx-tb-leadrow {
   display: flex;
   min-inline-size: 0;
@@ -1110,7 +1101,7 @@ a.hx-tab { text-decoration: none; }
   .hx-row.hx-tools-row[data-crowd] { flex-wrap: wrap; justify-content: flex-end; }
   .hx-row.hx-tools-row[data-crowd] > .hx-search { flex: 1 1 100%; }
   /* A long title wraps and its tags drop under it instead of squeezing it; a
-     campaign title (with a cover) stops at two lines, like the Campaigns card. */
+     detail title with a cover stops at two lines. */
   .hx-titleline { flex-wrap: wrap; row-gap: var(--ds-space-1); }
   .hx-titlerow[data-media] .hx-title {
     display: -webkit-box;
@@ -1122,14 +1113,9 @@ a.hx-tab { text-decoration: none; }
 @container hx (min-width: 30.01rem) and (max-width: 56rem) {
   .hx-row.hx-tools-row[data-many] > .hx-search { flex: 1 1 100%; max-inline-size: none; }
 }
-.hx-tb-leadrow > .pg-creator-view-bar { margin: 0; }
-.hx-sys .pg-creator-view-bar .pg-creator-view-add:not(:focus-visible) {
-  outline: 1px dashed var(--border);
-  outline-offset: calc(-1 * var(--hx-seg-slop) - 1px);
-}
 
 /* ---------------------------------------------------------------------------
-   Round 6 (captain Q8, 2026-09-30): the name of an icon-only button, shown on a
+   The name of an icon-only button, shown on a
    long press (touch), hover (mouse) or keyboard focus. One small bubble in the
    site's popover look, above the button (below it near the top of the screen).
    A long press only names the button; the tap still acts.
@@ -1162,10 +1148,10 @@ a.hx-tab { text-decoration: none; }
   .hx-tip { animation: none; }
 }
 
-/* Round 6 (captain Q8): the phone title line stays ONE line. The title never
+/* The phone title line stays ONE line. The title never
    wraps; when it does not fit beside the actions at 20 px, "tight" sets it at
    18 px with an 8 gap, and "squeeze" also lets the primary label shorten with
-   an ellipsis (page-header.tsx measures, from natural widths). A campaign title
+   an ellipsis (page-header.tsx measures, from natural widths). A detail title
    (with a cover) keeps its two-line clamp. A primary action's short phone label
    (`phoneLabel`) replaces its label on a phone. */
 .hx-act-label-phone { display: none; }

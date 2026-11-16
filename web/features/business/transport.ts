@@ -59,7 +59,7 @@ export async function command<T>(path: string, body: unknown, method = "POST") {
   const fingerprint = Array.from(new Uint8Array(bytes), (value) =>
     value.toString(16).padStart(2, "0"),
   ).join("");
-  // CP B-09/F-13: an uncertain retry reuses one key, never doubles an effect.
+  // An uncertain retry reuses one key, never doubles an effect.
   const operation = uncertain.get(fingerprint) ?? crypto.randomUUID();
   uncertain.set(fingerprint, operation);
   try {

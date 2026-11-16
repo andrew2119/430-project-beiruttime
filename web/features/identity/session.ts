@@ -56,7 +56,7 @@ export async function refreshSession(): Promise<Session | null> {
         throw error;
       }
     };
-    // CP F-11/S-02: one same-origin refresh admission, logout fences late answers.
+    // One same-origin refresh admission, logout fences late answers.
     const coordinated = navigator.locks ? navigator.locks.request('bt-refresh-v1', refresh) as unknown as Promise<Session | null> : refresh();
     refreshFlight = coordinated.finally(() => { refreshFlight = null; });
   }

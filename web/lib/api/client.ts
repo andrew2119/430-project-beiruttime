@@ -2,7 +2,7 @@ import type { ErrorEnvelope } from './types';
 export class ApiError extends Error {
   constructor(public status: number, public code: string, public requestId: string, public details: Record<string,unknown> = {}) { super(code); }
 }
-// CP F-12/F-13: one invocation deadline, body-read budget and support reference.
+// One invocation deadline, body-read budget and support reference.
 // Identity owns coordinated refresh; no credential or private response is persisted here.
 async function invoke<T>(path: string, options: RequestInit, format: 'json'|'blob'): Promise<T> {
   if(!path.startsWith('/api/')) throw new ApiError(400,'invalid_api_path','');

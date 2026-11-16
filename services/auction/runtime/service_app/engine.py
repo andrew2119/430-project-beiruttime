@@ -1,4 +1,4 @@
-"""Auction is the only commit owner. CP B-04/B-09/B-18 transaction protocol."""
+"""Auction is the only commit owner. Commands and event intent share one transaction."""
 import hashlib
 import json
 import os

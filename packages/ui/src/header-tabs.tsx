@@ -1,10 +1,5 @@
 "use client";
-/* LAB PROTOTYPE ONLY (round 7, 2026-10-02 evening). Never committed.
- *
- * The page header's tabs (All Campaigns / My Campaigns, a campaign's Overview /
- * Drafts / Creators / Posts / Financials, and every other header that shows tabs),
- * in three looks that replace the tinted tab with the red underline the captain
- * turned down ("it just doesn't fit with the design that I'm looking for").
+/* Shared page-header tabs. Pane is the active look; alternate looks remain unused.
  *
  *   A "Tray"   - the tabs sit in one recessed track and a raised key glides between
  *                them: the same language as the site's Segmented mode switches.
@@ -30,11 +25,8 @@
  * buttons) marked aria-current="page"; a non-navigation row is a tablist of tabs
  * marked aria-selected. Counts and icons stay.
  *
- * Round 2 (2026-10-02 night). The captain locked Ink ("Ink looks AMAZING for the
- * tabs. let's lock this"), then: "I'm having second thoughts on the ink part ... make
- * it maybe liquid glass as that would be better and would avoid this unnecessary
- * contrast." Three liquid glass takes now sit on the lab bar's "Tabs" switch (Tray,
- * Ink and Folder stay in the code and the stylesheet, unused):
+ * Liquid glass reduces contrast between the current tab and its neighbors.
+ * Tray, Ink and Folder remain in the code and stylesheet, unused:
  *
  *   A "Frost" - a milky frosted key raised out of a sunken glass track; glides.
  *   B "Lens"  - Ink's free labels and stretching key, as a clear lens: the labels it
@@ -44,7 +36,7 @@
  *               of smoked glass inside it that glides and settles with a small give.
  *
  * Glass is translucency, backdrop blur and saturation, a thin light inner edge and a
- * soft shadow: no gradients. The header's mode switches and the sub-campaign
+ * soft shadow: no gradients. The header's mode switches and the detail
  * switcher take the same glass. Phones (coarse pointers) keep the look without the
  * live blur and bending, so scrolling never pays for them. */
 import * as React from "react";
@@ -73,9 +65,7 @@ const GLASS_IDS = GLASS_LOOKS.map(([v]) => v);
 /** The lab's current tabs look (lab bar switch id "tabs"). The first round's looks
  *  (Tray, Ink, Folder; Ink was locked on 2026-10-02 evening) are kept, unused. */
 export function useTabsLook(): TabsLook | GlassLook {
-  // Locked by the captain 2026-10-02: C "Pane" ("I chose option C pane. It looks
-  // amazing. but make it less circular."). Tray, Ink, Folder, Frost and Lens stay
-  // in the code and the stylesheet, unused; the lab bar's Tabs switch is gone.
+  // Pane uses rounded rectangles, not capsules. Alternate looks remain unused.
   void LOOK_IDS;
   void GLASS_IDS;
   return GLASS_BY_PICK.C;
@@ -115,7 +105,7 @@ export type HeaderTabItem = {
   count?: React.ReactNode;
   /** A status tone (a dot before the label). */
   tone?: string;
-  /** A real link (prefetched), as the site's campaign sub-tabs are. */
+  /** A real prefetched link, preserving page-owned navigation. */
   href?: string;
 };
 
@@ -311,8 +301,7 @@ export function HeaderTabs({
 
   return (
     <>
-      {/* Locked by the captain 2026-10-02 (Pane): the lab bar's Tabs switch is gone.
-          Was: <LabOptionSwitch id="tabs" label="Tabs" options={GLASS_LOOKS} /> */}
+      {/* Pane is fixed; no look switch is rendered. */}
       {owner && null}
       {look === "lens" && <LensFilter id={lensId} />}
       <div

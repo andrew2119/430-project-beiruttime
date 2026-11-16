@@ -2,7 +2,7 @@
 import { useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { cn } from './utils';
 
-/** CP's reserved-box / decode-gated reveal, with marketplace-owned image URLs.
+/** The shared reserved-box / decode-gated reveal, with marketplace-owned image URLs.
  * Photo source selection remains the caller's existing catalog policy. */
 export function ImageFrame({ src, alt, width, height, placeholder, fallback, className, priority = false, ...props }: Omit<ComponentProps<'img'>, 'placeholder' | 'onLoad' | 'onError'> & { placeholder: ReactNode; fallback?: ReactNode; priority?: boolean }) {
   const [result, setResult] = useState<{ src: typeof src; state: 'loaded' | 'error' } | null>(null);

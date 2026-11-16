@@ -70,7 +70,7 @@ for(const locale of [await page.eval(()=>document.documentElement.lang)]) {
   return {hold:true,intake:true,releaseUnavailable:true};
  });
 }
-await check('shared theme switch uses the CP View Transition',async()=>{
+await check('shared theme switch uses the shared View Transition',async()=>{
  await page.eval(()=>{document.cookie='bt-theme=light; Path=/';});await page.open(`${origin}/en/buyer`);await page.wait('.buyer-activity-row');
  await page.eval(()=>{window.__buyerTransitions=0;const original=document.startViewTransition?.bind(document);if(original)document.startViewTransition=fn=>{window.__buyerTransitions++;return original(fn);};});
  await page.click('button[aria-label="Switch to dark theme"]');await until(`document.documentElement.dataset.theme==='dark'`);

@@ -1,4 +1,4 @@
-/* Seller compositions of Creator Pipeline Campaigns, New Campaign and Home.
+/* Seller compositions of shared listing rows, forms and dashboard cards.
    Surfaces, controls, ink, radii, elevation and motion belong to the shared kit. */
 .le-page { container-type:inline-size; min-inline-size:0; }
 .le-page > .hx-wrap { margin-block-end:var(--ds-space-4); }
@@ -15,7 +15,7 @@
 .le-pager { display:flex; justify-content:center; margin-block-start:var(--ds-space-4); }
 .le-row-skeletons { display:grid; gap:var(--ds-space-3); }
 /* Row geometry and loading motion come from the shared RowSkeleton. */
-/* CP CampaignRow: cover, identity, price, status, one stretched navigation door. */
+/* Listing row: cover, identity, price, status, one stretched navigation door. */
 .le-watch-row { position:relative; display:flex; min-inline-size:0; min-block-size:5.5rem; align-items:center; gap:var(--ds-space-4); margin-block-end:var(--ds-space-3); padding:var(--ds-space-4) var(--ds-space-5); border-radius:var(--radius-2xl); background:var(--card); color:var(--card-foreground); box-shadow:var(--ds-shadow-medium); transition:color var(--ds-motion-overlay) var(--ease-standard), transform var(--ds-motion-fast) var(--ease-settle); }
 .le-row-open { position:absolute; inset:0; z-index:1; border-radius:inherit; -webkit-tap-highlight-color:transparent; }
 .le-row-open:focus-visible { outline:.125rem solid var(--ring); outline-offset:.125rem; }
@@ -47,7 +47,7 @@
 .le-panel > p { margin-block-end:var(--ds-space-4); }
 .le-panel fieldset { padding:0; margin:0; border:0; min-inline-size:0; }
 .le-panel label:not(.ui-check) { display:flex; min-inline-size:0; flex-direction:column; gap:var(--ds-space-2); color:var(--muted-foreground); font-size:.6875rem; font-weight:var(--ds-weight-strong); }
-/* New Campaign's calm field variant of the shared controls. */
+/* Calm field variant of the shared controls. */
 .le-panel :is(.ui-input,.ui-textarea,.ui-select) { inline-size:100%; border:.0625rem solid var(--input); border-radius:var(--radius-lg); font-size:.8125rem; font-weight:500; }
 .le-panel .ui-input { block-size:2.25rem; }
 .le-panel :is(.ui-input,.ui-textarea):hover { border-color:color-mix(in oklab,var(--ring) 50%,var(--input)); }
