@@ -54,8 +54,15 @@ def order_fact(row):
         "is_demo",
     )
     return {
-        k: str(row[k]) if isinstance(row[k], UUID) else row[k].isoformat() if k == "deadline" else row[k] for k in names
-    } | {"payment_authority": False}
+        k: str(row[k]) if isinstance(row[k], UUID) else row[k].isoformat() if k == "deadline" and row[k] else row[k] for k in names
+    } | {
+        "notified_at": row.get("notified_at").isoformat() if row.get("notified_at") else None,
+        "initiation_extended_until": row.get("initiation_extended_until").isoformat() if row.get("initiation_extended_until") else None,
+        "payment_method": row.get("payment_method"),
+        "order_kind": row.get("order_kind", "sale"),
+        "notification_state": "notified" if row.get("notified_at") else "pending",
+        "payment_authority": False,
+    }
 
 
 async def lock_watch(tx, watch_id):

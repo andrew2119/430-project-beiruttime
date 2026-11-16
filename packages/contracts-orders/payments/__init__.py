@@ -8,6 +8,11 @@ from bt_contracts_core.models import Contract
 Route = Literal["card", "whish", "omt"]
 
 
+class SelectPaymentMethod(Contract):
+    expected_revision: StrictInt = Field(ge=1)
+    route: Route
+
+
 class StartPayment(Contract):
     expected_revision: StrictInt = Field(ge=1)
     route: Route

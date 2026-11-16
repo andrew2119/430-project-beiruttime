@@ -132,8 +132,8 @@ async def process(tx, body, request_id):
         }
     elif (
         newer
-        or order["state"] in {"expired_fenced", "paid_held"}
-        or attempt["state"] == "held"
+        or order["state"] in {"expired_released", "paid_held"}
+        or (attempt["state"] == "declined" and body.outcome != "declined")
     ):
         # Late conflicting/expired money is an explicit financial hold, never a second post or release.
         result = {
@@ -145,7 +145,10 @@ async def process(tx, body, request_id):
     else:
         state = body.outcome
         now = await tx.fetchval("SELECT clock_timestamp()")
-        if now >= order["deadline"]:
+        if order["currency"] != "USD" or (
+            state != "declined"
+            and (order["state"] == "expired_fenced" or order["deadline"] is None or now >= order["deadline"])
+        ):
             state = "held"
         if state == "confirmed":
             group_id = uuid4()
@@ -204,6 +207,9 @@ async def process(tx, body, request_id):
                 ),
                 ["communications-order-timeline"],
             )
+        elif state == "declined" and order["state"] == "expired_fenced":
+            # A conclusive final decline makes the original expiry eligible for safe release.
+            await tx.execute("UPDATE l08_orders SET state='payment_unknown',revision=revision+1 WHERE id=$1", order["id"])
         elif state in {"pending", "held"}:
             if order["state"] == "awaiting_payment":
                 await tx.execute(

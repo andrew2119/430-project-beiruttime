@@ -1,36 +1,13 @@
-"""CP B-04/B-18: locks, outcome and outbox share one SQL transaction."""
+"""Locks, outcome and outbox share one SQL transaction."""
 
 import json
 from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
-from service_app.orders_kernel import command as command, audit as audit
+from service_app.orders_kernel import command as command, audit as audit, order_fact
 
 
 def order_view(row):
-    return {
-        key: (
-            (str(row[key]) if row[key] is not None else None)
-            if key.endswith("_id") or key == "id"
-            else row[key].isoformat()
-            if key == "deadline"
-            else row[key]
-        )
-        for key in (
-            "id",
-            "watch_id",
-            "listing_id",
-            "quote_id",
-            "buyer_id",
-            "seller_id",
-            "organization_id",
-            "state",
-            "currency",
-            "total_minor",
-            "revision",
-            "deadline",
-            "is_demo",
-        )
-    } | {"payment_authority": False}
+    return order_fact(row)
 
 
 def watch_view(row):

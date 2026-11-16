@@ -1,6 +1,5 @@
 import json
-import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Query
 from bt_contracts.orders.allocation import RegisterWatch, ReserveWatch, FenceWatch, CustodyFact, Transition
@@ -9,7 +8,7 @@ from bt_runtime.principal import require_scope
 from bt_runtime.app.db import unit_of_work
 from .dependencies import principal, service, quote, organization_principal
 from .repository import command, audit, event, denied, order_view, watch_view
-from .communications import reservation_notice
+from .communications import reservation_notice, payment_notice
 
 router = APIRouter(tags=["allocation-v1"])
 
@@ -145,12 +144,13 @@ async def reserve(
         # host must not extend a Pricing UTC deadline already elapsed here.
         if max(now, datetime.now(timezone.utc)) >= validated.expires_at:
             return denied("quote_expired")
-        ttl = max(60, min(86400, int(os.environ.get("BT_UNPAID_FIXED_SECONDS", "900"))))
-        deadline = min(validated.expires_at, now + timedelta(seconds=ttl))
+        if validated.currency != "USD":
+            return denied("legacy_currency_reconciliation_required")
+        deadline = None
         order_id = uuid4()
         order = await tx.fetchrow(
             """INSERT INTO l08_orders(id,watch_id,buyer_id,seller_id,organization_id,quote_id,
-            state,currency,total_minor,deadline,listing_id,is_demo) VALUES($1,$2,$3,$4,$5,$6,'awaiting_payment',$7,$8,$9,$10,$11) RETURNING *""",
+            state,currency,total_minor,deadline,listing_id,is_demo) VALUES($1,$2,$3,$4,$5,$6,'awaiting_notification',$7,$8,$9,$10,$11) RETURNING *""",
             order_id,
             body.watch_id,
             actor.actor.subject_id,
@@ -172,6 +172,7 @@ async def reserve(
         await audit(tx, body.watch_id, actor_key, "reserve", "Exclusive physical commitment", row["revision"] + 1)
         await event(tx, request, "reserved", order_id, 1)
         await reservation_notice(tx, request, order)
+        await payment_notice(tx, request, order)
         return {"status": "succeeded", "resource_id": str(order_id), "order": order_view(order)}
 
     return await command(
@@ -245,7 +246,7 @@ async def buyer_reservations(
     ):
         raise PublicError("invalid_cursor", "Reload the first reservations page.", status=422)
     rows = await request.app.state.pool.fetch(
-        """SELECT * FROM l08_orders o WHERE buyer_id=$1 AND state='awaiting_payment' AND deadline>clock_timestamp()
+        """SELECT * FROM l08_orders o WHERE buyer_id=$1 AND (state='awaiting_notification' OR (state IN ('awaiting_payment','payment_unknown') AND deadline>clock_timestamp()))
         AND ($2::uuid IS NULL OR (o.created_at,o.id)<(SELECT created_at,id FROM l08_orders WHERE id=$2 AND buyer_id=$1))
         ORDER BY created_at DESC,id DESC LIMIT $3""",
         actor.actor.subject_id,
@@ -261,7 +262,7 @@ async def buyer_reservations(
             "total_minor": row["total_minor"],
             "currency": row["currency"],
             "revision": row["revision"],
-            "expires_at": row["deadline"].isoformat(),
+            "expires_at": row["deadline"].isoformat() if row["deadline"] else None,
             "is_demo": row["is_demo"],
         }
         for row in rows[:limit]

@@ -1,4 +1,3 @@
-from datetime import timedelta
 from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Header, Query, Request
 from bt_contracts.orders.allocation import ReserveWatch
@@ -19,6 +18,7 @@ from service_app.orders_kernel import (
     audit,
     record_fact,
 )
+from service_app.payment_notices import payment_notice
 from service_app.exact_quote import (
     upstream,
     exact_snapshot,
@@ -338,7 +338,7 @@ async def reserve_exact(
             return denied("quote_expired", row)
         order = await tx.fetchrow(
             """INSERT INTO l08_orders(id,watch_id,listing_id,buyer_id,seller_id,organization_id,
-            quote_id,state,currency,total_minor,deadline,is_demo) VALUES($1,$2,$3,$4,$5,$6,$7,'awaiting_payment',$8,$9,$10,$11) RETURNING *""",
+            quote_id,state,currency,total_minor,deadline,is_demo) VALUES($1,$2,$3,$4,$5,$6,$7,'awaiting_notification',$8,$9,$10,$11) RETURNING *""",
             uuid4(),
             row["id"],
             row["listing_id"],
@@ -348,7 +348,7 @@ async def reserve_exact(
             body.quote_id,
             snapshot["currency"],
             snapshot["payable_minor"],
-            min(expires, now + timedelta(minutes=15)),
+            None,
             row["is_demo"],
         )
         await retain(
@@ -379,9 +379,10 @@ async def reserve_exact(
                 "listing_id": str(row["listing_id"]),
                 "buyer_id": str(order["buyer_id"]),
                 "seller_id": str(row["seller_id"]),
-                "state": "awaiting_payment",
+                "state": "awaiting_notification",
             },
         )
+        await payment_notice(tx, request, order)
         return {
             "status": "succeeded",
             "resource_id": str(order["id"]),
@@ -415,6 +416,10 @@ async def allocate(
     require_key(body, idempotency_key)
     actor_key = "service:" + caller
     prior = await operation(request.app.state.pool, actor_key, idempotency_key)
+    if prior is None and body.kind == "prebid":
+        return denied("auction_purchase_removed")
+    if prior is None and body.currency != "USD":
+        return denied("legacy_currency_reconciliation_required")
     basis = None
     if prior is None:
         # Pricing v2 service validation binds source/buyer and immutable exact snapshot.
@@ -496,22 +501,11 @@ async def allocate(
         )
         if not permitted:
             return denied("watch_committed", row)
-        now = await tx.fetchval("SELECT clock_timestamp()")
-        try:
-            from datetime import datetime
-
-            expiry = datetime.fromisoformat(basis["expires_at"].replace("Z", "+00:00"))
-            if now >= expiry:
-                return denied("quote_expired", row)
-        except (KeyError, TypeError, ValueError):
-            raise PublicError(
-                "pricing_unavailable",
-                "Exact quote expiry cannot be verified.",
-                status=503,
-            ) from None
+        # Accepted offer/winner economics are immutable, not a fresh price preview.
+        # Current versioned authorization still governs scope and permission.
         order = await tx.fetchrow(
             """INSERT INTO l08_orders(id,watch_id,listing_id,buyer_id,seller_id,organization_id,
-            quote_id,state,currency,total_minor,deadline,is_demo) VALUES($1,$2,$3,$4,$5,$6,$7,'awaiting_payment',$8,$9,$10,$11) RETURNING *""",
+            quote_id,state,currency,total_minor,deadline,is_demo) VALUES($1,$2,$3,$4,$5,$6,$7,'awaiting_notification',$8,$9,$10,$11) RETURNING *""",
             uuid4(),
             body.watch_id,
             body.listing_id,
@@ -521,7 +515,7 @@ async def allocate(
             body.quote_id,
             body.currency,
             body.total_minor,
-            min(expiry, now + timedelta(hours=24)),
+            None,
             row["is_demo"],
         )
         await retain(
@@ -557,10 +551,11 @@ async def allocate(
                 "listing_id": str(row["listing_id"]),
                 "buyer_id": str(order["buyer_id"]),
                 "seller_id": str(row["seller_id"]),
-                "state": "awaiting_payment",
+                "state": "awaiting_notification",
                 "kind": body.kind,
             },
         )
+        await payment_notice(tx, request, order)
         return {
             "status": "succeeded",
             "resource_id": str(order["id"]),

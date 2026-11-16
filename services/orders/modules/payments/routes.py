@@ -1,11 +1,12 @@
 from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Header, Request
-from bt_contracts.orders.payments import StartPayment, Simulate, PaymentCallback
+from bt_contracts.orders.payments import StartPayment, SelectPaymentMethod, Simulate, PaymentCallback
 from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_runtime.app.db import unit_of_work
 from service_app.orders_dependencies import principal
 from service_app.orders_kernel import command, lock_order, order_fact, decoded, audit
 from .processor import project, verify, sign, secret, process
+from service_app.payment_clock import can_initiate, initiated_until, deadline_for
 
 router = APIRouter(tags=["simulated-payments-v1"])
 
@@ -48,6 +49,8 @@ async def checkout(order_id: UUID, request: Request, actor=Depends(principal)):
                     and attempts[0]["state"] == "declined"
                 )
             )
+            and order["currency"] == "USD"
+            and order.get("deadline") is not None
             and now < order["deadline"]
             and not any(
                 attempt["state"] in {"pending", "confirmed", "held"}
@@ -56,6 +59,33 @@ async def checkout(order_id: UUID, request: Request, actor=Depends(principal)):
             "server_time": now.isoformat(),
             "requires_current_quote": quote is None,
         }
+
+
+@router.post("/v1/orders/{order_id}/payment-method")
+async def select_method(
+    order_id: UUID, body: SelectPaymentMethod, request: Request,
+    actor=Depends(principal), idempotency_key: str = Header(default=""),
+):
+    async def apply(tx):
+        order = await lock_order(tx, order_id)
+        owner(actor, order)
+        if order["revision"] != body.expected_revision:
+            return {"status": "denied", "code": "stale_revision"}
+        if order["state"] not in {"awaiting_payment", "payment_unknown"} or not order["notified_at"]:
+            return {"status": "denied", "code": "order_not_payable"}
+        now = await tx.fetchval("SELECT clock_timestamp()")
+        if order["deadline"] is None or now >= order["deadline"]:
+            return {"status": "denied", "code": "deadline_elapsed"}
+        if await tx.fetchval("SELECT 1 FROM l13_payment_attempts WHERE order_id=$1 AND state<>'declined'", order_id):
+            return {"status": "denied", "code": "reconciliation_required"}
+        # Selection can shorten the remaining window, never move its start time.
+        order = await tx.fetchrow(
+            "UPDATE l08_orders SET payment_method=$2,deadline=$3,revision=revision+1 WHERE id=$1 RETURNING *",
+            order_id, body.route, deadline_for(order["notified_at"], body.route, order["initiation_extended_until"]),
+        )
+        return {"status": "succeeded", "order": order_fact(order)}
+    return await command(request.app.state.pool, "user:" + str(actor.actor.subject_id), idempotency_key,
+                         "payment-method", {"order_id": order_id, **body.model_dump()}, apply, request_id=request.state.request_id)
 
 
 @router.post("/v1/orders/{order_id}/payment-attempts")
@@ -118,8 +148,9 @@ async def start(
         ):
             return {"status": "denied", "code": "exact_quote_review_required"}
         now = await tx.fetchval("SELECT clock_timestamp()")
-        if now >= order["deadline"]:
+        if not can_initiate(order, body.route, now):
             return {"status": "denied", "code": "deadline_elapsed"}
+        extension = initiated_until(order, body.route, now)
         attempt_id = uuid4()
         attempt = await tx.fetchrow(
             """INSERT INTO l13_payment_attempts(id,order_id,buyer_id,quote_id,quote_revision,currency,total_minor,route,reference)
@@ -135,8 +166,9 @@ async def start(
             "SIM-" + str(attempt_id),
         )
         await tx.execute(
-            "UPDATE l08_orders SET state='payment_unknown',revision=revision+1 WHERE id=$1",
-            order_id,
+            """UPDATE l08_orders SET state='payment_unknown',revision=revision+1,payment_method=$2,
+            initiation_extended_until=$3,deadline=$4 WHERE id=$1""",
+            order_id, body.route, extension, deadline_for(order["notified_at"], body.route, extension),
         )
         await audit(
             tx,

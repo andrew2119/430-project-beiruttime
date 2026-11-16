@@ -51,7 +51,7 @@ def exact_snapshot(value, *, quote_id, buyer_id, listing_id, listing_revision, c
             or value["revision"] < 1
             or type(value["payable_minor"]) is not int
             or not 1 <= value["payable_minor"] <= 9000000000000000
-            or value["currency"] not in ("USD", "LBP")
+            or value["currency"] != "USD"
             or (currency is not None and value["currency"] != currency)
             or (total_minor is not None and value["payable_minor"] != total_minor)
         ):
@@ -118,7 +118,8 @@ def retained_snapshot(value, current):
         retained_expiry = datetime.fromisoformat(financial["expires_at"])
         current_expiry = datetime.fromisoformat(current["expires_at"])
         if (
-            financial["payable_minor"] != current["total_minor"]
+            financial["currency"] != "USD"
+            or financial["payable_minor"] != current["total_minor"]
             or financial["source_id"] != source_id
             or financial["source_revision"] != source_revision
             or (retained_expiry != current_expiry if current["kind"] != "offer" else retained_expiry < current_expiry)
@@ -154,7 +155,8 @@ async def retain(tx, order, snapshot, listing_revision, seller_type):
         raise PublicError("seller_type_unknown", "The current seller route cannot be verified.", status=503)
     fields = ("price_minor", "buyer_fee_minor", "shipping_minor", "tax_minor")
     if (
-        any(type(snapshot.get(k)) is not int or snapshot[k] < 0 for k in fields)
+        order["currency"] != "USD"
+        or any(type(snapshot.get(k)) is not int or snapshot[k] < 0 for k in fields)
         or sum(snapshot[k] for k in fields) != order["total_minor"]
         or snapshot.get("id") != str(order["quote_id"])
         or snapshot.get("owner_id") != str(order["buyer_id"])
