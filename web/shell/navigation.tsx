@@ -14,7 +14,7 @@ export function areaForPath(path: string, routes: RouteEntry[]): Area {
 }
 export function permittedEntries(entries: NavEntry[], roles: Role[], area?: Area) { return entries.filter(n=>(!area||n.area===area) && n.roles.some(role=>role==='public'||roles.includes(role))); }
 const areaLabels: Record<Area, Record<Locale,string>> = { storefront: { en: 'Marketplace', ar: 'السوق' }, account: { en: 'Account', ar: 'الحساب' }, seller: { en: 'Selling', ar: 'البيع' }, operator: { en: 'Operations', ar: 'العمليات' } };
-/** CP's section rows, backed by Beirut Time's unchanged permission registry. */
+/** Shared section rows, backed by Beirut Time's unchanged permission registry. */
 export function DesktopNavigation({entries,routes,locale,label}:{entries:NavEntry[];routes:RouteEntry[];locale:Locale;label:string}) {
   const path=usePathname(), access=useAccessContext();
   const [warm,setWarm]=useState(false);

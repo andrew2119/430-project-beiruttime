@@ -5,14 +5,14 @@ import type { Messages } from '@/lib/i18n';
 import { Button, Popover, PopoverTrigger, PopoverContent, toast } from '@beirut-time/ui';
 import { useInstallPrompt } from './install-prompt-provider';
 const subscribe=(callback:()=>void)=>{window.addEventListener('online',callback);window.addEventListener('offline',callback);return()=>{window.removeEventListener('online',callback);window.removeEventListener('offline',callback);};};
-/** CP's footer install row: no unsupported button, no duplicate event capture. */
+/** The footer install row: no unsupported button, no duplicate event capture. */
 export function PwaInstall({t}:{t:Messages}) {
  const {canInstall,promptInstall,isStandalone,isIOS}=useInstallPrompt();
  if(isStandalone||(!canInstall&&!isIOS))return null;
  if(canInstall)return <Button variant="ghost" className="pg-nav-item pg-profile-link" onClick={()=>void promptInstall()}><Download aria-hidden="true"/>{t.install}</Button>;
  return <Popover><PopoverTrigger asChild><Button variant="ghost" className="pg-nav-item pg-profile-link"><Download aria-hidden="true"/>{t.install}</Button></PopoverTrigger><PopoverContent side="right" align="end"><h2 className="text-sm font-semibold">{t.install}</h2><p className="mt-2 text-xs text-muted-foreground">{t.iosInstall}</p></PopoverContent></Popover>;
 }
-/** Existing online-first worker/update policy, now in CP's banner/toast placement. */
+/** Existing online-first worker/update policy, using the shared banner/toast placement. */
 export function Pwa({t}:{t:Messages}) {
  const online=useSyncExternalStore(subscribe,()=>navigator.onLine!==false,()=>true);
  const [waiting,setWaiting]=useState<ServiceWorker|null>(null);

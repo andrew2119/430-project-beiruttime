@@ -1,4 +1,4 @@
-"""CP B-04/B-09: one lock/transaction owns a saved command and its outbox."""
+"""One lock/transaction owns a saved command and its outbox."""
 
 import hashlib
 import json

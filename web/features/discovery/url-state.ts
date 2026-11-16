@@ -3,7 +3,7 @@ export const fields = ['q','brand','model','location','min_minor','max_minor','c
 export type SearchField = typeof fields[number];
 export type SearchState = Record<SearchField, string>;
 export const defaults: SearchState = { q:'',brand:'',model:'',location:'',min_minor:'',max_minor:'',currency:'USD',sale_mode:'',sort:'newest',cursor:'' };
-// CP F-08: one pure URL codec; never copy unknown query parameters into requests.
+// One pure URL codec; never copy unknown query parameters into requests.
 export function readSearch(params: Pick<URLSearchParams,'get'>): SearchState {
   const state = {...defaults};
   for (const field of fields) {

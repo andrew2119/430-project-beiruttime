@@ -1,4 +1,4 @@
-/* CP Settings choices and Requests hairline-separated rows. */
+/* Shared settings choices and hairline-separated record rows. */
 .consent-choices{border:0;padding:0;display:grid;gap:var(--ds-space-2);min-inline-size:0}
 .identity-form .consent-choices .ui-check{display:inline-flex;align-items:center;gap:var(--ds-space-2);font-size:0.8125rem;color:var(--foreground);font-weight:400}
 .consent-records{display:grid;min-inline-size:0}

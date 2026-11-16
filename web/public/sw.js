@@ -1,7 +1,7 @@
-/* CP F-55/F-56: public assets only. Never cache HTML, API, RSC or credentials. */
+/* Public assets only. Never cache HTML, API, RSC or credentials. */
 const CACHE = 'bt-public-v2';
 const LIMIT = 160;
-// CP's self-contained offline face intentionally uses a platform font: no network required.
+// The self-contained offline face intentionally uses a platform font: no network required.
 const OFFLINE_HTML = `<!doctype html>
 <html lang="en">
   <head>

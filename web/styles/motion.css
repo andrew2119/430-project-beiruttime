@@ -41,7 +41,7 @@
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
-/* Route content arrival (ADR-0036): the monolith's campaign body fade,
+/* Route content arrival: the shared page-body fade,
    opacity plus a 12px rise, on the overlay step. */
 @keyframes pg-contentIn {
   from { opacity: 0; transform: translateY(12px); }
@@ -52,13 +52,12 @@
   to { opacity: 0; }
 }
 
-/* Skeleton shimmer (the Maintenance page's skeleton cards still name it,
-   styles/proto-maintenance.css) */
+/* Shared skeleton shimmer. */
 @keyframes pg-shimmer {
   from { background-position: 200% 0; }
   to { background-position: -200% 0; }
 }
-/* Skeleton pulse (no gradients, captain 2026-09-30): the whole placeholder
+/* Skeleton pulse (no gradients): the whole placeholder
    breathes between two flat tones. The light tone keeps most of --muted so the
    block never melts into the page ground at the top of the breath. */
 @keyframes pg-skeleton-pulse {
@@ -84,9 +83,7 @@
     animation: pg-fadeOut var(--ds-motion-fast) var(--ease-in-hard);
   }
 
-  /* Campaign detail body: arrives on entry and on every sub-tab change
-     (components/campaigns/campaign-detail-shell.tsx keys the wrapper per
-     path). `both` keeps the content unpainted until the first frame. */
+  /* Detail body: arrives on entry and on every keyed sub-tab change. `both` keeps the content unpainted until the first frame. */
   .pg-detail-arrive { animation: pg-contentIn var(--ds-motion-overlay) var(--ease-out-soft) both; }
 
   /* Overlay + modal: enter on the overlay step, exit on the fast step. */
@@ -111,7 +108,7 @@
     animation: pg-skeleton-pulse var(--ds-motion-shimmer) var(--ease-standard) infinite;
   }
 
-  /* Icon micro-motion on hover (the v0 subtle icon nudge Andrew liked) */
+  /* Icon micro-motion on hover (the shared subtle icon nudge) */
   .pg-iconbtn svg {
     transition: transform var(--ds-motion-fast) var(--ease-overshoot);
   }
@@ -124,8 +121,7 @@
       transform var(--ds-motion-fast) var(--ease-settle);
   }
 
-  /* Row hover for tables (restored: campaign-row.tsx and
-     efficiency/EfficiencyDashboard.tsx still emit pg-row). */
+  /* Shared table-row hover. */
   .pg-row {
     transition: background-color var(--ds-motion-fast) var(--ease-standard);
   }
@@ -135,7 +131,7 @@
      inside a card grid (`.pg-list-grid`) the box is itself a grid so the card
      stretches to the row height as a direct grid child would. Enter plays only
      for a row the caller marks as a live arrival, every arrival of a batch at
-     once (captain 2026-10-24); exit holds the box for one fast beat with
+     once; exit holds the box for one fast beat with
      pointer events off; a reorder releases its FLIP transform on the popover
      step. */
   .pg-list-item {
@@ -149,8 +145,8 @@
   .pg-list-item[data-list-enter] {
     animation: pg-listIn var(--ds-motion-image-reveal) var(--ease-out-soft) backwards;
   }
-  /* A row that enters fades its picture in too, even one that was ready
-     (captain 2026-10-24); the reduced-motion baseline below still wins. */
+  /* A row that enters fades its picture in too, even one that was ready;
+     the reduced-motion baseline below still wins. */
   .pg-list-item[data-list-enter] .ui-image-frame-img,
   .pg-list-item[data-list-enter] .ui-image-frame-placeholder {
     transition: opacity var(--ds-motion-image-reveal) var(--ease-out-soft);
@@ -233,6 +229,6 @@
   .pg-list-item[data-list-exit] { animation: none; }
   .pg-list-item[data-list-flip] { transition: none; transform: none; }
   .pg-seg-thumb { transition: none; }
-  /* Campaign detail content mounts atomically. */
+  /* Detail content mounts atomically. */
   .pg-detail-arrive { animation: none; }
 }

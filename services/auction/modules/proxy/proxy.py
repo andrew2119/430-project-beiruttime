@@ -1,6 +1,6 @@
 """Pure auction.proxy.v1 arithmetic, invoked in the owning Auction transaction.
 
-CP B-04: no IO, clocks, randomness, connection or commit. The return value is
+No IO, clocks, randomness, connection or commit. The return value is
 private transaction state, NEVER a public DTO, diagnostic, event or receipt.
 """
 from copy import deepcopy

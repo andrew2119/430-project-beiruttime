@@ -1,13 +1,7 @@
-/* LAB PROTOTYPE ONLY (2026-10-03). Sticky page headers on every page. Imported last.
+/* Sticky page headers. web/shell/sticky-header.tsx finds each header box,
+   marks it [data-sx-root] and measures it; this file owns the visual behavior.
 
-   The captain: "the tabs that have a top header, that header should be sticky".
-   components/proto/sticky/sticky-header.tsx finds each page's header box, marks it
-   [data-sx-root] and measures it; this file does everything you see.
-
-   B "Condense" is LOCKED by the captain 2026-10-03 ("I like the condense option ...
-   their upper parts are getting faded in to the top and absorbed. That should not
-   happen.") and, round 3, tied to the scroll again ("There's this delay ... it's not
-   really in sync"):
+   B "Condense" is fixed and tied directly to scroll position:
    - The card is pinned where it sits: it never moves, never slides under anything,
      its top edge stays crisp.
    - As the page scrolls, the card condenses by exactly as much as the page has
@@ -21,15 +15,15 @@
    - A solid strip of the page's own paint runs from the window's top edge to the card
      and on below it by the page's own gap, so nothing ever shows above or beside the
      card; the page passes under that strip's straight bottom edge, which takes a very
-     soft shadow while something is under it. On a campaign page (header joined to the
+     soft shadow while something is under it. On a detail page (header joined to the
      body card) the strip under the card is the body card's own top padding.
    - Inside the tray (which isolates its layers) the header sits at z 20: above the
      page, below every pop-up, menu, sheet and the lab bar, which live outside it.
    - Reduced motion: no in-between; the card sits open, or condensed once the page has
      scrolled the whole way.
 
-   A "Whole card" and C "Controls only" stay below, unused (locked by the captain
-   2026-10-03), with C's scroll-linked motion and campaign-toolbar pinning. */
+   A "Whole card" and C "Controls only" stay below, unused,
+   with C's scroll-linked motion and detail-toolbar pinning. */
 
 /* The air above a pinned card: the page's own top gutter (24; phone 12), so a card
    pinned at the top sits exactly where it sat before scrolling. */
@@ -119,9 +113,9 @@
 }
 /* At rest nothing is under the card, yet as the page's top layer it drew over the
    first card below it: the strip hid that card's top ring and the card's own shadow
-   washed out its top (captain, 2026-10-18: "their top part is being absorbed"). At rest
+   washed out its top. At rest
    the header stops just above the next block, clear of the 1 px ring every card draws
-   (--ds-shadow-border and the shadows built on it), and on a campaign page at the body
+   (--ds-shadow-border and the shadows built on it), and on a detail page at the body
    card's top padding. Once the page moves, every frame is as before. */
 [data-sx-root="B"][data-sx-ready][data-sx-rest] {
   clip-path: inset(-100vmax -100vmax min(0px, 1px - var(--sx-below, 0px)) -100vmax);
@@ -131,7 +125,7 @@
 }
 /* A very soft shadow on that edge while the page is passing under it. */
 [data-sx-root="B"][data-sx-under] .hx-zone::before { box-shadow: var(--ds-shadow-menu); }
-/* A campaign page: the header is joined to the body card below it, so the strip under
+/* A detail page: the header is joined to the body card below it, so the strip under
    the card is the body card's own top padding in the card's paint, ending on a clean
    hairline while the tab's content passes under it. */
 .hx-detail-page > [data-sx-root="B"][data-sx-under] .hx-zone::before { box-shadow: none; }
@@ -141,8 +135,7 @@
   z-index: -1;
   inset-inline: 0;
   inset-block-start: 100%;
-  /* Short of the tab toolbar's buttons, whose raised faces stand 2px above their boxes
-     (captain, click-test 2026-10-20, finding 12: the strip cut their tops off). */
+  /* Stop short of toolbar buttons, whose raised faces stand 2px above their boxes. */
   block-size: max(0px, var(--sx-lip, 0px) - 2px);
   background: var(--card);
   pointer-events: auto;
@@ -166,7 +159,7 @@
 [data-sx-root="B"][data-sx-ready] .hx-head[data-opt="A"] > [data-sx-keep="nav"] {
   margin-block-start: calc(var(--sx-km) + (var(--ds-space-2) - var(--sx-km)) * var(--sx-p));
 }
-/* ... the title settles smaller (it never fades) and a campaign's cover to 32 (28 on
+/* ... the title settles smaller (it never fades) and a detail cover to 32 (28 on
    a phone) ... */
 [data-sx-root="B"][data-sx-ready] .hx-titleline {
   transform-origin: 0 50%;
@@ -200,7 +193,7 @@
 }
 
 /* ============================================================================
-   A "Whole card" and C "Controls only": unused, locked by the captain 2026-10-03
+   A "Whole card" and C "Controls only": unused
    ========================================================================== */
 /* The tray's paint over the gutter above the pinned card (and a little behind its top
    corners). While a C card is still settling the strip sits hidden behind it. */
@@ -258,7 +251,7 @@
   to { opacity: 0; visibility: hidden; }
 }
 
-/* C: a campaign tab's own toolbar pins right under the header's bar, with the body
+/* C: a detail tab's own toolbar pins right under the header's bar, with the body
    card's top padding above it, on a strip of the card's own paint. */
 [data-sx-tb] {
   position: sticky;

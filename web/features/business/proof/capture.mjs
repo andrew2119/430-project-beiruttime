@@ -7,8 +7,9 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdir, writeFile } from 'node:fs/promises';
 const exec=promisify(execFile);
-const shots='/Users/andrew/.harness/homes/430-project/firstmate/data/bt-cp-business/shots';
-const env={...process.env,CHROME_DEVTOOLS_AXI_SESSION:'bt-cp-business',CHROME_DEVTOOLS_AXI_BROWSER_URL:'http://127.0.0.1:3360'};
+const shots=process.env.BT_BUSINESS_SHOTS;
+if(!shots)throw new Error('Set BT_BUSINESS_SHOTS to the screenshot directory');
+const env={...process.env,CHROME_DEVTOOLS_AXI_SESSION:'bt-business',CHROME_DEVTOOLS_AXI_BROWSER_URL:'http://127.0.0.1:3360'};
 const routes=[['business','/business','input[name="legal_name"]'],['contacts','/business/contacts','input[name="recipient"]'],['membership','/business/membership','input[name="subject"]'],['history','/business/review-history','.business-timeline'],['verification','/operations/verification','.business-queue button'],['intake','/business-intake','.ops-form .ui-select'],['moderation','/operations/moderation?case=00000000-0000-4000-8000-000000000007','.ops-private'],['dashboard','/operations/dashboard','.ops-queue-grid .ui-card'],['queue','/operations/dashboard/queues/inspection','.ops-queue-grid .ui-card']];
 const cli=(...args)=>exec('chrome-devtools-axi',args,{env,maxBuffer:4*1024*1024});
 async function run(script){
@@ -39,9 +40,9 @@ for(const [size,viewport] of [['desktop','1440x1000x1'],['phone','390x844x1,mobi
   const filename=`${shots}/${name}-${locale}-${size}-${theme}.png`;
   await screenshot(url,filename);console.log(JSON.stringify({name,locale,size,theme,filename}));
  }
- for(const theme of ['light','dark']){
+ if(process.env.BT_CAPTURE_GALLERY==='1')for(const theme of ['light','dark']){
   const url=`http://127.0.0.1:${theme==='dark'?3353:3352}/bt-business-reference`;
   await run(`await page.open(${JSON.stringify(url)});await page.wait('.proto-set-card');await page.eval(async()=>{await document.fonts.ready;return true;});await page.wait(350);`);
-  await screenshot(url,`${shots}/cp-reference-controls-${size}-${theme}.png`);
+  await screenshot(url,`${shots}/reference-controls-${size}-${theme}.png`);
  }
 }
