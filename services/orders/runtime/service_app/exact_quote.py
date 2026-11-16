@@ -76,10 +76,13 @@ def exact_snapshot(value, *, quote_id, buyer_id, listing_id, listing_revision, c
 
 def current_quote(value):
     try:
-        from bt_contracts.pricing.quotes.current import CurrentQuote
+        from bt_contracts.pricing.quotes.current import CurrentQuoteV3
 
-        return CurrentQuote.model_validate(value).model_dump(mode="json")
-    except (ImportError, ValidationError):
+        quote = CurrentQuoteV3.model_validate(value)
+        if quote.economics != "committed" or quote.expires_at is not None:
+            raise ValueError("Allocation requires non-expiring accepted economics")
+        return quote.model_dump(mode="json")
+    except (ImportError, ValidationError, ValueError):
         raise PublicError("pricing_unavailable", "The current quote contract cannot be verified.", status=503) from None
 
 
@@ -87,7 +90,7 @@ def retained_snapshot(value, current):
     """Normalize only the published financial DTO, never assessment/evidence prose.
 
     This historical read is NOT authorization. The caller has separately obtained
-    CurrentQuote and must bind the same revision/source/buyer before allocating.
+    CurrentQuoteV3 and must bind the same revision/source/buyer before allocating.
     """
     try:
         from bt_contracts.pricing.quotes.current import RetainedFinancialQuote
@@ -110,19 +113,18 @@ def retained_snapshot(value, current):
         ):
             if financial[field] != current[field]:
                 raise ValueError()
-        # Offers authorize the current offer aggregate, while its immutable
-        # original Q01 financial quote remains bound to the listing revision.
-        # The current offer expiry may also shorten the historical quote expiry.
+        # Offers authorize the accepted offer aggregate, while its original
+        # financial snapshot remains bound to the listing revision. The old
+        # preview expiry is historical, not a committed-price deadline.
         source_id = current["listing_id"] if current["kind"] == "offer" else current["source_id"]
         source_revision = current["listing_revision"] if current["kind"] == "offer" else current["source_revision"]
-        retained_expiry = datetime.fromisoformat(financial["expires_at"])
-        current_expiry = datetime.fromisoformat(current["expires_at"])
         if (
             financial["currency"] != "USD"
             or financial["payable_minor"] != current["total_minor"]
             or financial["source_id"] != source_id
             or financial["source_revision"] != source_revision
-            or (retained_expiry != current_expiry if current["kind"] != "offer" else retained_expiry < current_expiry)
+            or current["economics"] != "committed"
+            or current["expires_at"] is not None
         ):
             raise ValueError()
         return {

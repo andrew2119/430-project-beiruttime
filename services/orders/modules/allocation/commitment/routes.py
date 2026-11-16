@@ -422,12 +422,12 @@ async def allocate(
         return denied("legacy_currency_reconciliation_required")
     basis = None
     if prior is None:
-        # Pricing v2 service validation binds source/buyer and immutable exact snapshot.
+        # Pricing v3 binds current source/buyer and non-expiring accepted economics.
         basis = current_quote(
             await upstream(
                 request,
                 "pricing",
-                f"/internal/v2/quotes/{body.quote_id}/validation?buyer_id={body.buyer_id}",
+                f"/internal/v3/quotes/{body.quote_id}/validation?buyer_id={body.buyer_id}",
                 service_auth=True,
             )
         )
@@ -452,7 +452,7 @@ async def allocate(
         retained = await upstream(
             request,
             "pricing",
-            f"/internal/v2/quotes/{body.quote_id}/retained?buyer_id={body.buyer_id}",
+            f"/internal/v3/quotes/{body.quote_id}/retained?buyer_id={body.buyer_id}",
             service_auth=True,
         )
         snapshot = retained_snapshot(retained, basis)
