@@ -1,1 +1,1 @@
-{"version":1,"lane":"L12","contracts":[{"namespace":"auction.policy.v1","path":"packages/contracts-auction/policy","fixtures":["packages/contracts-auction/policy/fixtures.json"]}]}
+{"version":1,"lane":"L12","contracts":[{"namespace":"auction.policy.v2","path":"packages/contracts-auction/policy","fixtures":["packages/contracts-auction/policy/fixtures.json"]}]}

@@ -91,8 +91,6 @@ async def api(database_url):
         result=await client.post('/v1/auctions',headers=headers(SELLER),json={'listing_id':str(LISTING),'currency':'USD','opening_minor':400000,'reserve_minor':450000,'increment_bands':[{'from_minor':0,'step_minor':10000}],'starts_at':(now-timedelta(minutes=1)).isoformat(),'ends_at':(now+timedelta(minutes=10)).isoformat()})
         assert result.status_code==200,result.text
         auction=result.json()['auction_id']
-        result=await client.patch(f'/v1/auctions/{auction}/policy',headers=headers(SELLER,revision=1),json={'extension_policy':'last-two-minutes.v1','buy_now_minor':500000})
-        assert result.status_code==200,result.text
         yield client,app,fixture,UUID(auction)
     await app.state.pool.close()
     await fixture.close()

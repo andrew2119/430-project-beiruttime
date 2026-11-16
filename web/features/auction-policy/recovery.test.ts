@@ -5,23 +5,18 @@ import {expect,it,vi} from 'vitest';
 import PrebidSlot from './prebid-slot';
 import en from './en.json';
 import ar from './ar.json';
-vi.mock('@/features/identity/session',()=>({useSession:()=>({access_fingerprint:'current-buyer',principal:{roles:['buyer'],actor:{subject_id:'current-buyer'}}}),useSessionState:()=> 'authenticated',authenticatedRequest:vi.fn(),refreshSession:vi.fn(),signInHref:()=>'/en/account'}));
-function render(locale:'en'|'ar',operation:object|null,price:number|null=500000,standalone=true){
+vi.mock('@/features/identity/session',()=>({useSession:()=>({access_fingerprint:'current-buyer',principal:{roles:['buyer'],actor:{subject_id:'current-buyer'}}}),authenticatedRequest:vi.fn()}));
+function render(locale:'en'|'ar',operation:object|null){
  const cache=new QueryClient();
  cache.setQueryData(['prebid-lots','listing'],{items:[{id:'auction',listing_id:'listing',currency:'USD',status:'live'}]});
- cache.setQueryData(['prebid-policy','auction'],{revision:4,mode:'prebid_reserved',buy_now_minor:price,frozen:true});
  cache.setQueryData(['my-prebid','current-buyer','auction'],{operation});
- return renderToStaticMarkup(createElement(QueryClientProvider,{client:cache},createElement(PrebidSlot,{locale,resourceId:'listing',standalone})));
+ return renderToStaticMarkup(createElement(QueryClientProvider,{client:cache},createElement(PrebidSlot,{locale,resourceId:'listing',standalone:true})));
 }
-it.each(['en','ar'] as const)('recovers the current buyer receipt without an in-memory command in %s',locale=>{
+it.each(['en','ar'] as const)('keeps historical pending outcomes in %s without purchase or checkout controls',locale=>{
  const t=locale==='ar'?ar:en;
- const html=render(locale,{status:'succeeded',order_id:'own-order',quote_id:'own-quote'});
- expect(html).toContain(t.reserved);expect(html).toContain('/checkout?order_id=own-order&amp;quote_id=own-quote');expect(html).not.toContain(t.purchase);
+ const html=render(locale,{status:'pending',order_id:'own-order',quote_id:'own-quote'});
+ expect(html).toContain(t.pending);expect(html).toContain(t.excluded);expect(html).not.toContain('/checkout');expect(html).not.toContain('<form');expect(html).not.toContain('<button');
 });
-it('keeps a different buyer on public held facts, without a private reference',()=>{
- const html=render('en',null);expect(html).toContain(en.held);expect(html).not.toContain('/checkout');expect(html).not.toContain('<form');
-});
-it('shows unavailable purchase context on the standalone dashboard while leaving absent watch actions hidden',()=>{
- expect(render('en',null,null)).toContain(en.disabled);expect(render('ar',null,null)).toContain(ar.disabled);
- expect(render('en',null,null,false)).toBe('');
+it('never lets a different buyer restore another historical reference',()=>{
+ const html=render('en',null);expect(html).toContain(en.excluded);expect(html).not.toContain('own-order');expect(html).not.toContain('/checkout');
 });

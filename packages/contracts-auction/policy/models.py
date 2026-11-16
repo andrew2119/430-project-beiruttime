@@ -1,19 +1,18 @@
-"""Auction policy v1. Kernel invokes the pure hook once per admitted command, not per proxy row."""
+"""Fixed-end policy v2 with retained historical purchase read models."""
 from typing import Literal
 from uuid import UUID
 from pydantic import AwareDatetime, Field, StrictInt
 from bt_contracts_core.models import Contract
 
-POLICY_VERSION = 'last-two-minutes.v1'
-WINDOW_SECONDS = 120
-EXTENSION_SECONDS = 120
+POLICY_VERSION = 'fixed-end.v2'
 
 
 class AcceptedBidPolicy(Contract):
     ends_at: AwareDatetime
     server_time: AwareDatetime
     end_version: StrictInt = Field(ge=1)
-    extension_policy: Literal['none.v1', 'last-two-minutes.v1']
+    # Read compatibility only; a legacy value has no timing effect.
+    extension_policy: Literal['none.v1', 'last-two-minutes.v1'] = 'none.v1'
 
 
 class ExtensionResult(Contract):
@@ -23,8 +22,7 @@ class ExtensionResult(Contract):
 
 
 class ConfigurePolicy(Contract):
-    extension_policy: Literal['none.v1', 'last-two-minutes.v1']
-    buy_now_minor: StrictInt | None = Field(default=None, ge=1, le=9_000_000_000_000_000)
+    """No extension or auction-purchase configuration is admitted."""
 
 
 class PrebidCommand(Contract):
@@ -32,7 +30,8 @@ class PrebidCommand(Contract):
     quote_id: UUID
 
 
-class PolicySnapshot(ConfigurePolicy):
+class PolicySnapshot(Contract):
+    policy_version: Literal['fixed-end.v2'] = POLICY_VERSION
     auction_id: UUID
     revision: StrictInt = Field(ge=1)
     end_version: StrictInt = Field(ge=1)
@@ -40,8 +39,13 @@ class PolicySnapshot(ConfigurePolicy):
     server_time: AwareDatetime
     frozen: bool
     reserve_set: bool
+    mode: str = Field(min_length=1, max_length=100)
+    schedule_state: Literal['scheduled', 'live', 'ended', 'ended_legacy_review']
+
+
+class SellerPolicySnapshot(PolicySnapshot):
     reserve_met: bool
-    mode: Literal['bidding', 'listing_edit_pending', 'first_bid_pending', 'prebid_pending', 'prebid_reserved', 'closed_no_sale', 'closed_winner']
+    cancellation_eligible: bool
 
 
 class PrebidOutcome(Contract):
