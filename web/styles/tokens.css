@@ -42,17 +42,17 @@
 
 /* Existing utility and consumer spellings resolve to the same owned values. */
 @theme {
-  --color-rebellion-50: var(--bt-burgundy-50);
-  --color-rebellion-100: var(--bt-burgundy-100);
-  --color-rebellion-200: var(--bt-burgundy-200);
-  --color-rebellion-300: var(--bt-burgundy-300);
-  --color-rebellion-400: var(--bt-burgundy-400);
-  --color-rebellion-500: var(--bt-burgundy-500);
-  --color-rebellion-600: var(--bt-burgundy-600);
-  --color-rebellion-700: var(--bt-burgundy-700);
-  --color-rebellion-800: var(--bt-burgundy-800);
-  --color-rebellion-900: var(--bt-burgundy-900);
-  --color-rebellion-950: var(--bt-burgundy-950);
+  --color-bordeaux-50: var(--bt-burgundy-50);
+  --color-bordeaux-100: var(--bt-burgundy-100);
+  --color-bordeaux-200: var(--bt-burgundy-200);
+  --color-bordeaux-300: var(--bt-burgundy-300);
+  --color-bordeaux-400: var(--bt-burgundy-400);
+  --color-bordeaux-500: var(--bt-burgundy-500);
+  --color-bordeaux-600: var(--bt-burgundy-600);
+  --color-bordeaux-700: var(--bt-burgundy-700);
+  --color-bordeaux-800: var(--bt-burgundy-800);
+  --color-bordeaux-900: var(--bt-burgundy-900);
+  --color-bordeaux-950: var(--bt-burgundy-950);
   --color-sand-50: var(--bt-sand-50);
   --color-sand-100: var(--bt-sand-100);
   --color-sand-200: var(--bt-sand-200);

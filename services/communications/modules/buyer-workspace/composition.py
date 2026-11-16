@@ -1,6 +1,6 @@
 """Read-only composition: every source remains authoritative for its activity.
 
-CP B-18: no new business state/event is created by a read. Source writes and
+No new business state/event is created by a read. Source writes and
 notifications use the Auction/Orders owning outboxes, not a second projection
 that can falsely turn a pending reservation into a paid order.
 """

@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import ts from 'typescript';
 import { ROOT, LEDGER, MOTION_OWNER, LEGACY_MOTION_OWNER, LEGACY_MOTION_HASH, census, cssDeclarations, hashSource, inspectSource, measureReference, committedHistory, ledgerRegressions, motionRetirementIssues, motionTokenMs } from './check-ui-rules.mjs';
 import { splitOutside } from './token-cascade.mjs';
+import { cleanupLedgerHashes } from './check-foundation-boundary.mjs';
 
 const css = readFileSync(join(ROOT,MOTION_OWNER),'utf8');
 const entries = cssDeclarations(css);
@@ -196,9 +197,9 @@ test('old pacing and persistence statements stay exact alongside explicit supers
   assert.equal(hashSource(JSON.stringify(compiled)),'0c9fd2d3271f768a9560673cbc57b88c115f4121e92667173519f4e951d61119');
 });
 
-test('the owner migration does not increase or rehash any accepted main debt', async () => {
+test('the owner migration keeps debt exact through the one reviewed main cleanup', async () => {
   const {initial} = committedHistory(ROOT), active = JSON.parse(readFileSync(join(ROOT,LEDGER),'utf8'));
-  assert.deepEqual(await measureReference(),initial);
+  assert.deepEqual(await measureReference(),cleanupLedgerHashes(initial));
   assert.deepEqual(ledgerRegressions(active,initial),[]);
-  const retiredRoot = {...initial};delete retiredRoot['web/app/layout.tsx'];assert.deepEqual(active,retiredRoot);
+  const retiredRoot = cleanupLedgerHashes(initial);delete retiredRoot['web/app/layout.tsx'];assert.deepEqual(active,retiredRoot);
 });

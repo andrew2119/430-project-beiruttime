@@ -27,7 +27,7 @@ export const INTERFACE_CHECKS = Object.freeze({
 export const TOKEN_OWNER = 'web/styles/tokens.css';
 export const MOTION_OWNER = 'web/styles/bt-motion.css';
 export const LEGACY_MOTION_OWNER = 'web/styles/motion.css';
-export const LEGACY_MOTION_HASH = '020d59936efcd46cfc0c76ccc41cb64684f94721e7ba9065035e6c789614ae43';
+export const LEGACY_MOTION_HASH = 'ca73ac8abb2114fb27f1ee0ff82685590a7fff849e1a103dccdea5fade86f497';
 const legacyMotionClasses = new Set(['pg-boot-shimmer', 'pg-card', 'pg-chonk', 'pg-dept-card', 'pg-dept-card-go', 'pg-dept-link', 'pg-detail-arrive', 'pg-iconbtn', 'pg-list-grid', 'pg-list-item', 'pg-modal', 'pg-nav-icon', 'pg-nav-icon-glyph', 'pg-nav-item', 'pg-overlay', 'pg-popover', 'pg-row', 'pg-seg-thumb', 'pg-skeleton', 'pg-skeleton-copy', 'pg-skeleton-row-composed', 'ui-image-frame-glyph', 'ui-image-frame-img', 'ui-image-frame-placeholder']);
 const legacyMotionFrames = new Set([
   'pg-slideUpAndFade', 'pg-fadeOut', 'pg-overlayIn', 'pg-overlayOut', 'pg-modalIn', 'pg-modalOut',

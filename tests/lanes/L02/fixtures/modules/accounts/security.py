@@ -1,4 +1,4 @@
-"""CP S-02/S-04/S-05: account-serialized lineage and hash-only purpose tokens."""
+"""Account-serialized lineage and hash-only purpose tokens."""
 import asyncio
 import base64
 import hashlib

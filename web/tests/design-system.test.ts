@@ -45,6 +45,17 @@ describe('Beirut Time foundation contract',()=>{
    expect(canScrollBoxMove(area,[0,80])).toBe(true);
   } finally {vi.unstubAllGlobals();}
  });
+ it('keeps the bordeaux ramp and brand-mark references aligned',()=>{
+  const tokens=read('../styles/tokens.css');
+  const ramp={50:'97% 0.012 27',100:'91.4% 0.028 28.5',200:'85% 0.055 28',300:'76% 0.09 27.5',400:'66% 0.135 27.5',500:'58% 0.19 27.5',600:'50.6% 0.193 27.7',700:'41.6% 0.148 26.6',800:'35.6% 0.124 26.2',900:'29% 0.1 26',950:'23.3% 0.079 25.8'};
+  for(const [step,value] of Object.entries(ramp)){
+   expect(tokens).toContain(`--bt-burgundy-${step}: oklch(${value});`);
+   expect(tokens).toContain(`--color-bordeaux-${step}: var(--bt-burgundy-${step});`);
+  }
+  const foundation=read('../styles/foundation.css');
+  expect(foundation).toContain('color: var(--color-bordeaux-700)');
+  expect(foundation).toContain('[data-theme="dark"] .bt-brand-mark { color: var(--color-bordeaux-400); }');
+ });
  it('has one token owner, faithful motion steps, reduced motion and an exact 850px boundary',()=>{
   const tokens=read('../styles/tokens.css'), motion=read('../styles/motion.css');
   expect(tokens).toContain('--ds-motion-theme: 0.45s');expect(tokens).toContain('--ds-motion-image-reveal: 0.18s');expect(tokens).toContain('--bt-touch-target: 44px');expect(tokens).toContain('--bt-phone-control: 36px');

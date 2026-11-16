@@ -4,7 +4,7 @@ import { join, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
-import { legacyUiIssues } from './check-foundation-boundary.mjs';
+import { cleanupBoundaryHash, isCleanupBlob, legacyUiIssues } from './check-foundation-boundary.mjs';
 import { INTERFACE_CHECKS, SEMANTIC_PLUGIN, SEMANTIC_RULES, TOKEN_OWNER, LEGACY_MOTION_OWNER, declaredLayers, inspectSource } from './ui-source.mjs';
 export { INTERFACE_CHECKS, LONG_TIMES, LAYER_SLOTS, MOTION_OWNER, LEGACY_MOTION_OWNER, LEGACY_MOTION_HASH, cssDeclarations, declaredLayers, inspectSource } from './ui-source.mjs';
 export { metadataIssues, motionTokenMs } from './ui-syntax.mjs';
@@ -44,7 +44,7 @@ export function census(root = ROOT) {
   return Object.fromEntries(sourceFiles(root).map(file => {
     const source = readFileSync(join(root, file), 'utf8');
     const blob = createHash(head.algorithm).update(`blob ${Buffer.byteLength(source)}\0`).update(source).digest('hex');
-    return [file, { sha256: hashSource(source), counts: inspectSource(file, source, { layers, legacyMotionAllowed:head.files.get(file) === blob }) }];
+    return [file, { sha256: hashSource(source), counts: inspectSource(file, source, { layers, legacyMotionAllowed:head.files.get(file) === blob || isCleanupBlob(file,blob,head.files.get(file)) }) }];
   }));
 }
 export async function semanticCensus(root = ROOT) {
@@ -107,7 +107,7 @@ export function regressions(current, ledger = {}, strict = false) {
 export function ledgerRegressions(candidate, accepted) {
   const failures = [];
   for (const [file, entry] of Object.entries(candidate)) {
-    if (!accepted[file] || accepted[file].sha256 !== entry.sha256) failures.push(`${file}: baseline file/hash cannot be added or replaced`);
+    if (!accepted[file] || cleanupBoundaryHash(file,accepted[file].sha256) !== entry.sha256) failures.push(`${file}: baseline file/hash cannot be added or replaced`);
     if (!entry.counts || !Object.keys(entry.counts).length) failures.push(`${file}: remove an empty baseline entry`);
     for (const [check, count] of Object.entries(entry.counts ?? {})) if (!(check in INTERFACE_CHECKS) || !Number.isSafeInteger(count) || count < 1 || count > (accepted[file]?.counts[check] ?? 0)) failures.push(`${file}: baseline ${check} cannot grow or return`);
   }

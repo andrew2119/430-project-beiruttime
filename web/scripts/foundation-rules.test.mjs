@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import ts from 'typescript';
 import { ROOT, LEDGER, census, cssDeclarations, declaredLayers, hashSource, inspectSource, measureReference, committedHistory } from './check-ui-rules.mjs';
-import { LEGACY_UI_INVENTORY, legacyUiIssues } from './check-foundation-boundary.mjs';
+import { CLEANUP_BASE, CLEANUP_FOUNDATION, CLEANUP_MAIN, LEGACY_UI_INVENTORY, cleanupBoundary, cleanupBoundaryHash, cleanupLedgerHashes, legacyUiIssues } from './check-foundation-boundary.mjs';
 import { FOUNDATION_ENTRY } from './foundation-boundary.mjs';
 import { splitOutside } from './token-cascade.mjs';
 import { surfacePointer, surfacePadding } from '../tests/helpers/component-cascade.mjs';
@@ -36,7 +36,7 @@ test('only exact HEAD consumers retain root controls; edits and copied paths use
   } finally {rmSync(directory, {recursive:true, force:true});}
 });
 
-test('legacy components and styles stay at their original bytes with only the preceding lint comment boundary', () => {
+test('legacy components and styles keep exact reviewed bytes across the single main cleanup', () => {
   const inventory = JSON.parse(readFileSync(join(ROOT, LEGACY_UI_INVENTORY), 'utf8'));
   const paths = git('ls-tree', '-r', '--name-only', 'main', '--', 'packages/ui/src', 'web/styles', 'web/shell/primitives.tsx').trim().split('\n').filter(file => !['packages/ui/src/motion-tokens.ts','web/styles/tokens.css'].includes(file));
   assert.deepEqual(Object.keys(inventory), paths);
@@ -46,6 +46,16 @@ test('legacy components and styles stay at their original bytes with only the pr
       const compile = source => ts.transpileModule(source, {compilerOptions:{target:ts.ScriptTarget.ES2022, module:ts.ModuleKind.ESNext, jsx:ts.JsxEmit.ReactJSX, removeComments:true}}).outputText;
       assert.equal(compile(readFileSync(join(ROOT,file),'utf8')), compile(git('show', `main:${file}`)));
     } else assert.equal(inventory[file], hashSource(git('show', `main:${file}`)), file);
+  }
+  const original = JSON.parse(git('show',`${CLEANUP_FOUNDATION}:${LEGACY_UI_INVENTORY}`));
+  assert.deepEqual(Object.keys(inventory),Object.keys(original));
+  const rebound = Object.keys(original).filter(file=>original[file] !== inventory[file]);
+  assert.equal(rebound.length,29);
+  for (const file of rebound) {
+    assert.equal(hashSource(git('show',`${CLEANUP_FOUNDATION}:${file}`)),original[file]);
+    assert.equal(git('show',`${CLEANUP_FOUNDATION}:${file}`),git('show',`${CLEANUP_BASE}:${file}`));
+    assert.equal(inventory[file],cleanupBoundaryHash(file,original[file]));
+    assert.equal(readFileSync(join(ROOT,file),'utf8'),git('show',`${CLEANUP_MAIN}:${file}`));
   }
   assert.deepEqual(legacyUiIssues(ROOT), []);
   const directory = mkdtempSync(join(ROOT, '.bt-foundation-probe-'));
@@ -58,6 +68,14 @@ test('legacy components and styles stay at their original bytes with only the pr
     assert.deepEqual(legacyUiIssues(directory), []);
     writeFileSync(file, readFileSync(file,'utf8') + '\n/* changed */');
     assert.ok(legacyUiIssues(directory).some(line => line.includes('frozen compatibility')));
+    writeFileSync(join(directory,LEGACY_UI_INVENTORY),JSON.stringify({'packages/ui/src/button.tsx':hashSource(readFileSync(file,'utf8'))}));
+    assert.ok(legacyUiIssues(directory).some(line=>line.includes('inventory cannot grow or be rehashed')));
+    const migrated = 'packages/ui/src/animated-list.tsx', pair = cleanupBoundary(migrated);
+    writeFileSync(join(directory,LEGACY_UI_INVENTORY),JSON.stringify({[migrated]:pair.after}));
+    const actual = join(directory,migrated);writeFileSync(actual,git('show',`${CLEANUP_MAIN}:${migrated}`));
+    assert.deepEqual(legacyUiIssues(directory),[]);
+    writeFileSync(actual,readFileSync(actual,'utf8')+'\n/* later edit */');
+    assert.ok(legacyUiIssues(directory).some(line=>line.includes('frozen compatibility')));
   } finally {rmSync(directory,{recursive:true,force:true});}
 });
 
@@ -70,8 +88,8 @@ test('canonical State announces errors without pretending the unchanged legacy g
   assert.equal(Object.keys(ledger).length,91);
   assert.equal(Object.values(ledger).flatMap(entry => Object.values(entry.counts)).reduce((a,b)=>a+b,0),321);
   const {initial} = committedHistory(ROOT);
-  assert.deepEqual(await measureReference(),initial);
-  const retiredRoot = {...initial};delete retiredRoot['web/app/layout.tsx'];assert.deepEqual(ledger,retiredRoot);
+  assert.deepEqual(await measureReference(),cleanupLedgerHashes(initial));
+  const retiredRoot = cleanupLedgerHashes(initial);delete retiredRoot['web/app/layout.tsx'];assert.deepEqual(ledger,retiredRoot);
   assert.equal(ledger['packages/ui/src/index.tsx'].counts['bt-state-alert-gap'],1);
 });
 

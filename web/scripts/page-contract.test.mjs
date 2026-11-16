@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inspectSource } from './ui-source.mjs';
+import { cleanupBoundaryHash } from './check-foundation-boundary.mjs';
 import { committedHistory, cssDeclarations, ledgerRegressions, regressions } from './check-ui-rules.mjs';
 import { createStartingPage, startingFiles } from './new-page.mjs';
 import { directReadIssues, PAGE_TABLE, pageContractIssues, validatePageTable } from './check-page-contract.mjs';
@@ -37,11 +38,25 @@ test('only fixed root debt retires; provenance and every surviving hash/count re
   const ledger = JSON.parse(readFileSync(join(ROOT,'web/tests/ui-rules-baseline.json'),'utf8')), {initial} = committedHistory(ROOT);
   assert.equal(Object.keys(initial).length,92);assert.equal(Object.values(initial).reduce((n,entry)=>n+Object.values(entry.counts).reduce((a,b)=>a+b,0),0),324);
   assert.equal(Object.keys(ledger).length,91);assert.equal(Object.values(ledger).reduce((n,entry)=>n+Object.values(entry.counts).reduce((a,b)=>a+b,0),0),321);
-  assert.equal(ledger[rootFile],undefined);for (const [file,value] of Object.entries(ledger)) assert.deepEqual(value,initial[file]);
+  assert.equal(ledger[rootFile],undefined);for (const [file,value] of Object.entries(ledger)) assert.deepEqual(value,{...initial[file],sha256:cleanupBoundaryHash(file,initial[file].sha256)});
   const source = root.replace('<body>','<body className="text-red-500">'), counts = inspectSource(rootFile,source);
   assert.ok(regressions({...ledger,[rootFile]:{sha256:hash(source),counts}},ledger).some(line=>line.includes('bt-palette-inline')));
   assert.ok(ledgerRegressions({...ledger,[rootFile]:initial[rootFile]},ledger).length);
 });
+test('the exact shell cleanup does not allow a later edit or a forged migration digest',()=>{
+  const manifest = join(ROOT,'web/tests/page-migration.json'), sourcePath = 'web/shell/page-header.tsx', file = join(ROOT,sourcePath);
+  const original = readFileSync(file,'utf8'), saved = readFileSync(manifest,'utf8');
+  assert.deepEqual(pageContractIssues(ROOT),[]);
+  try {
+    const changed = original+'\n/* later edit */';writeFileSync(file,changed);
+    assert.ok(pageContractIssues(ROOT).some(line=>line.includes(sourcePath) && line.includes('frozen shell changed')));
+    const migration = JSON.parse(saved);migration.shell[sourcePath] = hash(changed);writeFileSync(manifest,JSON.stringify(migration));
+    assert.ok(pageContractIssues(ROOT).some(line=>line.includes(sourcePath) && line.includes('cannot grow or be rehashed')));
+  } finally {writeFileSync(file,original);writeFileSync(manifest,saved);}
+  assert.equal(readFileSync(file,'utf8'),original);assert.equal(readFileSync(manifest,'utf8'),saved);
+  assert.deepEqual(pageContractIssues(ROOT),[]);
+});
+
 test('root defaults keep the same words but retire the two invalid title endings',()=>{
   assert.ok(root.includes("'للوقت حُسن الاختيار · بيروت تايم':'Time well chosen · Beirut Time'"));
   assert.ok(inspectSource(rootFile,root.replace('Time well chosen · Beirut Time','Beirut Time — Time well chosen'))['bt-title-format']);

@@ -1,4 +1,4 @@
-"""CP S-01: cryptographic identity is not resource authorization.
+"""Cryptographic identity is not resource authorization.
 
 Domain handlers must separately check current permissions, ownership and revocation.
 Verification keys are explicit (no caller-controlled JWKS URL or algorithm choice).

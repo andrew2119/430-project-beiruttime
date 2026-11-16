@@ -7,7 +7,7 @@ export const privateRequest = authenticatedRequest;
 export const directoryPath = '/api/web/v1/service-operations/v1/directory';
 export const movementPath = '/api/web/v1/catalog/v1/options/movement';
 
-// CP B-09/F-23: an uncertain retry reuses the logical command key and original body.
+// An uncertain retry reuses the logical command key and original body.
 export function useJsonCommand() {
   const { fingerprint } = useAccessContext();
   const attempt = useRef<{path:string;body:string;key:string}|null>(null);

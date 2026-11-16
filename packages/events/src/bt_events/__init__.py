@@ -1,4 +1,4 @@
-"""CP B-18: atomic intent, transactional inbox and at-least-once delivery.
+"""Atomic intent, transactional inbox and at-least-once delivery.
 
 Each destination has its own durable row. Relay HTTP runs outside transactions,
 uses dedicated dependency clients, bounded dispatch slots and fenced completion.

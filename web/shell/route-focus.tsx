@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-// CP F-39: routing owns destination focus, without stealing first-page input focus.
+// Routing owns destination focus, without stealing first-page input focus.
 export function RouteFocus() {
   const path = usePathname();
   const previous = useRef(path);

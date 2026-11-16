@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { test } from 'node:test';
+import { execFileSync } from 'node:child_process';
+import { CLEANUP_FOUNDATION } from './check-foundation-boundary.mjs';
 import { cssDeclarations, inspectSource, LAYER_SLOTS } from './check-ui-rules.mjs';
 import { matchSelector, tokenCascade } from './token-cascade.mjs';
 
@@ -20,7 +22,8 @@ const environment = list => Object.fromEntries(list.map(entry => [entry.prop, en
 const rootEntries = entries.filter(entry => entry.context.length === 1 && (/^@theme/.test(entry.context[0]) || /(?:^|,)\s*:root(?:\s*,|$)/.test(entry.context[0])));
 
 // Lock all 271 retained pre-migration declarations; two unused external-mark
-// values were retired. Cover selector/media context, order and expanded value.
+// values were retired. The reviewed main integration translates eleven alias
+// names only; selector/media context, order and expanded values stay exact.
 // It is not a browser cascade, font-metric or screenshot-parity certificate.
 test('all retained token spellings keep their exact expanded declaration facts', () => {
   const facts = entries.filter(entry => !entry.prop.startsWith('--bt-')).map(entry => {
@@ -29,7 +32,23 @@ test('all retained token spellings keep their exact expanded declaration facts',
     return [entry.context.map(normalize), entry.prop, expand(entry.value, env)];
   });
   assert.equal(facts.length, 271);
-  assert.equal(createHash('sha256').update(JSON.stringify(facts)).digest('hex'), '441375f909fc802efdd6fa2be726a04d972d7c361fe920c4195788d675e3d497');
+  assert.equal(createHash('sha256').update(JSON.stringify(facts)).digest('hex'), '0f3e2b1d6e0f551c69c761f9500ce578ebc6811eea6c710543d3c4a7af04a9b6');
+});
+
+test('the reviewed alias translation preserves the original accepted token bytes and values', () => {
+  const original = execFileSync('git',['show',`${CLEANUP_FOUNDATION}:web/styles/tokens.css`],{encoding:'utf8'});
+  const old = cssDeclarations(original).filter(entry=>entry.context.join('\n') === '@theme' && /^var\(--bt-burgundy-\d+\)$/.test(entry.value));
+  assert.equal(old.length,11);
+  let translated = original;
+  for (const entry of old) {
+    const step = /--bt-burgundy-(\d+)/.exec(entry.value)[1], name = `--color-bordeaux-${step}`;
+    assert.ok(!original.includes(name),'The replacement must not collide with an existing name');
+    translated = translated.replaceAll(entry.prop,name);
+    assert.ok(entries.some(candidate=>candidate.prop === name && candidate.value === entry.value));
+  }
+  // Canonical additions remain possible; only retained facts are the locked contract.
+  const retained = source=>cssDeclarations(source).filter(entry=>!entry.prop.startsWith('--bt-')).map(({context,prop,value})=>({context,prop,value}));
+  assert.deepEqual(retained(tokens),retained(translated));
 });
 
 const compute = tokenCascade(tokens);
@@ -174,11 +193,11 @@ test('legacy computed token values match the fixed main-byte source-cascade snap
       facts.push([theme, lang, width, index, legacy.map(name => [name, env[name]])]);
     }
   }
-  // Recorded from main's original tokens and unchanged Arabic adapter using
-  // this bounded model, not from the proposal. Emitted CSS still needs proof.
+  // Recorded from the original accepted tokens/Arabic adapter, translating
+  // only the eleven reviewed alias names. Emitted CSS still needs proof.
   assert.equal(legacy.length, 185);
   assert.equal(facts.length, 128);
-  assert.equal(createHash('sha256').update(JSON.stringify(facts)).digest('hex'), 'b595d38a7972772cba207335c6e16afc600b236711c90212e6a37e425b075549');
+  assert.equal(createHash('sha256').update(JSON.stringify(facts)).digest('hex'), 'ec2e5661990479d34dd2cd6350d328d3bb68acfc59a1eb43a4c618462722a229');
 });
 
 test('local bilingual fonts and opt-in type keep Arabic, identifiers and digits readable', () => {

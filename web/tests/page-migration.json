@@ -37,17 +37,17 @@
   ],
   "shell": {
     "web/shell/shell.tsx":"75c9343ca1841dd6040baf5cca33dab4637d10b54e8836fc95667031b2a57497",
-    "web/shell/page-header.tsx":"513dc5e1bc459c85793e49df7ebe144d1e399a1022805f6d6b1924346d45b99f",
-    "web/shell/navigation.tsx":"47810c4bc34ceba154f3cb8b1e7cb85c8969e5ddefa452eaa19cb5958bdbb608",
-    "web/shell/phone-navigation.tsx":"d9f3b7190b9424d0659ae0e14f8c13993529e762e91e5fcebc4c69568858c257",
+    "web/shell/page-header.tsx":"ef8464183b18e485e3af4f53d20b06dd2ea6a3462841e1fbb99a54356c8fffc5",
+    "web/shell/navigation.tsx":"f1d9f164eb79ee619b3d03b437c04e7f8ba5257145ff5e4c54b8e6eeb5b8c3ef",
+    "web/shell/phone-navigation.tsx":"5a8120a09b0d1220e6e0c45217ba8a7cc8da46332124e62693967f200d630d54",
     "web/shell/profile-block.tsx":"704ae49be2e836801f00536fa14c5dc9b8c4a111a0e600ccccc63dd8715926e4",
     "web/shell/preferences.tsx":"3fb605f6255ccc3b256691cf1a25169c303989a2a3f5fa38491bc2a30f24717f",
-    "web/shell/providers.tsx":"402f9cd9f6b97d072fd826e0977671bdbb7e9d2460a48eadf97f074e4fe13060",
-    "web/shell/sticky-header.tsx":"fe43cdbcedef116ea4c568ca43f524857b0e84a780f0594699e60b5b2aa22637",
-    "web/shell/route-focus.tsx":"d2635c8b7e087ba1700d07e72ab9840099457318a3f7f4a295239c4afa818deb",
+    "web/shell/providers.tsx":"81ea7d6bdfe4770c4378252a013de1fc6fa94c9e68ee2029acea9e1aa7d1d362",
+    "web/shell/sticky-header.tsx":"2969ef32534ae35a8c72f8fd1cdeb71eb2c8a097d392358af43b3cbf9a9bfc62",
+    "web/shell/route-focus.tsx":"bccfa9449209ef97a98982f2893dad3c2c30be36b498571fd51ce91677e34338",
     "web/shell/route-icon.tsx":"b4506cd05af9d05776355e9282568730f9a99edb1db0603fe5af97300bdd98c6",
     "web/shell/layouts.tsx":"a861d5d005a982d9453a36620e9b810ac27fee29f2de2c48fda7687ef57cf6ed",
     "web/shell/brand.tsx":"896b34d0704fa7a144bfb39dcd8dd4cb1e0089f9178a7d717f67290819f449a3",
-    "web/shell/pwa.tsx":"fe56c4112b5a98b1fa8dfdc6706c608f6763d4b3d21db21dd1732b7fc84d38eb"
+    "web/shell/pwa.tsx":"5ed8a3bb02e6dcc46a612ef23be8ba2e419a14b6effda98350ec6168931e7ee1"
   }
 }

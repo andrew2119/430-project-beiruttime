@@ -61,7 +61,7 @@ async def _read(client, identifier: str, request_id: str | None) -> AuctionRead:
         return AuctionRead(state='unavailable')
     bids, truncated = [], False
     if canonical.accepted_sequence:
-        # CP B-19: history carries its own canonical snapshot. Receipt sequences
+        # History carries its own canonical snapshot. Receipt sequences
         # may have gaps: a private ceiling-only raise adds no public bid. If bids
         # race the first read, resync the bounded window once, never grow a queue.
         for attempt in range(2):

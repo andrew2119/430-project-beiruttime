@@ -1,6 +1,6 @@
 @layer components {
-/* CP Home CardHead and compact Calm-card faces; kit promotion candidates.
-   Geometry follows the source recipes. Every paint/motion value is shared. */
+/* Dashboard CardHead and compact Calm-card faces; kit promotion candidates.
+   Geometry follows the shared page patterns. Every paint/motion value is shared. */
 .buyer-card-head { display:flex; align-items:center; gap:var(--ds-space-3); min-block-size:2.25rem; margin-block-end:var(--ds-space-3); min-inline-size:0; }
 .buyer-card-titles { display:flex; min-inline-size:0; flex:1 1 auto; flex-direction:column; }
 .buyer-card-head h2 { display:flex; align-items:center; flex-wrap:wrap; gap:var(--ds-space-2); min-inline-size:0; color:var(--foreground); font-size:.9375rem; font-weight:var(--ds-weight-heavy); letter-spacing:-.01em; line-height:1.2; }

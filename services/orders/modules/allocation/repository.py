@@ -1,4 +1,4 @@
-"""CP B-04/B-18: locks, outcome and outbox share one SQL transaction."""
+"""Locks, outcome and outbox share one SQL transaction."""
 
 import hashlib
 import json

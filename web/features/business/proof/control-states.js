@@ -6,7 +6,7 @@ await page.eval(()=>document.querySelector('.business-form .ui-select').focus())
 const menu=await page.eval(()=>{const e=document.querySelector('[role="menu"]'),c=getComputedStyle(e);return {state:e.dataset.state,animation:c.animationName,duration:c.animationDuration,radioCount:e.querySelectorAll('[role="menuitemradio"]').length};});
 await page.press('Escape');await page.wait(250);
 const returned=await page.eval(()=>document.activeElement?.classList.contains('ui-select'));
-if(!returned||menu.radioCount!==2)throw Error('CP menu keyboard/focus contract failed');
+if(!returned||menu.radioCount!==2)throw Error('Shared menu keyboard/focus contract failed');
 const before=await page.eval(()=>document.documentElement.dataset.theme);
 await page.eval(()=>{window.__proofTransitions=0;const original=document.startViewTransition.bind(document);document.startViewTransition=(...args)=>{window.__proofTransitions++;return original(...args);};});
 await page.click('button[aria-label^="Switch to"]');await page.wait(600);

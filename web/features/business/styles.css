@@ -1,4 +1,4 @@
-/* Layout recipes from CP Settings / Approvals. All paint and motion belongs to
+/* Shared settings and review layout recipes. All paint and motion belongs to
    the shared kit; no feature palette, font family, radius or keyframe. */
 .business-workspace { container-type: inline-size; }
 .business-content { display: grid; gap: var(--ds-gap-content); min-inline-size: 0; animation: pg-contentIn var(--ds-motion-overlay) var(--ease-out-soft) both; }
@@ -31,7 +31,7 @@
 .business-content bdi { overflow-wrap: anywhere; }
 .business-loading { display: grid; gap: var(--ds-space-2); }
 .business-row-skeleton { block-size: 5rem; border-radius: var(--radius-xl); }
-/* CP Submissions timeline: fixed marker column and logical connectors. */
+/* Review history timeline: fixed marker column and logical connectors. */
 .business-timeline { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
 .business-step { position: relative; display: grid; grid-template-columns: 1.5rem minmax(0,1fr); gap: var(--ds-space-3); padding-block-end: var(--ds-space-5); }
 .business-step:last-child { padding-block-end: 0; }
@@ -39,7 +39,7 @@
 .business-step-dot { display: grid; inline-size: 1.5rem; block-size: 1.5rem; place-items: center; border-radius: var(--radius-2xl); background: var(--muted); box-shadow: var(--ds-shadow-border); color: var(--muted-foreground); }
 .business-step-body { display: grid; justify-items: start; min-inline-size: 0; gap: var(--ds-space-2); padding-block-start: var(--ds-space-1); font-size: var(--ds-control-text); }
 .business-step-body time { color: var(--muted-foreground); font-size: .6875rem; }
-/* CP Settings' five-tab phone recipe: whole labels in measured tiles rather
+/* Shared five-tab phone recipe: whole labels in measured tiles rather
    than five squeezed columns. The shared Pane keeps its two-axis indicator. */
 @container hx (max-width:30rem) {
   .business-workspace .hx-tabs[data-fit="stack"][data-count="5"] { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-auto-flow: row; }

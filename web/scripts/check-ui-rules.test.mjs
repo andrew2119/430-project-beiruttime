@@ -7,6 +7,7 @@ import ts from 'typescript';
 import { ESLint } from 'eslint';
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import { SEMANTIC_PLUGIN, SEMANTIC_RULES } from './ui-source.mjs';
+import { cleanupBoundary, cleanupLedgerHashes } from './check-foundation-boundary.mjs';
 import { INTERFACE_CHECKS, LEDGER, ROOT, census, committedHistory, cssDeclarations, hashSource, inspectSource, ledgerRegressions, measure, measureReference, metadataIssues, motionTokenMs, regressions, rulebookIssues, sourceFiles, verifyMeasurements } from './check-ui-rules.mjs';
 
 const layers = new Set(['--z-skip-link']);
@@ -342,6 +343,35 @@ test('hash isolation and latest-accepted history forbid reducing then restoring 
   // Committed file/rule deletion, then reintroduction with the original bytes/ledger.
   assert.ok(verifyMeasurements(oldBytes, original, {initial: original, accepted:{}}).length);
   assert.ok(ledgerRegressions({'old.tsx': record('original', {'bt-loop-detour':1})}, reduced).length);
+});
+
+test('the single committed cleanup cannot admit later edits, copied paths, count growth or retired findings', async () => {
+  const file = 'web/styles/foundation.css', pair = cleanupBoundary(file);
+  assert.ok(pair && pair.before !== pair.after);
+  const history = committedHistory(), ledger = JSON.parse(readFileSync(join(ROOT,LEDGER),'utf8'));
+  const initial = {[file]:history.initial[file]}, accepted = {[file]:history.accepted[file]}, active = {[file]:ledger[file]};
+  assert.deepEqual(cleanupLedgerHashes(initial),active);
+  assert.deepEqual(ledgerRegressions(active,initial),[]);
+  assert.ok(ledgerRegressions(active,{}).length,'A deleted file cannot return through the cleanup');
+  const growth = structuredClone(active);growth[file].counts['bt-motion-literal'] = 1;
+  assert.ok(ledgerRegressions(growth,initial).some(line=>line.includes('cannot grow or return')));
+  const reduced = structuredClone(active);delete reduced[file].counts['bt-focus-lost'];
+  assert.ok(ledgerRegressions(active,reduced).some(line=>line.includes('cannot grow or return')));
+  const restoredRoot = {'web/app/layout.tsx':history.initial['web/app/layout.tsx']};
+  assert.ok(ledgerRegressions(restoredRoot,ledger).length,'The retired root entry cannot return');
+  const directory = mkdtempSync(join(ROOT,'.bt-cleanup-probe-'));
+  const write = (path,text)=>{mkdirSync(dirname(join(directory,path)),{recursive:true});writeFileSync(join(directory,path),text);};
+  try {
+    const source = readFileSync(join(ROOT,file),'utf8');assert.equal(hashSource(source),pair.after);
+    write(file,source);assert.deepEqual(verifyMeasurements(await measure(directory),active,{initial,accepted}),[]);
+    write(file,source+'\n/* later edit */');
+    assert.ok(verifyMeasurements(await measure(directory),active,{initial,accepted}).some(line=>line.includes('changed file must be clean')));
+    const forged = {[file]:record(source+'\n/* later edit */',active[file].counts)};
+    assert.ok(ledgerRegressions(forged,initial).length,'Rehashing the later edit is refused');
+    write('web/features/review/copied.css',source);
+    assert.ok((await measure(directory))['web/features/review/copied.css'].counts['bt-motion-legacy']);
+    assert.equal(cleanupBoundary('web/features/review/copied.css'),undefined);
+  } finally {rmSync(directory,{recursive:true,force:true});}
 });
 
 test('rulebook synchronization is bidirectional, including advertised bare names and every emitted key', () => {

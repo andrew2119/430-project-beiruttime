@@ -1,6 +1,6 @@
 import type { ReactNode, Ref } from 'react';
 import { Card } from './card';
-/** CP's public AuthCard, with a watch-marketplace mark and caller-owned heading level. */
+/** The shared public AuthCard, with a watch-marketplace mark and caller-owned heading level. */
 export function AuthCard({ title, headingRef, authenticated = false, children, subtitle, titleAs: Title = 'h2' }: {
   title: string; headingRef?: Ref<HTMLHeadingElement>; authenticated?: boolean; children: ReactNode; subtitle?: string; titleAs?: 'h1' | 'h2';
 }) {

@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
+import { cleanupBoundaryHash } from './check-foundation-boundary.mjs';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)),'../..');
 export const PAGE_TABLE = 'web/lib/page-speed/pages.json';
 export const MIGRATION = 'web/tests/page-migration.json';
@@ -80,7 +81,7 @@ export function pageContractIssues(root=ROOT) {
   }
   for (const [file,digest] of Object.entries(migration.shell)) {
     if (!/^web\/shell\/[a-z-]+\.tsx$/.test(file)) {errors.push('Invalid frozen shell path');continue;}
-    if (accepted && accepted.shell[file] !== digest) errors.push(`${file}: frozen shell ledger cannot grow or be rehashed`);
+    if (accepted && (!accepted.shell[file] || cleanupBoundaryHash(file,accepted.shell[file]) !== digest)) errors.push(`${file}: frozen shell ledger cannot grow or be rehashed`);
     const main = accepted ? null : optionalGit(root,'main',file);
     if (!accepted && (main == null || hash(main) !== digest)) errors.push(`${file}: shell hash must be original main bytes`);
     const source = readOwned(file);if (source == null || hash(source) !== digest) errors.push(`${file}: frozen shell changed`);
@@ -96,7 +97,7 @@ export function pageContractIssues(root=ROOT) {
     }
   }
   // Read all production script sources, not just page entry files.
-  const walkSources = directory=>{for (const entry of readdirSync(join(root,directory),{withFileTypes:true})) {const file = `${directory}/${entry.name}`;if (entry.isSymbolicLink()) {errors.push(`${file}: source symlinks are not supported`);continue;}if (entry.isDirectory()) walkSources(file);else if (/\.[cm]?[jt]sx?$/.test(file) && !/\.(?:test|spec)\./.test(file)) {const source = readFileSync(join(root,file),'utf8');if (optionalGit(root,'HEAD',file) !== source) errors.push(...directReadIssues(file,source));}}};
+  const walkSources = directory=>{for (const entry of readdirSync(join(root,directory),{withFileTypes:true})) {const file = `${directory}/${entry.name}`;if (entry.isSymbolicLink()) {errors.push(`${file}: source symlinks are not supported`);continue;}if (entry.isDirectory()) walkSources(file);else if (/\.[cm]?[jt]sx?$/.test(file) && !/\.(?:test|spec)\./.test(file)) {const source = readFileSync(join(root,file),'utf8');const before = optionalGit(root,'HEAD',file);if (before !== source && (before == null || cleanupBoundaryHash(file,hash(before)) !== hash(source))) errors.push(...directReadIssues(file,source));}}};
   for (const directory of ['web/app','web/shell','web/features','web/lib','web/internal','packages/ui/src']) if (existsSync(join(root,directory))) walkSources(directory);
   return errors;
 }

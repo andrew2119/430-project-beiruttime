@@ -1,12 +1,12 @@
 {
   "packages/ui/src/animated-list.tsx": {
-    "sha256": "b19f86a246b7b85ef9bcabb495c65f05646e2056bf8828cc1c1451d53be715d5",
+    "sha256": "2c40b1f8b31bf5aa8203b903906779966b6ed7b753398fe360c5318731f262bd",
     "counts": {
       "bt-style-opaque": 5
     }
   },
   "packages/ui/src/auto-height.tsx": {
-    "sha256": "7d29ee069959bb81ccb491c00b4db7665626c5c3e4c70cad639b91b2f09b42c7",
+    "sha256": "acc9627c97b332ac6ac9a57af2431aeb78b86af0c8de5b89c8dc82e8a895f9f5",
     "counts": {
       "bt-style-opaque": 4
     }
@@ -50,7 +50,7 @@
     }
   },
   "packages/ui/src/header-tabs.tsx": {
-    "sha256": "a701d4b0c27a885ec8d17687ce54c32c9b93981090b268ccca88b1e0297d6680",
+    "sha256": "49979506dc7bcaf790d0799e1639fc47b6f0cfc5adbbc5eddac9138439f4cc19",
     "counts": {
       "bt-style-opaque": 2
     }
@@ -75,7 +75,7 @@
     }
   },
   "packages/ui/src/loading-overlay.tsx": {
-    "sha256": "02d537f1d8f8b9eef47da286205d71a99245b2d98395cfe3a443a30de6cdf036",
+    "sha256": "e6e26dcb0e00e08a9bd10949e08ba36ddd3859f9d7e16cc78637910592dba6dc",
     "counts": {
       "bt-modal-detour": 1
     }
@@ -87,31 +87,31 @@
     }
   },
   "packages/ui/src/radio.tsx": {
-    "sha256": "d2909fbb0ab0df81a3ad35d6a09ad64df524453f8d3fa1bdfbb8deabed7e3e91",
+    "sha256": "be68051d5add97f5d817904dfcf77f28afad0c4d914d8abc0e01689a6df57616",
     "counts": {
       "bt-style-opaque": 1
     }
   },
   "packages/ui/src/row-skeleton.tsx": {
-    "sha256": "da801efbc7fdbf548feef8e2161aff058d1384b822bfd81b07ad986a40caff90",
+    "sha256": "8b1e844f6dbd5dd1272c1ad19dea96f13488c680080b3f45ea7f472886174977",
     "counts": {
       "bt-style-opaque": 1
     }
   },
   "packages/ui/src/scroll-box.tsx": {
-    "sha256": "0f037e9a8160656fda14e9ae04e2459542ea2f344a810e230558fcc37fdd1c3e",
+    "sha256": "f039f91bafa3b21ddab980402b85e2d7d23072206b199b4f7e0c0d6ea9b7f06c",
     "counts": {
       "bt-style-opaque": 2
     }
   },
   "packages/ui/src/segmented-thumb.tsx": {
-    "sha256": "54f860d2062b4d491904a81498a563fd111e259115828f2ab522ad23f6aa8187",
+    "sha256": "74eca9996f30d4e90625554c7a5100b9351d88278974f51f3307d90aedc3af04",
     "counts": {
       "bt-style-opaque": 4
     }
   },
   "packages/ui/src/segmented.tsx": {
-    "sha256": "46d46ce0b6cfa35556a79b75d20b93eef8b2950a334024fba0bb6ddcee12a484",
+    "sha256": "bdaa753664926ef41f252e83b8ce1ab8b1c6de0d64a732d5a8c5074977191f21",
     "counts": {
       "bt-style-opaque": 3
     }
@@ -366,32 +366,32 @@
     }
   },
   "web/features/brand-options/styles.css": {
-    "sha256": "a1dacc8f804b7b422bb1cbafd952e0b05c580613b301a82783de5db1b16d3873",
+    "sha256": "0e9193080f7b15ffceaff3b3dd5b766c79c6ab0828213bffc3eebba2568507b6",
     "counts": {
       "bt-touch-hover": 1
     }
   },
   "web/features/brand-options/view.tsx": {
-    "sha256": "0992bf6c6c7982d8624d993ed9f804b9a029a2fc6f553124bbf8f5f59fcb4da6",
+    "sha256": "26349a65df6321717a92327e1752fbb9d6f6e7d34b1943e49f8b5b3d50fc78fc",
     "counts": {
       "bt-style-opaque": 10,
       "jsx-a11y": 2
     }
   },
   "web/features/business/form-select.tsx": {
-    "sha256": "a728fd7fba24276de309fe7b07d98caefc484e5baad41cfa3d5f1b03f8d0e2d9",
+    "sha256": "0d26cc68f3c609640935afbcaade7a4b1a4ada6e0cf209d17f4a8a4a9767f42b",
     "counts": {
       "bt-style-opaque": 2
     }
   },
   "web/features/discovery/photo.tsx": {
-    "sha256": "98db32a6119d7189a0dec81a139586eb90b2270fbaa6d1894f1a43c9be157ec1",
+    "sha256": "eccbd385be7ff63092c24e0b789a7b2d3cc57d49c71e13887ef8293fd1e52e0c",
     "counts": {
       "jsx-a11y": 1
     }
   },
   "web/features/identity/styles.css": {
-    "sha256": "1ab23a28cb4573773d12a7809f7c0c5da35ca635af88dfaa6a23d8a6c05a8b11",
+    "sha256": "834c03759d6637562b1e96b166557ae2d16ffada65f33a968c8664295ea0a226",
     "counts": {
       "bt-focus-lost": 1
     }
@@ -403,7 +403,7 @@
     }
   },
   "web/features/listing-editor/styles.css": {
-    "sha256": "09232c23b4632b6d19cfebccb2323ec461eb2c5a0a315ddb24c8ae2cde063a4f",
+    "sha256": "3e06c1aab21b8909ea50e82cbbf08fe2be7ff7b6b97bf445d045bf85b5ad004b",
     "counts": {
       "bt-stack-escape": 2,
       "bt-motion-literal": 1,
@@ -447,7 +447,7 @@
     }
   },
   "web/shell/page-header.tsx": {
-    "sha256": "513dc5e1bc459c85793e49df7ebe144d1e399a1022805f6d6b1924346d45b99f",
+    "sha256": "ef8464183b18e485e3af4f53d20b06dd2ea6a3462841e1fbb99a54356c8fffc5",
     "counts": {
       "bt-loop-detour": 1,
       "bt-style-opaque": 1
@@ -466,21 +466,21 @@
     }
   },
   "web/shell/sticky-header.tsx": {
-    "sha256": "fe43cdbcedef116ea4c568ca43f524857b0e84a780f0594699e60b5b2aa22637",
+    "sha256": "2969ef32534ae35a8c72f8fd1cdeb71eb2c8a097d392358af43b3cbf9a9bfc62",
     "counts": {
       "bt-force-priority": 1,
       "bt-style-opaque": 23
     }
   },
   "web/styles/ar.css": {
-    "sha256": "e55299717e89414dd958fb6743698e2ddd8423972f8e0d865095b9e86590dbbc",
+    "sha256": "fb0534bb9a993c4a9f0ac57adb009aca7448b5b4e97ee082a6f490cb6ac79f3e",
     "counts": {
       "bt-motion-owner": 2,
       "bt-touch-hover": 3
     }
   },
   "web/styles/auth.css": {
-    "sha256": "0d2e9ebd050babfc63e4a62a91e6bca84f855d285a1e3ce6495bab503cd73c37",
+    "sha256": "6adab4a038b03c3da036437758dfdabd5c91fc4158a96a207dd17342c6adc1bd",
     "counts": {
       "bt-palette-inline": 2
     }
@@ -494,7 +494,7 @@
     }
   },
   "web/styles/faces.css": {
-    "sha256": "ab674c267532df8021af0289ee8227cf7089aa9c2cf4d5cc56fdd70806f8f058",
+    "sha256": "34bf37a680f59a06cbb0d0f6e00db24947d20077bc9f8844ec135e17a97c5f56",
     "counts": {
       "bt-motion-owner": 1,
       "bt-touch-hover": 1,
@@ -502,19 +502,19 @@
     }
   },
   "web/styles/foundation.css": {
-    "sha256": "89550f3954fc64c2127e4be4b4795130d7ec36825717c4c473b40cf32bbfd0c6",
+    "sha256": "0756e1c22615488935cc64c0be06fd989f2d3fa68f7a57f4c8dfbc7d2f84a64d",
     "counts": {
       "bt-focus-lost": 1
     }
   },
   "web/styles/mobile.css": {
-    "sha256": "60ba0079685491e643eb75282534a5bbf5de306681e28ffbc033c912caa728dd",
+    "sha256": "adf8d846648c2316e380657e605c32aa1423bcfb35c0610629add3e1b6acc423",
     "counts": {
       "bt-stack-escape": 1
     }
   },
   "web/styles/motion.css": {
-    "sha256": "020d59936efcd46cfc0c76ccc41cb64684f94721e7ba9065035e6c789614ae43",
+    "sha256": "ca73ac8abb2114fb27f1ee0ff82685590a7fff849e1a103dccdea5fade86f497",
     "counts": {
       "bt-slow-start": 4,
       "bt-motion-literal": 2,
@@ -522,7 +522,7 @@
     }
   },
   "web/styles/page-header.css": {
-    "sha256": "51b78afe5f0e097e85f183f1914de94885d680696afb0c2b8b82f3a66d0f2ed3",
+    "sha256": "52eec6b10f486a6cc3ac5eaea6b481230fec50fcc4d3b5565105019f332e2217",
     "counts": {
       "bt-force-priority": 4,
       "bt-reflow-motion": 1,
@@ -530,7 +530,7 @@
     }
   },
   "web/styles/settings.css": {
-    "sha256": "071dfc315df1cb89a1f830d87b6412fc6befebd0bfbb90d8685c625738a309cb",
+    "sha256": "9d9f06766e959413b873861deeae41e7c0287df4bebb5994acd7535e6b913259",
     "counts": {
       "bt-force-priority": 2,
       "bt-motion-owner": 1,
@@ -542,7 +542,7 @@
     }
   },
   "web/styles/shell.css": {
-    "sha256": "93ef77b84feed5beb60d8e82ba10fff048ca9782b9bb915db2bcbcb1903fb4e7",
+    "sha256": "cc97b1da92035948b207248ead51c512fa4374ff9b71a3ac8eec24f539f4df3b",
     "counts": {
       "bt-motion-owner": 12,
       "bt-stack-escape": 7,
@@ -552,7 +552,7 @@
     }
   },
   "web/styles/sidebar.css": {
-    "sha256": "a199f751142b31a2bb006c00bf4af7cb093a4a4c2f2a2b896193b9b6e778ee33",
+    "sha256": "fc554a86fd42fa5226d4187eb6feab8346d1beb4ed964d7af3419818b8237c55",
     "counts": {
       "bt-force-priority": 2,
       "bt-motion-owner": 4,
@@ -560,7 +560,7 @@
     }
   },
   "web/styles/sticky.css": {
-    "sha256": "5234b571e09589bdf9792f9356b703e213094583f184d7c4f3c738fd15a8c26d",
+    "sha256": "0457f5bfd52f36db287ff72384281c50381bc3b1dee8efc7fef2b60fc6b7b1a3",
     "counts": {
       "bt-force-priority": 3,
       "bt-motion-owner": 6,
@@ -569,7 +569,7 @@
     }
   },
   "web/styles/tabs.css": {
-    "sha256": "1ffac40b4ae0fc875f3762e9e865d37c25377ebd4ef95734eb204701459f7df8",
+    "sha256": "8bb40b3b96c2dc789180002848e813f21c3b40029142bd55c6794435ee3e3eeb",
     "counts": {
       "bt-force-priority": 1,
       "bt-stack-escape": 7,
@@ -578,7 +578,7 @@
     }
   },
   "web/styles/ui.css": {
-    "sha256": "6cbf93d5dac3b78319f26c610d5cb57af4335f6ff52a4d3d1a408ea732efe17f",
+    "sha256": "027a7499ff378a7fb4cf6912cefc6ace80653d075371836f6a5fedbc85b24bd3",
     "counts": {
       "bt-timing-detour": 5,
       "bt-stack-escape": 3,
