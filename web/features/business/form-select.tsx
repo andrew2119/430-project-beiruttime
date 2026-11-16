@@ -4,7 +4,7 @@ import { Children, isValidElement, useEffect, useRef, useState, type ComponentPr
 import { Select } from "@beirut-time/ui";
 
 type NativeProps = ComponentProps<"select">;
-/** CP's lazy single-choice menu with a native form bridge. The real select keeps
+/** The shared lazy single-choice menu with a native form bridge. The real select keeps
  * FormData, reset, existing draft restoration, and change handlers intact. */
 export function FormSelect({ children, value, defaultValue, id, className, ...props }: NativeProps) {
   const options = Children.toArray(children).filter(isValidElement).map(child => {

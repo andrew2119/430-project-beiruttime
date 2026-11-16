@@ -3,7 +3,6 @@
 ## Commands
 
 ```sh
-export PATH=/Users/andrew/.harness/homes/430-project/firstmate/data/bt-tools/bin:$PATH
 python3 tests/lanes/L05/verify.py
 web/node_modules/.bin/vitest run --config web/features/auction-management/vitest.config.ts
 web/node_modules/.bin/tsc -p tests/lanes/L05/web/tsconfig.json --noEmit

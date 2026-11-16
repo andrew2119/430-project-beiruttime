@@ -1,4 +1,4 @@
-"""CP B-03: stable, additive errors with opaque support references."""
+"""Stable, additive errors with opaque support references."""
 import re
 from typing import Any
 from pydantic import BaseModel, ConfigDict, Field

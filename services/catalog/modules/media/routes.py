@@ -304,7 +304,7 @@ async def private_media(listing_id: UUID, asset_id: UUID, request: Request):
     async with request.app.state.pool.acquire() as tx:
         row = await tx.fetchrow("SELECT * FROM catalog_listings WHERE id=$1", listing_id)
         assert_owner(row, person)
-        # The owner decision precedes fetching private bytes (CP S-15).
+        # The owner decision precedes fetching private bytes.
         asset = await tx.fetchrow(
             "SELECT kind,mime,private_bytes FROM catalog_media WHERE id=$1 AND listing_id=$2", asset_id, listing_id
         )

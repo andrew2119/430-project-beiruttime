@@ -15,18 +15,18 @@
    ========================================================================== */
 
 @theme {
-  /* ---- Tier 4: Rebellion bordeaux brand ramp (hue ≈ 26-28) ---- */
-  --color-rebellion-50: oklch(97% 0.012 27);
-  --color-rebellion-100: oklch(91.4% 0.028 28.5);
-  --color-rebellion-200: oklch(85% 0.055 28);
-  --color-rebellion-300: oklch(76% 0.09 27.5);
-  --color-rebellion-400: oklch(66% 0.135 27.5);
-  --color-rebellion-500: oklch(58% 0.19 27.5);
-  --color-rebellion-600: oklch(50.6% 0.193 27.7);
-  --color-rebellion-700: oklch(41.6% 0.148 26.6);
-  --color-rebellion-800: oklch(35.6% 0.124 26.2);
-  --color-rebellion-900: oklch(29% 0.1 26);
-  --color-rebellion-950: oklch(23.3% 0.079 25.8);
+  /* ---- Tier 4: bordeaux brand ramp (hue ≈ 26-28) ---- */
+  --color-bordeaux-50: oklch(97% 0.012 27);
+  --color-bordeaux-100: oklch(91.4% 0.028 28.5);
+  --color-bordeaux-200: oklch(85% 0.055 28);
+  --color-bordeaux-300: oklch(76% 0.09 27.5);
+  --color-bordeaux-400: oklch(66% 0.135 27.5);
+  --color-bordeaux-500: oklch(58% 0.19 27.5);
+  --color-bordeaux-600: oklch(50.6% 0.193 27.7);
+  --color-bordeaux-700: oklch(41.6% 0.148 26.6);
+  --color-bordeaux-800: oklch(35.6% 0.124 26.2);
+  --color-bordeaux-900: oklch(29% 0.1 26);
+  --color-bordeaux-950: oklch(23.3% 0.079 25.8);
 
   /* ---- Tier 4: sand warm-neutral ramp (hue ≈ 85) ---- */
   --color-sand-50: oklch(99.1% 0.01 87.5);
@@ -88,10 +88,9 @@
   --font-sans: var(--font-active);
 }
 
-/* Font: Lexend Deca (captain 2026-09-30; replaces Geist, OD-17d). One variable
-   face (weights 100 to 900) for titles, body, controls and numbers. It has no
-   tabular figures, so `tabular-nums` does nothing in it: digits in a column
-   are proportional (seen and accepted by the captain with the pick). */
+/* Font: Lexend Deca. One variable face (weights 100 to 900) for titles,
+   body, controls and numbers. It has no tabular figures, so `tabular-nums`
+   does nothing in it: digits in a column are proportional. */
 :root { --font-active: var(--font-lexend-deca); }
 
 /* ============================================================================
@@ -108,7 +107,7 @@
   --card-foreground: var(--color-sand-800);
   --popover: var(--color-sand-50);
   --popover-foreground: var(--color-sand-800);
-  --primary: var(--color-rebellion-700);
+  --primary: var(--color-bordeaux-700);
   --primary-foreground: var(--color-sand-50);
   /* Primary ink: the color of primary-tinted text, icons, links and graphic
      marks (bars, underlines, state borders). Reads through `text-primary`
@@ -119,7 +118,7 @@
   --muted-foreground: var(--color-sand-600);
   --accent: var(--color-sand-200);
   --accent-foreground: var(--color-sand-800);
-  --destructive: var(--color-rebellion-600);
+  --destructive: var(--color-bordeaux-600);
   /* Destructive ink: the color of destructive-tinted text (form errors, the
      red label of a quiet danger action). Reads through `text-destructive`
      (base.css). Equals --destructive here and in Light; Dark lifts it to the
@@ -127,9 +126,9 @@
   --destructive-ink: var(--destructive);
   --border: var(--color-sand-350);
   --input: var(--color-sand-350);
-  --ring: var(--color-rebellion-700);
+  --ring: var(--color-bordeaux-700);
   --ds-canvas: oklch(93.6% 0.016 86);
-  /* The switches' calm colour code (captain, finding 28, 2026-10-20; lib/switch-hue.ts):
+  /* The switches' calm colour code (packages/ui/src/switch-hue.ts):
      green done or in, amber waiting, blue new or open, rose stopped, plum a spare fifth;
      --calm-ink is the plain strong ink of a selected choice with no meaning colour.
      Lower chroma than the status tokens, 5.9:1 or better on each look's card. */
@@ -168,7 +167,7 @@
   --muted-foreground: oklch(50% 0.012 80);
   --accent: oklab(94.5% 0 0.006);
   --accent-foreground: oklch(24% 0.01 80);
-  --destructive: var(--color-rebellion-600);
+  --destructive: var(--color-bordeaux-600);
   --destructive-ink: var(--destructive);
   --border: oklab(90% 0 0.006);
   --input: oklab(90% 0 0.006);
@@ -183,17 +182,15 @@
   color-scheme: light;
 }
 
-/* DARK — anchors from THEME_DARK. Captain decision 2026-09-18 (login redesign,
-   propagated site-wide): the primary is the same Rebellion red as Classic, not
-   the former desaturated blue. rebellion-700 fills carry sand-50 labels at
-   9.1:1; primary-tinted text, links, focus rings and graphic marks use the
-   rebellion-400 step through --primary-ink / --ring (5.7:1 on the ground,
-   5.0:1 on cards), because rebellion-700 itself reads at 2:1 on this ground.
-   Light keeps its blue (OD-17a).
-   Destructive follows the same split (2026-10-04): the --destructive fill
-   carries sand-50 labels at 4.6:1 but reads at 3.5:1 as text on a card, so
-   destructive-tinted text uses the rebellion-400 step through
-   --destructive-ink (5.0:1 on cards, 5.7:1 on the ground). */
+/* DARK: the primary uses the same bordeaux ramp as Classic.
+   Bordeaux-700 fills carry sand-50 labels at 9.1:1; primary-tinted text,
+   links, focus rings and graphic marks use bordeaux-400 through
+   --primary-ink / --ring (5.7:1 on the ground, 5.0:1 on cards), because
+   bordeaux-700 itself reads at 2:1 on this ground. Light keeps its blue.
+   Destructive follows the same split: the --destructive fill carries
+   sand-50 labels at 4.6:1 but reads at 3.5:1 as text on a card, so
+   destructive-tinted text uses bordeaux-400 through --destructive-ink
+   (5.0:1 on cards, 5.7:1 on the ground). */
 [data-theme="dark"] {
   --background: oklch(18.2% 0 0);
   --foreground: oklch(90.7% 0 0);
@@ -201,9 +198,9 @@
   --card-foreground: oklch(90.7% 0 0);
   --popover: oklch(23.5% 0 0);
   --popover-foreground: oklch(90.7% 0 0);
-  --primary: var(--color-rebellion-700);
+  --primary: var(--color-bordeaux-700);
   --primary-foreground: var(--color-sand-50);
-  --primary-ink: var(--color-rebellion-400);
+  --primary-ink: var(--color-bordeaux-400);
   /* First 0.1% lightness step clearing 4.5:1 on muted (the limiting surface). */
   --green-ink: oklch(64.2% 0.109 152);
   --muted: oklch(28.5% 0 0);
@@ -211,10 +208,10 @@
   --accent: oklch(28.5% 0 0);
   --accent-foreground: oklch(90.7% 0 0);
   --destructive: oklch(58% 0.19 27.5);
-  --destructive-ink: var(--color-rebellion-400);
+  --destructive-ink: var(--color-bordeaux-400);
   --border: oklch(34.1% 0 0);
   --input: oklch(34.1% 0 0);
-  --ring: var(--color-rebellion-400);
+  --ring: var(--color-bordeaux-400);
   --ds-canvas: #14161a;
   --tone-green: oklch(80% 0.075 155);
   --tone-amber: oklch(83% 0.08 82);
@@ -271,7 +268,7 @@
   /* Skeleton sweep period. */
   --ds-motion-shimmer: 1.6s;
   /* Image reveal (ADR-0031): the fully-decoded fade-in of every avatar, cover
-     and thumbnail; inside the 150-200 ms band the captain set, between the
+     and thumbnail; inside the 150-200 ms band, between the
      fast and popover steps. Reduced motion reveals atomically (motion.css). */
   --ds-motion-image-reveal: 0.18s;
 
@@ -303,8 +300,7 @@
      never follows the theme, so --primary-foreground would be wrong in dark. */
   --ds-ink-on-dark: var(--color-sand-50);
 
-  /* Phone scale (styles/mobile.css, captain staging review round 1,
-     2026-09-24): on a phone every compact action keeps the 44 by 44 touch
+  /* Phone scale (styles/mobile.css): every compact action keeps the 44 by 44 touch
      target, but the part that is DRAWN stays at a phone's visual scale instead
      of inflating to the target. Full-size form fields, including Select
      triggers, keep their painted boundary. A pressable (chonk, button,
@@ -356,7 +352,7 @@
   }
 }
 
-/* Shared page-header spacing and control scales, from Creator Pipeline. */
+/* Shared page-header spacing and control scales. */
 :root {
   /* The scale: steps of 4 up to 24, then 8. Nothing on a page uses a value
      outside it (text line-heights excepted). */

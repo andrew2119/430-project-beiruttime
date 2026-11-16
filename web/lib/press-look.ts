@@ -1,15 +1,14 @@
 import type * as React from "react";
 
 /**
- * The pressed look of a row that opens a campaign, on a phone (the captain's yes of
- * 29 Oct 2026: "a campaign row shows a pressed look the moment it is touched").
+ * The pressed look of a phone listing row appears as soon as it is touched.
  *
  * A finger landing on the row marks it `data-pressed` inside the touch's own event, so
  * the first frame drawn after the touch already shows the look; each list's stylesheet
  * draws it. The browser taking the finger for a scroll cancels the pointer, which
  * clears the mark. The tap's click arrives just after the finger lifts and turns the
  * mark into `data-pressed="open"`, which stays until the page changes and the row goes
- * with it, so the row reads as pressed while the campaign draws. A lift that brings no
+ * with it, so the row reads as pressed while the destination page draws. A lift that brings no
  * click (a long press) clears the mark after LIFT_MS. A mouse never marks a row, so
  * desktop hover and click stay as they were.
  *

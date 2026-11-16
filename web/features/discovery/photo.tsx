@@ -17,14 +17,14 @@ export function PublicPhoto({photo,fallback,eager=false}:{photo:Photo|null;fallb
   const url=photo&&publicImageURL(photo.url);
   useEffect(()=>{
     if(!failed||!url||attempt>=2)return;
-    // CP F-48: shed-load/media failures get two bounded, jittered rereads, not
+    // Shed-load/media failures get two bounded, jittered rereads, not
     // an invented missing-photo state or an unbounded background retry loop.
     const timer=setTimeout(()=>{setFailed(false);setDecoded(false);setAttempt(value=>value+1);},350+attempt*400+Math.random()*250);
     return ()=>clearTimeout(timer);
   },[failed,url,attempt]);
   const state=!photo?'missing':!url||failed?'unavailable':decoded?'ready':'loading';
   return <div className="discovery-photo" data-decoded={decoded} data-has-photo={!!photo} data-photo-state={state} aria-busy={state==='loading'}>
-    {url&&!failed?/* CP F-48: reserve aspect before fetch, reveal only decoded pixels. */
+    {url&&!failed?/* Reserve aspect before fetch, reveal only decoded pixels. */
       /* eslint-disable-next-line @next/next/no-img-element -- Public media already has a bounded, same-origin source policy. */
       <img key={attempt} src={url} alt={locale==='ar'&&photo!.alt_ar?photo!.alt_ar:photo!.alt} loading={eager?'eager':'lazy'} decoding="async" onLoad={event=>{const image=event.currentTarget;void image.decode().then(()=>{if(image.isConnected)setDecoded(true);},()=>{if(image.isConnected)setFailed(true);});}} onError={()=>setFailed(true)}/>:<span>{photo?t.photoUnavailable:fallback}</span>}
   </div>;

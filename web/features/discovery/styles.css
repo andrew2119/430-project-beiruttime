@@ -1,4 +1,4 @@
-/* Layout adapters for CP discovery cards/ProfilePanel. All visual recipes use
+/* Layout adapters for shared discovery cards and detail panels. All visual recipes use
    the shared foundation; no feature palette, font, elevation or keyframes. */
 .discovery-page { display:flex; flex-direction:column; gap:var(--ds-gap-content); min-inline-size:0; }
 .discovery-filter-content { inline-size:100%; min-inline-size:0; display:grid; gap:var(--ds-gap-row); }

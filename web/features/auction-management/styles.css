@@ -1,4 +1,4 @@
-/* Creator Pipeline calm-form and detail-card compositions. Shared kit owns paint. */
+/* Shared calm-form and detail-card compositions. Shared kit owns paint. */
 .auction-feature { container-type:inline-size; min-inline-size:0; }
 .auction-studio .hx-wrap { margin-block-end:var(--ds-space-4); }
 .auction-feature .muted { color:var(--muted-foreground); }

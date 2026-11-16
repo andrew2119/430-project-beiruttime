@@ -1,4 +1,4 @@
-/* CP Settings panel rhythm and Appearance selection recipe; layout only otherwise. */
+/* Shared settings panel rhythm and appearance selection recipe; layout only otherwise. */
 .bo-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:var(--ds-space-4);align-items:start;margin-block-start:var(--ds-gap-content)}
 .bo-five-review{display:grid;gap:var(--ds-gap-content);margin-block-start:var(--ds-gap-content);min-inline-size:0}.bo-validation{display:grid;gap:var(--ds-gap-row);min-inline-size:0;overflow-wrap:anywhere}.bo-validation>div{display:flex;gap:var(--ds-gap-group);flex-wrap:wrap}
 .bo-workbench{display:grid;gap:var(--ds-space-4);min-inline-size:0}

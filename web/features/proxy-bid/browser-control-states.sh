@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Shared controls are checked on the unchanged CP reference and the real buyer tab.
+# Shared controls are checked in the controls gallery and the real buyer tab.
 set -euo pipefail
 : "${BT_BUYER_SHOTS:?Set screenshot/evidence directory}"
-export CHROME_DEVTOOLS_AXI_SESSION=bt-cp-buyer
-for app in cp buyer; do
+export CHROME_DEVTOOLS_AXI_SESSION=bt-buyer
+for app in reference buyer; do
   port=33515; path=buyer-reference; label=Refresh
   if [ "$app" = buyer ]; then port=33517; path=en/buyer; label='Try again'; fi
   for theme in light dark; do
-    chrome-devtools-axi eval "() => {document.cookie='bt-theme=$theme; Path=/';document.cookie='crpipe_theme=$theme; Path=/';}" >/dev/null
+    chrome-devtools-axi eval "() => {document.cookie='bt-theme=$theme; Path=/';}" >/dev/null
     chrome-devtools-axi open "http://127.0.0.1:$port/$path" >/dev/null
     chrome-devtools-axi wait 600 >/dev/null
     tree=$(chrome-devtools-axi snapshot)

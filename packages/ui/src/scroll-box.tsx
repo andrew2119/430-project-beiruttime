@@ -72,7 +72,7 @@ export function canScrollBoxMove(area: HTMLElement, [down, across]: [number, num
 
 /**
  * A list inside a box on a page shows a fixed number of rows and scrolls inside the box,
- * so the page never grows with the data (the captain, 2026-10-18, decisions register).
+ * so the page never grows with the data.
  * Each section sets the box's height (--scroll-box-max, styles/ui.css). The prototype's
  * box edge: a flat hairline where more rows wait, never a fade. While rows wait past an
  * edge (or a wide table runs past its side) the box is a named region and a tab stop that

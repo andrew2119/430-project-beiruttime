@@ -21,7 +21,6 @@ Independent exact operator capabilities (business, membership and reviewer autho
 ## Reproduction
 
 ```sh
-export PATH=/Users/andrew/.harness/homes/430-project/firstmate/data/bt-tools/bin:$PATH
 export PYTHONPATH="$PWD/packages/runtime/src:$PWD/packages/bulkheads/src:$PWD/packages/events/src:$PWD/packages/contracts-core/src"
 TEST_DATABASE_ADMIN_URL=postgresql://…/postgres .venv/bin/python -m pytest tests/lanes/L02 -q
 .venv/bin/ruff check services/identity/modules/{contacts,businesses,membership,private-review} tests/lanes/L02

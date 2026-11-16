@@ -7,13 +7,12 @@ import { cn } from "./utils";
 /**
  * AnimatedList - the ONE list-transition layer (ADR-0033).
  *
- * Insertions, removals and reorders on the adopted Marketing lists used to
+ * Insertions, removals and reorders on list pages used to
  * re-render plain mapped arrays and snap while the control that drove them
  * animated. This primitive gives each keyed row a `.pg-list-item` box and
  * drives three behaviours from styles/motion.css on the existing ladder rungs:
  *
- * - ENTER: only a row the caller marks enters (captain 2026-10-24: a live
- *   arrival). A key that mounts after the list's first render, or comes back
+ * - ENTER: only a row the caller marks as a live arrival enters. A key that mounts after the list's first render, or comes back
  *   while its exit still plays, asks the caller's `enters`, told whether the
  *   list has shown that key before; a yes gives its box `data-list-enter`
  *   and CSS plays `pg-listIn` (opacity 0 -> 1, translateY(4px) -> none) on

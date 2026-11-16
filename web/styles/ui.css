@@ -84,8 +84,8 @@
      is revealed. A picture that was ready when its box showed
      (data-image-reveal="ready") replaces the placeholder at once; one whose
      placeholder was showing ("late") fades in over the image-reveal step while
-     the placeholder fades under it (captain 2026-10-24; a row entering a list
-     fades its picture too, styles/motion.css).
+     the placeholder fades under it (a row entering a list also fades its
+     picture, styles/motion.css).
      States (data-image-state): placeholder | idle | loading | retrying |
      loaded | error (retrying: a picture-host copy waits to ask again, keeping
      the placeholder and its calm loading glyph).
@@ -230,7 +230,7 @@
        .pg-modal-panel): on a short phone viewport the content scrolls inside the
        dialog, so a focused control is always revealed and the locked document
        never has to scroll. Surfaces that manage their own scroller (Finance,
-       Campaigns) override this through their vocabulary classes. */
+       list pages) override this through their vocabulary classes. */
     max-block-size: calc(100dvh - 1.875rem);
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -327,11 +327,9 @@
 
 @layer components {
   /* ---- ScrollBox (components/ui/scroll-box.tsx) ------------------------- */
-  /* A list inside a box on a page keeps a fixed height and scrolls inside it (the
-     captain, 2026-10-18): each section sets --scroll-box-max to about seven of its
-     rows. Where more rows wait past an edge the box draws a flat hairline, as the
-     prototype draws its scroll edges (proto-add-creator, proto-collision): never a
-     fade. The inline gutter keeps the rows' own focus rings inside the box. */
+  /* A list inside a box keeps a fixed height and scrolls inside it:
+     each section sets --scroll-box-max to about seven rows. Where more rows
+     wait past an edge the box draws a flat hairline, never a fade. The inline gutter keeps the rows' own focus rings inside the box. */
   :where(.ui-scroll-box) {
     max-block-size: var(--scroll-box-max, 28rem);
     margin-inline: -0.375rem;

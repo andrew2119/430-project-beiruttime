@@ -16,7 +16,7 @@ for(const locale of ['en','ar'])for(const theme of ['light','dark'])for(const [r
     const textFields=[...main.querySelectorAll('input:not([type=hidden]),textarea')].filter(visible);
     const short=controls.filter(el=>el.getBoundingClientRect().height<43.9).map(el=>({label:el.getAttribute('aria-label')??el.textContent,height:el.getBoundingClientRect().height}));
     const h=getComputedStyle(header),title=getComputedStyle(main.querySelector('h1')),bounds=main.getBoundingClientRect();
-    // CP StickyHeader deliberately paints hx-zone::before 48px outside its box.
+    // Shared StickyHeader deliberately paints hx-zone::before 48px outside its box.
     // Its clipped veil contributes to scrollWidth, but is not content overflow.
     const contentOverflow=[...main.querySelectorAll('*')].filter(el=>visible(el)&&!el.closest('.hx-tabs-rulerbox')).some(el=>{const r=el.getBoundingClientRect();return r.left<bounds.left-1||r.right>bounds.right+1;});
     return {width:innerWidth,locale:document.documentElement.lang,dir:document.documentElement.dir,theme:document.documentElement.dataset.theme,documentOverflow:document.documentElement.scrollWidth>innerWidth,rawScrollWidth:main.scrollWidth,contentOverflow,titleCount:main.querySelectorAll('h1').length,focused:document.activeElement!==document.body,shortTargets:short,inputSizes:textFields.map(el=>parseFloat(getComputedStyle(el).fontSize)),header:{padding:h.padding,radius:h.borderRadius,shadow:h.boxShadow,font:title.fontFamily,size:title.fontSize,weight:title.fontWeight},nestedShell:!!main.querySelector('main')};

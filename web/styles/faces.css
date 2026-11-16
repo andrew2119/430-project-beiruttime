@@ -1,11 +1,11 @@
 /* ============================================================================
    Calm faces (components/faces/calm-face.tsx): the designed 404, the segment
    error boundary and the redirect interstitial. Extends the accepted
-   Campaigns empty-state vocabulary (pg-empty-*) so every "nothing here"
+   Shared empty-state vocabulary (pg-empty-*) so every "nothing here"
    moment reads as one system. Tokens only; motion on the shared ladder;
    frozen under prefers-reduced-motion (the global baseline in motion.css;
    the block at the end resets end-state transforms). Imported from
-   app/globals.css into @layer components after campaigns.css.
+   app/globals.css into @layer components after controls.css.
    ========================================================================== */
 .pg-face {
   display: flex;

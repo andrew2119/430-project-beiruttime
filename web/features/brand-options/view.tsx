@@ -38,7 +38,7 @@ export default function BrandOptions(initial: InitialState) {
   const fingerprint=session?.access_fingerprint??null;
   const sessionState=useSessionState();
   // The SDK owns restoration and retry status; do not mirror its external store in local state.
-  // CP F-16: remount all local private state at the same synchronous identity boundary as query state.
+  // Remount all local private state at the same synchronous identity boundary as query state.
   return <Configurator key={fingerprint ?? 'public'} fingerprint={fingerprint}
     identityPending={!session&&sessionState==='restoring'} identityError={!session&&sessionState==='unavailable'}
     retryIdentity={()=>void refreshSession().catch(()=>{/* SDK publishes unavailable for explicit retry. */})} {...initial} />;
