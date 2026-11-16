@@ -6,6 +6,10 @@ from bt_events import enqueue
 
 
 async def payment_notice(tx, request, order):
+    await ensure_payment_notice(tx, order, request.state.request_id)
+
+
+async def ensure_payment_notice(tx, order, request_id):
     event_id = await tx.fetchval(
         """INSERT INTO l13_payment_notices(order_id,event_id,buyer_id) VALUES($1,$2,$3)
         ON CONFLICT(order_id) DO NOTHING RETURNING event_id""",
@@ -15,7 +19,7 @@ async def payment_notice(tx, request, order):
         return
     await enqueue(tx, EventEnvelope(
         id=event_id, type="orders.payment-action-required.v3", source="orders",
-        subject=str(order["id"]), request_id=request.state.request_id,
+        subject=str(order["id"]), request_id=request_id,
         data={"order_id": str(order["id"]), "buyer_id": str(order["buyer_id"]),
               "recipient_id": str(order["buyer_id"]), "revision": order["revision"],
               "required": True, "sample": order["is_demo"], "simulated": True},

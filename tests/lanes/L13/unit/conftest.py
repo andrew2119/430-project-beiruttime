@@ -21,6 +21,7 @@ def lane_modules(monkeypatch):
     namespace("bt_contracts.orders", "packages/contracts-orders")
     namespace("bt_contracts.pricing", "packages/contracts-pricing")
     namespace("service_app", "services/orders/runtime/service_app")
+    namespace("l13_payment_module", "services/orders/modules/payments")
 
     def load(name, relative):
         spec = importlib.util.spec_from_file_location(name, ROOT / relative)
@@ -33,5 +34,5 @@ def lane_modules(monkeypatch):
     before = set(sys.modules)
     yield load
     for name in set(sys.modules) - before:
-        if name.startswith(("service_app.", "bt_contracts.")):
+        if name.startswith(("service_app.", "bt_contracts.", "l13_payment_module.")):
             sys.modules.pop(name, None)

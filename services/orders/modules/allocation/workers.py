@@ -7,6 +7,21 @@ from .repository import audit
 from .communications import InboxDestination
 from service_app.orders_kernel import lock_watch
 from service_app.payment_clock import expiry_decision
+from service_app.payment_notices import ensure_payment_notice
+
+
+async def recover_notices(pool):
+    """Recover migrated orders without inventing notice delivery or a clock."""
+    async with unit_of_work(pool) as tx:
+        rows = await tx.fetch(
+            """SELECT o.* FROM l08_orders o WHERE state='awaiting_notification'
+            AND currency='USD' AND notified_at IS NULL
+            AND NOT EXISTS (SELECT 1 FROM l13_payment_notices n WHERE n.order_id=o.id)
+            ORDER BY created_at,id LIMIT 25 FOR UPDATE OF o SKIP LOCKED"""
+        )
+        for row in rows:
+            await ensure_payment_notice(tx, row, "payment-notice-recovery")
+        return len(rows)
 
 
 async def expire(pool):
@@ -57,6 +72,7 @@ async def run(app, stop):
     )
     try:
         while not stop.is_set():
+            await recover_notices(app.state.pool)
             await expire(app.state.pool)
             await relay.tick()
             try:
