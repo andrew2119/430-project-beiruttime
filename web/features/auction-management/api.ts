@@ -2,6 +2,8 @@ import { request, ApiError } from '@/lib/api/client';
 import { authenticatedRequest } from '@/features/identity/session';
 import type { QuoteInput } from '@contracts/contracts-pricing/quotes';
 export const auctionBase = '/api/web/v1/auction/v1';
+export type ScheduleReview={starts:import('@/gateway/beirut-time').BeirutInstant;ends:import('@/gateway/beirut-time').BeirutInstant};
+export const reviewSchedule=(starts:string,ends:string,owner:string,signal?:AbortSignal)=>authenticatedRequest<ScheduleReview>('/api/web/v2/auction-schedules',{method:'POST',accessFingerprint:owner,signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({starts_local:starts,ends_local:ends,review_only:true})});
 import type { AuctionSnapshot, AuctionOutcome as Outcome } from '@contracts/contracts-auction/core';
 export type { AuctionOutcome as Outcome } from '@contracts/contracts-auction/core';
 export type Auction = AuctionSnapshot & {mode?:'bidding'|'listing_edit_pending'|'first_bid_pending'|'prebid_pending'|'prebid_reserved'|'closed_no_sale'|'closed_winner'};
@@ -11,12 +13,21 @@ async function readCurrent<T>(suffix:string,signal?:AbortSignal):Promise<T>{
   catch(error){if(!(error instanceof ApiError)||error.status!==404||signal?.aborted)throw error;
     return request<T>(`${auctionBase}/auctions${suffix}`,{signal});}
 }
-export const readAuction = (id:string, signal?:AbortSignal) => readCurrent<Auction>(`/${encodeURIComponent(id)}`,signal);
-export const readLots = (listingId?:string, signal?:AbortSignal) => readCurrent<{items:Auction[]}>(listingId?`?listing_id=${encodeURIComponent(listingId)}`:'',signal);
-// CP F-24: keep the exact logical command and key during uncertain reconciliation.
+export const readAuction = async (id:string, signal?:AbortSignal) => {
+  const lot=await readCurrent<Auction>(`/${encodeURIComponent(id)}`,signal);
+  if(lot.currency!=='USD')throw new ApiError(409,'legacy_currency_review','');
+  return lot;
+};
+export const readLots = async (listingId?:string, signal?:AbortSignal) => {
+  const result=await readCurrent<{items:Auction[]}>(listingId?`?listing_id=${encodeURIComponent(listingId)}`:'',signal);
+  return {...result,items:result.items.filter(lot=>lot.currency==='USD')};
+};
+// Keep the exact logical command and key during uncertain reconciliation.
 export async function command(path:string, body:unknown, key:string, signal?:AbortSignal, accessFingerprint?:string):Promise<Outcome> {
   try {
-    return await authenticatedRequest<Outcome>(`${auctionBase}${path}`,{method:'POST',signal,accessFingerprint,headers:{'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify(body)});
+    const schedule=(path==='/auctions'||path.startsWith('/auctions?'))&&!!body&&typeof body==='object'&&'starts_local' in body;
+    const destination=schedule?`/api/web/v2/auction-schedules${path.includes('?')?path.slice(path.indexOf('?')):''}`:`${auctionBase}${path}`;
+    return await authenticatedRequest<Outcome>(destination,{method:'POST',signal,accessFingerprint,headers:{'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify(body)});
   } catch(error) {
     if(error instanceof ApiError && error.status>=500 && !signal?.aborted) {
       const scopeQuery=path.includes('?')?path.slice(path.indexOf('?')):'';
@@ -29,7 +40,7 @@ export async function command(path:string, body:unknown, key:string, signal?:Abo
 export type QuotePreview={id:string;buyer_fee_minor:number;shipping_minor:number;tax_minor:number;total_minor:number;expires_at:string;auction_revision:number;quote_revision:number;sample:true;request:QuoteInput};
 export function quotePreview(value:unknown,amountMinor:number,revision:number,auctionId:string,ownerId:string,currency:'USD'|'LBP'):QuotePreview {
   const fail=()=>{throw new ApiError(503,'malformed_quote','');};
-  if(!value||typeof value!=='object'||Array.isArray(value)||!Number.isSafeInteger(amountMinor)||amountMinor<=0||amountMinor>9000000000000) return fail();
+  if(currency!=='USD'||!value||typeof value!=='object'||Array.isArray(value)||!Number.isSafeInteger(amountMinor)||amountMinor<=0||amountMinor>9000000000000) return fail();
   const raw=value as Record<string,unknown>;
   const safeMinor=(amount:unknown):amount is number=>typeof amount==='number'&&Number.isSafeInteger(amount)&&amount>=0&&amount<=18000000000000;
   if(typeof raw.id!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(raw.id)
@@ -60,7 +71,7 @@ export function incrementBands(step:string,extra:readonly {from:string;step:stri
   return bands;
 }
 export function displayMinor(value:number,currency:string,locale:string) {
-  if(!Number.isSafeInteger(value)||value<0||value>9000000000000000) throw new Error('invalid_minor_units');
+  if(currency!=='USD'||!Number.isSafeInteger(value)||value<0||value>9000000000000000) throw new Error('invalid_minor_units');
   const language=locale==='ar'?'ar-LB':'en-US'; const exact=BigInt(value);
   const fraction=new Intl.NumberFormat(language,{useGrouping:false,minimumIntegerDigits:2,maximumFractionDigits:0}).format(exact%100n);
   // Format the integer and replace only its fraction: no binary floating-point cent rounding.

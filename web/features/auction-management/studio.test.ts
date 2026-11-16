@@ -7,8 +7,7 @@ import AuctionStudio from './studio';
 import en from './en.json';
 import ar from './ar.json';
 const state=vi.hoisted(()=>({locale:'en' as 'en'|'ar',session:null as Session|null,status:'signed-out',selectOptions:[] as string[]}));
-// CP Select lazily mounts its menu after engagement. Verify the same authorized
-// options supplied to that primitive rather than expecting closed-menu DOM.
+// Select mounts its menu on engagement. Check its authorized options directly.
 vi.mock('@beirut-time/ui',async importOriginal=>({
   ...await importOriginal<typeof import('@beirut-time/ui')>(),
   Select:({options,value}:{options:{value:string;label:string}[];value:string})=>{
@@ -30,7 +29,7 @@ it.each(['en','ar'] as const)('renders %s seller controls only with the canonica
   state.locale=locale;state.status='authenticated';state.session=signedIn(['identity.listings.publish']);
   const html=render(),copy=locale==='ar'?ar:en;
   expect(html).toContain(copy.title);expect(html).toContain(copy.addBand);expect(html).toContain(copy.reserve);
-  expect(html).toContain('datetime-local');expect(html).toContain('<form');
+  expect(html).toContain('datetime-local');expect(html).toContain('<form');expect(html).not.toContain('LBP');expect(state.selectOptions).not.toContain('LBP');
 });
 it.each(['en','ar'] as const)('does not grant %s seller controls to a buyer',locale=>{
   state.locale=locale;state.status='authenticated';state.session=signedIn();

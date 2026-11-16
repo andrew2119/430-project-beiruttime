@@ -13,6 +13,7 @@ describe('exact localized money',()=>{
   it('formats both languages with a currency',()=>{expect(displayMinor(410000,'USD','en')).toContain('4,100.00');expect(displayMinor(410000,'USD','ar')).toContain('٤');});
   it('retains every cent at the maximum supported magnitude',()=>expect(displayMinor(8999999999999999,'USD','en')).toBe('$89,999,999,999,999.99'));
   it('localizes the exact two-digit Arabic fraction',()=>expect(displayMinor(410001,'USD','ar')).toContain('٫٠١'));
+  it('keeps historic non-USD money outside active dollar displays',()=>expect(()=>displayMinor(410000,'LBP','en')).toThrow());
   it.each([NaN,Infinity,-1,1.5,9000000000000001])('refuses malformed display money %s',value=>expect(()=>displayMinor(value,'USD','en')).toThrow());
 });
 describe('disclosed increment bands',()=>{
@@ -27,6 +28,13 @@ describe('stored acknowledgements, never optimistic bids',()=>{
   it('never converts absent reconciliation into a denial or success',async()=>{send.mockRejectedValueOnce(new ApiError(503,'unavailable','')).mockRejectedValueOnce(new ApiError(404,'not_found',''));await expect(command('/auctions/a/bids',{},'uncertain')).rejects.toMatchObject({status:503});expect(send).toHaveBeenCalledTimes(2);});
   it('does not retry deterministic policy denials',async()=>{send.mockRejectedValueOnce(new ApiError(403,'forbidden',''));await expect(command('/auctions/a/bids',{},'denied')).rejects.toMatchObject({status:403});expect(send).toHaveBeenCalledTimes(1);});
   it('does not reconcile after the account scope cancels the invocation',async()=>{const controller=new AbortController();controller.abort();send.mockRejectedValueOnce(new ApiError(503,'unavailable',''));await expect(command('/auctions/a/bids',{},'cancelled',controller.signal)).rejects.toMatchObject({status:503});expect(send).toHaveBeenCalledTimes(1);});
+});
+it('schedules local times through server interpretation under the same operation and business scope',async()=>{
+ send.mockResolvedValueOnce({status:'succeeded'});
+ const body={starts_local:'2026-11-16T19:00',ends_local:'2026-11-17T19:00'};
+ await command('/auctions?organization_id=business',body,'schedule-key',undefined,'seller-session');
+ expect(send.mock.calls[0][0]).toBe('/api/web/v2/auction-schedules?organization_id=business');
+ expect(send.mock.calls[0][1]).toMatchObject({accessFingerprint:'seller-session',headers:{'Idempotency-Key':'schedule-key'},body:JSON.stringify(body)});
 });
 describe('a real fee preview is required before confirmation',()=>{
   const auction='00000000-0000-4000-8000-000000000010',owner='00000000-0000-4000-8000-000000000001';
