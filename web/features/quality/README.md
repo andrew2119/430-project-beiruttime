@@ -1,0 +1,13 @@
+# Business quality view
+
+The view consumes the versioned quality boundary with an authenticated current context and a bounded submit operation. The additive route view awaits registration by its runtime steward, S10 and the private route adapter. It never seeds a pass. Complete actual records are required for every accepted line. Pagination retains the same in-memory form; language changes retain that form and the exact pending command. Identity, job, revision or access-state changes clear private drafts.
+
+The read key is quality.v1 plus access partition, selected business, job and all source revisions. Private reads must revalidate authority before returning retained answers. Ready-before-press, data-on-intent and kept answers require the shared authenticated reader; they are deferred with runtime composition. Content during refresh must remain inert pending revalidation; placeholders belong only to the first load. The existing root owns theme/font/provider and arrival behavior. This leaf adds no provider, shell or private cache. First-frame, per-page size and the six shared speed methods require separate measured proof. No speed transfer or timing pass is claimed.
+
+Connected current-source reads, database registration, outbox delivery, source serialization, route recovery, bilingual browser/theme/keyboard checks at an asserted 390-pixel width, screenshots, private-file retention and physical-phone checks remain required. No file input is introduced here.
+
+Ordinary refresh retains the current form and uncertain operation, including when loading or temporary unavailability omits context. Confirmed submission denial removes the findings and clears the retained command. Access denial, identity changes and source-binding changes clear private state. A confirmed rejected response means no record was accepted: correction is enabled and the next submission uses a new operation. Transport failures remain uncertain and retry the unchanged operation.
+
+The optional bounded page reader supplies five accepted lines per read and the authoritative total, up to 1,000. Every returned context binds the same source revisions; all pages must be complete before recording. Ordinary revalidation keeps content visible and inert. An unavailable submission retains its exact command and allows retry when current authority is ready again.
+
+Submission waiting is bounded to 1.2 seconds. A timeout retains the exact command and enables retry; a response arriving after that wait cannot replace the current result. Context identity and page source comparisons ignore object property insertion order.
