@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Exact payment readiness context v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation_id",
+    "actor_id",
+    "organization_id",
+    "subject_id",
+    "watch_id",
+    "buyer_id",
+    "order_id",
+    "order_kind",
+    "quote_id",
+    "quote_revision",
+    "request_revision",
+    "authority_revision",
+    "payment_revision",
+    "currency",
+    "total_minor"
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "actor_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "organization_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "subject_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "watch_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "buyer_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "order_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "order_kind": {
+      "const": "job"
+    },
+    "quote_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "quote_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "request_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "authority_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "payment_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "currency": {
+      "const": "USD"
+    },
+    "total_minor": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}
