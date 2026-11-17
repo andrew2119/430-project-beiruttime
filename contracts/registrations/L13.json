@@ -1,9 +1,164 @@
 {
-  "version":1,"lane":"L13","contracts":[
-    {"namespace":"orders.commitment.v2","path":"packages/contracts-orders/allocation","fixtures":["packages/contracts-orders/allocation/fixtures/commitment.v2.json"]},
-    {"namespace":"orders.payments.v1","path":"packages/contracts-orders/payments","fixtures":["packages/contracts-orders/payments/fixtures/simulated.v1.json"]},
-    {"namespace":"orders.journal.v1","path":"packages/contracts-orders/journal","fixtures":["packages/contracts-orders/journal/fixtures/balanced.v1.json"]},
-    {"namespace":"auction.closing.v1","path":"packages/contracts-auction/closing","fixtures":["packages/contracts-auction/closing/fixtures/close.v1.json"]},
-    {"namespace":"catalog.withdrawal.v1","path":"packages/contracts-catalog/withdrawal","fixtures":["packages/contracts-catalog/withdrawal/fixtures/withdrawal.v1.json"]}
-  ]
+  "version": 1,
+  "lane": "L13",
+  "contracts": [
+    {
+      "namespace": "orders.commitment.v2",
+      "path": "packages/contracts-orders/allocation",
+      "fixtures": [
+        "packages/contracts-orders/allocation/fixtures/commitment.v2.json"
+      ]
+    },
+    {
+      "namespace": "orders.payment-notice.v3",
+      "path": "packages/contracts-orders/allocation/v3.py",
+      "fixtures": [
+        "tests/lanes/L13/WIRE-L13/outcomes.v1.json"
+      ]
+    },
+    {
+      "namespace": "orders.quote-commitment.v3",
+      "path": "packages/contracts-orders/allocation/quote_commitment.py",
+      "fixtures": [
+        "tests/lanes/L13/WIRE-L13/outcomes.v1.json"
+      ]
+    },
+    {
+      "namespace": "orders.payments.v1",
+      "path": "packages/contracts-orders/payments",
+      "fixtures": [
+        "packages/contracts-orders/payments/fixtures/simulated.v1.json"
+      ]
+    },
+    {
+      "namespace": "orders.journal.v1",
+      "path": "packages/contracts-orders/journal",
+      "fixtures": [
+        "packages/contracts-orders/journal/fixtures/balanced.v1.json"
+      ]
+    },
+    {
+      "namespace": "auction.closing.v1",
+      "path": "packages/contracts-auction/closing",
+      "fixtures": [
+        "packages/contracts-auction/closing/fixtures/close.v1.json"
+      ]
+    },
+    {
+      "namespace": "catalog.withdrawal.v1",
+      "path": "packages/contracts-catalog/withdrawal",
+      "fixtures": [
+        "packages/contracts-catalog/withdrawal/fixtures/withdrawal.v1.json"
+      ]
+    }
+  ],
+  "runtime": {
+    "service": "orders",
+    "factory": "service_app.bootstrap:create_app",
+    "discovery_lanes": {
+      "first": "L00",
+      "last": "L25"
+    },
+    "operations": {
+      "payment_notice": {
+        "method": "POST",
+        "path": "/internal/v3/payment-notices",
+        "producer": "communications",
+        "receipt": "orders.payment-notice.v3"
+      },
+      "quote_commitment": {
+        "method": "POST",
+        "path": "/internal/v3/quotes/{id}/commit",
+        "producer": "orders",
+        "destination": "pricing",
+        "receipt": "orders.quote-commitment.v3"
+      }
+    },
+    "pending_rule": "Retry the same operation reference; no inferred success.",
+    "revision_rule": "Current authority and exact retained revisions are required.",
+    "destinations": {
+      "enabled": [
+        "catalog",
+        "communications"
+      ],
+      "pending": [
+        "communications:orders.payment-action-required.v3",
+        "communications-order-timeline"
+      ]
+    }
+  },
+  "outcome_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "schema_version",
+      "operation_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "state",
+      "revision",
+      "pending_reason",
+      "next_actor",
+      "next_review_at"
+    ],
+    "properties": {
+      "schema_version": {
+        "const": "orders.wiring.v1"
+      },
+      "operation_id": {
+        "type": "string"
+      },
+      "subject_id": {
+        "type": "string"
+      },
+      "watch_id": {
+        "type": "string"
+      },
+      "actor_id": {
+        "type": "string"
+      },
+      "organization_id": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "expected_revision": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "state": {
+        "enum": [
+          "acknowledged",
+          "denied",
+          "pending"
+        ]
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "pending_reason": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "next_actor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "next_review_at": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  }
 }
