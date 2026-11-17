@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "devices": [
+    {"id":"desktop","width":1440,"height":900,"dpr":1,"mobile":false,"touch":false},
+    {"id":"phone","width":390,"height":844,"dpr":3,"mobile":true,"touch":true}
+  ],
+  "languages": ["en","ar"],
+  "themes": ["light","dark"],
+  "required_proofs": ["N01","N05"],
+  "feature_manifest": null,
+  "adapter": null,
+  "physical_device_record": null
+}
