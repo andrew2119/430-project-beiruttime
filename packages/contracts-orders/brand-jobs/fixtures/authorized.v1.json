@@ -1,0 +1,17 @@
+{
+  "schema_version": "orders.brand-jobs.v1",
+  "operation_id": "sample-operation",
+  "subject_id": "sample-buyer",
+  "watch_id": "sample-watch",
+  "actor_id": "sample-buyer",
+  "organization_id": "sample-brand",
+  "expected_revision": 1,
+  "revision": 1,
+  "next_actor": null,
+  "next_review_at": null,
+  "pending_reason": null,
+  "state": "authorized",
+  "job_id": "sample-job",
+  "assignee_id": "sample-worker",
+  "permitted_start_state": "requires_current_start_check"
+}
