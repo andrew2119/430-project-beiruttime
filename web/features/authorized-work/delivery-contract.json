@@ -1,0 +1,10 @@
+{
+  "route": "/business/work",
+  "file": "web/app/(authorized-work)/business/work/page.tsx",
+  "view": "web/features/authorized-work/view.tsx",
+  "kind": "reads",
+  "reason": "Current assigned private work and paginated observations.",
+  "content": ".bt-page-body",
+  "read": "authorized-work.v1",
+  "proof": "owed"
+}
