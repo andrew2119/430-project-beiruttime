@@ -1,0 +1,14 @@
+{
+  "schema_version": "finish.v1",
+  "operation_id": "00000000-0000-0000-0000-000000000008",
+  "subject_id": "00000000-0000-0000-0000-000000000001",
+  "watch_id": "00000000-0000-0000-0000-000000000002",
+  "actor_id": "00000000-0000-0000-0000-000000000003",
+  "organization_id": "00000000-0000-0000-0000-000000000004",
+  "expected_revision": 0,
+  "state": "recorded",
+  "revision": 1,
+  "pending_reason": null,
+  "next_actor": null,
+  "next_review_at": null
+}
