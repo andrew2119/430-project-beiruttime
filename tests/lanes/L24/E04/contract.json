@@ -1,0 +1,69 @@
+{
+  "schema_version": "l24.restore.v1",
+  "synthetic": true,
+  "operations": {
+    "restore": "Restore all nine isolated snapshots into a private staging directory; never serve staging files.",
+    "read": "Recheck current identity, organization, assignment, revision, tombstones and retention before bytes.",
+    "replay": "Look up the original operation; unknown remains held and never creates another effect."
+  },
+  "required_bindings": [
+    "operation_id",
+    "subject_id",
+    "watch_id",
+    "actor_id",
+    "organization_id",
+    "expected_revision",
+    "quote_revision",
+    "policy_revision"
+  ],
+  "states": [
+    "complete",
+    "missing_file",
+    "denied",
+    "stale",
+    "pending",
+    "unavailable"
+  ],
+  "limits": {
+    "stores": 9,
+    "files": 10,
+    "file_bytes": 262144,
+    "attempts": 2
+  },
+  "retention_days": {
+    "unsubmitted": 7,
+    "reviewed": 30,
+    "audit": 365
+  },
+  "remaining_proof": [
+    "I07",
+    "O08",
+    "S11",
+    "A10",
+    "nine_database_restore",
+    "actual_file_provider",
+    "restart_durability",
+    "connected_money_custody_reconciliation",
+    "separate_machine_clearance"
+  ],
+  "retention_exception": {
+    "source": "current read facts only; never backup metadata or a caller override",
+    "required_case_fields": [
+      "case_id",
+      "case_revision",
+      "assignment_revision",
+      "active",
+      "needs_evidence",
+      "file_id",
+      "binding"
+    ],
+    "required_assignment_fields": [
+      "case_id",
+      "case_revision",
+      "assignment_revision",
+      "active",
+      "binding"
+    ],
+    "rules": "Only reviewed identity/possession proof permits this exception; unsubmitted uploads and audit references do not. Both assertions must be active, match every required binding and the same case and positive integer revisions; the case must need this file. Missing, revoked or cross-scope assertions deny; mismatched revisions are stale."
+  }
+}
