@@ -1,0 +1,67 @@
+{
+  "schema_version": "l25.freeze-fixtures.v1",
+  "synthetic": true,
+  "integration_proof": false,
+  "proxy": {
+    "input": {
+      "opening_minor": 400000,
+      "current_minor": 400000,
+      "leader_id": null,
+      "sequence": 0,
+      "increment_bands": [
+        {
+          "from_minor": 0,
+          "step_minor": 10000
+        }
+      ],
+      "maxima": []
+    },
+    "command": {
+      "kind": "maximum",
+      "bidder_id": "sample-buyer",
+      "amount_minor": 450000,
+      "sequence": 1
+    },
+    "expected": {
+      "leader_id": "sample-buyer",
+      "current_minor": 400000,
+      "maxima": [
+        {
+          "bidder_id": "sample-buyer",
+          "amount_minor": 450000,
+          "sequence": 1,
+          "active": true
+        }
+      ],
+      "bids": [
+        {
+          "bidder_id": "sample-buyer",
+          "amount_minor": 400000,
+          "automatic": false
+        }
+      ]
+    }
+  },
+  "quote_commit": {
+    "buyer_id": "sample-buyer",
+    "order_id": "sample-order",
+    "quote_revision": 1,
+    "total_minor": 515000,
+    "committed_at": "2026-11-17T00:00:00Z"
+  },
+  "notice": {
+    "event_id": "sample-event",
+    "notice_id": "sample-notice",
+    "order_id": "sample-order",
+    "buyer_id": "sample-buyer",
+    "notified_at": "2026-11-17T00:00:00Z",
+    "verified_delivery_recorded": true
+  },
+  "cases": {
+    "success": "exact retained result",
+    "denied": "wrong consumer or current scope",
+    "stale": "changed quote revision or auction sequence",
+    "lost_response": "acknowledge once then raise; restore store and replay same reference",
+    "duplicate": "same binding returns same result; changed binding denies"
+  }
+}
