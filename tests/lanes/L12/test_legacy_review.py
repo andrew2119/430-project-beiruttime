@@ -161,3 +161,67 @@ async def test_versioned_read_uses_server_deadline_even_before_worker(monkeypatc
     result = await load('routes.py:legacy_view')(tx, tx.row)
     assert result['version'] == 2 and result['schedule_state'] == 'ended_legacy_review'
     assert result['financial_state'] == 'held' and result['status'] == 'pending'
+
+
+@pytest.mark.asyncio
+async def test_private_recovery_read_distinguishes_no_attempt_from_unknown():
+    now = datetime.now(timezone.utc)
+    tx = Transaction(now, now)
+    tx.row.update(admission_revision=2)
+    tx.row['allocation'].update(quote_revision=1, policy_revision=1)
+    from test_prebid import context
+    request = context(tx.row)
+    request.app.state.pool.fetchval = tx.fetchval
+    deps = request.app.state.auction.dependencies
+    async def lookup(value):
+        return {**value, 'state': deps.result, 'revision': 2, 'pending_reason': 'payment_review',
+                'next_actor': str(tx.row['id']), 'next_review_at': '2026-11-17T00:00:00Z'}
+    deps.lookup_historical_v1 = lookup
+    for remote, expected in [(state, state) for state in
+            ('no_attempt', 'unknown', 'pending', 'declined', 'paid_held', 'released')]:
+        deps.result = remote
+        result = await load('routes.py:operation_v3')('stable', request)
+        assert result['resolution'] == expected
+        assert result['recovery'] == {
+            'state': remote, 'revision': 2, 'pending_reason': 'payment_review',
+            'next_actor': str(tx.row['id']), 'next_review_at': '2026-11-17T00:00:00Z'}
+        assert result['historical']['schedule_state'] == 'ended_legacy_review'
+        assert result['message']['en'] and result['message']['ar']
+    assert not tx.transitions
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('change', [{'quote_revision': '1'}, {'policy_revision': True}, {'watch_id': 'invalid'}])
+async def test_private_recovery_read_rejects_malformed_retained_binding(change):
+    now = datetime.now(timezone.utc)
+    tx = Transaction(now, now)
+    tx.row.update(admission_revision=2)
+    tx.row['allocation'].update({'quote_revision': 1, 'policy_revision': 1, **change})
+    from test_prebid import context
+    request = context(tx.row)
+    request.app.state.pool.fetchval = tx.fetchval
+    result = await load('routes.py:operation_v3')('stable', request)
+    assert result['resolution'] == 'unavailable'
+    assert result['recovery']['next_actor'] is None
+    assert result['recovery']['next_review_at'] is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('roles,organization', [(['seller'], None), (['buyer'], uuid4())])
+async def test_private_recovery_read_denial_is_bilingual_before_lookup(roles, organization):
+    from bt_contracts_core.errors import PublicError
+    from test_prebid import context
+
+    request = context(roles=roles, organization=organization)
+
+    class UnavailablePool:
+        def acquire(self):
+            pytest.fail('Denied reads must not access private receipts.')
+
+    request.app.state.pool = UnavailablePool()
+    with pytest.raises(PublicError) as error:
+        await load('routes.py:operation_v3')('stable', request)
+    assert error.value.status == 403
+    assert error.value.code == 'access_denied'
+    assert 'Access denied.' in error.value.message
+    assert 'الوصول مرفوض.' in error.value.message
