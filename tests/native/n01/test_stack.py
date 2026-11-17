@@ -139,6 +139,8 @@ class NativeTests(unittest.TestCase):
             with patch.object(native, 'available'), patch.object(native, 'launch', side_effect=launch), patch.object(native.subprocess, 'check_output', return_value=b'postgres (PostgreSQL) 17.6'), patch.object(native.subprocess, 'run', return_value=Mock(returncode=0)), patch.object(native, 'wait_ready'), patch.object(native, 'restrict_auth'), patch.object(native, 'owned', return_value=False), patch.object(native, 'supervise'):
                 native.start(run, [native.MANIFEST['services'][0], native.MANIFEST['services'][-1]], cap)
             initialization = next(c for c in calls if c[1][0].endswith('/initdb'))
+            self.assertIn('--encoding=UTF8', initialization[1])
+            self.assertIn('--no-locale', initialization[1])
             self.assertIn('--auth-host=reject', initialization[1])
             bootstrap = next(c for c in calls if c[0] == 'database')
             self.assertEqual(bootstrap[1][bootstrap[1].index('-h') + 1], '')

@@ -388,7 +388,8 @@ def start(run, services, cap):
         version = subprocess.check_output([str(pg / 'postgres'), '--version'], env=env, timeout=5).decode()
         if not version.split()[-1].startswith('17.'):
             raise ValueError('Database major version must be 17')
-        command([str(pg / 'initdb'), '-D', str(run / 'data'), '-U', 'postgres', '--auth-local=trust', '--auth-host=reject'])
+        command([str(pg / 'initdb'), '-D', str(run / 'data'), '-U', 'postgres',
+                 '--encoding=UTF8', '--no-locale', '--auth-local=trust', '--auth-host=reject'])
         child = launch(run, ledger, 'database', [str(pg / 'postgres'), '-D', str(run / 'data'),
                        '-h', '', '-p', '54329', '-k', str(run)], env)
         database_ready(pg, run, env, child, cap)
