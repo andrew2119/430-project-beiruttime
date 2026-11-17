@@ -1,1 +1,1 @@
-{"version":1,"id":"L13.withdrawal","dependencies":["fastapi","asyncpg","httpx","PyJWT"],"routes":["routes.py:router"],"migrations":["migrations/L13_0001_withdrawal.sql"]}
+{"version":1,"id":"L13.withdrawal","dependencies":["fastapi","asyncpg","httpx","PyJWT"],"routes":["routes.py:router"],"migrations":["migrations/L13_0001_withdrawal.sql","migrations/L13_0002_withdrawal_attempts.sql"]}
