@@ -1,6 +1,7 @@
 import importlib.util
 from importlib.machinery import PathFinder
 import json
+import errno
 from pathlib import Path
 import tempfile
 import unittest
@@ -94,13 +95,54 @@ class NativeTests(unittest.TestCase):
                 native.stop(run, ledger)
             self.assertEqual(json.loads((run / 'ledger.json').read_text())['state'], 'stopped')
 
-    def test_occupied_port_precedes_mutation(self):
+    def test_occupied_port_records_failure_without_launch(self):
         with tempfile.TemporaryDirectory() as directory:
             run = Path(directory) / 'new'
-            with patch.object(native, 'available', side_effect=OSError), patch.object(native.subprocess, 'Popen', side_effect=AssertionError):
+            with patch.object(native, 'available', side_effect=OSError(errno.EADDRINUSE, 'Address already in use')), patch.object(native.subprocess, 'Popen', side_effect=AssertionError):
                 with self.assertRaises(OSError):
                     native.start(run, native.MANIFEST['services'], {})
-            self.assertFalse(run.exists())
+            ledger = json.loads((run / 'ledger.json').read_text())
+            self.assertEqual(ledger['state'], 'failed')
+            self.assertEqual(ledger['processes'], [])
+            self.assertEqual(ledger['failure'], {
+                'phase': 'port-precheck', 'port': 54329,
+                'errno': errno.EADDRINUSE, 'reason': '[Errno 98] Address already in use'})
+            self.assertEqual(run.stat().st_mode & 0o777, 0o700)
+
+    def test_time_wait_port_is_available(self):
+        # Model the kernel refusing a stale connection unless reuse is enabled.
+        probe = Mock()
+        probe.__enter__ = Mock(return_value=probe)
+        probe.__exit__ = Mock(return_value=False)
+        reused = False
+
+        def reuse(level, option, value):
+            nonlocal reused
+            self.assertEqual((level, option, value),
+                             (native.socket.SOL_SOCKET, native.socket.SO_REUSEADDR, 1))
+            reused = True
+
+        def bind(address):
+            self.assertEqual(address, ('127.0.0.1', 54329))
+            if not reused:
+                raise OSError(errno.EADDRINUSE, 'Port held in TIME_WAIT')
+
+        probe.setsockopt.side_effect = reuse
+        probe.bind.side_effect = bind
+        with patch.object(native.socket, 'socket', return_value=probe):
+            native.available(54329)
+        probe.listen.assert_called_once_with(1)
+
+    def test_live_listener_or_bound_port_is_refused(self):
+        for stage in ('bind', 'listen'):
+            with self.subTest(stage=stage):
+                probe = Mock()
+                probe.__enter__ = Mock(return_value=probe)
+                probe.__exit__ = Mock(return_value=False)
+                getattr(probe, stage).side_effect = OSError(errno.EADDRINUSE, 'Port in use')
+                with patch.object(native.socket, 'socket', return_value=probe):
+                    with self.assertRaises(OSError):
+                        native.available(54329)
 
     def test_capability_requires_installed_admission(self):
         with tempfile.TemporaryDirectory() as directory:

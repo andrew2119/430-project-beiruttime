@@ -82,7 +82,9 @@ def save(run, ledger):
 
 def available(port):
     with socket.socket() as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('127.0.0.1', port))
+        sock.listen(1)
 
 
 ADMISSION = Path('/opt/domain-contracts/native-admission-v1.json')
@@ -350,7 +352,15 @@ def cleanup_lock(control):
 def start(run, services, cap):
     admission(cap)
     for port in [54329] + [s['port'] for s in services]:
-        available(port)
+        try:
+            available(port)
+        except OSError as error:
+            run.mkdir(mode=0o700, parents=True, exist_ok=False)
+            save(run, {'schema_version': 1, 'state': 'failed', 'services': services,
+                       'processes': [], 'cleanup_complete': True,
+                       'failure': {'phase': 'port-precheck', 'port': port,
+                                   'errno': error.errno, 'reason': str(error)}})
+            raise
     run.mkdir(mode=0o700, parents=True, exist_ok=False)
     ledger = {'schema_version': 1, 'state': 'starting', 'services': services, 'processes': []}
     save(run, ledger)
