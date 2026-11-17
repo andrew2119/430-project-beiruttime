@@ -57,6 +57,8 @@ class PublicListing(PublicModel):
 
     @model_validator(mode='after')
     def bindings(self):
+        if self.facts.no_documents == ('papers' in self.facts.included):
+            raise ValueError('Conflicting document declaration')
         proof=self.registration
         if proof.watch_id!=self.physical_watch_id or proof.listing_id!=self.id or proof.sale_mode!={'fixed_price':'fixed','auction':'auction','offer':'seller_base'}[self.facts.sale_mode]:
             raise ValueError('Publication registration binding changed')

@@ -31,11 +31,12 @@ export function PublicPhoto({photo,fallback,eager=false}:{photo:Photo|null;fallb
 }
 export function Gallery({photos,unavailable=false}:{photos:Photo[];unavailable?:boolean}) {
   const locale=useLocale(),t=locale==='ar'?ar:en, [selected,setSelected]=useState(0), trigger=useRef<HTMLButtonElement>(null), zoom=useRef<HTMLDivElement>(null);
-  const photo=photos[selected]??null;
-  function step(delta:number){setSelected(value=>(value+delta+photos.length)%photos.length);}
+  const current=Math.min(selected,Math.max(0,photos.length-1));
+  const photo=photos[current]??null;
+  function step(delta:number){if(photos.length)setSelected((current+delta+photos.length)%photos.length);}
   return <Dialog><section className="discovery-gallery" aria-label={t.photo}>
     <DialogTrigger asChild><button ref={trigger} className="discovery-hero-photo" type="button" aria-label={photo?t.zoom:unavailable?t.photoUnavailable:t.noPhoto} disabled={!photo}><PublicPhoto key={photo?.id} photo={photo} fallback={unavailable?t.photoUnavailable:t.noPhoto} eager/>{photo&&<span className="discovery-zoom-label">{t.zoom} ↗</span>}</button></DialogTrigger>
-    {photos.length>1&&<div className="discovery-thumbnails">{photos.map((item,index)=><button key={item.id} type="button" aria-label={`${t.photo} ${index+1}`} aria-pressed={selected===index} onClick={()=>setSelected(index)}><PublicPhoto photo={item} fallback={t.noPhoto}/></button>)}</div>}
+    {photos.length>1&&<div className="discovery-thumbnails">{photos.map((item,index)=><button key={item.id} type="button" aria-label={`${t.photo} ${index+1}`} aria-pressed={current===index} onClick={()=>setSelected(index)}><PublicPhoto photo={item} fallback={t.noPhoto}/></button>)}</div>}
     {photo?.credit&&<p className="discovery-help">{photo.credit}</p>}
     <DialogContent className="discovery-zoom" closeLabel={t.close} aria-describedby={undefined} onCloseAutoFocus={event=>{event.preventDefault();trigger.current?.focus({preventScroll:true});}} onOpenAutoFocus={()=>{requestAnimationFrame(()=>{const el=zoom.current;if(el)el.scrollTo({left:(el.scrollWidth-el.clientWidth)/2*(locale==='ar'?-1:1),top:(el.scrollHeight-el.clientHeight)/2});});}}><DialogTitle>{t.zoom}</DialogTitle><div className="discovery-zoom-controls">{photos.length>1&&<><Button variant="outline" size="sm" onClick={()=>step(-1)}>{t.previousPhoto}</Button><Button variant="outline" size="sm" onClick={()=>step(1)}>{t.nextPhoto}</Button></>}</div><div ref={zoom} className="discovery-zoom-scroll" tabIndex={0} role="region" aria-label={t.photo}><PublicPhoto key={photo?.id} photo={photo} fallback={t.noPhoto} eager/></div></DialogContent>
   </section></Dialog>;

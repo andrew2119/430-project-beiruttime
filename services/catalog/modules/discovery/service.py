@@ -4,11 +4,15 @@ from dataclasses import dataclass
 from bt_contracts_core.errors import PublicError
 from . import search as repository
 from .dependencies import Reads
-from .models import Assurance, Photo, SearchPage, Seller, WatchDetail, WatchSummary
+from .models import Assurance, HistoryPage, Photo, SearchPage, Seller, WatchDetail, WatchSummary
 from .upstream import money
 
 
 def unavailable():return PublicError('unavailable','Current marketplace information is unavailable.',status=503)
+
+
+def business_eligible(business):
+    return business is not None and business.state == 'active' and business.platform_onboarded and business.authenticated_business and 'sales' in business.capabilities
 
 
 @dataclass
@@ -26,7 +30,7 @@ class Resolved:
     @property
     def state(self):
         if not self.authority_known:return 'unavailable'
-        if self.business and(self.business.state!='active'or not self.business.platform_onboarded or not self.business.authenticated_business or 'sales'not in self.business.capabilities):return 'unavailable'
+        if self.source.seller_type != 'private' and not business_eligible(self.business):return 'unavailable'
         if self.availability.status=='reserved':return 'reserved'
         if self.source.facts.sale_mode=='auction':
             if self.timing is None:return 'not_started'
@@ -77,7 +81,11 @@ async def _read_candidates(pool, filters, cursor):
 async def find(pool, reads, filters, cursor=''):
     try:
         async with asyncio.timeout(.95):
-            return await _ending_search(pool,reads,filters,cursor)if filters.sort=='ending_soon'else await _catalog_search(pool,reads,filters,cursor)
+            page = await _ending_search(pool,reads,filters,cursor)if filters.sort=='ending_soon'else await _catalog_search(pool,reads,filters,cursor)
+            try:
+                async with asyncio.timeout(.15):page.total = await reads.search_total(filters,page.server_time)
+            except (TimeoutError,OSError):pass
+            return page
     except(TimeoutError,OSError,*repository.UNAVAILABLE_SOURCE):raise unavailable()from None
 
 
@@ -152,7 +160,7 @@ async def canonical(pool, reads, identifier):
             async with asyncio.timeout(.5):business=await reads.business(source)
         except TimeoutError:raise unavailable()from None
         if business is None:raise unavailable()
-        if business.state!='active'or not business.platform_onboarded or not business.authenticated_business or 'sales'not in business.capabilities:
+        if not business_eligible(business):
             raise PublicError('listing_ineligible','This business cannot currently offer this listing.',status=403)
     return source
 
@@ -163,19 +171,34 @@ async def view(pool, reads, identifier):
         async with asyncio.timeout(.85):
             (timings,missing),credits=await asyncio.gather(reads.timing_batch([source.id])if source.facts.sale_mode=='auction'else _no_timing(),reads.credits(source))
             result=(await resolve([source],reads,timings,missing,{}))[0]
+            public_facts = await reads.public_facts(source) if source.organization_id is None or business_eligible(result.business) else None
     except(TimeoutError,OSError):
-        result=Resolved(source,None,None,None,False);credits=None
+        result=Resolved(source,None,None,None,False);credits=None;public_facts=None
     base=summary(result).model_dump()
     if credits is None:base['thumbnail']=None
     facts=source.facts
     parts=[f'{item.component} · {item.provenance} · {item.modifier} · {item.warranty_issuer}'+(f' · {item.notes}'if item.notes else '')for item in facts.modifications]
     official=source.seller_type!='private'
     verified=official and result.business is not None and result.business.state=='active'and result.business.platform_onboarded and result.business.authenticated_business
-    return WatchDetail(**base,reference=facts.reference or None,year=facts.year,component_wear=facts.component_wear,description='',condition=facts.condition,
+    return WatchDetail(**base,history_next_cursor=public_facts.history_next_cursor if public_facts else None,history_revision=public_facts.revision if public_facts else None,no_documents=facts.no_documents,history=public_facts.history if public_facts else None,reference=facts.reference or None,year=facts.year,component_wear=facts.component_wear,description='',condition=facts.condition,
         included_items=facts.included,modified=facts.modified,modified_parts=parts,
         photos=[photo(source,asset,'detail',credits[asset])for asset in source.photo_ids]if credits is not None else [],media_state='available'if credits is not None else'unavailable',
-        seller=Seller(display_name=result.business.public_name if result.business else source.seller_label,kind=source.seller_type,completed_sales=None,joined_at=None),
-        assurance=Assurance(kind='official_business'if official else'private_inspection',status=('onboarded'if verified else'unavailable')if official else'pending'))
+        seller=Seller(id=str(source.seller_id),city=public_facts.city if public_facts else None,display_name=result.business.public_name if result.business else source.seller_label,kind=source.seller_type,completed_sales=public_facts.released_sales if public_facts else None,joined_at=public_facts.joined_at if public_facts else None,review_distribution=public_facts.review_distribution if public_facts else None),
+        assurance=Assurance(kind='official_business'if official else'private_inspection',status=('onboarded'if verified else'unavailable')if official else(public_facts.inspection if public_facts and public_facts.inspection else'unavailable')))
 
 
 async def _no_timing():return {},set()
+
+
+async def history(pool, reads, identifier, cursor, listing_revision, revision):
+    source = await canonical(pool, reads, identifier)
+    if source.revision != listing_revision:
+        raise PublicError('stale_revision', 'The listing changed. Reload the watch history.', status=409)
+    try:
+        async with asyncio.timeout(.5):
+            facts = await reads.public_facts(source, cursor, revision)
+    except (TimeoutError, OSError):
+        raise unavailable() from None
+    if facts is None:raise unavailable()
+    return HistoryPage(history=facts.history, next_cursor=facts.history_next_cursor,
+        revision=facts.revision, listing_revision=source.revision)

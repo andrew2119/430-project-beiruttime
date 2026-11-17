@@ -27,19 +27,23 @@ def normalize(value: str) -> str:
 
 @dataclass(frozen=True)
 class Filters:
+    seller_id: str = ''
     q: str = ''
     brand: str = ''
     model: str = ''
     location: str = ''
     min_minor: int | None = None
     max_minor: int | None = None
-    currency: Literal['USD','LBP'] = 'USD'
+    currency: Literal['USD'] = 'USD'
     sale_mode: str = ''
     sort: str = 'newest'
     limit: int = 12
 
     def __post_init__(self):
-        if self.sort not in SORTS or self.currency not in ('USD','LBP') or self.sale_mode not in ('','fixed','auction','offer') or not 1<=self.limit<=24:
+        if self.seller_id:
+            try:UUID(self.seller_id)
+            except (ValueError,TypeError):raise PublicError('invalid_filters','Invalid seller reference.',status=422)from None
+        if self.sort not in SORTS or self.currency != 'USD' or self.sale_mode not in ('','fixed','auction','offer') or not 1<=self.limit<=24:
             raise PublicError('invalid_filters','Check the search filters.',status=422)
         if len(self.q)>160 or len(self.q.split())>8 or len(self.brand)>100 or len(self.model)>160 or len(self.location)>160:
             raise PublicError('invalid_filters','Check the search filters.',status=422)
@@ -85,6 +89,7 @@ async def conditions(conn, filters, window):
     def bind(value):args.append(value);return f'${len(args)}'
     clauses=[f'published_at<={bind(window)}',f"facts->>'currency'={bind(filters.currency)}"]
     norm=lambda value:f'catalog_discovery_canonicalize_v1({value})'
+    if filters.seller_id:clauses.append(f'seller_id={bind(filters.seller_id)}::uuid')
     for field in ('brand','model','location'):
         value=alias(getattr(filters,field))
         if value:
