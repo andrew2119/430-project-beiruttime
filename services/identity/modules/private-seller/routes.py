@@ -10,6 +10,7 @@ from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from service_app.identity import live_actor
+from .possession_routes import router as possession_router
 
 router = APIRouter(prefix='/v1/private-seller')
 
@@ -107,3 +108,6 @@ async def evidence(application_id: UUID, evidence_id: UUID, request: Request):
     if content is None:
         raise HTTPException(404)
     return Response(content, media_type='text/plain', headers={'Content-Disposition':'attachment; filename="synthetic-proof.txt"','Cache-Control':'no-store'})
+
+
+router.include_router(possession_router)

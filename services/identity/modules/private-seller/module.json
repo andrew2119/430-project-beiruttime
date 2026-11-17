@@ -5,7 +5,8 @@
     "fastapi",
     "asyncpg",
     "PyJWT",
-    "cryptography"
+    "cryptography",
+    "Pillow"
   ],
   "routes": [
     "routes.py:router"
