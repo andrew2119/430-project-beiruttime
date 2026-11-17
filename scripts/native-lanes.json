@@ -1,0 +1,3054 @@
+{
+  "schema_version": 1,
+  "provider_contract": {
+    "layout": "N08: --request FILE --result FILE; schema_version=1, request_fingerprint, read_only=true, provider-owned layout data",
+    "collection": "N02: --request FILE --result FILE; per-selection fields validated by validate_record; shared checks bind request_fingerprint",
+    "lifecycle": "N03: required-lifecycle check includes all opt-in lifecycle cases; required skips fail",
+    "execution": "Sequential; separately authorized execution only; shared checks run once per batch",
+    "configuration": "native-configuration-v1 validates configuration without launching services; no legacy runner invocation"
+  },
+  "dependencies": [
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "package.json",
+    "web/package.json",
+    "services/_template/runtime/requirements.txt",
+    "services/_template/runtime/requirements-dev.txt",
+    "services/identity/runtime/requirements.txt",
+    "services/identity/runtime/requirements-dev.txt",
+    "services/catalog/runtime/requirements.txt",
+    "services/catalog/runtime/requirements-dev.txt",
+    "services/auction/runtime/requirements.txt",
+    "services/auction/runtime/requirements-dev.txt",
+    "services/pricing/runtime/requirements.txt",
+    "services/pricing/runtime/requirements-dev.txt",
+    "services/orders/runtime/requirements.txt",
+    "services/orders/runtime/requirements-dev.txt",
+    "services/eligibility/runtime/requirements.txt",
+    "services/eligibility/runtime/requirements-dev.txt",
+    "services/trust/runtime/requirements.txt",
+    "services/trust/runtime/requirements-dev.txt",
+    "services/communications/runtime/requirements.txt",
+    "services/communications/runtime/requirements-dev.txt",
+    "services/service-operations/runtime/requirements.txt",
+    "services/service-operations/runtime/requirements-dev.txt",
+    "packages/runtime/pyproject.toml",
+    "packages/events/pyproject.toml",
+    "packages/bulkheads/pyproject.toml",
+    "packages/contracts-core/pyproject.toml"
+  ],
+  "selections": [
+    {
+      "id": "L00-identity",
+      "lane": "L00",
+      "service": "identity",
+      "topology": {
+        "runtime": "services/_template/runtime",
+        "module_roots": [
+          "services/identity/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/_template/runtime/tests",
+          "services/identity/modules",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "identity",
+          "BT_TEST_LANE": "L00"
+        },
+        "database_domains": [
+          "identity"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/tests",
+          "services/identity/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/_template/runtime",
+        "services/identity/modules",
+        "tests/lanes/L00",
+        "tests/foundation",
+        "packages",
+        "contracts",
+        "services/_template/runtime/service_app",
+        "services/_template/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/_template/runtime/pyproject.toml",
+        "targets": [
+          "services/_template/runtime/service_app",
+          "services/identity/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/service_app",
+          "services/identity/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ]
+      }
+    },
+    {
+      "id": "L00-catalog",
+      "lane": "L00",
+      "service": "catalog",
+      "topology": {
+        "runtime": "services/_template/runtime",
+        "module_roots": [
+          "services/catalog/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/_template/runtime/tests",
+          "services/catalog/modules",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "catalog",
+          "BT_TEST_LANE": "L00"
+        },
+        "database_domains": [
+          "catalog"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/tests",
+          "services/catalog/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/_template/runtime",
+        "services/catalog/modules",
+        "tests/lanes/L00",
+        "tests/foundation",
+        "packages",
+        "contracts",
+        "services/_template/runtime/service_app",
+        "services/_template/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/_template/runtime/pyproject.toml",
+        "targets": [
+          "services/_template/runtime/service_app",
+          "services/catalog/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/service_app",
+          "services/catalog/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ]
+      }
+    },
+    {
+      "id": "L00-auction",
+      "lane": "L00",
+      "service": "auction",
+      "topology": {
+        "runtime": "services/_template/runtime",
+        "module_roots": [
+          "services/auction/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/_template/runtime/tests",
+          "services/auction/modules",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "auction",
+          "BT_TEST_LANE": "L00"
+        },
+        "database_domains": [
+          "auction"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/tests",
+          "services/auction/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/_template/runtime",
+        "services/auction/modules",
+        "tests/lanes/L00",
+        "tests/foundation",
+        "packages",
+        "contracts",
+        "services/_template/runtime/service_app",
+        "services/_template/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/_template/runtime/pyproject.toml",
+        "targets": [
+          "services/_template/runtime/service_app",
+          "services/auction/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/service_app",
+          "services/auction/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ]
+      }
+    },
+    {
+      "id": "L00-pricing",
+      "lane": "L00",
+      "service": "pricing",
+      "topology": {
+        "runtime": "services/_template/runtime",
+        "module_roots": [
+          "services/pricing/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/_template/runtime/tests",
+          "services/pricing/modules",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "pricing",
+          "BT_TEST_LANE": "L00"
+        },
+        "database_domains": [
+          "pricing"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/tests",
+          "services/pricing/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/_template/runtime",
+        "services/pricing/modules",
+        "tests/lanes/L00",
+        "tests/foundation",
+        "packages",
+        "contracts",
+        "services/_template/runtime/service_app",
+        "services/_template/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/_template/runtime/pyproject.toml",
+        "targets": [
+          "services/_template/runtime/service_app",
+          "services/pricing/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/service_app",
+          "services/pricing/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ]
+      }
+    },
+    {
+      "id": "L00-orders",
+      "lane": "L00",
+      "service": "orders",
+      "topology": {
+        "runtime": "services/_template/runtime",
+        "module_roots": [
+          "services/orders/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/_template/runtime/tests",
+          "services/orders/modules",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "orders",
+          "BT_TEST_LANE": "L00"
+        },
+        "database_domains": [
+          "orders"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/tests",
+          "services/orders/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/_template/runtime",
+        "services/orders/modules",
+        "tests/lanes/L00",
+        "tests/foundation",
+        "packages",
+        "contracts",
+        "services/_template/runtime/service_app",
+        "services/_template/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/_template/runtime/pyproject.toml",
+        "targets": [
+          "services/_template/runtime/service_app",
+          "services/orders/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/service_app",
+          "services/orders/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ]
+      }
+    },
+    {
+      "id": "L00-eligibility",
+      "lane": "L00",
+      "service": "eligibility",
+      "topology": {
+        "runtime": "services/_template/runtime",
+        "module_roots": [
+          "services/eligibility/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/_template/runtime/tests",
+          "services/eligibility/modules",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "eligibility",
+          "BT_TEST_LANE": "L00"
+        },
+        "database_domains": [
+          "eligibility"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/tests",
+          "services/eligibility/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/_template/runtime",
+        "services/eligibility/modules",
+        "tests/lanes/L00",
+        "tests/foundation",
+        "packages",
+        "contracts",
+        "services/_template/runtime/service_app",
+        "services/_template/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/_template/runtime/pyproject.toml",
+        "targets": [
+          "services/_template/runtime/service_app",
+          "services/eligibility/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/service_app",
+          "services/eligibility/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ]
+      }
+    },
+    {
+      "id": "L00-trust",
+      "lane": "L00",
+      "service": "trust",
+      "topology": {
+        "runtime": "services/_template/runtime",
+        "module_roots": [
+          "services/trust/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/_template/runtime/tests",
+          "services/trust/modules",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "trust",
+          "BT_TEST_LANE": "L00"
+        },
+        "database_domains": [
+          "trust"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/tests",
+          "services/trust/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/_template/runtime",
+        "services/trust/modules",
+        "tests/lanes/L00",
+        "tests/foundation",
+        "packages",
+        "contracts",
+        "services/_template/runtime/service_app",
+        "services/_template/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/_template/runtime/pyproject.toml",
+        "targets": [
+          "services/_template/runtime/service_app",
+          "services/trust/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/service_app",
+          "services/trust/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ]
+      }
+    },
+    {
+      "id": "L00-communications",
+      "lane": "L00",
+      "service": "communications",
+      "topology": {
+        "runtime": "services/_template/runtime",
+        "module_roots": [
+          "services/communications/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/_template/runtime/tests",
+          "services/communications/modules",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "communications",
+          "BT_TEST_LANE": "L00"
+        },
+        "database_domains": [
+          "communications"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/tests",
+          "services/communications/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/_template/runtime",
+        "services/communications/modules",
+        "tests/lanes/L00",
+        "tests/foundation",
+        "packages",
+        "contracts",
+        "services/_template/runtime/service_app",
+        "services/_template/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/_template/runtime/pyproject.toml",
+        "targets": [
+          "services/_template/runtime/service_app",
+          "services/communications/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/service_app",
+          "services/communications/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ]
+      }
+    },
+    {
+      "id": "L00-service-operations",
+      "lane": "L00",
+      "service": "service-operations",
+      "topology": {
+        "runtime": "services/_template/runtime",
+        "module_roots": [
+          "services/service-operations/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/_template/runtime/tests",
+          "services/service-operations/modules",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "service-operations",
+          "BT_TEST_LANE": "L00"
+        },
+        "database_domains": [
+          "service-operations"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/tests",
+          "services/service-operations/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/_template/runtime",
+        "services/service-operations/modules",
+        "tests/lanes/L00",
+        "tests/foundation",
+        "packages",
+        "contracts",
+        "services/_template/runtime/service_app",
+        "services/_template/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/_template/runtime/pyproject.toml",
+        "targets": [
+          "services/_template/runtime/service_app",
+          "services/service-operations/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/service_app",
+          "services/service-operations/modules",
+          "services/_template/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00"
+        ]
+      }
+    },
+    {
+      "id": "L01-identity",
+      "lane": "L01",
+      "service": "identity",
+      "topology": {
+        "runtime": "services/identity/runtime",
+        "module_roots": [
+          "services/identity/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/identity/runtime/tests",
+          "services/identity/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L01/identity"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "identity",
+          "BT_TEST_LANE": "L01"
+        },
+        "database_domains": [
+          "identity"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/identity/runtime/pyproject.toml",
+          "services/identity/runtime/tests",
+          "services/identity/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L01/identity",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/identity/runtime",
+        "services/identity/modules",
+        "tests/lanes/L01/identity",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/identity/runtime/service_app",
+        "services/identity/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/identity/runtime/pyproject.toml",
+        "targets": [
+          "services/identity/runtime/service_app",
+          "services/identity/modules",
+          "services/identity/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L01/identity"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/identity/runtime/pyproject.toml",
+          "services/identity/runtime/service_app",
+          "services/identity/modules",
+          "services/identity/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L01/identity"
+        ]
+      }
+    },
+    {
+      "id": "L01-eligibility",
+      "lane": "L01",
+      "service": "eligibility",
+      "topology": {
+        "runtime": "services/eligibility/runtime",
+        "module_roots": [
+          "services/eligibility/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/eligibility/runtime/tests",
+          "services/eligibility/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L01/eligibility"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "eligibility",
+          "BT_TEST_LANE": "L01"
+        },
+        "database_domains": [
+          "eligibility"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/eligibility/runtime/pyproject.toml",
+          "services/eligibility/runtime/tests",
+          "services/eligibility/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L01/eligibility",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/eligibility/runtime",
+        "services/eligibility/modules",
+        "tests/lanes/L01/eligibility",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/eligibility/runtime/service_app",
+        "services/eligibility/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/eligibility/runtime/pyproject.toml",
+        "targets": [
+          "services/eligibility/runtime/service_app",
+          "services/eligibility/modules",
+          "services/eligibility/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L01/eligibility"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/eligibility/runtime/pyproject.toml",
+          "services/eligibility/runtime/service_app",
+          "services/eligibility/modules",
+          "services/eligibility/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L01/eligibility"
+        ]
+      }
+    },
+    {
+      "id": "L02-identity",
+      "lane": "L02",
+      "service": "identity",
+      "topology": {
+        "runtime": "services/identity/runtime",
+        "module_roots": [
+          "services/identity/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/identity/runtime/tests",
+          "services/identity/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L02"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "identity",
+          "BT_TEST_LANE": "L02"
+        },
+        "database_domains": [
+          "identity"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/identity/runtime/pyproject.toml",
+          "services/identity/runtime/tests",
+          "services/identity/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L02",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/identity/runtime",
+        "services/identity/modules",
+        "tests/lanes/L02",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/identity/runtime/service_app",
+        "services/identity/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/identity/runtime/pyproject.toml",
+        "targets": [
+          "services/identity/runtime/service_app",
+          "services/identity/modules",
+          "services/identity/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L02"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/identity/runtime/pyproject.toml",
+          "services/identity/runtime/service_app",
+          "services/identity/modules",
+          "services/identity/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L02"
+        ]
+      }
+    },
+    {
+      "id": "L03-catalog",
+      "lane": "L03",
+      "service": "catalog",
+      "topology": {
+        "runtime": "services/catalog/runtime",
+        "module_roots": [
+          "services/catalog/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/catalog/runtime/tests",
+          "services/catalog/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L03/catalog"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "catalog",
+          "BT_TEST_LANE": "L03"
+        },
+        "database_domains": [
+          "catalog"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/catalog/runtime/pyproject.toml",
+          "services/catalog/runtime/tests",
+          "services/catalog/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L03/catalog",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/catalog/runtime",
+        "services/catalog/modules",
+        "tests/lanes/L03/catalog",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/catalog/runtime/service_app",
+        "services/catalog/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/catalog/runtime/pyproject.toml",
+        "targets": [
+          "services/catalog/runtime/service_app",
+          "services/catalog/modules",
+          "services/catalog/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L03/catalog"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/catalog/runtime/pyproject.toml",
+          "services/catalog/runtime/service_app",
+          "services/catalog/modules",
+          "services/catalog/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L03/catalog"
+        ]
+      }
+    },
+    {
+      "id": "L03-communications",
+      "lane": "L03",
+      "service": "communications",
+      "topology": {
+        "runtime": "services/communications/runtime",
+        "module_roots": [
+          "services/communications/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/communications/runtime/tests",
+          "services/communications/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L03/communications"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "communications",
+          "BT_TEST_LANE": "L03"
+        },
+        "database_domains": [
+          "communications"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/communications/runtime/pyproject.toml",
+          "services/communications/runtime/tests",
+          "services/communications/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L03/communications",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/communications/runtime",
+        "services/communications/modules",
+        "tests/lanes/L03/communications",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/communications/runtime/service_app",
+        "services/communications/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/communications/runtime/pyproject.toml",
+        "targets": [
+          "services/communications/runtime/service_app",
+          "services/communications/modules",
+          "services/communications/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L03/communications"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/communications/runtime/pyproject.toml",
+          "services/communications/runtime/service_app",
+          "services/communications/modules",
+          "services/communications/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L03/communications"
+        ]
+      }
+    },
+    {
+      "id": "L04-catalog",
+      "lane": "L04",
+      "service": "catalog",
+      "topology": {
+        "runtime": "services/catalog/runtime",
+        "module_roots": [
+          "services/catalog/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/catalog/runtime/tests",
+          "services/catalog/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L04"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "catalog",
+          "BT_TEST_LANE": "L04"
+        },
+        "database_domains": [
+          "catalog"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/catalog/runtime/pyproject.toml",
+          "services/catalog/runtime/tests",
+          "services/catalog/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L04",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/catalog/runtime",
+        "services/catalog/modules",
+        "tests/lanes/L04",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/catalog/runtime/service_app",
+        "services/catalog/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/catalog/runtime/pyproject.toml",
+        "targets": [
+          "services/catalog/runtime/service_app",
+          "services/catalog/modules",
+          "services/catalog/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L04"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/catalog/runtime/pyproject.toml",
+          "services/catalog/runtime/service_app",
+          "services/catalog/modules",
+          "services/catalog/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L04"
+        ]
+      }
+    },
+    {
+      "id": "L05-auction",
+      "lane": "L05",
+      "service": "auction",
+      "topology": {
+        "runtime": "services/auction/runtime",
+        "module_roots": [
+          "services/auction/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/auction/runtime/tests",
+          "services/auction/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L05/auction"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "auction",
+          "BT_TEST_LANE": "L05"
+        },
+        "database_domains": [
+          "auction"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/auction/runtime/pyproject.toml",
+          "services/auction/runtime/tests",
+          "services/auction/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L05/auction",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/auction/runtime",
+        "services/auction/modules",
+        "tests/lanes/L05/auction",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/auction/runtime/service_app",
+        "packages/contracts-auction/core/models.py"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/auction/runtime/pyproject.toml",
+        "targets": [
+          "services/auction/runtime/service_app",
+          "services/auction/modules",
+          "tests/lanes/L05/auction",
+          "packages/contracts-auction/core/models.py"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/auction/runtime/pyproject.toml",
+          "services/auction/runtime/service_app",
+          "services/auction/modules",
+          "tests/lanes/L05/auction",
+          "packages/contracts-auction/core/models.py"
+        ]
+      }
+    },
+    {
+      "id": "L05-communications",
+      "lane": "L05",
+      "service": "communications",
+      "topology": {
+        "runtime": "services/auction/runtime",
+        "module_roots": [
+          "services/communications/modules/bid-notices"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "tests/lanes/L05/communications"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src",
+          "services/auction/runtime",
+          "tests/lanes/L05/auction"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "communications",
+          "BT_TEST_LANE": "L05"
+        },
+        "database_domains": [
+          "auction",
+          "communications"
+        ],
+        "required_proofs": [
+          "tests/lanes/L05/communications/test_auction_delivery.py"
+        ],
+        "auction_module_root": "services/auction/modules",
+        "auction_factory": "services/auction/runtime/service_app",
+        "path_aliases": {
+          "/app/auction-modules": "services/auction/modules"
+        },
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/auction/runtime/pyproject.toml",
+          "tests/lanes/L05/communications",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/auction/runtime",
+        "services/communications/modules",
+        "tests/lanes/L05/communications",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/auction/modules",
+        "tests/lanes/L05/auction",
+        "services/communications/modules/bid-notices"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/auction/runtime/pyproject.toml",
+        "targets": [
+          "services/communications/modules/bid-notices",
+          "tests/lanes/L05/communications"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/auction/runtime/pyproject.toml",
+          "services/communications/modules/bid-notices",
+          "tests/lanes/L05/communications"
+        ]
+      }
+    },
+    {
+      "id": "L06-auction",
+      "lane": "L06",
+      "service": "auction",
+      "topology": {
+        "runtime": "services/auction/runtime",
+        "module_roots": [
+          "services/auction/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/auction/runtime/tests",
+          "services/auction/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L06/auction"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "auction",
+          "BT_TEST_LANE": "L06"
+        },
+        "database_domains": [
+          "auction"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/auction/runtime/pyproject.toml",
+          "services/auction/runtime/tests",
+          "services/auction/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L06/auction",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/auction/runtime",
+        "services/auction/modules",
+        "tests/lanes/L06/auction",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/auction/runtime/service_app",
+        "services/auction/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/auction/runtime/pyproject.toml",
+        "targets": [
+          "services/auction/runtime/service_app",
+          "services/auction/modules",
+          "services/auction/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L06/auction"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/auction/runtime/pyproject.toml",
+          "services/auction/runtime/service_app",
+          "services/auction/modules",
+          "services/auction/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L06/auction"
+        ]
+      }
+    },
+    {
+      "id": "L06-communications",
+      "lane": "L06",
+      "service": "communications",
+      "topology": {
+        "runtime": "services/communications/runtime",
+        "module_roots": [
+          "services/communications/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/communications/runtime/tests",
+          "services/communications/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L06/communications"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "communications",
+          "BT_TEST_LANE": "L06"
+        },
+        "database_domains": [
+          "communications"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/communications/runtime/pyproject.toml",
+          "services/communications/runtime/tests",
+          "services/communications/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L06/communications",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/communications/runtime",
+        "services/communications/modules",
+        "tests/lanes/L06/communications",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/communications/runtime/service_app",
+        "services/communications/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/communications/runtime/pyproject.toml",
+        "targets": [
+          "services/communications/runtime/service_app",
+          "services/communications/modules",
+          "services/communications/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L06/communications"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/communications/runtime/pyproject.toml",
+          "services/communications/runtime/service_app",
+          "services/communications/modules",
+          "services/communications/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L06/communications"
+        ]
+      }
+    },
+    {
+      "id": "L07-pricing",
+      "lane": "L07",
+      "service": "pricing",
+      "topology": {
+        "runtime": "services/pricing/runtime",
+        "module_roots": [
+          "services/pricing/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/pricing/runtime/tests",
+          "services/pricing/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L07/pricing"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "pricing",
+          "BT_TEST_LANE": "L07"
+        },
+        "database_domains": [
+          "pricing"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/pricing/runtime/pyproject.toml",
+          "services/pricing/runtime/tests",
+          "services/pricing/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L07/pricing",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/pricing/runtime",
+        "services/pricing/modules",
+        "tests/lanes/L07/pricing",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/pricing/runtime/service_app",
+        "services/pricing/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/pricing/runtime/pyproject.toml",
+        "targets": [
+          "services/pricing/runtime/service_app",
+          "services/pricing/modules",
+          "services/pricing/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L07/pricing"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/pricing/runtime/pyproject.toml",
+          "services/pricing/runtime/service_app",
+          "services/pricing/modules",
+          "services/pricing/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L07/pricing"
+        ]
+      }
+    },
+    {
+      "id": "L07-communications",
+      "lane": "L07",
+      "service": "communications",
+      "topology": {
+        "runtime": "services/communications/runtime",
+        "module_roots": [
+          "services/communications/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/communications/runtime/tests",
+          "services/communications/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L07/communications"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "communications",
+          "BT_TEST_LANE": "L07"
+        },
+        "database_domains": [
+          "communications"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/communications/runtime/pyproject.toml",
+          "services/communications/runtime/tests",
+          "services/communications/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L07/communications",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/communications/runtime",
+        "services/communications/modules",
+        "tests/lanes/L07/communications",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/communications/runtime/service_app",
+        "services/communications/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/communications/runtime/pyproject.toml",
+        "targets": [
+          "services/communications/runtime/service_app",
+          "services/communications/modules",
+          "services/communications/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L07/communications"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/communications/runtime/pyproject.toml",
+          "services/communications/runtime/service_app",
+          "services/communications/modules",
+          "services/communications/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L07/communications"
+        ]
+      }
+    },
+    {
+      "id": "L08-orders",
+      "lane": "L08",
+      "service": "orders",
+      "topology": {
+        "runtime": "services/orders/runtime",
+        "module_roots": [
+          "services/orders/modules/allocation"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/orders/runtime/tests",
+          "services/orders/modules/allocation",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L08/orders"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "orders",
+          "BT_TEST_LANE": "L08"
+        },
+        "database_domains": [
+          "orders"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/orders/runtime/pyproject.toml",
+          "services/orders/runtime/tests",
+          "services/orders/modules/allocation",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L08/orders",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/orders/runtime",
+        "services/orders/modules/allocation",
+        "tests/lanes/L08/orders",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/orders/runtime/service_app",
+        "services/orders/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/orders/runtime/pyproject.toml",
+        "targets": [
+          "services/orders/runtime/service_app",
+          "services/orders/modules/allocation",
+          "services/orders/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L08/orders"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/orders/runtime/pyproject.toml",
+          "services/orders/runtime/service_app",
+          "services/orders/modules/allocation",
+          "services/orders/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L08/orders"
+        ]
+      }
+    },
+    {
+      "id": "L08-catalog",
+      "lane": "L08",
+      "service": "catalog",
+      "topology": {
+        "runtime": "services/orders/runtime",
+        "module_roots": [
+          "services/catalog/modules/request-drafts"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/orders/runtime/tests",
+          "services/catalog/modules/request-drafts",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L08/catalog"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "catalog",
+          "BT_TEST_LANE": "L08"
+        },
+        "database_domains": [
+          "catalog"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/orders/runtime/pyproject.toml",
+          "services/orders/runtime/tests",
+          "services/catalog/modules/request-drafts",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L08/catalog",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/orders/runtime",
+        "services/catalog/modules/request-drafts",
+        "tests/lanes/L08/catalog",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/orders/runtime/service_app",
+        "services/orders/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/orders/runtime/pyproject.toml",
+        "targets": [
+          "services/orders/runtime/service_app",
+          "services/catalog/modules/request-drafts",
+          "services/orders/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L08/catalog"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/orders/runtime/pyproject.toml",
+          "services/orders/runtime/service_app",
+          "services/catalog/modules/request-drafts",
+          "services/orders/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L08/catalog"
+        ]
+      }
+    },
+    {
+      "id": "L09-trust",
+      "lane": "L09",
+      "service": "trust",
+      "topology": {
+        "runtime": "services/trust/runtime",
+        "module_roots": [
+          "services/trust/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/trust/runtime/tests",
+          "services/trust/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/trust"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "trust",
+          "BT_TEST_LANE": "L09"
+        },
+        "database_domains": [
+          "trust"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/trust/runtime/pyproject.toml",
+          "services/trust/runtime/tests",
+          "services/trust/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/trust",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/trust/runtime",
+        "services/trust/modules",
+        "tests/lanes/L09/trust",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/trust/runtime/service_app",
+        "services/trust/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/trust/runtime/pyproject.toml",
+        "targets": [
+          "services/trust/runtime/service_app",
+          "services/trust/modules",
+          "services/trust/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/trust"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/trust/runtime/pyproject.toml",
+          "services/trust/runtime/service_app",
+          "services/trust/modules",
+          "services/trust/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/trust"
+        ]
+      }
+    },
+    {
+      "id": "L09-communications",
+      "lane": "L09",
+      "service": "communications",
+      "topology": {
+        "runtime": "services/trust/runtime",
+        "module_roots": [
+          "services/communications/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/trust/runtime/tests",
+          "services/communications/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/communications"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "communications",
+          "BT_TEST_LANE": "L09"
+        },
+        "database_domains": [
+          "communications"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/trust/runtime/pyproject.toml",
+          "services/trust/runtime/tests",
+          "services/communications/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/communications",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/trust/runtime",
+        "services/communications/modules",
+        "tests/lanes/L09/communications",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/trust/runtime/service_app",
+        "services/trust/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/trust/runtime/pyproject.toml",
+        "targets": [
+          "services/trust/runtime/service_app",
+          "services/communications/modules",
+          "services/trust/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/communications"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/trust/runtime/pyproject.toml",
+          "services/trust/runtime/service_app",
+          "services/communications/modules",
+          "services/trust/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/communications"
+        ]
+      }
+    },
+    {
+      "id": "L09-service-operations",
+      "lane": "L09",
+      "service": "service-operations",
+      "topology": {
+        "runtime": "services/trust/runtime",
+        "module_roots": [
+          "services/service-operations/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/trust/runtime/tests",
+          "services/service-operations/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/service-operations"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "service-operations",
+          "BT_TEST_LANE": "L09"
+        },
+        "database_domains": [
+          "service-operations"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/trust/runtime/pyproject.toml",
+          "services/trust/runtime/tests",
+          "services/service-operations/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/service-operations",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/trust/runtime",
+        "services/service-operations/modules",
+        "tests/lanes/L09/service-operations",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/trust/runtime/service_app",
+        "services/trust/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/trust/runtime/pyproject.toml",
+        "targets": [
+          "services/trust/runtime/service_app",
+          "services/service-operations/modules",
+          "services/trust/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/service-operations"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/trust/runtime/pyproject.toml",
+          "services/trust/runtime/service_app",
+          "services/service-operations/modules",
+          "services/trust/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L09/service-operations"
+        ]
+      }
+    },
+    {
+      "id": "L10-catalog",
+      "lane": "L10",
+      "service": "catalog",
+      "topology": {
+        "runtime": "services/_template/runtime",
+        "module_roots": [
+          "services/catalog/modules/options/color",
+          "services/catalog/modules/options/material",
+          "services/catalog/modules/options/dial",
+          "services/catalog/modules/options/sophistication"
+        ],
+        "core_baseline": "empty",
+        "test_roots": [
+          "services/_template/runtime/tests",
+          "services/catalog/modules/options/color",
+          "services/catalog/modules/options/material",
+          "services/catalog/modules/options/dial",
+          "services/catalog/modules/options/sophistication",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L10"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "catalog",
+          "BT_TEST_LANE": "L10"
+        },
+        "database_domains": [
+          "catalog"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/_template/runtime/pyproject.toml",
+          "services/_template/runtime/tests",
+          "services/catalog/modules/options/color",
+          "services/catalog/modules/options/material",
+          "services/catalog/modules/options/dial",
+          "services/catalog/modules/options/sophistication",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L10",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/_template/runtime",
+        "services/catalog/modules/options/color",
+        "services/catalog/modules/options/material",
+        "services/catalog/modules/options/dial",
+        "services/catalog/modules/options/sophistication",
+        "tests/lanes/L10",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "packages/contracts-catalog/options"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/_template/runtime/pyproject.toml",
+        "targets": [
+          "services/catalog/modules/options/color",
+          "services/catalog/modules/options/material",
+          "services/catalog/modules/options/dial",
+          "services/catalog/modules/options/sophistication",
+          "packages/contracts-catalog/options",
+          "tests/lanes/L10"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/_template/runtime/pyproject.toml",
+          "services/catalog/modules/options/color",
+          "services/catalog/modules/options/material",
+          "services/catalog/modules/options/dial",
+          "services/catalog/modules/options/sophistication",
+          "packages/contracts-catalog/options",
+          "tests/lanes/L10"
+        ]
+      }
+    },
+    {
+      "id": "L11-catalog",
+      "lane": "L11",
+      "service": "catalog",
+      "topology": {
+        "runtime": "services/catalog/runtime",
+        "module_roots": [
+          "services/catalog/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/catalog/runtime/tests",
+          "services/catalog/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L11/catalog"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "catalog",
+          "BT_TEST_LANE": "L11"
+        },
+        "database_domains": [
+          "catalog"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/catalog/runtime/pyproject.toml",
+          "services/catalog/runtime/tests",
+          "services/catalog/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L11/catalog",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/catalog/runtime",
+        "services/catalog/modules",
+        "tests/lanes/L11/catalog",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/catalog/runtime/service_app",
+        "services/catalog/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/catalog/runtime/pyproject.toml",
+        "targets": [
+          "services/catalog/runtime/service_app",
+          "services/catalog/modules",
+          "services/catalog/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L11/catalog"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/catalog/runtime/pyproject.toml",
+          "services/catalog/runtime/service_app",
+          "services/catalog/modules",
+          "services/catalog/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L11/catalog"
+        ]
+      }
+    },
+    {
+      "id": "L11-service-operations",
+      "lane": "L11",
+      "service": "service-operations",
+      "topology": {
+        "runtime": "services/service-operations/runtime",
+        "module_roots": [
+          "services/service-operations/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "services/service-operations/runtime/tests",
+          "services/service-operations/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L11/service-operations"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "service-operations",
+          "BT_TEST_LANE": "L11"
+        },
+        "database_domains": [
+          "service-operations"
+        ],
+        "required_proofs": [],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/service-operations/runtime/pyproject.toml",
+          "services/service-operations/runtime/tests",
+          "services/service-operations/modules",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L11/service-operations",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/service-operations/runtime",
+        "services/service-operations/modules",
+        "tests/lanes/L11/service-operations",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "services/service-operations/runtime/service_app",
+        "services/service-operations/runtime/tests"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/service-operations/runtime/pyproject.toml",
+        "targets": [
+          "services/service-operations/runtime/service_app",
+          "services/service-operations/modules",
+          "services/service-operations/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L11/service-operations"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/service-operations/runtime/pyproject.toml",
+          "services/service-operations/runtime/service_app",
+          "services/service-operations/modules",
+          "services/service-operations/runtime/tests",
+          "tests/foundation",
+          "tests/lanes/L00",
+          "tests/lanes/L11/service-operations"
+        ]
+      }
+    },
+    {
+      "id": "L09-directory-intake-integration",
+      "lane": "L09",
+      "service": "service-operations",
+      "topology": {
+        "runtime": "services/trust/runtime",
+        "module_roots": [
+          "services/service-operations/modules"
+        ],
+        "core_baseline": "selected-modules",
+        "test_roots": [
+          "tests/lanes/L09/integration/directory.py"
+        ],
+        "import_roots": [
+          "packages/runtime/src",
+          "packages/events/src",
+          "packages/bulkheads/src",
+          "packages/contracts-core/src"
+        ],
+        "environment": {
+          "BT_SERVICE_NAME": "service-operations",
+          "BT_TEST_LANE": "L09",
+          "BT_L09_INTEGRATION_ONLY": "directory"
+        },
+        "database_domains": [
+          "service-operations"
+        ],
+        "required_proofs": [
+          "tests/lanes/L09/integration/directory.py"
+        ],
+        "test_command": [
+          "python3",
+          "-m",
+          "pytest",
+          "-p",
+          "bt_runtime.testing",
+          "-c",
+          "services/trust/runtime/pyproject.toml",
+          "tests/lanes/L09/integration/directory.py",
+          "-q"
+        ],
+        "lifecycle_policy": "collect-and-run-all-opt-in-cases",
+        "read_only": true
+      },
+      "checks": [
+        "dependency-pins",
+        "python-lint",
+        "collection",
+        "required-lifecycle"
+      ],
+      "optional_skips": [],
+      "sources": [
+        "services/trust/runtime",
+        "services/service-operations/modules",
+        "tests/lanes/L09/service-operations",
+        "tests/foundation",
+        "tests/lanes/L00",
+        "packages",
+        "contracts",
+        "tests/lanes/L09/integration/directory.py",
+        "services/trust/runtime/service_app"
+      ],
+      "schema_version": 1,
+      "lint_operation": {
+        "operation": "native-python-lint-v1",
+        "phase": "before-tests",
+        "configuration": "services/trust/runtime/pyproject.toml",
+        "targets": [
+          "services/trust/runtime/service_app",
+          "services/service-operations/modules",
+          "tests/lanes/L09/integration/directory.py"
+        ],
+        "argv": [
+          "ruff",
+          "check",
+          "--no-cache",
+          "--config",
+          "services/trust/runtime/pyproject.toml",
+          "services/trust/runtime/service_app",
+          "services/service-operations/modules",
+          "tests/lanes/L09/integration/directory.py"
+        ]
+      }
+    }
+  ],
+  "checks": [
+    {
+      "id": "web-lint",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "lint"
+      ]
+    },
+    {
+      "id": "web-typecheck",
+      "argv": [
+        "pnpm",
+        "typecheck"
+      ]
+    },
+    {
+      "id": "web-build",
+      "argv": [
+        "pnpm",
+        "build"
+      ]
+    },
+    {
+      "id": "web-unit",
+      "argv": [
+        "pnpm",
+        "test"
+      ]
+    },
+    {
+      "id": "contracts",
+      "argv": [
+        "python3",
+        "infra/foundation/discover-contracts.py"
+      ]
+    },
+    {
+      "id": "configuration",
+      "argv": [
+        "native-configuration-v1"
+      ]
+    },
+    {
+      "id": "web-config-tests-lanes-L04",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "../tests/lanes/L04/vitest.config.mts"
+      ]
+    },
+    {
+      "id": "web-config-tests-lanes-L07",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "../tests/lanes/L07/vitest.config.ts",
+        "--root",
+        ".."
+      ]
+    },
+    {
+      "id": "web-config-tests-lanes-L08-web",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "../tests/lanes/L08/web/vitest.config.ts",
+        "--root",
+        ".."
+      ]
+    },
+    {
+      "id": "web-config-tests-lanes-L09-web",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "../tests/lanes/L09/web/vitest.config.ts"
+      ]
+    },
+    {
+      "id": "web-config-web-features-auction-management",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "features/auction-management/vitest.config.ts"
+      ]
+    },
+    {
+      "id": "web-config-web-features-brand-options",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "features/brand-options/vitest.config.ts"
+      ]
+    },
+    {
+      "id": "web-config-web-features-business",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "features/business/vitest.config.ts"
+      ]
+    },
+    {
+      "id": "web-config-web-features-discovery",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "features/discovery/vitest.config.ts"
+      ]
+    },
+    {
+      "id": "web-config-web-features-identity",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "features/identity/vitest.config.ts"
+      ]
+    },
+    {
+      "id": "web-config-web-features-listing-editor",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "features/listing-editor/vitest.config.ts"
+      ]
+    },
+    {
+      "id": "web-config-web-features-proxy-bid",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "features/proxy-bid/vitest.config.ts"
+      ]
+    },
+    {
+      "id": "web-config-web-features-service-directory",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "beirut-time-web",
+        "exec",
+        "vitest",
+        "run",
+        "--config",
+        "features/service-directory/vitest.config.ts"
+      ]
+    }
+  ],
+  "selection_check_operations": {
+    "dependency-pins": {
+      "operation": "native-dependency-pins-v1",
+      "phase": "before-tests",
+      "requirements": [
+        "{runtime}/requirements.txt",
+        "{runtime}/requirements-dev.txt"
+      ],
+      "semantics": "Parse every nonblank noncomment requirement; resolve installed distribution in the selected interpreter; fail on missing distribution or version outside its specifier. Record each requirement and installed version; exit zero only when all match."
+    }
+  }
+}
