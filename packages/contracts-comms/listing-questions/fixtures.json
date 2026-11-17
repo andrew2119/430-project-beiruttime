@@ -1,0 +1,61 @@
+{
+  "synthetic": true,
+  "command": {
+    "operation_id": "sample-operation",
+    "kind": "ask",
+    "watch_id": "sample-watch",
+    "source_revision": 3,
+    "expected_revision": 0,
+    "question_id": "sample-question",
+    "text": "Is the original box included?"
+  },
+  "success": {
+    "schema_version": "listing-questions.v1",
+    "operation_id": "sample-operation",
+    "question_id": "sample-question",
+    "state": "published",
+    "revision": 1,
+    "subject_id": "sample-listing",
+    "watch_id": "sample-watch",
+    "actor_id": "sample-buyer",
+    "organization_id": null,
+    "expected_revision": 0,
+    "source_revision": 3,
+    "pending_reason": null,
+    "next_actor": null,
+    "next_review_at": null
+  },
+  "denied": {
+    "error": "denied",
+    "receipt_created": false
+  },
+  "stale": {
+    "error": "stale",
+    "receipt_created": false
+  },
+  "lost_response": {
+    "operation_id": "sample-operation",
+    "retry": "identical command",
+    "lookup_result": "success"
+  },
+  "timeout": {
+    "error": "unavailable",
+    "receipt_created": false
+  },
+  "held": {
+    "schema_version": "listing-questions.v1",
+    "operation_id": "sample-operation",
+    "question_id": "sample-question",
+    "state": "held",
+    "revision": 1,
+    "subject_id": "sample-listing",
+    "watch_id": "sample-watch",
+    "actor_id": "sample-buyer",
+    "organization_id": null,
+    "expected_revision": 0,
+    "source_revision": 3,
+    "pending_reason": "content_review",
+    "next_actor": "moderator",
+    "next_review_at": null
+  }
+}
