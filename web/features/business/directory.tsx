@@ -1,17 +1,18 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
-import { AnimatedList, BidiReference, Button, Card, Checkbox, StatusBadge } from "@beirut-time/ui";
+import { useState } from "react";
+import { PageControls, pagedRequest } from "./pagination";
+import { accessDenied, PendingRecovery, CommandForm, useCommandSnapshot, usePendingCommands } from "./command-form";
+import { Checkbox } from "./checkbox";
+import { useBusinessRead, directoryRead } from "./reads";
+import { Button, Card, StatusBadge } from "@beirut-time/ui/foundation";
 import type { OfficialBusiness } from "@contracts/contracts-identity/businesses";
-import { businessRequest, command } from "./transport";
 import {
   BusinessEmpty,
   BusinessLoading,
   Feedback,
   Field,
   Select,
-  Submit,
   text,
-  useAction,
   useCopy,
   Workspace,
 } from "./components";
@@ -21,8 +22,9 @@ import { usePublicBusinessDraft } from "./drafts";
 
 export default function BusinessDirectory() {
   const t = useCopy(),
-    access = useAccessContext(),
-    action = useAction();
+    access = useAccessContext();
+  const { busy, onPending, recovery } = usePendingCommands();
+  const [page,setPage]=useState(1),[managedPage,setManagedPage]=useState(1);
   const session = useSession();
   const canManage =
     session?.principal.permissions.includes("identity.businesses.manage") ??
@@ -32,24 +34,20 @@ export default function BusinessDirectory() {
     save: saveDraft,
     clear: clearDraft,
   } = usePublicBusinessDraft(access.fingerprint);
-  const query = useQuery({
-    queryKey: ["l02", "businesses"],
+  const query = useBusinessRead({
+    read: directoryRead(page),
+    queryKey: ["business-v2", "businesses",page],
     queryFn: () =>
-      businessRequest<{ items: OfficialBusiness[] }>(
-        "/v1/businesses",
-        {},
-        false,
-      ),
+      pagedRequest<OfficialBusiness>("/v2/businesses",page,false),
   });
-  const managed = useQuery({
-    queryKey: ["l02", "business-records", access.fingerprint],
+  const managed = useBusinessRead({
+    queryKey: ["business-v2", "business-records", access.fingerprint,managedPage],
     queryFn: () =>
-      businessRequest<{ items: OfficialBusiness[] }>(
-        "/v1/businesses/manage/records",
-      ),
+      pagedRequest<OfficialBusiness>("/v2/businesses/manage/records",managedPage),
     enabled: canManage,
     retry: false,
   });
+  const records = useCommandSnapshot(managed.isError ? undefined : managed.data, busy, access.fingerprint, accessDenied(managed.error));
   return (
     <Workspace title={t.title} intro={t.intro}>
       {query.isPending ? (
@@ -62,14 +60,14 @@ export default function BusinessDirectory() {
       ) : !query.data.items.length ? (
         <BusinessEmpty text={t.empty} />
       ) : (
-        <AnimatedList items={query.data.items} getKey={business => business.id} grid className="business-grid">
-          {(business) => (
+        <div className="business-grid">
+          {query.data.items.map((business) => (
             <Card key={business.id} className="business-card">
               <p className="business-eyebrow">
                 {business.kind === "brand" ? t.brand : t.dealer}
               </p>
               <h2>{business.public_name}</h2>
-              {business.sample && <StatusBadge hue="neutral">{t.sample}</StatusBadge>}
+              {business.sample && <StatusBadge tone="neutral">{t.sample}</StatusBadge>}
               <p>{t.onboarded}</p>
               <ul>
                 {business.capabilities.map((capability) => (
@@ -77,36 +75,27 @@ export default function BusinessDirectory() {
                 ))}
               </ul>
               <small>
-                {t.recordRef}: <BidiReference>{business.id}</BidiReference>
+                {t.recordRef}: <bdi dir="ltr">{business.id}</bdi>
               </small>
             </Card>
-          )}
-        </AnimatedList>
+          ))}
+        </div>
       )}
-      {managed.data?.items.map((business) => (
+      {query.data && !query.isError && <PageControls answer={query.data} change={setPage} />}
+    {busy && !records ? <PendingRecovery recovery={recovery} onPending={onPending} refresh={() => void managed.refetch()} /> : null}
+      {records?.items.map((business) => (
         <Card key={`${business.id}:${business.revision}`}>
           <h2>{business.public_name}</h2>
           <p>
             {t[business.state]} · {t.revision} {business.revision}
           </p>
-          <form
-            className="business-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const data = new FormData(event.currentTarget);
-              void action.run(async () => {
-                await command(
-                  `/v1/businesses/${business.id}`,
-                  {
-                    revision: business.revision,
-                    state: business.state === "active" ? "revoked" : "active",
-                    reason: text(data, "reason"),
-                  },
-                  "PATCH",
-                );
-                await Promise.all([query.refetch(), managed.refetch()]);
-              });
-            }}
+          <CommandForm disabled={busy} onPending={onPending}
+            onComplete={() => { void query.refetch(); void managed.refetch(); }}
+            submit={(data, operation) => operation.membership(`/v1/businesses/${business.id}`, {
+              revision: business.revision,
+              state: business.state === "active" ? "revoked" : "active",
+              reason: text(data, "reason"),
+            }, "PATCH")}
           >
             <Field
               name="reason"
@@ -114,41 +103,34 @@ export default function BusinessDirectory() {
               minLength={5}
               maxLength={500}
             />
-            <Submit
-              pending={action.pending}
-              label={business.state === "active" ? t.revoke : t.reactivate}
-            />
-          </form>
+          </CommandForm>
         </Card>
       ))}
       <Feedback error={managed.error} />
+      {records && <PageControls answer={records} change={setManagedPage} disabled={busy} />}
       <Card>
         <h2>{t.onboard}</h2>
         <p>{t.operatorOnly}</p>
         {canManage && (
-          <form
-            ref={attachForm}
+          <CommandForm disabled={busy} onPending={onPending}
+            formRef={attachForm}
             onChange={saveDraft}
-            className="business-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const form = event.currentTarget;
-              const data = new FormData(form);
-              void action.run(async () => {
-                await command("/v1/businesses", {
-                  legal_name: text(data, "legal_name"),
-                  public_name: text(data, "public_name"),
-                  kind: text(data, "kind"),
-                  capabilities: data.getAll("capabilities"),
-                  assurance_reference: text(data, "assurance"),
-                  reason: text(data, "reason"),
-                  sample: data.get("sample") === "on",
-                });
-                form.reset();
-                clearDraft();
-                await Promise.all([query.refetch(), managed.refetch()]);
-              });
+            onComplete={() => {
+              clearDraft();
+              void query.refetch();
+              void managed.refetch();
             }}
+            submit={(data, operation) => operation.membership("/v1/businesses", {
+              legal_name: text(data, "legal_name"),
+              public_name: text(data, "public_name"),
+              kind: text(data, "kind"),
+              capabilities: data.getAll("capabilities"),
+              assurance_reference: text(data, "assurance"),
+              reason: text(data, "reason"),
+              sample: data.get("sample") === "on",
+              confirmation_ref: text(data, "confirmation_ref") || null,
+              confirmed_scope: data.getAll("confirmed_scope"),
+            })}
           >
             <Field name="legal_name" label={t.legalName} minLength={2} />
             <Field
@@ -183,6 +165,16 @@ export default function BusinessDirectory() {
                 ),
               )}
             </fieldset>
+            <Field name="confirmation_ref" label={t.confirmationReference} required={false} maxLength={36} />
+            <fieldset className="business-checks">
+              <legend>{t.confirmedScope}</legend>
+              <p>{t.confirmationHelp}</p>
+              {(["sales", "customization", "servicing"] as const).map(capability => (
+                <Checkbox key={capability} name="confirmed_scope" value={capability}>
+                  {t[capability]}
+                </Checkbox>
+              ))}
+            </fieldset>
             <Field
               name="reason"
               label={t.reason}
@@ -190,9 +182,7 @@ export default function BusinessDirectory() {
               maxLength={500}
             />
             <Checkbox name="sample" className="business-check">{t.sampleInput}</Checkbox>
-            <Submit pending={action.pending} label={t.onboard} />
-            <Feedback error={action.error} success={action.success} />
-          </form>
+          </CommandForm>
         )}
       </Card>
     </Workspace>

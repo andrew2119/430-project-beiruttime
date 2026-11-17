@@ -2,7 +2,7 @@ import hashlib
 import json
 from typing import Literal
 from uuid import UUID, uuid4
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 from pydantic import Field, field_validator
 from bt_contracts_core.models import Contract, EventEnvelope
 from bt_contracts_core.errors import PublicError
@@ -10,6 +10,7 @@ from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from bt_runtime.principal import CurrentPrincipal, require_scope
 from service_app.identity import lock_accounts
+from .capabilities import CapabilityDeclaration
 from .security import principal, require_current
 from .identity_store import affected_subjects, sync_business
 
@@ -27,6 +28,10 @@ class Onboard(Contract):
     assurance_reference: str = Field(min_length=5, max_length=160)
     reason: str = Field(min_length=5, max_length=500)
     sample: bool = False
+    confirmation_ref: UUID | None = None
+    confirmed_scope: list[Literal["sales", "customization", "servicing"]] = Field(
+        default_factory=list, max_length=3
+    )
 
     @field_validator("legal_name", "public_name", "assurance_reference", "reason")
     @classmethod
@@ -55,6 +60,21 @@ class Change(Contract):
         if len(value) < 5:
             raise ValueError("A meaningful decision reason is required")
         return value
+
+
+def require_activation(identity, revision, sample, capabilities, confirmation_ref, confirmed_scope):
+    declaration = CapabilityDeclaration(
+        identity, revision, frozenset(capabilities), sample,
+        confirmation_ref, frozenset(confirmed_scope),
+    )
+    if (not declaration.permits(identity, revision, set(capabilities), synthetic_release=sample)
+            or (not sample and set(confirmed_scope) != set(capabilities))):
+        raise PublicError(
+            "business_confirmation_required",
+            "Record business confirmation of the exact offering scope before activation. / "
+            "سجّل تأكيد النشاط التجاري لنطاق العروض المحدد قبل التفعيل.",
+            status=409,
+        )
 
 
 def public(row):
@@ -142,10 +162,14 @@ async def onboard(
         if old:
             return old
         identity = uuid4()
+        require_activation(identity, 1, body.sample, body.capabilities,
+                           body.confirmation_ref, body.confirmed_scope)
         row = await tx.fetchrow(
             """INSERT INTO l02_businesses
-            (id,legal_name,public_name,kind,capabilities,assurance_reference,sample,created_by)
-            VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *""",
+            (id,legal_name,public_name,kind,capabilities,assurance_reference,sample,created_by,
+             confirmation_ref,confirmed_scope,confirmed_by,confirmed_at)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,
+                   CASE WHEN $9::uuid IS NOT NULL THEN now() ELSE NULL END) RETURNING *""",
             identity,
             body.legal_name,
             body.public_name,
@@ -154,6 +178,9 @@ async def onboard(
             body.assurance_reference,
             body.sample,
             subject,
+            None if body.sample else body.confirmation_ref,
+            [] if body.sample else body.confirmed_scope,
+            None if body.sample else subject,
         )
         await tx.execute(
             """INSERT INTO l02_business_history(business_id,actor_id,revision,action,reason)
@@ -237,6 +264,9 @@ async def change(
                 "Reload the current business before changing it.",
                 status=409,
             )
+        if body.state == "active":
+            require_activation(business_id, row["revision"], row["sample"], row["capabilities"],
+                               row["confirmation_ref"], row["confirmed_scope"])
         row = await tx.fetchrow(
             """UPDATE l02_businesses SET state=$2,revision=revision+1,updated_at=now()
             WHERE id=$1 RETURNING *""",
@@ -277,3 +307,32 @@ async def change(
             ["catalog", "service-operations", "auction"],
         )
     return result
+
+
+legacy_router = router
+router = APIRouter()
+router.include_router(legacy_router)
+
+
+@router.get("/v2/businesses")
+async def directory_v2(request: Request, page: int = Query(1, ge=1),
+                       page_size: int = Query(25, ge=1, le=25)):
+    async with unit_of_work(request.app.state.pool) as tx:
+        await tx.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        total = await tx.fetchval("SELECT count(*) FROM l02_businesses WHERE state='active'")
+        rows = await tx.fetch(
+            "SELECT * FROM l02_businesses WHERE state='active' ORDER BY public_name,id LIMIT $1 OFFSET $2",
+            page_size, (page - 1) * page_size)
+    return {"items": [public(row) for row in rows], "total": total, "page": page, "page_size": page_size}
+
+
+@router.get("/v2/businesses/manage/records")
+async def records_v2(request: Request, actor: CurrentPrincipal = Depends(principal),
+                     page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=25)):
+    async with unit_of_work(request.app.state.pool) as tx:
+        await tx.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        await require_current(tx, request, "identity.businesses.manage", actor.actor.subject_id)
+        total = await tx.fetchval("SELECT count(*) FROM l02_businesses")
+        rows = await tx.fetch("SELECT * FROM l02_businesses ORDER BY updated_at DESC,id LIMIT $1 OFFSET $2",
+                              page_size, (page - 1) * page_size)
+    return {"items": [public(row) for row in rows], "total": total, "page": page, "page_size": page_size}

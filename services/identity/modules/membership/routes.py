@@ -2,16 +2,17 @@ import hashlib
 import json
 from typing import Literal
 from uuid import UUID, uuid4
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 from pydantic import Field, field_validator
 from bt_contracts_core.models import Contract, EventEnvelope
 from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from bt_runtime.principal import CurrentPrincipal, require_scope
-from service_app.identity import lock_accounts
+from service_app.identity import live_actor, lock_accounts
 from .security import principal, require_current
 from .identity_store import sync_member
+from .administration import responsibility_reducing
 
 router = APIRouter(tags=["business-membership"])
 
@@ -324,6 +325,14 @@ async def change(
                 if body.capabilities is not None
                 else row["capabilities"],
             )
+        # This endpoint has no current responsibility or replacement boundary.
+        # Keep responsibility-reducing edits held until that boundary is available.
+        if responsibility_reducing(row, body):
+            raise PublicError(
+                "responsibilities_unavailable",
+                "Current responsibilities and replacement are required. / يلزم التحقق من المسؤوليات الحالية والبديل.",
+                status=409,
+            )
         row = await tx.fetchrow(
             """UPDATE l02_memberships SET state=$2,
             capabilities=COALESCE($3,capabilities),qualifications=COALESCE($4,qualifications),
@@ -372,3 +381,28 @@ async def change(
             ["catalog", "service-operations", "auction"],
         )
     return result
+
+
+@router.get("/v2/businesses/{business_id}/memberships")
+async def members_v2(business_id: UUID, request: Request,
+                     actor: CurrentPrincipal = Depends(principal),
+                     page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=25)):
+    platform = "identity.membership.manage" in actor.permissions
+    if not platform:
+        require_scope(actor, "business.staff.manage", business_id)
+    async with unit_of_work(request.app.state.pool) as tx:
+        await tx.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        await live_actor(tx, request, lock=True)
+        if platform:
+            await require_current(tx, request, "identity.membership.manage", actor.actor.subject_id)
+        await assert_business(tx, business_id, require_active=not platform)
+        if not platform and not await tx.fetchval(
+            """SELECT id FROM l02_memberships WHERE business_id=$1 AND subject_id=$2
+            AND state='active' AND 'business.staff.manage'=ANY(capabilities)""",
+            business_id, actor.actor.subject_id):
+            raise AccessDenied("Current business permission required / يلزم إذن حالي للنشاط التجاري")
+        total = await tx.fetchval("SELECT count(*) FROM l02_memberships WHERE business_id=$1", business_id)
+        rows = await tx.fetch(
+            "SELECT * FROM l02_memberships WHERE business_id=$1 ORDER BY id LIMIT $2 OFFSET $3",
+            business_id, page_size, (page - 1) * page_size)
+    return {"items": [dto(row) for row in rows], "total": total, "page": page, "page_size": page_size}

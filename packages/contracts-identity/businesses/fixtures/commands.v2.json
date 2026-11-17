@@ -1,0 +1,102 @@
+[
+  {
+    "name": "success",
+    "synthetic": true,
+    "command": {
+      "schema_version": "identity.business.v2",
+      "operation_id": "00000000-0000-0000-0000-000000000007",
+      "subject_id": "00000000-0000-0000-0000-000000000001",
+      "actor_id": "00000000-0000-0000-0000-000000000006",
+      "organization_id": "00000000-0000-0000-0000-000000000005",
+      "expected_revision": 0,
+      "kind": "grant",
+      "permissions": [
+        "business.records.read"
+      ],
+      "reason": "Synthetic ordinary colleague declaration",
+      "ceiling_revision": 2
+    },
+    "condition": "Current authority and complete responsibility records",
+    "expected": "active"
+  },
+  {
+    "name": "denied",
+    "synthetic": true,
+    "command": {
+      "schema_version": "identity.business.v2",
+      "operation_id": "00000000-0000-0000-0000-000000000007",
+      "subject_id": "00000000-0000-0000-0000-000000000001",
+      "actor_id": "00000000-0000-0000-0000-000000000006",
+      "organization_id": "00000000-0000-0000-0000-000000000005",
+      "expected_revision": 0,
+      "kind": "grant",
+      "permissions": [
+        "business.records.read"
+      ],
+      "reason": "Synthetic ordinary colleague declaration",
+      "ceiling_revision": 2
+    },
+    "condition": "Current membership suspended",
+    "expected": "denied"
+  },
+  {
+    "name": "stale",
+    "synthetic": true,
+    "command": {
+      "schema_version": "identity.business.v2",
+      "operation_id": "00000000-0000-0000-0000-000000000007",
+      "subject_id": "00000000-0000-0000-0000-000000000001",
+      "actor_id": "00000000-0000-0000-0000-000000000006",
+      "organization_id": "00000000-0000-0000-0000-000000000005",
+      "expected_revision": 0,
+      "kind": "grant",
+      "permissions": [
+        "business.records.read"
+      ],
+      "reason": "Synthetic ordinary colleague declaration",
+      "ceiling_revision": 2
+    },
+    "condition": "Membership revision is now one",
+    "expected": "stale_revision"
+  },
+  {
+    "name": "lost-response",
+    "synthetic": true,
+    "command": {
+      "schema_version": "identity.business.v2",
+      "operation_id": "00000000-0000-0000-0000-000000000007",
+      "subject_id": "00000000-0000-0000-0000-000000000001",
+      "actor_id": "00000000-0000-0000-0000-000000000006",
+      "organization_id": "00000000-0000-0000-0000-000000000005",
+      "expected_revision": 0,
+      "kind": "grant",
+      "permissions": [
+        "business.records.read"
+      ],
+      "reason": "Synthetic ordinary colleague declaration",
+      "ceiling_revision": 2
+    },
+    "condition": "Response lost after atomic commit; retry identical operation",
+    "expected": "same_receipt"
+  },
+  {
+    "name": "timeout",
+    "synthetic": true,
+    "command": {
+      "schema_version": "identity.business.v2",
+      "operation_id": "00000000-0000-0000-0000-000000000007",
+      "subject_id": "00000000-0000-0000-0000-000000000001",
+      "actor_id": "00000000-0000-0000-0000-000000000006",
+      "organization_id": "00000000-0000-0000-0000-000000000005",
+      "expected_revision": 0,
+      "kind": "grant",
+      "permissions": [
+        "business.records.read"
+      ],
+      "reason": "Synthetic ordinary colleague declaration",
+      "ceiling_revision": 2
+    },
+    "condition": "Responsibility records unavailable",
+    "expected": "unavailable"
+  }
+]

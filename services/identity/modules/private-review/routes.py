@@ -257,7 +257,8 @@ async def detail(
             row["reviewer_id"],
         }:
             raise AccessDenied(
-                "Only the applicant or currently assigned reviewer may read the review"
+                "Only the applicant or currently assigned reviewer may read the review. / "
+                "لا يمكن قراءة المراجعة إلا لمقدم الطلب أو المراجع المعيّن حاليًا."
             )
         if actor.actor.subject_id == row["reviewer_id"]:
             await require_current(
@@ -460,3 +461,82 @@ async def reassign(
             "identity.private-review-assigned.v1",
         )
     return result
+
+
+legacy_router = router
+router = APIRouter()
+router.include_router(legacy_router)
+
+
+async def review_page(request, actor, page, page_size, *, own):
+    field = "applicant_id" if own else "reviewer_id"
+    async with unit_of_work(request.app.state.pool) as tx:
+        await tx.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        await live_actor(tx, request, lock=True)
+        if not own:
+            await require_current(tx, request, "identity.private-seller.review", actor.actor.subject_id)
+        total = await tx.fetchval(
+            f"SELECT count(*) FROM l02_private_reviews WHERE {field}=$1", actor.actor.subject_id)
+        rows = await tx.fetch(
+            f"SELECT * FROM l02_private_reviews WHERE {field}=$1 ORDER BY updated_at DESC,id LIMIT $2 OFFSET $3",
+            actor.actor.subject_id, page_size, (page - 1) * page_size)
+    return {"items": [dto(row) for row in rows], "total": total, "page": page, "page_size": page_size}
+
+
+@router.get("/v2/private-reviews")
+async def queue_v2(request: Request, actor: CurrentPrincipal = Depends(principal),
+                   page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=25)):
+    return await review_page(request, actor, page, page_size, own=False)
+
+
+@router.get("/v2/private-reviews/mine")
+async def mine_v2(request: Request, actor: CurrentPrincipal = Depends(principal),
+                  page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=25)):
+    return await review_page(request, actor, page, page_size, own=True)
+
+
+@router.get("/v2/private-reviews/{review_id}")
+async def detail_v2(
+    review_id: UUID,
+    request: Request,
+    actor: CurrentPrincipal = Depends(principal),
+    before_revision: int | None = Query(default=None, ge=1, le=2147483647),
+):
+    async with unit_of_work(request.app.state.pool) as tx:
+        await tx.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        await live_actor(tx, request, lock=True)
+        row = await tx.fetchrow(
+            "SELECT * FROM l02_private_reviews WHERE id=$1", review_id
+        )
+        if not row or actor.actor.subject_id not in {
+            row["applicant_id"],
+            row["reviewer_id"],
+        }:
+            raise AccessDenied(
+                "Only the applicant or currently assigned reviewer may read the review. / "
+                "لا يمكن قراءة المراجعة إلا لمقدم الطلب أو المراجع المعيّن حاليًا."
+            )
+        if actor.actor.subject_id == row["reviewer_id"]:
+            await require_current(
+                tx, request, "identity.private-seller.review", actor.actor.subject_id
+            )
+        history = await tx.fetch(
+            """SELECT revision,state,reason,created_at FROM l02_private_review_history
+            WHERE review_id=$1 AND ($2::integer IS NULL OR revision<$2)
+            ORDER BY revision DESC LIMIT 26""",
+            review_id,
+            before_revision,
+        )
+        total = await tx.fetchval("SELECT count(*) FROM l02_private_review_history WHERE review_id=$1", review_id)
+        case = await application(tx, row["application_id"])
+    return {
+        **dto(row),
+        "application_revision": case["revision"],
+        "history_total": total,
+        "history": [dict(item) for item in reversed(history[:25])],
+        "history_before_revision": history[24]["revision"]
+        if len(history) > 25
+        else None,
+        "physical_watch_authentication": False,
+        "business_privileges": False,
+    }
