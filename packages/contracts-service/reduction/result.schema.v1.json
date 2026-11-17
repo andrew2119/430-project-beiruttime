@@ -1,0 +1,299 @@
+{
+  "$defs": {
+    "Measurement": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "pattern": "^[0-9]{1,3}(\\.[0-9])?$",
+          "title": "Value",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "cm",
+            "mm"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "source": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "method": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "unit",
+        "source",
+        "method"
+      ],
+      "title": "Measurement",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "subject_id": {
+      "format": "uuid",
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "source_revision": {
+      "minimum": 1,
+      "title": "Source Revision",
+      "type": "integer"
+    },
+    "quote_id": {
+      "format": "uuid",
+      "title": "Quote Id",
+      "type": "string"
+    },
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "reduction.result.v1",
+      "default": "reduction.result.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "kind": {
+      "enum": [
+        "request",
+        "record"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "choice_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Choice Id",
+      "type": "string"
+    },
+    "target": {
+      "$ref": "#/$defs/Measurement"
+    },
+    "recipient_id": {
+      "format": "uuid",
+      "title": "Recipient Id",
+      "type": "string"
+    },
+    "removed_link_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Removed Link Ids",
+      "type": "array"
+    },
+    "returned_link_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Returned Link Ids",
+      "type": "array"
+    },
+    "exception_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Exception Id"
+    },
+    "fit_confirmed": {
+      "default": false,
+      "title": "Fit Confirmed",
+      "type": "boolean"
+    },
+    "actual_strap_id": {
+      "anyOf": [
+        {
+          "maxLength": 160,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Actual Strap Id"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "assignment_revision": {
+      "minimum": 1,
+      "title": "Assignment Revision",
+      "type": "integer"
+    },
+    "commitment_id": {
+      "format": "uuid",
+      "title": "Commitment Id",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "requested",
+        "unresolved",
+        "recorded"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "accepted_exception_basis": {
+      "anyOf": [
+        {
+          "enum": [
+            "supplier_exchange",
+            "non_buyer_owned"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Accepted Exception Basis"
+    },
+    "removed_count": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Removed Count",
+      "type": "integer"
+    },
+    "returned_count": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Returned Count",
+      "type": "integer"
+    },
+    "pending_reason": {
+      "anyOf": [
+        {
+          "const": "fit_or_parts",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Pending Reason"
+    },
+    "next_actor": {
+      "format": "uuid",
+      "title": "Next Actor",
+      "type": "string"
+    },
+    "next_review_at": {
+      "format": "date-time",
+      "title": "Next Review At",
+      "type": "string"
+    },
+    "recorded_at": {
+      "format": "date-time",
+      "title": "Recorded At",
+      "type": "string"
+    },
+    "currency": {
+      "const": "USD",
+      "title": "Currency",
+      "type": "string"
+    },
+    "total_minor": {
+      "maximum": 999999999999,
+      "minimum": 0,
+      "title": "Total Minor",
+      "type": "integer"
+    },
+    "handover_authorized": {
+      "const": false,
+      "default": false,
+      "title": "Handover Authorized",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "subject_id",
+    "watch_id",
+    "organization_id",
+    "source_revision",
+    "quote_id",
+    "quote_revision",
+    "policy_revision",
+    "operation_id",
+    "expected_revision",
+    "kind",
+    "choice_id",
+    "target",
+    "recipient_id",
+    "actor_id",
+    "assignment_revision",
+    "commitment_id",
+    "state",
+    "revision",
+    "accepted_exception_basis",
+    "removed_count",
+    "returned_count",
+    "pending_reason",
+    "next_actor",
+    "next_review_at",
+    "recorded_at",
+    "currency",
+    "total_minor"
+  ],
+  "title": "Result",
+  "type": "object"
+}
