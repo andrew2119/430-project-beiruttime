@@ -24,3 +24,4 @@ export type BidAcceptedEventData = {
   auction_id:string;listing_id:string;sequence:number;revision:number;current_minor:number;
   currency:Currency;ends_at:string;bidder_id:string;previous_leader_id:string|null;leader_id:string;
 };
+export type { KernelModeV4, KernelCommandV4, KernelReceiptV4, KernelCurrentStateV4 } from './kernel-v4';
