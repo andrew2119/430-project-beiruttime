@@ -1,0 +1,9 @@
+{
+  "synthetic": true,
+  "schema_version":"communications.messages.v1",
+  "success":{"operation_id":"send-1","state":"accepted","revision":2,"sequence":1},
+  "denied":{"operation_id":"send-2","state":"denied","code":"membership"},
+  "stale":{"operation_id":"send-3","state":"stale","code":"revision"},
+  "lost_response":{"operation_id":"send-1","lookup":{"state":"accepted","revision":2,"sequence":1},"message_count":1},
+  "timeout":{"operation_id":"send-4","state":"unavailable","next_actor":"requester","pending_reason":"source_unavailable"}
+}
