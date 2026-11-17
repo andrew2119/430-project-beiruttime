@@ -14,7 +14,7 @@ vi.mock('react', async () => ({...await vi.importActual('react'),
   useRef:(value:unknown) => ({current:value}), useCallback:(callback:unknown) => callback,
   useEffect:(effect:() => unknown) => {state.effects.push(effect);},
 }));
-vi.mock('@tanstack/react-query', () => ({useQuery:({queryKey}:{queryKey:string[]}) => ({data:['l08-orders','l08-drafts'].includes(queryKey[0]) ? {items:[]} : undefined}),useInfiniteQuery:() => ({data:{pages:[]}}),useQueryClient:() => ({invalidateQueries:vi.fn()})}));
+vi.mock('@tanstack/react-query', () => ({useQuery:({queryKey}:{queryKey:string[]}) => ({data:['l08-orders','l08-drafts'].includes(queryKey[0]) ? {items:[]} : undefined}),useInfiniteQuery:({queryKey}:{queryKey:string[]}) => ({data:{pages:queryKey[0]==='l08-drafts' ? [{items:[],total:0,next_cursor:null}] : []}}),useQueryClient:() => ({invalidateQueries:vi.fn()})}));
 vi.mock('../shell/locale-context', () => ({useLocale:() => 'en',useLocaleChange:() => state.change}));
 vi.mock('next/navigation', () => ({useRouter:() => ({refresh:vi.fn()}),useSearchParams:() => new URLSearchParams()}));
 vi.mock('@/features/identity/session', () => ({useSession:() => ({access_fingerprint:'owner',principal:{actor:{subject_id:'buyer'}}}),signInHref:() => '/en/account'}));
