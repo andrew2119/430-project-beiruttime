@@ -1,0 +1,116 @@
+{
+  "schema_version": 3,
+  "synthetic": true,
+  "request": {
+    "schema_version": 3,
+    "operation_id": "00000000-0000-4000-8000-000000000001",
+    "order_id": "00000000-0000-4000-8000-000000000002",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "actor_id": "00000000-0000-4000-8000-000000000004",
+    "organization_id": null,
+    "expected_revision": 3,
+    "quote_id": "00000000-0000-4000-8000-000000000005",
+    "quote_revision": 2,
+    "source_id": "00000000-0000-4000-8000-000000000006",
+    "source_revision": 1,
+    "kind": "refund",
+    "amount_minor": 500000,
+    "currency": "USD",
+    "recipient_id": "00000000-0000-4000-8000-000000000004",
+    "method": null,
+    "destination": {
+      "id": "00000000-0000-4000-8000-000000000008",
+      "owner_id": "00000000-0000-4000-8000-000000000004",
+      "organization_id": null,
+      "revision": 1,
+      "route": "card",
+      "reference": "SIM-RECIPIENT-00000000-0000-4000-8000-000000000008"
+    },
+    "original_payment_attempt_id": "00000000-0000-4000-8000-000000000009"
+  },
+  "authority": {
+    "request": {
+      "schema_version": 3,
+      "operation_id": "00000000-0000-4000-8000-000000000001",
+      "order_id": "00000000-0000-4000-8000-000000000002",
+      "watch_id": "00000000-0000-4000-8000-000000000003",
+      "actor_id": "00000000-0000-4000-8000-000000000004",
+      "organization_id": null,
+      "expected_revision": 3,
+      "quote_id": "00000000-0000-4000-8000-000000000005",
+      "quote_revision": 2,
+      "source_id": "00000000-0000-4000-8000-000000000006",
+      "source_revision": 1,
+      "kind": "refund",
+      "amount_minor": 500000,
+      "currency": "USD",
+      "recipient_id": "00000000-0000-4000-8000-000000000004",
+      "method": null,
+      "destination": {
+        "id": "00000000-0000-4000-8000-000000000008",
+        "owner_id": "00000000-0000-4000-8000-000000000004",
+        "organization_id": null,
+        "revision": 1,
+        "route": "card",
+        "reference": "SIM-RECIPIENT-00000000-0000-4000-8000-000000000008"
+      },
+      "original_payment_attempt_id": "00000000-0000-4000-8000-000000000009"
+    },
+    "money": {
+      "order_kind": "sale",
+      "currency": "USD",
+      "price_minor": 500000,
+      "buyer_fee_minor": 15000,
+      "seller_commission_minor": 25000,
+      "seller_net_minor": 475000,
+      "shipping_minor": 0,
+      "tax_minor": 0,
+      "payable_minor": 515000,
+      "return_fee_minor": 2000,
+      "refundable_max_minor": 500000
+    },
+    "valid_until": "2026-11-16T00:01:00Z",
+    "permitted": true,
+    "responsible_actor_id": "00000000-0000-4000-8000-000000000007",
+    "permitted_refund_minor": 500000,
+    "inspection_failed": true,
+    "private_sale": true,
+    "custody_instruction_id": null,
+    "release_ready": false,
+    "received_at": null,
+    "window_ends_at": null,
+    "hold": true,
+    "fee_already_collected": false
+  },
+  "cases": [
+    {
+      "case": "success",
+      "request_changes": {},
+      "authority_changes": {},
+      "expected": "pending"
+    },
+    {
+      "case": "denied",
+      "request_changes": {
+        "amount_minor": 515000
+      },
+      "authority_changes": {},
+      "expected": "refund_limit"
+    },
+    {
+      "case": "stale",
+      "request_changes": {
+        "expected_revision": 2
+      },
+      "authority_changes": {},
+      "expected": "stale_revision"
+    },
+    {
+      "case": "lost_response",
+      "request_changes": {},
+      "authority_changes": {},
+      "retry_same_operation": true,
+      "expected": "original_result"
+    }
+  ]
+}
