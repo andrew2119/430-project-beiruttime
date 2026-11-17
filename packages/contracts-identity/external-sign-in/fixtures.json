@@ -1,0 +1,70 @@
+[
+  {
+    "case": "success",
+    "operation": {
+      "schema_version": 1,
+      "operation_id": "synthetic_operation_01",
+      "subject_id": "synthetic-buyer",
+      "watch_id": null,
+      "actor_id": null,
+      "organization_id": null,
+      "expected_revision": 0,
+      "state": "signed_in",
+      "revision": 2,
+      "pending_reason": null,
+      "next_actor": "buyer",
+      "next_review_at": null
+    }
+  },
+  {
+    "case": "denied",
+    "operation": {
+      "schema_version": 1,
+      "operation_id": "synthetic_operation_01",
+      "subject_id": null,
+      "watch_id": null,
+      "actor_id": null,
+      "organization_id": null,
+      "expected_revision": 0,
+      "state": "denied",
+      "revision": 1,
+      "pending_reason": null,
+      "next_actor": "buyer",
+      "next_review_at": null
+    }
+  },
+  {
+    "case": "stale",
+    "operation": {
+      "schema_version": 1,
+      "operation_id": "synthetic_operation_01",
+      "subject_id": null,
+      "watch_id": null,
+      "actor_id": null,
+      "organization_id": null,
+      "expected_revision": 0,
+      "state": "stale",
+      "revision": 1,
+      "pending_reason": null,
+      "next_actor": "buyer",
+      "next_review_at": null
+    }
+  },
+  {
+    "case": "lost_response",
+    "operation": {
+      "schema_version": 1,
+      "operation_id": "synthetic_operation_01",
+      "subject_id": null,
+      "watch_id": null,
+      "actor_id": null,
+      "organization_id": null,
+      "expected_revision": 0,
+      "state": "pending",
+      "revision": 1,
+      "pending_reason": "identity_unavailable",
+      "next_actor": "identity",
+      "next_review_at": null
+    }
+  }
+]
