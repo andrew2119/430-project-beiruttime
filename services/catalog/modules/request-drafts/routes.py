@@ -3,7 +3,7 @@ import hashlib
 import json
 from typing import Literal
 from uuid import UUID, uuid4
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from bt_contracts.catalog.request_drafts import DraftInput, DraftUpdate
 from bt_contracts_core.errors import PublicError
 from bt_contracts_core.models import EventEnvelope
@@ -166,12 +166,31 @@ async def catalogue(
 
 
 @router.get("/v1/request-drafts")
-async def drafts(request: Request, actor=Depends(principal)):
-    rows = await request.app.state.pool.fetch(
-        "SELECT * FROM l08_request_drafts WHERE owner_id=$1 ORDER BY updated_at DESC,id LIMIT 100",
-        actor.actor.subject_id,
-    )
-    return {"items": [view(row) for row in rows]}
+async def drafts(
+    request: Request,
+    actor=Depends(principal),
+    limit: int = Query(50, ge=1, le=100),
+    before: UUID | None = None,
+):
+    owner = actor.actor.subject_id
+    async with request.app.state.pool.acquire() as tx:
+        async with tx.transaction(isolation="repeatable_read", readonly=True):
+            if before is not None and not await tx.fetchval(
+                "SELECT 1 FROM l08_request_drafts WHERE id=$1 AND owner_id=$2", before, owner
+            ):
+                raise PublicError("invalid_cursor", "Reload the first drafts page.", status=422)
+            total = await tx.fetchval(
+                "SELECT count(*) FROM l08_request_drafts WHERE owner_id=$1", owner
+            )
+            rows = await tx.fetch(
+                "SELECT * FROM l08_request_drafts WHERE owner_id=$1 AND ($2::uuid IS NULL OR (updated_at,id)<(SELECT updated_at,id FROM l08_request_drafts WHERE id=$2)) ORDER BY updated_at DESC,id DESC LIMIT $3",
+                owner, before, limit + 1,
+            )
+    return {
+        "items": [view(row) for row in rows[:limit]],
+        "total": total,
+        "next_cursor": str(rows[limit - 1]["id"]) if len(rows) > limit else None,
+    }
 
 
 @router.get("/v1/request-drafts/{draft_id}")

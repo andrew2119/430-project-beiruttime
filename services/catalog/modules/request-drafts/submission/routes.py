@@ -10,7 +10,7 @@ from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from bt_runtime.principal import require_scope
-from service_app.catalog_dependencies import principal, upstream
+from service_app.catalog_dependencies import principal
 from service_app.configuration import configuration, selections, digest
 from service_app.customization import (
     current,
@@ -126,21 +126,7 @@ async def submit(draft_id: UUID, body: SubmitRequest, request: Request):
             status=422,
             details={"fields": {"watch_context": "missing"}},
         )
-    if content["watch_context"] == "seller_base":
-        reservations = await upstream(request, "orders", "GET", "/v1/me/reservations")
-        items = reservations.get("items") if isinstance(reservations, dict) else None
-        if not isinstance(items, list) or not any(
-            isinstance(item, dict)
-            and item.get("reservation_id") == content["watch_reference"]
-            and item.get("buyer_id") == str(owner)
-            and item.get("state") == "awaiting_payment"
-            for item in items
-        ):
-            raise PublicError(
-                "base_not_reserved",
-                "Choose your current seller-reserved base.",
-                status=409,
-            )
+    # A seller reference expresses intent; only the later purchase owns allocation.
     async with unit_of_work(
         request.app.state.pool, lock_key=f"l15-request-op:{owner}:{operation_key}"
     ) as tx:
@@ -152,6 +138,8 @@ async def submit(draft_id: UUID, body: SubmitRequest, request: Request):
             draft_id,
             owner,
         )
+        if draft is None:
+            raise PublicError("not_found", "Draft not found.", status=404)
         if draft["submitted_request_id"]:
             raise PublicError(
                 "already_submitted",
@@ -410,23 +398,33 @@ async def correct(request_id: UUID, body: Correction, request: Request):
 
 @router.get("/v1/customization-requests/{request_id}/revisions")
 @router.get("/v2/customization-requests/{request_id}/revisions")
-async def history(request_id: UUID, request: Request):
+async def history(
+    request_id: UUID,
+    request: Request,
+    limit: int = Query(50, ge=1, le=100),
+    before_revision: int | None = Query(None, ge=1, le=2147483647),
+):
     async with request.app.state.pool.acquire() as tx:
         row, _ = await current(tx, request_id)
     await readable(request, row)
     revisions = await request.app.state.pool.fetch(
-        "SELECT * FROM catalog_customization_revisions WHERE request_id=$1 ORDER BY revision DESC LIMIT 100",
+        "SELECT * FROM catalog_customization_revisions WHERE request_id=$1 AND revision<=$4 AND ($2::integer IS NULL OR revision<$2) ORDER BY revision DESC LIMIT $3",
         request_id,
+        before_revision,
+        limit + 1,
+        row["revision"],
     )
     return {
         "current_revision": row["revision"],
+        "total": row["revision"],
+        "next_cursor": revisions[limit - 1]["revision"] if len(revisions) > limit else None,
         "items": [
             {
                 **view({**dict(row), "revision": rev["revision"]}, rev),
                 "actor_id": str(rev["actor_id"]),
                 "reason": rev["reason"],
             }
-            for rev in revisions
+            for rev in revisions[:limit]
         ],
     }
 

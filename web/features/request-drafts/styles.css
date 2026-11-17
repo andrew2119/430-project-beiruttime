@@ -22,3 +22,6 @@
 .request-form fieldset p{font-size:0.75rem;color:var(--muted-foreground);margin-block-end:var(--ds-space-3)}
 @container(max-width:48rem){.request-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:850px){.request-option-grid{grid-template-columns:minmax(0,1fr)}.request-tools .ui-btn{flex:1 1 auto}}
+
+.request-history-row{border-block-start:0.0625rem solid var(--border);padding-block:var(--ds-space-3);min-inline-size:0;overflow-wrap:anywhere}
+.request-history-row time{font-size:0.75rem;color:var(--muted-foreground)}

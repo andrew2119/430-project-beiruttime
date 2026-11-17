@@ -4,3 +4,6 @@ export type Validation = {status:'valid'|'incompatible'|'parts_unavailable'|'man
 export type BrandRequest = {id:string;revision:number;draft_id:string;buyer_id:string;brand_id:string;status:'submitted';configuration_digest:string;configuration:Snapshot;watch_context:string;watch_reference:string;scope_intent:string;notes:string;created_at:string};
 export type Submit = {draft_revision:number;configuration_id:string;configuration_revision:number;movement_selection_id:string;movement_revision:number;expected_digest:string};
 export type Operation = {id:string;status:'succeeded';resource_id:string;request:BrandRequest};
+
+export type RequestRevision = BrandRequest & {actor_id:string;reason:string};
+export type RequestHistory = {items:RequestRevision[];current_revision:number;total:number;next_cursor:number|null};
