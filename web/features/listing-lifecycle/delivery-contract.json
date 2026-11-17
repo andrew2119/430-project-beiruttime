@@ -1,0 +1,10 @@
+{
+  "route": "/seller/lifecycle",
+  "file": "web/app/(listing-lifecycle)/seller/lifecycle/page.tsx",
+  "view": "web/features/listing-lifecycle/view.tsx",
+  "kind": "static",
+  "reason": "Command workspace; operation lookup runs only on explicit user action.",
+  "content": "Bilingual private listing lifecycle form with session recovery and stable pending-operation references.",
+  "read": "none",
+  "proof": "owed"
+}

@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Listing lifecycle command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation_id",
+    "subject_id",
+    "watch_id",
+    "actor_id",
+    "organization_id",
+    "expected_revision",
+    "kind",
+    "proof_id",
+    "quote_id",
+    "quote_revision",
+    "policy_revision",
+    "schema_version"
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "subject_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "watch_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "actor_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "organization_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "expected_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "kind": {
+      "enum": [
+        "pause",
+        "renew",
+        "relist"
+      ]
+    },
+    "proof_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "quote_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "quote_revision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "policy_revision": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "schema_version": {
+      "const": "listing-lifecycle.v1"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "renew",
+              "relist"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "quote_id": {
+            "type": "string"
+          },
+          "policy_revision": {
+            "type": "string"
+          },
+          "quote_revision": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  ]
+}
