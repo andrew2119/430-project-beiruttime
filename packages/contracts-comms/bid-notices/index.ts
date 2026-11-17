@@ -10,3 +10,4 @@ export type OpenedBidNotice = {
     ends_at:string;server_time:string;revision:number;accepted_sequence:number;status:'live'|'scheduled'|'ended'};
   current_status:'available'|'unavailable';requires_new_fee_preview:true;
 };
+export type OutbidV2 = {auction_id:string;recipient_id:string;revision:number;sequence:number;reason:'displaced_holder'|'immediately_beaten_challenger';sample?:boolean};

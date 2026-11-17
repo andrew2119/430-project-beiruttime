@@ -1,0 +1,22 @@
+{
+  "success": {
+    "auction_id": "50000000-0000-4000-8000-000000000001",
+    "recipient_id": "30000000-0000-4000-8000-000000000001",
+    "revision": 7,
+    "sequence": 6,
+    "reason": "immediately_beaten_challenger",
+    "sample": true
+  },
+  "denied": {
+    "producer": "pricing",
+    "status": 403
+  },
+  "stale": {
+    "state": "historical",
+    "next_action": "read_current_auction"
+  },
+  "lost_response": {
+    "state": "pending",
+    "next_action": "retry_same_event"
+  }
+}

@@ -13,6 +13,9 @@ async def accepted(tx, event):
     recipients = [(data.bidder_id, 'bid_accepted')]
     if data.previous_leader_id and data.previous_leader_id != data.leader_id:
         recipients.append((data.previous_leader_id, 'outbid'))
+    if data.bidder_id != data.leader_id:
+        recipients.append((data.bidder_id, 'outbid'))
+    recipients = list(dict.fromkeys(recipients))
     for recipient, kind in recipients:
         notice_id = uuid5(NAMESPACE_URL, f'bid-notice:{event.id}:{recipient}:{kind}')
         await tx.execute('''INSERT INTO bid_notices(id,event_id,recipient_id,kind,auction_id,listing_id,
