@@ -1,0 +1,9 @@
+# Appointment composition
+
+Mount the exported view within the canonical shell and its existing root providers. Supply current authenticated bindings, the selected onboarded brand/dealer and the current assigned business permission. Keep component identity stable across locale changes. Rotate it when actor, business, watch, record or access changes. No separate shell, provider, notification outlet or private persistence is used.
+
+The shared page table currently accepts only internal demonstration routes. Its registration file is outside this module's ownership, so the public route and read registration require their owner's composition change before the view becomes reachable. Do not add a route without that delivery contract.
+
+The exact read key is `appointments.v1 / access fingerprint / organization / appointment`; the shared cache adds its current access partition. Reads use the shared definition and mounted read boundary, remain open-only and freshly revalidated. Private appointment reads are not safe warming targets until the owning producer explicitly permits that behavior. Intent registration and full destination readiness remain required in the shared page table. Held answers remain visible during refresh, and loading appears only without an answer. The root shell owns arrival motion and first-frame theme/font order. No extra arrival effect is added here. Full-page warming, measured page size and first-frame readiness require separate runtime measurement; none is inferred from the definition.
+
+Commands remain in component memory under one immutable reference until acknowledged or conclusively rejected. A timeout exposes lookup and identical retry. Language changes neither submit nor replace that reference. The view accepts no passwords, private files or evidence. Current access changes abort in-flight requests and clear private state. Fit scheduling never changes the explicit false release, custody or work fields.
