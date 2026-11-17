@@ -1,0 +1,1 @@
+{"version":1,"id":"L23.movement-compatibility","migration_dependencies":["L11.movement"],"migrations":["migrations/L23_0001_compatibility.sql","migrations/L23_0002_selection_archive.sql"]}
