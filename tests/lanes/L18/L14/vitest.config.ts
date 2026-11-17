@@ -1,0 +1,3 @@
+import { defineConfig } from '../../../../web/node_modules/vitest/dist/config.js';
+import { fileURLToPath } from 'node:url';
+export default defineConfig({esbuild:{jsx:'automatic'},resolve:{alias:{'@':fileURLToPath(new URL('../../../../web',import.meta.url)),'vitest':fileURLToPath(new URL('../../../../web/node_modules/vitest/dist/index.js',import.meta.url)),'react':fileURLToPath(new URL('../../../../web/node_modules/react',import.meta.url)),'@beirut-time/ui/foundation':fileURLToPath(new URL('../../../../packages/ui/src/foundation/index.ts',import.meta.url))}},test:{include:['tests/lanes/L18/L14/*.test.tsx'],maxWorkers:1}});
