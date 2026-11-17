@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Custody command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "operation_id", "subject_id", "watch_id", "watch_revision", "actor_id", "organization_id", "expected_revision", "source_revision", "quote_id", "quote_revision", "policy_revision", "action"],
+  "$defs": {
+    "reference": {"type": "string", "minLength": 1, "maxLength": 100, "pattern": "^[a-zA-Z0-9_-]+$"},
+    "revision": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+  },
+  "properties": {
+    "schema_version": {"const": "custody.v1"},
+    "operation_id": {"$ref": "#/$defs/reference"},
+    "subject_id": {"$ref": "#/$defs/reference"},
+    "watch_id": {"$ref": "#/$defs/reference"},
+    "watch_revision": {"$ref": "#/$defs/revision"},
+    "actor_id": {"$ref": "#/$defs/reference"},
+    "organization_id": {"oneOf": [{"$ref": "#/$defs/reference"}, {"type": "null"}]},
+    "expected_revision": {"$ref": "#/$defs/revision"},
+    "source_revision": {"$ref": "#/$defs/revision"},
+    "quote_id": {"$ref": "#/$defs/reference"},
+    "quote_revision": {"$ref": "#/$defs/revision"},
+    "policy_revision": {"$ref": "#/$defs/revision"},
+    "action": {"enum": ["prepare", "dispatch", "ready", "expert_receipt", "job_intake", "buyer_receipt", "return_receipt", "incident", "miss_pickup", "resolve_incident"]},
+    "reason": {"enum": ["wrong_watch", "wrong_recipient", "missing_accessories", "condition", "loss", "damage", "non_shipment", "missed_pickup", "collection_pending", "return_instruction_pending"]},
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["watch_id", "recipient", "condition", "accessories", "location", "address", "received_at", "signed_handoff", "source"],
+      "properties": {
+        "watch_id": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "recipient": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "condition": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "accessories": {"type": "array", "maxItems": 50, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 100}},
+        "location": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "address": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "received_at": {"type": "string", "format": "date-time"},
+        "signed_handoff": {"const": true},
+        "source": {"enum": ["buyer_acknowledgement", "approved_proof"]}
+      }
+    }
+  }
+}
