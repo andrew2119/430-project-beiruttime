@@ -9,6 +9,7 @@ from service_app.orders_kernel import lock_watch
 from service_app.payment_clock import expiry_decision
 from service_app.payment_notices import ensure_payment_notice
 from service_app.quote_commitments import relay_commitments
+from .commitment.recovery import recover_releases
 
 
 async def recover_notices(pool):
@@ -44,6 +45,12 @@ async def expire(pool):
             await tx.execute("UPDATE l08_orders SET state=$2,revision=$3 WHERE id=$1", row["id"], state, revision)
             watch_revision = watch["revision"]
             if decision == "release":
+                await tx.execute(
+                    """INSERT INTO l13_unpaid_release_receipts
+                    (order_id,watch_id,order_revision,released_at,attempt_count,origin)
+                    VALUES($1,$2,$3,$4,$5,'expiry')""",
+                    row["id"], row["watch_id"], revision, now, len(attempts),
+                )
                 watch_revision += 1
                 await tx.execute(
                     """UPDATE l08_watches SET status='available',source_id=NULL,source_kind=NULL,
@@ -73,6 +80,8 @@ async def run(app, stop):
     )
     try:
         while not stop.is_set():
+            async with unit_of_work(app.state.pool) as tx:
+                await recover_releases(tx)
             await recover_notices(app.state.pool)
             await expire(app.state.pool)
             await relay_commitments(app.state.pool, dependencies["pricing"])

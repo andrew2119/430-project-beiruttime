@@ -124,6 +124,7 @@ async def commitment(
             and row["status"] == "fenced"
             and row["source_id"] == body.source_id
             and row["auction_committed"]
+            and row["revision"] == body.expected_revision
         ):
             return {"status": "succeeded", "watch": watch_fact(row)}
         if row["revision"] != body.expected_revision:
@@ -422,6 +423,8 @@ async def allocate(
         return denied("auction_purchase_removed")
     if prior is None and body.currency != "USD":
         return denied("legacy_currency_reconciliation_required")
+    if prior is None and body.kind == "brand_job":
+        return denied("typed_job_binding_required")
     basis = None
     if prior is None:
         # Pricing v3 binds current source/buyer and non-expiring accepted economics.
@@ -573,3 +576,41 @@ async def allocate(
         apply,
         request_id=request.state.request_id,
     )
+
+
+@router.get("/internal/v3/orders/{order_id}/commitment")
+async def current_commitment(order_id: UUID, request: Request):
+    from bt_contracts.orders.allocation.v3 import CurrentCommitment
+    from bt_runtime.app.db import unit_of_work
+    from service_app.orders_kernel import lock_order
+
+    service(request, {"catalog", "auction", "pricing", "service-operations", "trust"})
+    async with unit_of_work(request.app.state.pool) as tx:
+        order = await lock_order(tx, order_id)
+        watch = await lock_watch(tx, order["watch_id"])
+        quote_revision = await tx.fetchval(
+            "SELECT quote_revision FROM l13_order_quotes WHERE order_id=$1", order_id
+        )
+        if quote_revision is None:
+            raise PublicError("retained_quote_required", "The retained quote is unavailable. عرض السعر المحفوظ غير متاح.", status=409)
+        return CurrentCommitment(
+            order_id=order_id, watch_id=order["watch_id"], buyer_id=order["buyer_id"],
+            organization_id=order["organization_id"], quote_id=order["quote_id"],
+            quote_revision=quote_revision, order_revision=order["revision"], watch_revision=watch["revision"],
+            state=order["state"], current=watch["source_id"] == order_id and watch["status"] == "reserved"
+            and order["state"] != "expired_released", notified_at=order["notified_at"], deadline=order["deadline"],
+        )
+
+
+@router.get("/internal/v3/orders/{order_id}/unpaid-release")
+async def unpaid_release(order_id: UUID, request: Request):
+    from bt_contracts.orders.allocation.v3 import UnpaidReleaseReceipt
+
+    service(request, {"catalog", "auction", "pricing", "service-operations", "trust"})
+    receipt = await request.app.state.pool.fetchrow(
+        """SELECT order_id,watch_id,order_revision,released_at,attempt_count,origin
+        FROM l13_unpaid_release_receipts WHERE order_id=$1""", order_id,
+    )
+    if receipt is None:
+        raise PublicError("release_receipt_unavailable", "The original release receipt is unavailable. إيصال تحرير الحجز الأصلي غير متاح.", status=404)
+    return UnpaidReleaseReceipt(**dict(receipt))
