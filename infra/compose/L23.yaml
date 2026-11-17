@@ -1,0 +1,7 @@
+services:
+  service-operations:
+    environment:
+      BT_SERVICE_NAME: service-operations
+  service-operations-migrate:
+    environment:
+      BT_SERVICE_NAME: service-operations
