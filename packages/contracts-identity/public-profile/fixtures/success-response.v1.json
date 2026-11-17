@@ -1,0 +1,37 @@
+{
+  "schema_version": "public-profile.v1",
+  "operation_id": "sample-read-1",
+  "subject_id": "seller-1",
+  "revision": 1,
+  "state": "ready",
+  "identity": {
+    "name": "Sample seller بائع ⌚",
+    "city": "Beirut",
+    "kind": "private",
+    "member_since": "2026-01-01T00:00:00+00:00",
+    "verification": "private_seller_approved",
+    "logo": null,
+    "banner": null
+  },
+  "sales": {
+    "state": "ready",
+    "released_count": 0
+  },
+  "reviews": {
+    "state": "ready",
+    "distribution": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "listings": {
+    "state": "ready",
+    "items": [],
+    "total": 0,
+    "page": 1,
+    "page_size": 20
+  }
+}
