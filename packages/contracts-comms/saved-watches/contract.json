@@ -1,0 +1,66 @@
+{
+  "schema_version": "communications.saved-watches.v1",
+  "operations": {
+    "list": {
+      "method": "GET",
+      "path": "/v1/saved-watches",
+      "limit": 50
+    },
+    "record": {
+      "method": "GET",
+      "path": "/v1/saved-watches/{watch_id}",
+      "includes_removed_revision": true,
+      "ending_since_revision": "nullable uninterrupted subscription start revision"
+    },
+    "save": {
+      "method": "PUT",
+      "path": "/v1/saved-watches/{watch_id}"
+    },
+    "lookup": {
+      "method": "GET",
+      "path": "/v1/saved-watches/operations/{operation_id}"
+    },
+    "alerts": {
+      "kinds": [
+        "price",
+        "bid",
+        "ending",
+        "sold"
+      ],
+      "required_outbid": false
+    }
+  },
+  "rules": {
+    "identity": "Current authenticated personal scope on every read, write and retry",
+    "revision": "Zero creates; every acknowledged mutation increments revision",
+    "retry": "Identical operation returns its retained result; changed payload conflicts",
+    "pending": "Unavailable authority or uncertain delivery retains the same operation",
+    "ending": "Fixed canonical scheduled end; due at end minus 30 minutes, strictly before end",
+    "money": "USD integer cents only",
+    "delivery": "Transactional local outbox; receiver deduplicates notice_id and rechecks current source"
+  },
+  "errors": [
+    "denied",
+    "stale",
+    "conflict",
+    "unavailable",
+    "invalid"
+  ],
+  "source_occurrences": {
+    "operation": "occurrences(watch_id, after_revision, through_revision, limit=200)",
+    "response": {
+      "through_revision": "complete inclusive watermark, equal to requested revision",
+      "items": "immutable canonical occurrences with event_id, watch_id, kind, revision, occurred_at, sample"
+    },
+    "rules": "Authenticated bounded retained activity read; no latest-snapshot inference. Incomplete, denied, stale or uncertain reads do not advance observation. No truncation with a complete watermark."
+  },
+  "recovery": {
+    "assignment": "recovery_assignment(notice_id) returns responsible operator ID and escalation operator ID",
+    "authorization": "authorize_recovery(actor, assigned_operator, notice_id) rechecks current scoped permission",
+    "operations": [
+      "recovery(actor, notice_id)",
+      "reconcile(actor, notice_id, operation_id, expected_revision, now)"
+    ],
+    "rules": "Fifth failed attempt atomically holds with named assignment and next action; response due in 24 hours; escalation at 48 hours without resolution. Reconciliation records response and permits at most five retries using the original notice. Stable operation receipts survive restart; stale and changed retries reject."
+  }
+}
