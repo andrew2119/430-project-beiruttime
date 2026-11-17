@@ -1,0 +1,7 @@
+{
+  "code": "stale",
+  "state": "pending",
+  "operation_id": "request-1",
+  "expected_revision": 1,
+  "current_revision": 2
+}

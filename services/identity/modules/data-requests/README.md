@@ -1,0 +1,13 @@
+# Personal data coordination
+
+`Store` owns only its private request, inbox and outbox records, never another domain's data or money. Supply a responsible-operator resolver and a current authority callback on each scope check. The caller serializes current authorization with admission; a cached membership is insufficient. The private receipt entry accepts only the authenticated domain producer supplied by the composition boundary, never a browser field. Source/facts revisions must be current at that source's serialized deletion admission.
+
+`Adapter` is an additive route boundary. Scope comes from the authenticated session; the clock comes from the server. Handle closed error codes through bilingual messages, with no exception or body logging. Store private references using restricted storage. Creation, durable dispatch attempts and receipt application use atomic transactions; process restarts retain the same operation and command IDs. A missing response leaves the outbox intact. No transport is started here.
+
+`Retention` asks the current source before each cleanup and receipt. An unavailable source yields no candidate. The object remover must recheck that same source revision atomically at removal, and return a durable receipt. A failed removal stays partial. A confirmed removal is idempotent. Only final-review evidence uses the 30-day proof rule; a minimal audit record cannot be a copy of the evidence. Each source fact binds a positive revision, active_case, final_review_at and a closed obligations array. Missing obligations fail closed. Walk scan.next_cursor, including empty candidate pages. Schedule bounded passes and prune removed markers under the minimal audit policy in the production composition.
+
+Production database, bounded authenticated dispatch, source-fact admission and object-removal adapters remain required. Module registration is deliberately reserved to its composition owner. Local fixtures exercise the contract and do not certify connected operation.
+
+Exhausted dispatch reports operator recovery. `recover_dispatch` requires the assigned operator, a fresh operator authority callback and the current operation revision; it resets only exhausted attempt budgets and preserves every command ID and payload. The composition owner supplies the private operator entry.
+
+Failed domain receipts preserve the last authoritative retention reasons and review time. Clearing any recorded obligation requires explicit source closure, including after a failure or restart. A private export has one immutable assembly per operation; after expiry and cleanup, a new export requires a new request reference.

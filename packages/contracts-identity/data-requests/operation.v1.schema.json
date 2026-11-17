@@ -1,0 +1,475 @@
+{
+  "title": "Personal data operation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "operation_id",
+    "subject_id",
+    "watch_id",
+    "actor_id",
+    "organization_id",
+    "expected_revision",
+    "kind",
+    "state",
+    "revision",
+    "policy_revision",
+    "submitted_at",
+    "due_at",
+    "pending_reason",
+    "next_actor",
+    "next_review_at",
+    "export_available",
+    "export_expires_at",
+    "responsible_operator_id",
+    "support_due_at",
+    "escalation_at",
+    "domains",
+    "next_action"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "data-requests.v1"
+    },
+    "operation_id": {
+      "type": "string",
+      "maxLength": 96,
+      "pattern": "^[a-zA-Z0-9_-]{1,96}$"
+    },
+    "subject_id": {
+      "type": "string",
+      "maxLength": 96,
+      "pattern": "^[a-zA-Z0-9_-]{1,96}$"
+    },
+    "watch_id": {
+      "type": "null"
+    },
+    "actor_id": {
+      "type": "string",
+      "maxLength": 96,
+      "pattern": "^[a-zA-Z0-9_-]{1,96}$"
+    },
+    "organization_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "expected_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "kind": {
+      "enum": [
+        "export",
+        "delete"
+      ]
+    },
+    "state": {
+      "enum": [
+        "pending",
+        "partial",
+        "held",
+        "complete"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "policy_revision": {
+      "const": "D31.v1"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "due_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "pending_reason": {
+      "enum": [
+        "domain_acknowledgements",
+        "obligations",
+        "file_cleanup",
+        null
+      ]
+    },
+    "next_actor": {
+      "enum": [
+        "domain",
+        "operator",
+        null
+      ]
+    },
+    "next_review_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "export_available": {
+      "type": "boolean"
+    },
+    "export_expires_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "responsible_operator_id": {
+      "type": "string",
+      "maxLength": 96,
+      "pattern": "^[a-zA-Z0-9_-]{1,96}$"
+    },
+    "support_due_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "escalation_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "domains": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "type": "object",
+          "required": [
+            "state",
+            "reasons"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "deleted",
+                "redacted",
+                "retained",
+                "exported",
+                "failed"
+              ]
+            },
+            "reasons": {
+              "type": "array",
+              "maxItems": 7,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "active_sale",
+                  "custody",
+                  "payout",
+                  "dispute",
+                  "financial",
+                  "audit",
+                  "active_case"
+                ]
+              }
+            }
+          }
+        },
+        "catalog": {
+          "type": "object",
+          "required": [
+            "state",
+            "reasons"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "deleted",
+                "redacted",
+                "retained",
+                "exported",
+                "failed"
+              ]
+            },
+            "reasons": {
+              "type": "array",
+              "maxItems": 7,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "active_sale",
+                  "custody",
+                  "payout",
+                  "dispute",
+                  "financial",
+                  "audit",
+                  "active_case"
+                ]
+              }
+            }
+          }
+        },
+        "auction": {
+          "type": "object",
+          "required": [
+            "state",
+            "reasons"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "deleted",
+                "redacted",
+                "retained",
+                "exported",
+                "failed"
+              ]
+            },
+            "reasons": {
+              "type": "array",
+              "maxItems": 7,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "active_sale",
+                  "custody",
+                  "payout",
+                  "dispute",
+                  "financial",
+                  "audit",
+                  "active_case"
+                ]
+              }
+            }
+          }
+        },
+        "pricing": {
+          "type": "object",
+          "required": [
+            "state",
+            "reasons"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "deleted",
+                "redacted",
+                "retained",
+                "exported",
+                "failed"
+              ]
+            },
+            "reasons": {
+              "type": "array",
+              "maxItems": 7,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "active_sale",
+                  "custody",
+                  "payout",
+                  "dispute",
+                  "financial",
+                  "audit",
+                  "active_case"
+                ]
+              }
+            }
+          }
+        },
+        "orders": {
+          "type": "object",
+          "required": [
+            "state",
+            "reasons"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "deleted",
+                "redacted",
+                "retained",
+                "exported",
+                "failed"
+              ]
+            },
+            "reasons": {
+              "type": "array",
+              "maxItems": 7,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "active_sale",
+                  "custody",
+                  "payout",
+                  "dispute",
+                  "financial",
+                  "audit",
+                  "active_case"
+                ]
+              }
+            }
+          }
+        },
+        "eligibility": {
+          "type": "object",
+          "required": [
+            "state",
+            "reasons"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "deleted",
+                "redacted",
+                "retained",
+                "exported",
+                "failed"
+              ]
+            },
+            "reasons": {
+              "type": "array",
+              "maxItems": 7,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "active_sale",
+                  "custody",
+                  "payout",
+                  "dispute",
+                  "financial",
+                  "audit",
+                  "active_case"
+                ]
+              }
+            }
+          }
+        },
+        "service-operations": {
+          "type": "object",
+          "required": [
+            "state",
+            "reasons"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "deleted",
+                "redacted",
+                "retained",
+                "exported",
+                "failed"
+              ]
+            },
+            "reasons": {
+              "type": "array",
+              "maxItems": 7,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "active_sale",
+                  "custody",
+                  "payout",
+                  "dispute",
+                  "financial",
+                  "audit",
+                  "active_case"
+                ]
+              }
+            }
+          }
+        },
+        "communications": {
+          "type": "object",
+          "required": [
+            "state",
+            "reasons"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "deleted",
+                "redacted",
+                "retained",
+                "exported",
+                "failed"
+              ]
+            },
+            "reasons": {
+              "type": "array",
+              "maxItems": 7,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "active_sale",
+                  "custody",
+                  "payout",
+                  "dispute",
+                  "financial",
+                  "audit",
+                  "active_case"
+                ]
+              }
+            }
+          }
+        },
+        "trust": {
+          "type": "object",
+          "required": [
+            "state",
+            "reasons"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "enum": [
+                "deleted",
+                "redacted",
+                "retained",
+                "exported",
+                "failed"
+              ]
+            },
+            "reasons": {
+              "type": "array",
+              "maxItems": 7,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "active_sale",
+                  "custody",
+                  "payout",
+                  "dispute",
+                  "financial",
+                  "audit",
+                  "active_case"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "next_action": {
+      "enum": [
+        "await_domains",
+        "review_hold",
+        "retry_domain",
+        "remove_export_files",
+        null
+      ]
+    }
+  }
+}
