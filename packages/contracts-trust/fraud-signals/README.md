@@ -1,0 +1,13 @@
+# Private fraud signals v1
+
+POST /v1/fraud-signals/scans accepts Scan. GET /v1/fraud-signals/operations/{operation_id} recovers a lost response. GET /v1/fraud-signals?page=1&page_size=20 returns a scoped server total and stable operation ordering. Page size is at most 50; page at most 100000.
+
+A current provider snapshot binds actor, selected organization, subject, physical watch, assignment, source revision and record revision. The provider must serialize its authority lease through the local transaction; a cached projection is insufficient. Missing providers return unavailable. Calls have a 1.2-second deadline and no automatic retries. Revocation denies reads and replay as well as new writes. Independent assigned review excludes the subject, seller and bidders. No global operator evidence privilege is implied.
+
+Exact normalized v1 hash equality across distinct watches produces exact_photo_reuse. Legitimate reuse still only requests review. Three distinct accepted manual auction participations by one bidder with the same seller in the preceding 30 UTC days produce repeated_pair. The window includes its start and end. Automatic responses and repeated rows never increase the count. These are observable reasons, never a score or finding of guilt. Self-bid and current-block admission stay with Auctions. Network, device, price, maxima and low-data inference are not inputs.
+
+The source provider supplies the complete authorized snapshot, at most 500 photos and 5000 bids, not a truncated successful slice. It authenticates source facts and normalized hashes; this module does not accept arbitrary browser hashes as proof. Oversized, inconsistent or future facts fail closed. No uploads are accepted here.
+
+A transaction retains the operation and current subject revision together. The same operation and payload replay identically, even after restart; conflicting payload returns conflict. Stale source or record revision returns stale. Timeout is unavailable with the same operation reference retained for lookup/retry. HTTP adapters map denied to 403, stale/conflict to 409, invalid to 422 and unavailable to 503. Errors use codes with client-owned bilingual recovery copy and no evidence details.
+
+Only assigned current reviewers can read private results. Hashes, bidder identities, photos and evidence never enter results, logs, public events or previews. Results retain aggregate reasons and bindings only. Persistence must use the service's private durable volume. Runtime registration and the actual source/authority lease implementation remain integration prerequisites. No external enforcement event, balance or auction authority is created.
