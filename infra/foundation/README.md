@@ -136,3 +136,24 @@ Module tests live inside the module. `bt_runtime.testing` creates a unique dispo
 Fixtures are opt-in (`python -m bt_runtime.fixtures L01.accounts demo`), never startup seeds. Their callable receives Settings and must use real authorized application operations. L03 alone owns real demo listing/media import. No fixture may seed a winning bid, paid order, independent pass, receipt or payout.
 
 Auction proxy calculation and Orders allocation are domain-owned contracts (L05/L06 and L08); the foundation supplies their transport/transaction seams, not another bid engine or sale fence.
+
+## Service-local migration dependencies
+
+Module discovery accepts L00 through L25. An absent modules directory contributes
+nothing. A module may declare `migration_dependencies` as a list of complete
+module identifiers in the same service, for example `["L00.foundation"]`.
+The default is an empty list. This is distinct from `dependencies`, which lists
+installed distribution requirements.
+
+Discovery orders complete modules after their dependencies, with lexical ordering
+among ready modules. Each module retains its declared additive migration order.
+Unknown dependencies, duplicate dependencies and cycles fail before migration
+execution. Existing migration identifiers and checksums remain unchanged. A
+cross-service dependency must use the versioned service boundary instead.
+
+Gateway discovery emits one operation per service, method and path shape.
+Parameter names do not create another URL. Where published declarations overlap,
+the first declaration keeps its existing access rule and byte budgets; a later
+fragment cannot widen that rule. New methods remain independently registered.
+Public gateway paths remain limited to the supported v1 and v2 namespaces;
+internal producer operations are never exposed by automatic discovery.

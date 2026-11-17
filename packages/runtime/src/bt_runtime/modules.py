@@ -10,8 +10,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-MODULE_ID = re.compile(r'^L(0[1-9]|1[0-9]|2[0-5])\.[a-z][a-z0-9.-]+$')
-MIGRATION = re.compile(r'^L(0[1-9]|1[0-9]|2[0-5])_[0-9]{4}_[a-z0-9_]+\.sql$')
+MODULE_ID = re.compile(r'^L(0[0-9]|1[0-9]|2[0-5])\.[a-z][a-z0-9.-]+$')
+MIGRATION = re.compile(r'^L(0[0-9]|1[0-9]|2[0-5])_[0-9]{4}_[a-z0-9_]+\.sql$')
 
 
 @dataclass(frozen=True)
@@ -24,6 +24,7 @@ class Module:
     fixtures: dict[str, str]
     hooks: dict[str, str]
     workers: tuple[str, ...]
+    migration_dependencies: tuple[str, ...] = ()
 
     def load(self, reference: str) -> Any:
         file, separator, attribute = reference.partition(':')
@@ -74,9 +75,31 @@ def discover(root: Path) -> list[Module]:
             migrations.append(migration)
         if [p.name for p in migrations] != sorted({p.name for p in migrations}):
             raise ValueError('Module migrations must be unique and monotonically ordered')
+        migration_dependencies = data.get('migration_dependencies', [])
+        if not isinstance(migration_dependencies, list) or any(
+                not isinstance(dependency, str) or not MODULE_ID.fullmatch(dependency)
+                for dependency in migration_dependencies):
+            raise ValueError('Migration dependencies must name service-local modules')
         for dependency in data.get('dependencies', []):
             # Local metadata declares existing dependencies; it cannot install packages at boot.
             importlib.metadata.version(dependency)
         modules.append(Module(data['id'], module_root, tuple(data.get('routes', [])), tuple(migrations),
-                              data.get('authorization'), data.get('fixtures', {}), data.get('hooks', {}), tuple(data.get('workers', []))))
-    return sorted(modules, key=lambda module: module.id)
+                              data.get('authorization'), data.get('fixtures', {}), data.get('hooks', {}), tuple(data.get('workers', [])),
+                              tuple(migration_dependencies)))
+    # A service-local dependency orders whole additive modules, never another service.
+    by_id = {module.id: module for module in modules}
+    for module in modules:
+        if len(set(module.migration_dependencies)) != len(module.migration_dependencies):
+            raise ValueError('Duplicate migration dependency')
+        if any(dependency not in by_id for dependency in module.migration_dependencies):
+            raise ValueError('Missing service-local migration dependency')
+    ordered: list[Module] = []
+    remaining = dict(by_id)
+    while remaining:
+        ready = sorted(key for key, module in remaining.items()
+                       if all(dependency not in remaining for dependency in module.migration_dependencies))
+        if not ready:
+            raise ValueError('Cyclic migration dependencies')
+        for key in ready:
+            ordered.append(remaining.pop(key))
+    return ordered
