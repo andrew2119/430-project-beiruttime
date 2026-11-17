@@ -2,9 +2,8 @@
 from datetime import datetime, timezone
 from uuid import UUID
 from fastapi import APIRouter, Depends, Request
-from pydantic import AwareDatetime, Field, StrictInt
-from bt_contracts.pricing.quotes.current import CurrentQuoteV3
-from bt_contracts_core.models import Contract, EventEnvelope
+from bt_contracts.pricing.quotes.current import CurrentQuoteV3, FixedPurchaseCommitV3
+from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_runtime.app.db import unit_of_work
@@ -26,12 +25,7 @@ async def operation(key: str, request: Request, p=Depends(peers.principal)):
     return decoded(row['result'])
 
 
-class Commitment(Contract):
-    buyer_id: UUID
-    order_id: UUID
-    quote_revision: StrictInt = Field(ge=1)
-    total_minor: StrictInt = Field(gt=0, le=18_000_000_000_000)
-    committed_at: AwareDatetime
+Commitment = FixedPurchaseCommitV3
 
 
 @router.post('/internal/v3/quotes/{quote_id}/commit')

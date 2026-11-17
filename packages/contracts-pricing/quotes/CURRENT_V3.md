@@ -54,3 +54,24 @@ refund the customer receives the permitted gross job amount, never gross minus
 method when no payout can fund it. A receivable or unknown collection is not cash.
 Orders owns collection, refunds, reconciliation and actual payment-readiness
 proof. No fixture here asserts paid, inspected, received or completed state.
+
+## Command recovery and page reads
+
+The commitment body is `FixedPurchaseCommitV3` in both language contracts.
+An identical retry returns the original committed result even after preview expiry.
+A different buyer, order, revision, amount or allocation timestamp cannot replace it.
+A lost response remains uncertain until the same command returns its retained result.
+Current validation and retained history are separate reads with separate authority.
+The private operation lookup is `GET /v1/pricing-operations/{key}` and binds both
+actor and selected business; a missing result never implies success.
+
+`GET /v1/quotes?page=1&page_size=30` returns `items`, `total`, `page` and
+`page_size`. The maximum page size is 100. The server counts only the current
+owner's USD records in the same statement as the page read. Ordering is newest
+creation time then identifier. Invalid page bounds are refused.
+
+`PlatformPaymentReadinessV3` is the Orders-produced job proof, bound to buyer,
+order, watch, accepted quote revision, USD amount and payment operation/revision.
+It has no capacity or wealth fields. Only `paid_held` with all exact bindings can
+satisfy payment readiness; current scope, consent, allocation and permissions
+remain independent execution prerequisites. Pending or absent facts never pass.

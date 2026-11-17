@@ -44,6 +44,27 @@ class CurrentQuoteV3(CurrentQuote):
     accepted_fee_lines: AcceptedFeeLines = Field(default_factory=AcceptedFeeLines)
 
 
+    @model_validator(mode='after')
+    def economics_lifetime(self):
+        if (self.economics == 'committed') != (self.expires_at is None):
+            raise ValueError('Only committed economics have no preview deadline')
+        if self.economics == 'committed' and self.accepted_at is None:
+            raise ValueError('Committed economics require an acceptance time')
+        if self.kind in ('brand', 'repair') and self.schedule_id != 'usd-job-v2':
+            raise ValueError('Jobs require business-paid fee terms')
+        if self.kind not in ('brand', 'repair') and self.schedule_id != 'usd-v2':
+            raise ValueError('Watch sales require watch fee terms')
+        return self
+
+
+class FixedPurchaseCommitV3(Contract):
+    buyer_id: UUID
+    order_id: UUID
+    quote_revision: StrictInt = Field(ge=1)
+    total_minor: StrictInt = Field(gt=0, le=18_000_000_000_000)
+    committed_at: AwareDatetime
+
+
 class RetainedFinancialQuote(Contract):
     quote_id: UUID
     quote_revision: StrictInt = Field(ge=1)
@@ -78,4 +99,10 @@ class RetainedFinancialQuote(Contract):
         if (self.price_minor + self.buyer_fee_minor + self.shipping_minor + self.tax_minor != self.payable_minor
                 or self.price_minor - self.seller_commission_minor != self.seller_net_minor):
             raise ValueError('Retained exact economics must balance')
+        if self.policy_revision == 2:
+            fee = (self.price_minor * 500 + 5000) // 10000
+            buyer_fee = (self.price_minor * 300 + 5000) // 10000 if self.schedule_id == 'usd-v2' else 0
+            if (self.schedule_id not in ('usd-v2', 'usd-job-v2')
+                    or self.seller_commission_minor != fee or self.buyer_fee_minor != buyer_fee):
+                raise ValueError('Retained USD rates must match the accepted fee schedule')
         return self
