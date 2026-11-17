@@ -1,0 +1,11 @@
+.comparison-form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-3); }
+.comparison-form > div { flex: 1 1 15rem; min-inline-size: 0; }
+.comparison-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: var(--space-4); }
+.comparison-column { min-inline-size: 0; overflow-wrap: anywhere; }
+.comparison-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.comparison-actions bdi { min-inline-size: 0; overflow-wrap: anywhere; }
+.comparison-actions button { flex-shrink: 0; }
+.comparison-row { padding-block: var(--space-3); border-block-end: 1px solid var(--border); }
+.comparison-row dt { font-weight: 600; }
+.comparison-row dd { margin-inline: 0; margin-block: var(--space-2) 0; }
+.comparison-reference { overflow-wrap: anywhere; }
