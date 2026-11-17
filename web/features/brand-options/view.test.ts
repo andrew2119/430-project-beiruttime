@@ -25,7 +25,8 @@ vi.mock('@tanstack/react-query',()=>({
     return {data:state.data[String(queryKey[1])],error:null,isLoading:false};
   },
 }));
-import BrandOptions from './view';
+import BrandOptions, { OptionDetails } from './view';
+import ar from './ar.json';
 import en from './en.json';
 
 const definition={component:'case' as const,label:{en:'Sample midnight',ar:'نموذج ليلي'},
@@ -95,3 +96,18 @@ describe('canonical option view state without effect mirrors',()=>{
     expect(state.reads).toHaveBeenCalledWith(['brand-options','catalog',saved.brand_id]);
   });
 });
+
+ describe('indicative package amounts',()=>{
+  const details={interventions:[],exclusions:[],required_tests:[],price_reference:'Synthetic reference',price_minor:12345,currency:'USD' as const,conversion:'none' as const};
+  it.each(['en','ar'] as const)('displays cents as dollars in %s',locale=>{
+    const html=renderToStaticMarkup(createElement(OptionDetails,{option:{...definition,id:'package',revision:1,kind:'sophistication',component:'package',details},locale,t:locale==='ar'?ar:en}));
+    const expected=new Intl.NumberFormat(locale==='ar'?'ar-LB':'en-US',{style:'currency',currency:'USD'}).format(123.45);
+    expect(html).toContain(expected);
+  });
+  it('keeps legacy or invalid amounts unavailable',()=>{
+    for(const change of [{currency:'LBP' as const},{price_minor:1.5},{price_minor:-1}]){
+      const html=renderToStaticMarkup(createElement(OptionDetails,{option:{...definition,id:'package',revision:1,kind:'sophistication',component:'package',details:{...details,...change}},locale:'en',t:en}));
+      expect(html).toContain(en.unavailable);expect(html).not.toContain('<strong>');
+    }
+  });
+ });

@@ -1,9 +1,13 @@
 import { request, requestBlob, ApiError } from '@/lib/api/client';
 import { authenticatedRequest, refreshSession } from '@/features/identity/session';
-import type { Brand, Catalog, Configuration, Kind, SelectionWrite } from '@contracts/contracts-catalog/options';
+import type { Brand, Catalog, Configuration, Kind, Option, SelectionWrite } from '@contracts/contracts-catalog/options';
+export type OfferingWrite = Omit<Option, 'id'|'revision'|'kind'> & {expected_revision:number};
 const root = '/api/web/v1/catalog/v1/brand-options';
 // Session credentials stay in the Identity SDK's memory; no credential form or persistence.
 export const optionsApi = {
+  publish: (brand:string, kind:Kind, option:string, body:OfferingWrite, operation:string) => authenticatedRequest<{id:string;revision:number}>(`${root}/brands/${encodeURIComponent(brand)}/${kind}/${encodeURIComponent(option)}`, {
+    method:'PUT', headers:{'Content-Type':'application/json','Idempotency-Key':operation}, body:JSON.stringify(body),
+  }),
   brands: (signal?: AbortSignal, after?: string|null) => request<{items: Brand[];next_after:string|null}>(`${root}/brands${after?'?after='+encodeURIComponent(after):''}`, {signal}),
   catalog: (brand: string, signal?: AbortSignal) => request<Catalog>(`${root}/brands/${encodeURIComponent(brand)}`, {signal}),
   configurations: (signal?: AbortSignal) => authenticatedRequest<{items: Pick<Configuration, 'id' | 'brand_id' | 'base_model' | 'caliber' | 'revision'>[]}>(`${root}/configurations`, {signal}),

@@ -1,6 +1,6 @@
 from uuid import UUID
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field, StrictInt
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 
 class Wire(BaseModel):
@@ -29,3 +29,14 @@ class Rule(Wire):
     mounting: Mounting
     status: Literal["valid", "incompatible", "parts_unavailable", "manual_assessment"]
     reason: str = Field(min_length=3, max_length=1000)
+
+
+    @model_validator(mode="after")
+    def exact_option_versions(self):
+        if len(set(self.option_ids)) != 5 or set(self.option_ids) != set(self.option_revisions):
+            raise ValueError("Five distinct options and their exact revisions are required")
+        if any(revision < 1 for revision in self.option_revisions.values()):
+            raise ValueError("Option revisions must be positive")
+        if len(set(self.mounting.functions)) != len(self.mounting.functions):
+            raise ValueError("Movement functions must be distinct")
+        return self

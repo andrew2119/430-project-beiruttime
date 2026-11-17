@@ -3,14 +3,14 @@ import { PageHeader, PageLayout } from '@/shell/page-header';
 import Image from 'next/image';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BidiReference, Button, ButtonLink, Card, Input, Segmented, Radio, Skeleton, AnimatedList } from '@beirut-time/ui';
+import { BidiReference, Button, ButtonLink, Card, Input, Select, Label, Segmented, Radio, Skeleton, AnimatedList } from '@beirut-time/ui';
 import type { Configuration, Kind, Option, SelectionWrite } from '@contracts/contracts-catalog/options';
 import { ApiError } from '@/lib/api/client';
 import { useLocale } from '@/shell/locale-context';
 import { useSession, useSessionState, refreshSession, signInHref } from '@/features/identity/session';
 import { hasRoute } from '@/registry-loader';
 import { optionsApi } from './api';
-import { matchesAcknowledgedSelection } from './model';
+import { matchesAcknowledgedSelection, hasActivePrice } from './model';
 import { readPrivatePng } from './images';
 import { fencePrivateState } from './access-lease';
 import { previewPalette } from './preview';
@@ -70,7 +70,7 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
   const selectedBrand=listedBrands.some(item=>item.organization_id===brand)?null:brand;
   const catalogQuery = useQuery({queryKey:['brand-options','catalog',brand],queryFn:({signal})=>optionsApi.catalog(brand,signal),enabled:!!brand});
   const savedQuery = useQuery({queryKey:['brand-options','saved',fingerprint],queryFn:({signal})=>optionsApi.configurations(signal),enabled:!!fingerprint});
-  const items = catalogQuery.data?.items ?? [];
+  const items = (catalogQuery.data?.items ?? []).filter(hasActivePrice);
   const bases = [...new Set(items.flatMap(o=>o.base_models))];
   const calibers = [...new Set(items.filter(o=>o.base_models.includes(base)).flatMap(o=>o.calibers))];
   const supported = items.filter(o=>o.kind===kind&&o.base_models.includes(base)&&o.calibers.includes(caliber));
@@ -95,7 +95,7 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
     updateUrl('',brand);
   }
   async function save() {
-    if (!selected || !fingerprint || inFlight.current) return;
+    if (!selected?.available || !hasActivePrice(selected) || !fingerprint || inFlight.current) return;
     inFlight.current=true;setPending(true);setFailure(null);setMessage('');
     const id = configurationId || crypto.randomUUID();
     const body = {brand_id:brand,base_model:base,caliber,component:selected.component,option_id:selected.id,
@@ -148,15 +148,13 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
     <div className="bo-layout">
       <Card className="bo-workbench">
         <section className="bo-binding" aria-label={t.brand}>
-          <label>{t.brand}<select name="brand" value={brand} disabled={busy||!!ack} onChange={e=>{setBrand(e.target.value);setBase('');setCaliber('');setChosen('');updateUrl('',e.target.value);updateBindings('','');}}>
-            <option value="">{t.chooseBrand}</option>{selectedBrand&&catalogQuery.data&&<option value={selectedBrand}>{catalogQuery.data.brand.name[locale]}</option>}{listedBrands.map(b=><option value={b.organization_id} key={b.organization_id}>{b.name[locale]}</option>)}
-          </select></label>
-          <label>{t.base}<select dir="ltr" name="base_model" value={base} disabled={!brand||busy||!!ack} onChange={e=>{setBase(e.target.value);setCaliber('');setChosen('');updateBindings(e.target.value,'');}}>
-            <option value="">{t.chooseBase}</option>{bases.map(b=><option key={b} value={b}>{b}</option>)}
-          </select></label>
-          <label>{t.caliber}<select dir="ltr" name="caliber" value={caliber} disabled={!base||busy||!!ack} onChange={e=>{setCaliber(e.target.value);setChosen('');updateBindings(base,e.target.value);}}>
-            <option value="">{t.chooseCaliber}</option>{calibers.map(c=><option key={c} value={c}>{c}</option>)}
-          </select></label>
+          <div><Label htmlFor="bo-brand">{t.brand}</Label><input type="hidden" name="brand" value={brand}/><Select id="bo-brand" value={brand} placeholder={t.chooseBrand} disabled={busy||!!ack}
+            onValueChange={value=>{setBrand(value);setBase('');setCaliber('');setChosen('');updateUrl('',value);updateBindings('','');}}
+            options={[...(selectedBrand&&catalogQuery.data?[{value:selectedBrand,label:catalogQuery.data.brand.name[locale]}]:[]),...listedBrands.map(b=>({value:b.organization_id,label:b.name[locale]}))]}/></div>
+          <div><Label htmlFor="bo-base">{t.base}</Label><input type="hidden" name="base_model" value={base}/><Select id="bo-base" value={base} placeholder={t.chooseBase} disabled={!brand||busy||!!ack}
+            onValueChange={value=>{setBase(value);setCaliber('');setChosen('');updateBindings(value,'');}} options={bases.map(value=>({value,label:value}))}/></div>
+          <div><Label htmlFor="bo-caliber">{t.caliber}</Label><input type="hidden" name="caliber" value={caliber}/><Select id="bo-caliber" value={caliber} placeholder={t.chooseCaliber} disabled={!base||busy||!!ack}
+            onValueChange={value=>{setCaliber(value);setChosen('');updateBindings(base,value);}} options={calibers.map(value=>({value,label:value}))}/></div>
         </section>
         {brandQuery.hasNextPage&&<Button variant="outline" disabled={brandQuery.isFetchingNextPage||busy} onClick={()=>void brandQuery.fetchNextPage()}>{brandQuery.isFetchingNextPage?t.loading:t.moreBrands}</Button>}
         {catalogQuery.data?.brand.sample&&<p className="notice">{t.sample}</p>}
@@ -185,7 +183,7 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
       <aside className="bo-summary ui-card" aria-label={t.summary}>
         <figure className="bo-illustration"><svg viewBox="0 0 320 340" role="img" aria-label={t.watchFace}><rect x="132" y="4" width="56" height="330" rx="14" fill={palette.strap} stroke="var(--primary-ink)"/><circle cx="160" cy="170" r="112" fill={palette.case} stroke={palette.bezel} strokeWidth="3"/><circle cx="160" cy="170" r="97" fill={palette.dial}/>{Array.from({length:12},(_,i)=><path key={i} d="M160 83v10" transform={`rotate(${i*30} 160 170)`} stroke={palette.markers} strokeWidth="2"/>)}<path d="M160 109v61l43 29" stroke={palette.hands} strokeWidth="4" fill="none"/><circle cx="160" cy="170" r="5" fill={palette.hands}/></svg><figcaption>{t.illustration}</figcaption></figure>
         <section><p className="eyebrow">{t.notApproved}</p><h2>{t.summary}</h2>{ack?<><p>{t.savedRevision} <BidiReference>{ack.revision}</BidiReference></p><dl className="bo-saved">{ack.selections.map(s=><div key={`${s.kind}-${s.component}`}><dt>{t[s.kind]} · {t[s.component]}</dt><dd>{s.definition.label[locale]} <small>{t.revision} <BidiReference>{s.option_revision}</BidiReference></small>{!s.current&&<p className="notice">{t.needsReview}</p>}</dd></div>)}</dl>{hasRoute('/custom-requests')&&<ButtonLink variant="outline" href={`/${locale}/custom-requests?configuration=${ack.id}&revision=${ack.revision}`}>{t.next}</ButtonLink>}</>:<p>{t.summaryEmpty}</p>}</section>
-        {!!savedQuery.data?.items.length&&<label className="bo-resume">{t.resume}<select dir="ltr" name="saved_configuration" value={configurationId} disabled={busy} onChange={e=>{setBrand(brand);setBase(base);setCaliber(caliber);setConfigurationId(e.target.value);setChosen('');setFailure(null);setOperation(null);updateUrl(e.target.value,'');}}><option value="">—</option>{savedQuery.data.items.map(c=><option key={c.id} value={c.id}>{c.base_model} · {c.id.slice(0,8)} · {c.revision}</option>)}</select></label>}
+        {!!savedQuery.data?.items.length&&<div className="bo-resume"><Label htmlFor="bo-resume">{t.resume}</Label><input type="hidden" name="saved_configuration" value={configurationId}/><Select id="bo-resume" value={configurationId} disabled={busy} onValueChange={value=>{setBrand(brand);setBase(base);setCaliber(caliber);setConfigurationId(value);setChosen('');setFailure(null);setOperation(null);updateUrl(value,'');}} options={savedQuery.data.items.map(c=>({value:c.id,label:`${c.base_model} · ${c.id.slice(0,8)} · ${c.revision}`}))}/></div>}
       </aside>
     </div>
     {ack&&<div className="bo-five-review"><MovementOption key={`${fingerprint}:${ack.brand_id}`} brandId={ack.brand_id} sample={catalogQuery.data?.brand.sample??false}/><ConfigurationReview key={`${fingerprint}:${ack.id}:${ack.revision}`} id={ack.id} revision={ack.revision} brand={ack.brand_id} sourcesCurrent={ack.selections.every(selection=>selection.current)}/></div>}
@@ -213,9 +211,9 @@ function PrivateReference({configurationId,referenceId,label,failureLabel,retryL
   return current?.url?<Image unoptimized src={current.url} alt={label} width={120} height={120} onError={()=>setResult({key:requestKey,url:'',failed:true})}/>:<Skeleton role="status" aria-label={label} aria-hidden={false}/>;
 }
 
-function OptionDetails({option,locale,t}: {option:Option;locale:'en'|'ar';t:Copy}) {
+export function OptionDetails({option,locale,t}: {option:Option;locale:'en'|'ar';t:Copy}) {
   if(option.kind==='color') return <div className="bo-color"><span className="bo-swatch" style={{backgroundColor:/^#[\da-f]{6}$/i.test(option.details.swatch)?option.details.swatch:undefined}} aria-hidden="true"/><p>{option.details.color[locale]} · {option.details.finish[locale]}{option.details.coating&&<> · {t.coating}: {option.details.coating[locale]}</>}</p></div>;
   if(option.kind==='material') return <dl className="bo-details"><div><dt>{t.material}</dt><dd>{option.details.material[locale]}</dd></div><div><dt>{t.grade}</dt><dd><BidiReference>{option.details.grade}</BidiReference></dd></div><div><dt>{t.construction}</dt><dd>{t[option.details.construction]}</dd></div>{option.details.substrate&&<div><dt>{t.substrate}</dt><dd>{option.details.substrate[locale]}</dd></div>}{option.details.thickness_micrometers!==null&&<div><dt>{t.thickness}</dt><dd><BidiReference>{option.details.thickness_micrometers}</BidiReference></dd></div>}</dl>;
   if(option.kind==='dial') return <dl className="bo-details"><div><dt>{t.dial}</dt><dd>{option.details.dial[locale]}</dd></div><div><dt>{t.hands}</dt><dd>{option.details.hands[locale]}</dd></div><div><dt>{t.markers}</dt><dd>{option.details.markers[locale]}</dd></div><div><dt>{t.provenance}</dt><dd>{t[option.details.provenance]}</dd></div><div><dt>{t.source}</dt><dd><BidiReference>{option.details.source_reference}</BidiReference></dd></div></dl>;
-  return <div className="bo-package">{(['interventions','exclusions','required_tests'] as const).map(key=><div key={key}><h3>{key==='required_tests'?t.tests:t[key]}</h3><ul>{option.details[key].map((entry,index)=><li key={index}>{entry[locale]}</li>)}</ul></div>)}<p>{t.priceRef}: <BidiReference>{option.details.price_reference}</BidiReference></p><strong><BidiReference>{new Intl.NumberFormat(locale==='ar'?'ar-LB':'en-US',{style:'currency',currency:option.details.currency}).format(option.details.price_minor/(option.details.currency==='USD'?100:1))}</BidiReference></strong><p>{t.priceNote}</p></div>;
+  return <div className="bo-package">{(['interventions','exclusions','required_tests'] as const).map(key=><div key={key}><h3>{key==='required_tests'?t.tests:t[key]}</h3><ul>{option.details[key].map((entry,index)=><li key={index}>{entry[locale]}</li>)}</ul></div>)}<p>{t.priceRef}: <BidiReference>{option.details.price_reference}</BidiReference></p>{option.details.currency==='USD'&&Number.isSafeInteger(option.details.price_minor)&&option.details.price_minor>=0?<strong><BidiReference>{new Intl.NumberFormat(locale==='ar'?'ar-LB':'en-US',{style:'currency',currency:'USD'}).format(option.details.price_minor/100)}</BidiReference></strong>:<p role="status">{t.unavailable}</p>}<p>{t.priceNote}</p></div>;
 }
