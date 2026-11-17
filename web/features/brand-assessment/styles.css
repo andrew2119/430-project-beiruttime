@@ -1,0 +1,4 @@
+.bt-assessment-scope dd {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
