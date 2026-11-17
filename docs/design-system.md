@@ -1,77 +1,116 @@
 # Shared interface foundation
 
-The application opens into a dashboard, not a marketing landing page. Public browsing remains available; authenticated sections are filtered by the existing registration roles. Every visible tab opens a real route. Navigation visibility is not backend authorization.
+Beirut Time opens into a marketplace dashboard. Public browsing remains available; signed-in sections follow existing roles. Navigation visibility is never backend authorization. English and Arabic share the same pages and components.
 
-## Design-system ownership
+## Ownership and entry points
 
-The shared interface uses Lexend Deca, a four-tier token system, Light/Dark palettes, base/motion/UI/shell/mobile recipes, Calm page headers, Pane tabs, measured sticky-header condensation, native controls, Radix surfaces, Sonner outlet, skeletons and calm state faces. Navigation, copy, icons and session APIs belong to Beirut Time.
+`web/app/globals.css` is the only ordered global entry. `web/styles/tokens.css` owns visual primitive values, semantic themes, scales, layers and compatibility aliases. `web/styles/bt-motion.css` is the one canonical owner of new duration/curve tokens, keyframes, motion recipes and reduced-motion handling. Feature code consumes these contracts; it does not define another palette, type scale or motion ladder. `web/styles/typography.css` supplies zero-specificity opt-in recipes in the components layer before motion and shared controls. That layer outranks element font resets without competing with named composition or utilities. Component recipe hosts use :where in the components layer, below named composition and utilities.
 
-`web/app/globals.css` is the single ordered CSS entry. `web/styles/tokens.css` is the only global design-token owner. Feature styles consume tokens; they do not define palettes, fonts or animation ladders. Layout adapters stay with their features.
+New composition uses `--bt-*` properties and `bt-*` classes. Existing token and class spellings are migration bridges, not an alternative system. Their computed declaration values are preserved while pages move onto the foundation. Do not add consumers of legacy-only names. Removing the final consumer also removes its bridge.
 
-Arabic support is supplied by logical-property adapters, Radix direction provider, mirrored phone drawer and isolated LTR references. Lexend Deca remains the Latin face; local Noto Sans Arabic supplies glyphs it does not contain. Both fonts ship locally with their licenses.
+The canonical public component boundary is `@beirut-time/ui/foundation`. The existing `@beirut-time/ui` root and `@/shell/primitives` re-export are frozen compatibility for unchanged Sprint 1 callers only. New/changed code cannot import root counterparts of canonical controls; it uses the exact foundation entry, never a private subpath. Relative imports of the shell compatibility module, including extension/index spellings, obey the same frozen-counterpart boundary as aliases. Legacy implementations/styles retain their exact accepted bytes (including the reviewed image-lint comments and single commit-bound main cleanup documented in the frontend rules) and retire with their final callers. The old root State's one missing error-alert finding remains debt; only canonical State is corrected. [Frontend rules](frontend-rules.md) governs every change, including recipes used twice becoming one shared piece and approved designs propagating to all affected pages.
 
-## Page composition
+## Theme and colour roles
 
-The root mounts the shell, theme, locale/direction, query and installation providers once. Pages must not add another main, sidebar or dock.
+The server reads the existing `bt-theme` cookie and stamps `data-theme` before rendering. The only offered themes are `light` and `dark`; missing or invalid preference selects light. Runtime switching uses the same preference, without a second page tree. The unstamped-document compatibility palette is not a third selectable theme.
 
-```tsx
-import { PageHeader, PageLayout } from '@/shell/page-header';
-import { Button, Card, Input, Label } from '@beirut-time/ui';
+Every name in this section is prefixed `--bt-`:
 
-<PageLayout>
-  <PageHeader title={t.title} count={t.description} tools={filters}/>
-  <Card>{content}</Card>
-</PageLayout>
-```
+| Surface or use | Fill | Ink |
+|---|---|---|
+| Page | `background` | `foreground` |
+| Card | `card` | `card-foreground` |
+| Floating surface | `popover` | `popover-foreground` |
+| Muted region and its secondary copy | `muted` | `muted-foreground` |
+| Quiet secondary copy on page/card | Page/card fill | `muted-foreground` |
+| Primary action | `primary` | `primary-foreground` |
+| Destructive action | `destructive` | `destructive-foreground` |
+| Quiet accent region | `accent` | `accent-foreground` |
 
-PageHeader accepts translated title/count, lead, media, tag, actions, tools, views, nav, status, notice and search slots. Actions retain page-owned handlers and permissions. The shared component owns header spacing, phone fitting and measured sticky behavior. PageLayout supplies the 24px/28px desktop and 12px phone gutters. Do not double-pad a nested layout.
+Use `primary-ink` and `destructive-ink` for coloured text, links and marks on the proven opaque page/card/popover grounds, not the saturated fills. They are not ordinary-text ink on arbitrary tinted grounds: dark primary/destructive ink on muted/accent is only about 4.34:1. Use the paired foreground there or prove another pairing. Dark mode deliberately separates ink from fill. `success-ink` and `tone-green/amber/blue/rose/plum` provide readable state/choice ink. A state also needs words or an icon; colour is never its only meaning. `border`, `input` and `ring` serve different purposes; a decorative hairline is not evidence of sufficient focus contrast. `ink-on-dark` is reserved for fixed dark media/scrims, whose surface does not change with the theme.
 
-## Token contract
+The actual canonical `muted-foreground`/`muted` pair clears ordinary-text AA with margin: about 5.27:1 in light and 4.795:1 in dark. Dark canonical secondary ink is neutral 67% lightness. Existing secondary ink and its utility export retain the exact 65% value through `compat-muted-foreground`; they remain migration debt, not an approved new pair. New shared recipes consume canonical roles, not that compatibility utility.
 
-- Surfaces: `background`, `card`, `popover`, `muted`, `accent`, `ds-canvas`.
-- Text: `foreground`, `card-foreground`, `popover-foreground`, `muted-foreground`, `accent-foreground`.
-- Actions: `primary` fill with `primary-foreground` label; `primary-ink` for colored text/icons/lines. Destructive fill and ink are similarly separate. Focus uses `ring`; edges use `border` and `input`.
-- Spacing: `ds-space-1/2/3/4/5/6/8` = 4/8/12/16/20/24/32px; named `ds-gap-*` and `ds-pad-*` express header/card rhythm.
-- Radius: `radius-sm/md/lg/xl/2xl` = 4/6/8/12/16px. Rail/tray are 22/24px desktop and 20px phone.
-- Weight: `ds-weight-strong/heavy/black/display` = 680/750/800/820, not rounded to conventional hundreds.
-- Elevation: `ds-shadow-border/small/medium/menu/modal/shell`, with shared gloss and hairline tokens.
-- Motion: `ds-motion-fast/popover/overlay/theme/expressive/press/shimmer/image-reveal` = 150/200/300/450/600/130/1600/180ms, with the shared easing vocabulary. Global reduced motion is the single baseline.
+Primitive burgundy, sand, brass and status ramps stay in the token owner. Light retains its existing blue primary and dark its existing burgundy fill. Sprint 1's paint stays unchanged through compatibility values. Canonical semantics/materials rebind at the nearest explicit theme boundary, including within existing header descendants; legacy header/ancestor scopes only define legacy properties and cannot reassign canonical roles.
 
-All names above are CSS custom properties prefixed `--`. The old `--muted` text usage must become `--muted-foreground`: the muted token is a surface. Likewise, old colored `--accent` ink becomes `--primary-ink`. Transitional surface/brand/spacing aliases map into the same token system, not another palette.
+## Type, Arabic and numbers
 
-## Primitives
+Latin uses the local Lexend Deca variable face; Noto Sans Arabic supplies Arabic glyphs. Both local files and their licenses are in `web/app/fonts/`. Neither theme nor locale loads a remote font. `font-body` follows the nearest language attribute; `font-latin` and `font-arabic` expose the local faces without duplicating font declarations.
 
-`@beirut-time/ui` is the sole implementation; `@/shell/primitives` is a compatibility re-export.
+The `text-caption/small/body/lead/heading/display` steps are 0.75/0.8125/1/1.125/1.5/2rem. Body leading is 1.5; heading leading is 1.3. `weight-regular/medium/strong/heavy/black/display` are 400/500/680/750/800/820. Do not round the expressive weights to hundreds. Rem sizing permits text growth; typography never imposes a fixed block height or clips diacritics.
 
-- Button and ButtonLink share default/outline/ghost/destructive variants, default/sm/icon sizing, and the optional `chonk` raised plinth. Native form semantics and disabled behavior remain intact. ButtonLink's recipe is server-safe.
-- Input, Textarea, Label, Checkbox, Radio and lazy Select retain native naming/association or the shared menu keyboard contract. When replacing a named native select, retain its submitted value with a hidden field. Select's search labels follow EN/AR direction.
-- StatusBadge, Segmented/Group/Item, HeaderTabs and FilterChips share the selected-state, measurement and motion recipes. FilterChips takes translated accessible labels.
-- Dialog/Sheet, DropdownMenu and Popover use shared Radix portal, collision, keyboard, dismissal and focus behavior. DialogContent requires a translated closeLabel.
-- ImageFrame reserves geometry and reveals decoded pixels. Marketplace media policy, bounded retries and credit/zoom behavior remain domain-owned.
-- Skeleton, AnimatedList, State, LoadingOverlay, ScrollRegion and ScrollBox provide shared loading, arrival/reorder, calm empty/error and accessible overflow behavior. Pass translated state copy and region names.
-- AuthCard, AutoHeight, Switch, RowSkeleton, CardHead, SectionState, LoadingRows and Notice centralize auth, Settings, skeleton and compact state recipes. Feature modules compose these rather than copying another control.
-- The shell mounts Toaster once; pages call `toast` with translated messages. It measures actual toast-stack clearance without reserving room for absent integrations.
+- `bt-text`, `bt-heading`, `bt-display` and `bt-caption` use logical start alignment, shrinkable text and anywhere wrapping. Page titles use the display step on desktop and heading step below 851px. They do not globally truncate names or identifiers.
+- `bt-number` uses `font-numeric`, a tabular system monospace stack. The local display face has proportional digits; setting a numeric feature on that face does not create missing tabular glyphs. Use the numeric recipe for compared/updating columns, not all ordinary text.
+- `bt-ltr` isolates a watch reference, URL or explicitly LTR amount inside Arabic. Put it on the value, not an entire row. Reader-facing values use the foundation's `formatNumber`, `numberFormatter`, `formatCount` or exact-decimal `formatAmount`. Every formatter explicitly chooses `arab` for Arabic and `latn` for English, independent of ICU/browser defaults; currency, percent and compact options cannot override that choice. Plural categories still follow the locale. Identifiers, URLs and machine-readable references stay exact, never formatted.
 
-## Shell, preferences and phone behavior
+The root already stamps both `lang` and `dir`. Use inline/block dimensions, start/end alignment and logical padding. Do not reverse a whole page to repair one icon or identifier. Frozen Sprint 1 rail placement stays unchanged; the canonical internal shell uses the same logical grid in either direction, without a separate Arabic tree.
 
-The desktop rail stays on the left at 224px, including Arabic; its content still reads RTL. Brand, profile/role, Account, Settings and theme controls share fixed rail placements. Unknown/unavailable session restoration never grants a private tab. Badge counts must be real service state, never invented zeros.
+## Spacing, geometry and elevation
 
-The larger marketplace navigation scrolls within the rail so its profile footer stays anchored. Dashboard cards stack into one column on phone.
+`space-0/half/1/2/3/4/5/6/8/10/12/16` are 0/2/4/8/12/16/20/24/32/40/48/64px. Prefer semantic `gap-title/block/row/group/cluster/content` and `pad-header-block/inline`, `pad-card-block/inline` when composing headers and cards. These roles share the scale and adapt together; pages do not invent local ladders.
 
-Settings exposes the real session profile/account door, EN/AR language selection, and Light/Dark appearance miniatures. It does not invent profile-edit endpoints. The existing `bt-theme` cookie is stamped before paint; runtime changes use the shared 450ms root View Transition and reduced-motion fallback.
+`radius-sm/md/lg/xl/2xl` are 4/6/8/12/16px through one 8px base. `radius-navigation/frame` retain 22/24px on desktop and 20px on phone shell surfaces. `radius-raised/raised-small` are 10/8px. `radius-pill` is for pills, never an excuse to turn every surface into a capsule.
 
-The single shell breakpoint is 850px. A persistent tray sits between the 48px top bar and safe-area-aware quick dock. Both menu doors share one modal drawer. Escape returns focus to its invoker; navigation hands focus to the destination main. Compact controls paint at 36px inside a 44px target; phone inputs remain at least 16px. CSS/container layout changes never create a second page tree.
+`shadow-hairline/low/raised/menu/dialog/frame/key` describe elevation roles and adapt to the theme. Phone frame tokens select the short `phone-shadow-frame` at or below 850px, whether the frame carries its own theme attribute or sits under a themed wrapper. The owned responsive token selector matches theme specificity; component recipes remain zero-specificity. Glass roles and gloss are centrally owned, not per-page colours. Actual fallback, backdrop support and overlay integration are proved with their component slices.
 
-Installation remains progressive and online-first. The worker caches public static assets only, and updates require explicit consent. The self-contained offline and root-fatal faces intentionally retain a platform-font fallback when the application/font bundle cannot load. No offline transaction is confirmed or queued. Public icon-cache v2 retires the old presentation assets only through the existing update-consent lifecycle.
+`control-height` and `control-target` begin at 32px for desktop rows. At the 850px shell boundary they become the 36px drawn control and 44px target; chips draw at 32px. Form/input sizing and the coarse-pointer 16px font floor are separate contracts, not inferred from a painted-control token. Existing pages retain their current recipes until rebuilt.
 
-## Shared recipe inventory
+Desktop dialogs consume `window-read: 44rem` or `window-wide: 60rem`, constrained by viewport space. These are desktop windows, not phone-width panels. Responsive layout must also work in a narrow container on a wide screen.
 
-- `web/styles/` owns base, auth, faces, controls, page headers, shell, mobile, sidebar, sticky headers, tabs, settings and motion. Global spacing and glass materials stay in `tokens.css`; features consume them.
-- The shell centralizes title fitting, header tips, sticky measurements, navigation warming, theme lifecycle and phone keyboard/drawer behavior. Existing registration roles and RouteFocus/history remain authoritative.
-- AuthCard, AutoHeight, Switch, CardHead, SectionState, LoadingRows and Notice are shared UI primitives, not local feature copies.
-- Motion includes content/list/dialog entry and exit, skeleton pulse, image reveal, drawer/scrim and sticky-progress keyframes. Arabic drawer keyframes mirror the horizontal translation; reduced motion is global.
-- Light and Dark are the two selectable themes. Classic values remain a compatibility token set, not a third option.
-- Real account APIs determine available profile/security actions. Counts require real service state; no fabricated notification/chat integrations or unused dock reservations are introduced.
-- ImageFrame owns reserved geometry/decode reveal; callers own media URL policy, retries and attribution.
+## Layer ladder
 
-See [design verification](design-verification.md) for checks, reproduction and evidence limits.
+All values come from the token owner. A local stacking context must still be reviewed; a large number alone cannot place a surface above a sibling context.
+
+| Token | Value | Responsibility |
+|---|---:|---|
+| `--bt-layer-content` | 1 | Local content/decorative content plane |
+| `--bt-layer-pinned` | 10 | Sticky page chrome |
+| `--bt-layer-navigation` | 20 | Navigation rail, top bar and dock |
+| `--bt-layer-shade` | 40 | Modal shade |
+| `--bt-layer-window` | 50 | Dialog or sheet |
+| `--bt-layer-menu` | 60 | Nested popover/menu |
+| `--bt-layer-toast` | 80 | Reachable notifications above modals |
+| `--bt-layer-loading` | 95 | Emergency loading surface |
+| `--bt-layer-skip` | 110 | Keyboard skip link |
+
+The three existing local-content/loading/skip aliases resolve to the same ladder and keep their exact values. Features cannot define a new ladder or provide numeric fallbacks.
+
+## Shell and page composition
+
+One small `ShellBoundary` chooses the frozen shell or the canonical internal shell, using the trusted server path for direct loads and committed client path for navigation in either direction. Locale/direction, existing query, theme and installation providers stay above it with unchanged values and no route/locale key. Existing `PageHeader` and `PageLayout` are frozen for Sprint 1 consumers. New pages use `PageFrame`, `PageHeader`, `PageBody` and `PageLoading` from `@/shell/foundation/page`, with the actual composition demonstrated at the unlisted `/en/internal/page` route. [Page delivery](page-delivery.md) covers the starting command, shared reads and measurement contract.
+
+The canonical shell paints its real server frame before identity restoration, with one main/scroll owner, safe physical edges, a skip link and permission-filtered navigation. Visibility is not authorization. One rail/profile is composed at a time; the phone uses the accepted end Sheet, not a separate overlay recipe or nested trigger button. The dvh frame is capped to the finite unzoomed visual viewport and restores its previous cap on detach; zoom is never disabled. Locale-prefix normalization avoids a first-hydration focus jump. A cross-family commit focuses the new main once; within-family routing keeps its existing owner. The only intentional existing-page change is the root default tab-title format recorded in the rule book.
+
+The canonical entry exposes Button/ButtonLink; labeled Input/Textarea/Checkbox/Radio/Switch; lazy Select; Segmented; Dialog/Sheet/Popover/Menu; notifications; Card/Badge/State/Skeleton/RowSkeleton; Avatar/ImageFrame/WatchImage; ScrollRegion/Fold; AnimatedList; direction and number helpers. It uses only the owned visual/motion contracts. Badges are short, bounded state labels, not user-authored descriptions. Identifying content wraps; fixed media/actions and whole badges never shrink. Field errors use readable foreground copy with an invalid input border and alert semantics, rather than assuming coloured ordinary text works on every tinted parent.
+
+The unlisted `/en/internal/components?data=worst&locale=ar` drawing board composes 30 real component families; `/ar/internal/components` is also a visible locale route. The query controls only the preview language, not authorization. One usual/worst prop boundary reaches every data-bearing family, including expanded Arabic/mixed/emoji labels, surface titles/actions and notification words. Standalone labels, a wide window, real image source/remount/extreme-aspect examples and local loading/retry/reopen controls exercise the corresponding components. Decorative skeleton/glyph APIs and bounded badge statuses are not given invented user-data fields. State inventory strings are guidance, never execution proof. Data choices are usual, worst, empty, one and 1,000 records; changes are instant and URL-backed. Twelve-record local pagination reaches every fixture record and is labeled demonstration data, never a server-total substitute. Both preview languages, the root theme switch, a 320px composition, nested surfaces, toast actions and interruption controls are available. It is not registered in product navigation and is excluded from indexing.
+
+The internal board retains its existing canonical outlet and measured content ref. The canonical shell omits its own outlet on that exact route, so the board never duplicates it. Other internal pages use the shell outlet and main content ref; frozen pages keep only their original outlet. The queues stay independent during migration. Repeated equal implicit no-action notices of the same kind/title/description refresh one still-open notice and its readable lifetime; action-bearing notices stay independent and explicit IDs retain update ownership. Closed notices are never reused as implicit repeat identities; ordinary pages never mount another outlet. The root's exclusive shell choice never mounts old and canonical outlets together. The canonical outlet requires its caller-owned content ref for measured bottom room. Alt+T waits for a public focus bridge before entering notifications; Escape returns focus, pointer actions leave modal focus alone and outside guards keep the modal open. The native modal excludes the outlet's live region from background hiding. These mechanisms still require the deferred real-browser/assistive proof.
+
+Dialog/Sheet retain exiting parts, cancel stale holds on reopen and return focus only if it has not moved to a newer outside destination. Logical openness owns nested scroll locks; decorative exit holds do not keep a shade blocking input or scrolling. The later shared component sheet explicitly keeps closed shade/panel pointer events off, and the shade is inert while closed. Open enablement and closed suppression are tested against the actual ordered canonical sheets. Menus are nonmodal and retain native roving focus, typeahead and radio semantics. All four sheet forms share one demand-loaded touch engine. Scroll regions expose vertical, horizontal or both axes, contain overscroll only on each overflowing axis and become focusable only while content can move. Shared arrow/page/Home/End handling supports focused-region scrolling on minimum engines, leaves descendant/modified keys alone and yields at exhausted edges; horizontal RTL follows physical scroll direction. Fields keep the 16px narrow/coarse zoom floor. Edge sheets use physical left/right safe-inset clearance after every responsive padding override, in either reading direction.
+
+Select begins as its final named value box. Intent loads one retryable options implementation; leaving during that load cancels the pending open/focus. Unknown values stay visible; filtering and disabled-skipping focus use real options. The controlled owner supplies validation; a hidden form value is not a claim of native select constraint validation. The optional mount-stable `loadGate` is a readiness Promise before the same shared options module loads, never an alternate component or invented market response. The internal example deliberately holds/rejects/releases that local delivery task to exercise the real waiting/error/retry path. Ordinary consumers omit it.
+
+AnimatedList requires an access-partition `scopeKey`; changing it removes retained data atomically. Initial/page/replaced data is steady. Only explicitly eligible live additions enter. Removal captures/cancels a running entrance, fades before the gap closes, and a fast undo resumes from current pixels rather than replaying entry. Keyboard changes are immediate. The old root's similarly named exports remain migration debt, not proof of these contracts. New elements are composed here before pages adopt them.
+
+## Motion and input
+
+The canonical owner is `web/styles/bt-motion.css`, imported after the frozen compatibility sheet. Existing Sprint 1 motion is not retuned without its page rebuild and runtime proof. The old sheet is exact-hash frozen, gains no new consumer, and is deleted with its import when the last old consumer is rebuilt. Twenty fixed timing declarations remain in the visual token file only for compatibility. The checker rejects new/changed files naming the old motion classes/keyframes, including class-recipe strings. See [frontend rules](frontend-rules.md) for the exact frozen boundary.
+
+The `--bt-motion-press/fast/popover/menu/overlay/exit/image/gentle` steps are 130/150/180/200/250/120/180/120ms. Theme crossfade is an occasional 450ms document operation; opt-in icon arrival has a 600ms single-play arc; 1600ms is a loading/wait period and 5000ms a safety deadline, never interaction latency. The default reduced-motion floor matches the old instantaneous step, while script-driven canonical releases read the zero-time `none` token.
+
+Curves are `--bt-ease-out` for response, `travel` for movement, `drawer` for edge settling, `colour` for colour/opacity and `constant` for constant motion. Durations are public through `@beirut-time/ui/motion`; curve reads are separately loaded through `@beirut-time/ui/motion-easing`. Both resolve CSS at the action. Missing/unreadable values choose an immediate result, never a duplicate literal timing table. A safety deadline is not shortened by reduced motion.
+
+Shared recipes cover trigger-origin surfaces, centered windows and coordinated shades; bottom/end/responsive/phone-only sheets (850px boundary, logical end in RTL); the sole reversible 0fr/1fr fold; press feedback; one-shot answer arrival; explicit live-row enter/exit/reorder; decoded-pixel fades and flat placeholders. Opacity-only one-shot arrivals share a frame rather than separate shade/list copies. Reversible surfaces, shades and row exits use retargetable CSS transitions, not restarting keyframes. No gradient shimmer, decorative public-report entrance or private feature keyframe is added. Section rise is opt-in and occasional, not a repeated page/tab reading effect. Shared presence keeps exiting surfaces mounted through transition completion, cancels that hold on reopen, ignores stale unfinished events and settles reduced/keyboard exits immediately; an animation-name-only detector is insufficient. Modern entry uses @starting-style. Without native rule support, one shared attachment stages the accepted data-starting recipe for a paired panel/shade (or popup/menu/toast), then releases it after two frame callbacks. Close/unmount/reopen and keyboard/reduced/off modes cancel stale ownership and remove hidden starts; this is not a per-frame driver. Measured drag release and velocity/scroll ownership belong to the shared component implementation, never a CSS variable updated on a parent every frame. Shade and surface share both ordinary exit pacing and the longer measured drag-settle step.
+
+Reduced motion removes movement, freezes placeholder/icon loops, makes decoded images atomic and keeps only named gentle fades. `--bt-motion-kept-animation/transition/iterations` are registered non-inheriting per-part floor properties, not a global exemption. Keyboard/high-frequency entry points use `data-bt-motion-input="keyboard"` or `data-bt-motion="off"` for immediate state changes. The public `markMotionInput` helper marks discrete focus/key/pointer boundaries; it is never a frame driver. The new switch marks keyboard focus/press before CSS feedback as well as skipping its keyboard snapshot. New motion must declare frequency and purpose before using an arrival recipe.
+
+`ThemeSwitch` requires translated next-action labels and shares the root preference/cookie provider. Keyboard clicks, reduced motion, unsupported APIs or missing tokens apply immediately; pointer snapshots are cancellable and late stale callbacks cannot overwrite a newer request. Only this new control stamps the canonical snapshot marker. Existing preference controls retain their pacing, target and persistence statements; shared request ownership only cancels obsolete snapshots. Mixed old/new requests cannot let a late callback restore the wrong theme, and snapshot/curve code is not imported by the old control path. The drawing board and canonical shell warm snapshot/curve code only on pointer intent. A cold or keyboard change applies immediately without requesting that module; a later load never replays an old action. Canonical shell adoption reuses this same demand-warmed request; emitted-chunk proof is still owed.
+
+`NavigationIcon` covers every registered marketplace destination. Its slot is fixed and decorative; the link owns its accessible name, busy state and focus. Active/pending/busy remain static by default. Only an explicitly opted-in occasional pointer arrival plays an arc; keyboard never does, and hover never replays a glyph. Canonical destination links wait for the CSS-read 120ms pending-indication step and cancel its actual timer on commit/unmount; a warm destination never receives an intentional flash/minimum duration. The same fixed glyph remains in place, with no moving label or frequent icon arc. Keyboard motion stays immediate through the accepted floor. Current Sprint 1 route icons remain untouched until their page/shell adoption.
+
+## Quick checks and proof limits
+
+Run lint with zero warnings, type checks and `ui:rules`. `node --test web/scripts/foundation-tokens.test.mjs` checks the visual-token graph and 271 retained facts, opposite-theme headers, both phone-frame hosts and 128 legacy source-cascade arrangements. `node --test web/scripts/motion-rules.test.mjs` checks canonical ownership, frozen/retired motion, new/changed consumer rejection, shared recipes, budgets and the unchanged old provider path. The focused `tests/motion.test.ts`, `tests/motion-components.test.ts`, `tests/theme-provider.test.tsx` and existing design-system tests cover CSS token reads, interrupted theme requests, translation, modality and navigation registration/state contracts. `node --test web/scripts/foundation-rules.test.mjs` checks the exact public/frozen boundary, unchanged debt, narrow modal permission, zero-specificity hosts and explicit number ownership. Named `foundation-*.test.ts(x)`, `component-board.test.tsx`, `board-state-paths.test.tsx`, `image-frame-lifecycle.test.tsx`, `scroll-region.test.ts` and `theme-request.test.ts` cover actual pure/native controllers, SSR native controls, bounded component render/controller paths, lazy loading, exact number parts and cancellation. Surface props/controller tests do not pretend SSR can render native portals. Image readiness/error belongs to a keyed pixel generation, never a returning URL's old answer; cached ref/load delivery shares one decode and only becomes atomic after the current element establishes readiness. These are code/source-model proofs, not browser feel or frame recordings.
+
+Static token graphs and numerical colour pairs do not prove browser cascade, font metrics, mixed-script shaping, real focus contrast, glass compositing, page fit or runtime/render parity. The bilingual/theme/desktop/phone drawing-board matrix, 200% text/narrow containers, device checks and all other heavy evidence remain owed. See [frontend rules](frontend-rules.md) and [design verification](design-verification.md).

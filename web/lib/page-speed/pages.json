@@ -1,0 +1,4 @@
+[
+  {"route":"/internal/components","file":"web/app/internal/components/page.tsx","kind":"static","reason":"Local component examples have no server data.","content":".bt-board","read":"none","proof":"owed"},
+  {"route":"/internal/page","file":"web/app/internal/page/page.tsx","view":"web/internal/page/view.tsx","kind":"reads","reason":"Public synthetic review records only; never market answers.","content":"[data-page-answer]","read":"page-demo","proof":"owed"}
+]

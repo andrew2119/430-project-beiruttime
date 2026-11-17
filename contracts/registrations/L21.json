@@ -1,0 +1,365 @@
+{
+  "version": 1,
+  "lane": "L21",
+  "contracts": [],
+  "schema_version": "l21.registration.v1",
+  "outcomes": [
+    "C14",
+    "S04"
+  ],
+  "operation_lookup": {
+    "customization.status.v1": {
+      "outcome": "C14",
+      "service": "service-operations",
+      "method": "GET",
+      "path": "/v1/job-outcomes/customization/:id",
+      "max_body_bytes": 16384,
+      "max_response_bytes": 65536,
+      "authority": "current_provider_only",
+      "interface_status": "proposed",
+      "schema_version": "l21.outcome.v1",
+      "revision_binding": {
+        "location": "query",
+        "parameter": "expected_revision",
+        "type": "integer",
+        "minimum": 0,
+        "response": "echo_expected_revision"
+      }
+    },
+    "customization.reconcile.v1": {
+      "outcome": "C14",
+      "service": "service-operations",
+      "method": "POST",
+      "path": "/v1/job-outcomes/customization/:id/reconcile",
+      "max_body_bytes": 16384,
+      "max_response_bytes": 65536,
+      "authority": "current_provider_only",
+      "interface_status": "proposed",
+      "schema_version": "l21.outcome.v1"
+    },
+    "servicing.status.v1": {
+      "outcome": "S04",
+      "service": "service-operations",
+      "method": "GET",
+      "path": "/v1/job-outcomes/servicing/:id",
+      "max_body_bytes": 16384,
+      "max_response_bytes": 65536,
+      "authority": "current_provider_only",
+      "interface_status": "proposed",
+      "schema_version": "l21.outcome.v1",
+      "revision_binding": {
+        "location": "query",
+        "parameter": "expected_revision",
+        "type": "integer",
+        "minimum": 0,
+        "response": "echo_expected_revision"
+      }
+    },
+    "servicing.reconcile.v1": {
+      "outcome": "S04",
+      "service": "service-operations",
+      "method": "POST",
+      "path": "/v1/job-outcomes/servicing/:id/reconcile",
+      "max_body_bytes": 16384,
+      "max_response_bytes": 65536,
+      "authority": "current_provider_only",
+      "interface_status": "proposed",
+      "schema_version": "l21.outcome.v1"
+    }
+  },
+  "activation": "unavailable",
+  "required_provider_metadata": [
+    "C14",
+    "S04"
+  ],
+  "rules": {
+    "authority": "current_provider_only",
+    "retry": "same_operation_id",
+    "uncertain_result": "pending",
+    "revision_mismatch": "stale",
+    "receiver_before_destination": true,
+    "migration_policy": "additive_dependency_order",
+    "dependency_policy": "shared_per_service_budget"
+  },
+  "fixtures": [
+    {
+      "schema_version": "l21.registration.v1",
+      "operation_id": "fixture-1",
+      "expected_revision": 1,
+      "revision": 1,
+      "state": "unavailable",
+      "pending_reason": "provider_metadata_missing",
+      "subject_id": null,
+      "watch_id": null,
+      "actor_id": null,
+      "organization_id": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "l21.registration.v1",
+      "operation_id": "fixture-2",
+      "expected_revision": 1,
+      "revision": 1,
+      "state": "denied",
+      "pending_reason": "current_permission_denied",
+      "subject_id": null,
+      "watch_id": null,
+      "actor_id": null,
+      "organization_id": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "l21.registration.v1",
+      "operation_id": "fixture-3",
+      "expected_revision": 1,
+      "revision": 2,
+      "state": "stale",
+      "pending_reason": "revision_changed",
+      "subject_id": null,
+      "watch_id": null,
+      "actor_id": null,
+      "organization_id": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "l21.registration.v1",
+      "operation_id": "fixture-4",
+      "expected_revision": 1,
+      "revision": 1,
+      "state": "pending",
+      "pending_reason": "response_lost",
+      "subject_id": null,
+      "watch_id": null,
+      "actor_id": null,
+      "organization_id": null,
+      "next_actor": null,
+      "next_review_at": null
+    }
+  ],
+  "envelope_schema": {
+    "type": "object",
+    "required": [
+      "schema_version",
+      "operation_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "state",
+      "revision",
+      "pending_reason",
+      "next_actor",
+      "next_review_at"
+    ],
+    "properties": {
+      "schema_version": {
+        "const": "l21.registration.v1"
+      },
+      "operation_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "expected_revision": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "state": {
+        "enum": [
+          "unavailable",
+          "denied",
+          "stale",
+          "pending",
+          "current"
+        ]
+      }
+    }
+  },
+  "messages": {
+    "unavailable": {
+      "en": "This action is unavailable. Try again later.",
+      "ar": "هذا الإجراء غير متاح. حاول مرة أخرى لاحقًا."
+    },
+    "pending": {
+      "en": "The result is pending. Check the same action reference.",
+      "ar": "النتيجة قيد الانتظار. تحقق باستخدام مرجع الإجراء نفسه."
+    },
+    "denied": {
+      "en": "You do not have current permission for this action.",
+      "ar": "ليس لديك إذن حالي لتنفيذ هذا الإجراء."
+    },
+    "stale": {
+      "en": "The record changed. Review the current version before continuing.",
+      "ar": "تغير السجل. راجع النسخة الحالية قبل المتابعة."
+    }
+  },
+  "dependency_contract": {
+    "implementation": "web/gateway/dependency.ts",
+    "timeout_ms": 1200,
+    "concurrency_per_service": 4,
+    "failure_threshold": 3,
+    "cooldown_ms": 10000,
+    "automatic_retries": 0,
+    "uncertain_command_state": "pending",
+    "retry_reference": "same_operation_id",
+    "activation": "deferred_until_provider_metadata_and_shared_discovery"
+  },
+  "discovery_contract": {
+    "version": 1,
+    "minimum_lane": "L00",
+    "maximum_lane": "L25",
+    "required_consumers": [
+      "web/scripts/generate-nav.mjs",
+      "web/registry-loader.ts"
+    ],
+    "missing_fragments": "safe",
+    "generated_indexes": "uncommitted",
+    "activation": "requires_all_consumers"
+  },
+  "adapter": "web/registrations/L21.ts:createOutcomeAdapter",
+  "provider_fixtures": [
+    {
+      "schema_version": "l21.outcome.v1",
+      "operation_id": "fixture-outcome-operation",
+      "expected_revision": 1,
+      "revision": 1,
+      "state": "current",
+      "pending_reason": null,
+      "subject_id": "fixture-job",
+      "watch_id": "fixture-watch",
+      "actor_id": "fixture-buyer",
+      "organization_id": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "l21.outcome.v1",
+      "operation_id": "fixture-outcome-operation",
+      "expected_revision": 1,
+      "revision": 1,
+      "state": "denied",
+      "pending_reason": "current_permission_denied",
+      "subject_id": "fixture-job",
+      "watch_id": "fixture-watch",
+      "actor_id": "fixture-buyer",
+      "organization_id": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "l21.outcome.v1",
+      "operation_id": "fixture-outcome-operation",
+      "expected_revision": 1,
+      "revision": 1,
+      "state": "stale",
+      "pending_reason": "revision_changed",
+      "subject_id": "fixture-job",
+      "watch_id": "fixture-watch",
+      "actor_id": "fixture-buyer",
+      "organization_id": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "l21.outcome.v1",
+      "operation_id": "fixture-outcome-operation",
+      "expected_revision": 1,
+      "revision": 1,
+      "state": "pending",
+      "pending_reason": "response_lost",
+      "subject_id": "fixture-job",
+      "watch_id": "fixture-watch",
+      "actor_id": "fixture-buyer",
+      "organization_id": null,
+      "next_actor": null,
+      "next_review_at": null
+    }
+  ],
+  "outcome_schema": {
+    "type": "object",
+    "required": [
+      "schema_version",
+      "operation_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "state",
+      "revision",
+      "pending_reason",
+      "next_actor",
+      "next_review_at"
+    ],
+    "properties": {
+      "schema_version": {
+        "const": "l21.outcome.v1"
+      },
+      "operation_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "expected_revision": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "revision": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "state": {
+        "enum": [
+          "unavailable",
+          "denied",
+          "stale",
+          "pending",
+          "current"
+        ]
+      },
+      "subject_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "watch_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "actor_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "organization_id": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "pending_reason": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "next_actor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "next_review_at": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "additionalProperties": false
+  }
+}

@@ -1,0 +1,3 @@
+# Keep the existing authoritative runtime and migration image.
+# Outcome metadata must be admitted by service-local discovery before activation.
+services: {}
