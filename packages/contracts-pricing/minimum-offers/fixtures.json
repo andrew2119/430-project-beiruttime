@@ -1,0 +1,103 @@
+{
+  "synthetic": true,
+  "command": {
+    "schema_version": 1,
+    "operation_id": "change-1",
+    "actor_id": "seller",
+    "organization_id": "business",
+    "subject_id": "listing",
+    "watch_id": "watch",
+    "expected_revision": 0,
+    "source_revision": 2,
+    "policy_revision": 3,
+    "quote_id": "quote",
+    "quote_revision": 4,
+    "minimum_minor": 10000
+  },
+  "success": {
+    "subject_id": "listing",
+    "watch_id": "watch",
+    "actor_id": "seller",
+    "organization_id": "business",
+    "expected_revision": 0,
+    "revision": 1,
+    "pending_reason": null,
+    "next_actor": null,
+    "next_review_at": null,
+    "schema_version": 1,
+    "operation_id": "change-1",
+    "state": "saved",
+    "minimum_minor": 10000
+  },
+  "denied": {
+    "schema_version": 1,
+    "operation_id": "change-1",
+    "state": "denied"
+  },
+  "stale": {
+    "subject_id": "listing",
+    "watch_id": "watch",
+    "actor_id": "seller",
+    "organization_id": "business",
+    "expected_revision": 0,
+    "revision": null,
+    "pending_reason": null,
+    "next_actor": null,
+    "next_review_at": null,
+    "schema_version": 1,
+    "operation_id": "change-1",
+    "state": "stale"
+  },
+  "lost_response": {
+    "subject_id": "listing",
+    "watch_id": "watch",
+    "actor_id": "seller",
+    "organization_id": "business",
+    "expected_revision": 0,
+    "revision": null,
+    "pending_reason": "source_unavailable",
+    "next_actor": "seller",
+    "next_review_at": null,
+    "schema_version": 1,
+    "operation_id": "change-1",
+    "state": "pending"
+  },
+  "below": {
+    "state": "declined"
+  },
+  "equal": {
+    "state": "review_required"
+  },
+  "above": {
+    "state": "review_required"
+  },
+  "current": {
+    "subject_id": "listing",
+    "watch_id": "watch",
+    "actor_id": "seller",
+    "organization_id": "business",
+    "expected_revision": 0,
+    "revision": 1,
+    "pending_reason": null,
+    "next_actor": null,
+    "next_review_at": null,
+    "schema_version": 1,
+    "operation_id": "current",
+    "state": "saved",
+    "minimum_minor": 10000
+  },
+  "unavailable": {
+    "subject_id": "listing",
+    "watch_id": "watch",
+    "actor_id": "seller",
+    "organization_id": "business",
+    "expected_revision": 0,
+    "revision": null,
+    "pending_reason": null,
+    "next_actor": null,
+    "next_review_at": null,
+    "schema_version": 1,
+    "operation_id": "change-1",
+    "state": "unavailable"
+  }
+}
