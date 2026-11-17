@@ -1,0 +1,81 @@
+{
+  "schema_version": "communications.runtime.v1",
+  "operations": {
+    "payment-notice.v3": {
+      "service": "orders",
+      "method": "POST",
+      "path": "/internal/v3/payment-notices",
+      "authentication": "communications",
+      "timeout_seconds": 1.2,
+      "retry": "same_event_and_notice",
+      "activation": "receiver_required",
+      "required": [
+        "event_id",
+        "notice_id",
+        "order_id",
+        "buyer_id",
+        "notified_at",
+        "verified_delivery_recorded"
+      ],
+      "preconditions": [
+        "durable_buyer_inbox",
+        "durable_synthetic_verified_recipient"
+      ],
+      "revision_rule": "Original event, buyer, order and durable availability time must match the retained intent.",
+      "duplicate_rule": "Identical receipt is idempotent; conflicting receipt is denied.",
+      "uncertain_rule": "Keep notification pending and retry the same receipt."
+    }
+  },
+  "fixtures": [
+    {
+      "scenario": "success",
+      "synthetic": true,
+      "operation_id": "notice-001",
+      "state": "receipt_acknowledged"
+    },
+    {
+      "scenario": "denied",
+      "synthetic": true,
+      "operation_id": "notice-001",
+      "state": "denied",
+      "reason": "current_authority_required"
+    },
+    {
+      "scenario": "stale",
+      "synthetic": true,
+      "operation_id": "notice-001",
+      "state": "denied",
+      "reason": "retained_intent_mismatch"
+    },
+    {
+      "scenario": "lost_response",
+      "synthetic": true,
+      "operation_id": "notice-001",
+      "state": "pending",
+      "reason": "result_unknown"
+    }
+  ],
+  "event_input": {
+    "type": "orders.payment-action-required.v3",
+    "source": "orders",
+    "receiver": "/internal/v3/payment-events",
+    "subject": "order_id",
+    "data": {
+      "order_id": "UUID",
+      "buyer_id": "UUID",
+      "order_revision": "positive integer"
+    },
+    "status": "Contract fixture pending producer integration"
+  },
+  "recovery": {
+    "operator_configuration": "BT_PAYMENT_NOTICE_OPERATOR_ID",
+    "operator_format": "UUID",
+    "missing_operator": "Reject new events as unavailable before notice persistence. Preserve the event reference for retry.",
+    "ownership": "Persist one operator per event atomically with the notice; retries never reassign it.",
+    "response_due": "Durable notice availability plus 24 hours.",
+    "escalation_due": "Durable notice availability plus 48 hours without acknowledgement.",
+    "escalation": "Record escalation and bilingual next action durably; resolve only after receipt acknowledgement.",
+    "migration": "Assign existing pending notices before delivery using their original availability time.",
+    "connected_proof": "Database migration, configured operator identity and operational response remain deferred."
+  }
+}
