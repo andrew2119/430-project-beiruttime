@@ -1,0 +1,23 @@
+{
+  "title": "Independent eligibility review",
+  "scope": "Review only your current assigned case under the objective identity policy. The buyer and this case’s brand approver cannot review it. Payment readiness is separate.",
+  "consent": "Consent reference",
+  "revision": "Expected review revision",
+  "reason": "Reasoned decision",
+  "privateHint": "Use a short policy explanation, at most 1,000 characters. Do not copy evidence or identity details.",
+  "reference": "Action reference",
+  "retry": "Retry this reference",
+  "submit": "Record independent verdict",
+  "error": "Decision unavailable",
+  "recovery": "No successful decision is confirmed. Retry the same reference. If access was denied or the scope changed, open the current assigned case.",
+  "receipt": "This is a decision receipt. Current scope and consent must still be checked before preparing or consuming permission.",
+  "eligible": "Eligible",
+  "not_eligible": "Not eligible",
+  "correction": "Correction required",
+  "pending": "Confirmation pending",
+  "stale": "Revision changed",
+  "denied": "Permission denied",
+  "prepared": "Permission prepared",
+  "consumed": "Permission consumed",
+  "revoked": "Permission revoked"
+}

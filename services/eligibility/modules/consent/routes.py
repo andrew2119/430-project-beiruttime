@@ -1,7 +1,8 @@
+import asyncio
 import hashlib
 import json
 from uuid import UUID, uuid4
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from starlette.responses import Response
 from bt_bulkheads import Unavailable
@@ -12,6 +13,7 @@ from bt_runtime.app.auth import require_principal
 from bt_runtime.app.db import unit_of_work
 from bt_runtime.principal import current_principal
 from bt_runtime.event_http import build_event_router
+from .current import Current
 
 router = APIRouter(prefix='/v1/consents')
 
@@ -105,11 +107,26 @@ async def record(tx, request, buyer, row, key, digest, kind, destinations):
 
 
 @router.get('')
-async def mine(request: Request):
+async def mine(request: Request, page: int | None = Query(default=None, ge=0, le=1000000)):
     principal = await actor(request)
     async with request.app.state.pool.acquire() as tx:
-        rows = await tx.fetch('SELECT * FROM eligibility_consents WHERE buyer_id=$1 ORDER BY created_at DESC LIMIT 50', principal.actor.subject_id)
-    return {'consents':[view(row) for row in rows]}
+        rows = await tx.fetch('SELECT * FROM eligibility_consents WHERE buyer_id=$1 ORDER BY created_at DESC,id DESC LIMIT $2 OFFSET $3', principal.actor.subject_id, 50 if page is None else 25, 0 if page is None else page * 25)
+        total = await tx.fetchval('SELECT count(*) FROM eligibility_consents WHERE buyer_id=$1', principal.actor.subject_id)
+    return {'consents':[view(row) for row in rows], **({'total':total,'page':page} if page is not None else {})}
+
+
+@router.get('/operations/{operation_id}')
+async def consent_operation(operation_id: str, request: Request):
+    principal = await actor(request)
+    if not 8 <= len(operation_id) <= 100:
+        raise HTTPException(422)
+    async with request.app.state.pool.acquire() as tx:
+        result = await tx.fetchval('SELECT result FROM eligibility_consent_operations WHERE buyer_id=$1 AND key=$2',
+                                   principal.actor.subject_id, operation_id)
+    if result is None:
+        raise HTTPException(404)
+    # A receipt confirms only the recorded action, never current grant effectiveness.
+    return json.loads(result)
 
 
 @router.post('')
@@ -195,6 +212,28 @@ async def evidence(consent_id: UUID,evidence_id: UUID,request: Request):
         allowed = 'eligibility.identity.review' in principal.permissions and await tx.fetchval('''SELECT 1 FROM eligibility_consent_assignments a
             JOIN eligibility_consents c ON c.id=a.consent_id WHERE a.consent_id=$1 AND a.reviewer_id=$2
             AND a.revoked_at IS NULL AND c.status='active' AND c.buyer_id<>$2''',consent_id,reviewer)
+        if allowed:
+            provider = getattr(request.app.state, 'eligibility_current', None)
+            if provider is None:
+                raise HTTPException(503)
+            try:
+                async with asyncio.timeout(1.2):
+                    current = Current.model_validate(await provider(consent_id, reviewer, request.headers['authorization']))
+                consent_row = await tx.fetchrow('SELECT * FROM eligibility_consents WHERE id=$1 FOR UPDATE', consent_id)
+                current_time_valid = current.now < current.expires_at
+                current = current.model_dump(mode='json')
+                allowed = (current_time_valid and current.get('assignment_current') is True
+                    and current.get('identity_current') is True and current.get('organization_current') is True
+                    and current.get('reviewer_id') == str(reviewer)
+                    and current.get('subject_id') == str(consent_row['buyer_id'])
+                    and current.get('organization_id') == str(consent_row['brand_id'])
+                    and current.get('request_id') == str(consent_row['request_id'])
+                    and current.get('request_revision') == consent_row['request_revision']
+                    and current.get('consent_revision') == consent_row['revision']
+                    and current.get('brand_approver_id') not in (None, str(reviewer))
+                    and consent_row['status'] == 'active')
+            except (TimeoutError, OSError, ValueError):
+                raise HTTPException(503) from None
         await tx.execute('INSERT INTO eligibility_consent_audit VALUES($1,$2,$3,$4,$5,$6,now())',uuid4(),reviewer,consent_id,'evidence.read','accepted' if allowed else 'denied',request.state.request_id)
         content = await tx.fetchval('SELECT content FROM eligibility_consent_evidence WHERE id=$1 AND consent_id=$2',evidence_id,consent_id) if allowed else None
     if not allowed:
