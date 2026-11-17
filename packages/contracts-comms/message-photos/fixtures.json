@@ -1,0 +1,72 @@
+{
+  "version": "communications.message-photos.v1",
+  "synthetic": true,
+  "success": {
+    "schema_version": "communications.message-photos.v1",
+    "operation_id": "sample-attach-1",
+    "subject_id": "thread",
+    "watch_id": "watch",
+    "actor_id": "buyer",
+    "organization_id": "business",
+    "expected_revision": 1,
+    "state": "attached",
+    "revision": 1,
+    "pending_reason": null,
+    "next_actor": null,
+    "next_review_at": null,
+    "photo": "00000000-0000-0000-0000-000000000001"
+  },
+  "denied": {
+    "error": {
+      "code": "denied",
+      "message": "Access denied. Reopen the conversation.",
+      "request_id": "",
+      "details": {
+        "messages": {
+          "en": "Access denied. Reopen the conversation.",
+          "ar": "الوصول مرفوض. أعد فتح المحادثة."
+        }
+      }
+    }
+  },
+  "stale": {
+    "error": {
+      "code": "stale_revision",
+      "message": "Conversation changed. Review it again.",
+      "request_id": "",
+      "details": {
+        "messages": {
+          "en": "Conversation changed. Review it again.",
+          "ar": "تغيّرت المحادثة. راجعها مجدداً."
+        }
+      }
+    }
+  },
+  "lost_response": {
+    "schema_version": "communications.message-photos.v1",
+    "operation_id": "sample-attach-1",
+    "subject_id": "thread",
+    "watch_id": "watch",
+    "actor_id": "buyer",
+    "organization_id": "business",
+    "expected_revision": 1,
+    "state": "pending",
+    "revision": 1,
+    "pending_reason": "result_unknown",
+    "next_actor": "buyer",
+    "next_review_at": null
+  },
+  "unavailable": {
+    "error": {
+      "code": "unavailable",
+      "message": "Unavailable. Retry the same action reference.",
+      "request_id": "",
+      "details": {
+        "messages": {
+          "en": "Unavailable. Retry the same action reference.",
+          "ar": "غير متاح. أعد المحاولة بمرجع الإجراء نفسه."
+        }
+      }
+    }
+  }
+}
