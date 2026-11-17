@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import type { ReactElement } from 'react';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import Checkout from '../features/buy-now/checkout';
 import RequestDrafts from '../features/request-drafts/request-drafts';
 import { LocaleControl } from '../shell/foundation/locale-control';
@@ -15,6 +16,7 @@ vi.mock('react', async () => ({...await vi.importActual('react'),
 }));
 vi.mock('@tanstack/react-query', () => ({useQuery:({queryKey}:{queryKey:string[]}) => ({data:['l08-orders','l08-drafts'].includes(queryKey[0]) ? {items:[]} : undefined}),useInfiniteQuery:() => ({data:{pages:[]}}),useQueryClient:() => ({invalidateQueries:vi.fn()})}));
 vi.mock('../shell/locale-context', () => ({useLocale:() => 'en',useLocaleChange:() => state.change}));
+vi.mock('next/navigation', () => ({useRouter:() => ({refresh:vi.fn()}),useSearchParams:() => new URLSearchParams()}));
 vi.mock('@/features/identity/session', () => ({useSession:() => ({access_fingerprint:'owner',principal:{actor:{subject_id:'buyer'}}}),signInHref:() => '/en/account'}));
 vi.mock('../features/request-drafts/api', () => ({draftApi:{save:state.save}}));
 vi.mock('../features/buy-now/api', () => ({buyNowApi:{reserve:state.reserve}}));
@@ -34,13 +36,11 @@ it.each(['dirty draft','uncertain reservation'])('%s does not write or navigate 
   const form={configuration_id:null,configuration_revision:null,brand_id:null,kind:'customization' as const,watch_context:'undecided' as const,watch_reference:'',scope_intent:'scope',notes:'نور ⌚',options:{}};
   remember({owner:'owner',id:null,revision:0,form,dirty:true,pending:null},draftMemoryEpoch());
   const draft=recall('owner'), reservation=recallReservation('owner');
-  // Invoke the actual private components with bounded state and read fixtures.
-  let view:ReactElement = flow==='dirty draft' ? RequestDrafts() : Checkout();
-  for(let depth=0;depth<2 && typeof view.type==='function';depth++) {
-    view=(view.type as (props:unknown) => ReactElement)(view.props);
-  }
+  // Render the actual private components so their nested hooks have a dispatcher.
+  renderToStaticMarkup(flow==='dirty draft' ? createElement(RequestDrafts) : createElement(Checkout, {}));
   for(const effect of state.effects) effect();
-  expect(listeners).toHaveLength(1);
+  // The current checkout no longer installs a legacy locale-link listener.
+  expect(listeners).toHaveLength(flow==='dirty draft' ? 1 : 0);
   const control=LocaleControl({});
   expect(control.type).toBe(Button);
   const event={target:new Target(),button:0,preventDefault:vi.fn(),stopPropagation:vi.fn()};
