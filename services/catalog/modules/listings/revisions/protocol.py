@@ -21,7 +21,7 @@ def matches(value, op, row, phase):
     ):
         return False
     if phase == 'aborted':
-        return value.get('code') in ('prepare_expired', 'orders_denied')
+        return value.get('code') in ('prepare_expired', 'orders_denied', 'publication_review_denied')
     if op['auction_protocol'] == 3 and phase in ('prepared', 'dispatched'):
         if not (
             type(value.get('protocol')) is int and value['protocol'] == 3

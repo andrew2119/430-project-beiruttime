@@ -130,3 +130,6 @@
   .le-watch-row { transition:none; }
   .le-watch-row:hover, .le-watch-row:active, .le-watch-row[data-pressed] { transform:none; }
 }
+
+.le-current-facts > div { flex-wrap:wrap; min-inline-size:0; }
+.le-current-facts dd { min-inline-size:0; max-inline-size:100%; overflow-wrap:anywhere; }

@@ -19,3 +19,16 @@ describe('published revision failure copy',()=>{
     expect(render('en',409,'sale_mode_frozen')).toContain(copy('en').saleModeFrozen);
   });
 });
+
+it.each(['en','ar'] as const)('explains listing-specific review recovery in %s', locale => {
+  expect(render(locale,503,'publication_review_pending')).toContain(copy(locale).publicationReviewPending);
+  expect(render(locale,409,'publication_review_denied')).toContain(copy(locale).publicationReviewDenied);
+});
+
+it.each(['en','ar'] as const)('keeps published revision recovery honest in %s', locale => {
+  for (const [code,message] of [['publication_review_pending',copy(locale).revisionReviewPending],['publication_review_denied',copy(locale).revisionReviewDenied]]) {
+    const html = renderToStaticMarkup(createElement(Failure,{locale,t:copy(locale),revision:true,error:new ApiError(503,code,'')}));
+    expect(html).toContain(message);
+    expect(html).not.toContain(copy(locale).publicationReviewPending);
+  }
+});

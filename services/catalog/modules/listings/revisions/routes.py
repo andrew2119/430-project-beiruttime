@@ -2,7 +2,7 @@
 
 import json
 import hashlib
-from uuid import UUID, uuid4
+from uuid import UUID, uuid5, NAMESPACE_URL
 from fastapi import APIRouter, Request
 from pydantic import Field
 from bt_contracts.catalog.listings.v1 import SaveDraft, incomplete
@@ -29,6 +29,7 @@ from service_app.listing_repository import (
 )
 
 from .protocol import matches as auction_matches
+from .eligibility import check_publication
 
 router = APIRouter()
 
@@ -103,6 +104,19 @@ async def finish_aborted(request, op, row, value):
     return answer
 
 
+async def abort_review(request, op, row):
+    operation_id = op["id"]
+    return await held_request(
+        request, "auction", "POST", f"/internal/v3/listing-edits/{operation_id}/abort",
+        headers={"Idempotency-Key": str(operation_id)},
+        json={"operation_id": str(operation_id), "listing_id": str(row["id"]),
+              "watch_id": str(row["physical_watch_id"]),
+              "listing_revision": op["base_revision"],
+              "next_revision": op["base_revision"] + 1,
+              "reason": "publication_review_denied"},
+    )
+
+
 async def resume(request, operation_id):
     person = await principal(request)
     seller_scope(person, "identity.listings.publish")
@@ -118,6 +132,37 @@ async def resume(request, operation_id):
     assert_owner(row, person)
     if op["status"] in ("succeeded", "denied"):
         return outcome(op, row)
+    if op['status'] == 'pending' and op['result'] and unpack(op['result']).get('status') == 'denied':
+        if unpack(op['result']).get('code') == 'publication_review_denied':
+            aborted = await abort_review(request, op, row)
+        else:
+            aborted = await held_request(request, 'auction', 'POST', f'/internal/v3/listing-edits/{operation_id}/abort')
+        return await finish_aborted(request, op, row, aborted)
+    if op['status'] == 'pending' and (op['orders_started'] or op['auction_prepared'] or op['auction_dispatched']):
+        recovered = await held_request(request, 'auction', 'POST', f'/internal/v3/listing-edits/{operation_id}/reconcile')
+        if isinstance(recovered, dict) and recovered.get('phase') == 'aborted':
+            return await finish_aborted(request, op, row, recovered)
+        async with request.app.state.pool.acquire() as tx:
+            op = await tx.fetchrow('SELECT * FROM catalog_listing_edits WHERE id=$1', operation_id)
+            row = await tx.fetchrow('SELECT * FROM catalog_listings WHERE id=$1', row['id'])
+        if op['status'] in ('succeeded', 'denied'):
+            return outcome(op, row)
+    if op["status"] == "pending":
+        proposed = {**dict(row), "facts": unpack(op["facts"])}
+        try:
+            await check_publication(request, proposed, str(op["id"]), person.actor.subject_id)
+        except PublicError as error:
+            if error.code != "publication_review_denied":
+                raise
+            # The remote authority must settle even an apparently unstarted
+            # intent: a concurrent retry may already have prepared its fence.
+            async with unit_of_work(request.app.state.pool, lock_key=f"listing:{row['id']}") as tx:
+                await tx.execute(
+                    "UPDATE catalog_listing_edits SET result=$2::jsonb WHERE id=$1 AND status='pending'",
+                    operation_id, json.dumps({"status": "denied", "code": "publication_review_denied"}),
+                )
+            aborted = await abort_review(request, op, row)
+            return await finish_aborted(request, op, row, aborted)
     # Orders uses stable operation keys: always retry the exact retained command.
     if op["orders_revision"] is None:
         watch = await held_request(
@@ -145,18 +190,6 @@ async def resume(request, operation_id):
             op = await tx.fetchrow(
                 "SELECT * FROM catalog_listing_edits WHERE id=$1", operation_id
             )
-    if op['status'] == 'pending' and op['result'] and unpack(op['result']).get('status') == 'denied':
-        aborted = await held_request(request, 'auction', 'POST', f'/internal/v3/listing-edits/{operation_id}/abort')
-        return await finish_aborted(request, op, row, aborted)
-    if op['status'] == 'pending' and op['orders_started']:
-        recovered = await held_request(request, 'auction', 'POST', f'/internal/v3/listing-edits/{operation_id}/reconcile')
-        if isinstance(recovered, dict) and recovered.get('phase') == 'aborted':
-            return await finish_aborted(request, op, row, recovered)
-        async with request.app.state.pool.acquire() as tx:
-            op = await tx.fetchrow('SELECT * FROM catalog_listing_edits WHERE id=$1', operation_id)
-            row = await tx.fetchrow('SELECT * FROM catalog_listings WHERE id=$1', row['id'])
-        if op['status'] in ('succeeded', 'denied'):
-            return outcome(op, row)
     if op["status"] == "pending":
         # Freeze Auction before Orders, including a listing-level hold when no
         # lot exists. Reversing this order can strand competing first-bid holds.
@@ -389,6 +422,18 @@ async def revise(listing_id: UUID, body: Revise, request: Request):
     seller_scope(person, "identity.listings.publish")
     expected, key = revision(request), command_key(request)
     fingerprint = digest({"revision": expected, **body.model_dump(mode="json")})
+    async with request.app.state.pool.acquire() as tx:
+        preview = await tx.fetchrow("SELECT * FROM catalog_listings WHERE id=$1", listing_id)
+        prior = await tx.fetchrow(
+            "SELECT id FROM catalog_listing_edits WHERE listing_id=$1 AND actor_id=$2 AND operation_key=$3",
+            listing_id, person.actor.subject_id, key,
+        )
+    assert_owner(preview, person)
+    operation_id = prior["id"] if prior else uuid5(NAMESPACE_URL, f"listing-revision:{listing_id}:{person.actor.subject_id}:{key}")
+    if not prior:
+        check_revision(preview, expected)
+        proposed = {**dict(preview), "facts": body.facts.model_dump(mode="json")}
+        await check_publication(request, proposed, str(operation_id), person.actor.subject_id)
     async with unit_of_work(
         request.app.state.pool, lock_key=f"listing:{listing_id}"
     ) as tx:
@@ -432,7 +477,7 @@ async def revise(listing_id: UUID, body: Revise, request: Request):
             op = await tx.fetchrow(
                 """INSERT INTO catalog_listing_edits(id,listing_id,actor_id,organization_id,operation_key,digest,base_revision,facts,reason,auction_protocol)
                 VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,3) RETURNING *""",
-                uuid4(),
+                operation_id,
                 listing_id,
                 person.actor.subject_id,
                 person.actor.organization_id,

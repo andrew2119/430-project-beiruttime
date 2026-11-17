@@ -18,7 +18,9 @@ export function Failure({
   t,
   locale,
   retry,
+  revision = false,
 }: {
+  revision?: boolean;
   error: unknown;
   t: Copy;
   locale: string;
@@ -33,6 +35,8 @@ export function Failure({
     edit_pending:t.editPending,listing_frozen:t.revisionBlocked,
     auction_edit_denied:t.revisionBlocked,edit_denied:t.revisionBlocked,
     sale_mode_frozen:t.saleModeFrozen,
+    publication_review_pending:revision ? t.revisionReviewPending : t.publicationReviewPending,
+    publication_review_denied:revision ? t.revisionReviewDenied : t.publicationReviewDenied,
   };
   const message = denied ? t.signInBody
     : error instanceof ApiError && error.status === 403 ? t.forbidden

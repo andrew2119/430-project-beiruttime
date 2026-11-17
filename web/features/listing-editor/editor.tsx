@@ -31,6 +31,8 @@ import { listingApiFor, scopedHref } from "./api";
 import { copy } from "./copy";
 import { Failure, OwnerPhoto, Status } from "./components";
 import { parseMinor } from "./money";
+import { CurrentFacts } from "./current-facts";
+import { RetainedUpload } from "./upload";
 
 export default function Editor({ id }: { id: string }) {
   const access = useAccessContext(),
@@ -133,12 +135,19 @@ function DraftEditor({
       const retained=initial.fee_snapshot as FeeQuote|null;
       return retained?.price_minor===initial.facts.price_minor?retained:null;
     });
+  const [saveNeedsReview, setSaveNeedsReview] = useState(false);
+  const [reviewedVersion, setReviewedVersion] = useState<Listing | null>(null);
   const [editReason,setEditReason]=useState('');
   const [editUncertain,setEditUncertain]=useState(false);
   const editHistory=useQuery({queryKey:['listing-revisions',fingerprint,organization,id,row.revision],queryFn:()=>listingApi.history(id),enabled:row.status==='published',retry:false});
   const publicationKey = useRef(crypto.randomUUID());
+  const pendingPublication = useRef<{listing: Listing; quote: FeeQuote; key: string} | null>(null);
+  const [publicationUncertain, setPublicationUncertain] = useState(false);
   const pendingSave = useRef<{ signature: string; key: string } | null>(null);
-  const pendingUpload = useRef<{ signature: string; key: string } | null>(null);
+  const [retainedFile, setRetainedFile] = useState<{file: File; kind: "public_photo" | "private_document"} | null>(null);
+  const pendingUpload = useRef(new RetainedUpload());
+  const [uploadUncertain, setUploadUncertain] = useState(false);
+  const [uploadNeedsReview, setUploadNeedsReview] = useState(false);
   const media = useQuery({
     queryKey: ["listing-media", fingerprint, organization, id, row.revision],
     queryFn: () => listingApi.media(id),
@@ -146,8 +155,8 @@ function DraftEditor({
   });
   const current = row,
     form = facts,
-    editable = current.status === "draft",
-    factsEditable = (editable || current.status === 'published') && !editUncertain && !editHistory.data?.pending_operation_id;
+    editable = current.status === "draft" && !publicationUncertain,
+    factsEditable = (editable || current.status === 'published') && !publicationUncertain && !editUncertain && !uploadUncertain && !uploadNeedsReview && !editHistory.data?.pending_operation_id;
   function field<K extends keyof WatchFacts>(name: K, value: WatchFacts[K]) {
     setFacts({ ...form, [name]: value });
     setDirty(true);
@@ -167,6 +176,7 @@ function DraftEditor({
     }
   }
   async function persist() {
+    if (saveNeedsReview) return Promise.reject(new ApiError(409, "stale_revision", ""));
     const signature = JSON.stringify([current.revision, form, current.status==='published'?editReason:null]);
     if (pendingSave.current?.signature !== signature)
       pendingSave.current = { signature, key: crypto.randomUUID() };
@@ -181,10 +191,17 @@ function DraftEditor({
         }
         saved=result.listing;setEditUncertain(false);void editHistory.refetch();
       } catch(cause) {
+        if (cause instanceof ApiError && cause.code === "stale_revision") setSaveNeedsReview(true);
         if(!(cause instanceof ApiError)||cause.status>=500)setEditUncertain(true);
         void editHistory.refetch();throw cause;
       }
-    } else saved = await listingApi.save(current, form, pendingSave.current.key);
+    } else {
+      try { saved = await listingApi.save(current, form, pendingSave.current.key); }
+      catch (cause) {
+        if (cause instanceof ApiError && cause.code === "stale_revision") setSaveNeedsReview(true);
+        throw cause;
+      }
+    }
     pendingSave.current = null;
     setRow(saved);
     setFacts(saved.facts);
@@ -196,6 +213,29 @@ function DraftEditor({
   }
   async function save() {
     await persist();
+  }
+  async function publish() {
+    const command = pendingPublication.current ?? (quote ? {
+      listing: current, quote, key: publicationKey.current,
+    } : null);
+    if (!command) return;
+    pendingPublication.current = command;
+    setPublicationUncertain(true);
+    try {
+      const result = await listingApi.publish(command.listing, command.quote, command.key);
+      pendingPublication.current = null;
+      setPublicationUncertain(false);
+      setRow(result);
+      setFacts(result.facts);
+      setNotice(t.published);
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.status < 500 && ![401, 403].includes(cause.status)) {
+        pendingPublication.current = null;
+        setPublicationUncertain(false);
+        publicationKey.current = crypto.randomUUID();
+      }
+      throw cause;
+    }
   }
   function modify(index: number, name: keyof Modification, value: string) {
     field(
@@ -209,30 +249,32 @@ function DraftEditor({
     file: File | undefined,
     kind: "public_photo" | "private_document",
   ) {
-    if (!file) return;
+    if (uploadNeedsReview) return;
+    if (!file || (pendingUpload.current.command && pendingUpload.current.command.file !== file)) return;
+    setRetainedFile({file, kind});
     await run(async () => {
+      if (!pendingUpload.current.command && kind === "public_photo" && !safe)
+        throw new ApiError(422, "safe_photo_required", "");
       if (file.size > 8_000_000)
         throw new ApiError(413, "media_bytes_limit", "");
-      let saved = current;
-      if (dirty) saved = await persist();
-      const hash = Array.from(
-        new Uint8Array(
-          await crypto.subtle.digest("SHA-256", await file.arrayBuffer()),
-        ),
-      )
-        .map((byte) => byte.toString(16).padStart(2, "0"))
-        .join("");
+      let saved = pendingUpload.current.command?.listing ?? current;
+      if (!pendingUpload.current.command && dirty) saved = await persist();
       if (!alive.current) return;
-      const signature = JSON.stringify([saved.id, saved.revision, kind, hash]);
-      if (pendingUpload.current?.signature !== signature)
-        pendingUpload.current = { signature, key: crypto.randomUUID() };
-      const result = await listingApi.upload(
-        saved,
-        file,
-        kind,
-        pendingUpload.current.key,
-      );
-      pendingUpload.current = null;
+      setUploadUncertain(true);
+      let result;
+      try {
+        result = await pendingUpload.current.send(
+          {listing: saved, file, kind, key: crypto.randomUUID()},
+          command => listingApi.upload(command.listing, command.file, command.kind, command.key),
+          safe,
+        );
+      } catch (cause) {
+        if (cause instanceof ApiError && ["stale_revision", "listing_frozen"].includes(cause.code)) setUploadNeedsReview(true);
+        throw cause;
+      } finally {
+        if (alive.current) setUploadUncertain(pendingUpload.current.command !== null);
+      }
+      setRetainedFile(null);
       setRow(result.listing);
       setFacts(result.listing.facts);
       setQuote(null);
@@ -277,7 +319,7 @@ function DraftEditor({
         media={<span className="hx-cover" aria-hidden="true"><Watch /></span>}
         lead={<ButtonLink variant="outline" size="sm" href={scopedHref(`/${locale}/seller/listings`, organization)}><ArrowLeft className="le-directional" aria-hidden="true" />{t.listings}</ButtonLink>}
         count={<span className="le-inline"><Status row={current} t={t} /><span>{t.revision} <BidiReference>{current.revision}</BidiReference></span>{current.is_demo && <span>{t.demo}</span>}</span>}
-        actions={[{id:"save",label:busy ? t.working : current.status==='published'?t.saveRevision:t.save,phoneLabel:locale==='ar'?'حفظ':'Save',icon:Save,primary:true,busy,disabled:!dirty || (!factsEditable&&!editUncertain) || (current.status==='published'&&editReason.trim().length<3),onSelect:() => void run(save)}]}
+        actions={[{id:"save",label:busy ? t.working : current.status==='published'?t.saveRevision:t.save,phoneLabel:locale==='ar'?'حفظ':'Save',icon:Save,primary:true,busy,disabled:uploadUncertain || !dirty || (!factsEditable&&!editUncertain) || (current.status==='published'&&editReason.trim().length<3),onSelect:() => void run(save)}]}
         status={<span role="status">{dirty ? t.unsaved : notice || (current.status==='published'?t.published:t.saved)}</span>}
         nav={<HeaderTabs value={String(step)} onChange={value => setStep(Number(value))} items={labels.map((label, i) => ({id:String(i),label,icon:[ClipboardList,ShieldCheck,Images,Send][i]}))} label={t.newListing} />}
       />
@@ -294,13 +336,21 @@ function DraftEditor({
           </div>
         )}
       {Boolean(error) && (
-        <Failure error={error} t={t} locale={locale} retry={reload} />
+        <Failure error={error} t={t} locale={locale} revision={current.status === "published"} retry={publicationUncertain ? () => void run(publish) : saveNeedsReview || uploadNeedsReview ? undefined : retainedFile && editable ? () => void fileUpload(retainedFile.file, retainedFile.kind) : dirty ? () => void run(save) : reload} />
       )}
+      {saveNeedsReview && <Card role="status"><p>{t.saveReview}</p><Button disabled={busy || uploadUncertain} onClick={() => void run(async () => {
+        const latest = await listingApi.read(id);
+        if (alive.current) setReviewedVersion(latest);
+      })}>{t.reviewCurrent}</Button>{reviewedVersion && <><p>{t.revision} <BidiReference>{reviewedVersion.revision}</BidiReference></p><CurrentFacts facts={reviewedVersion.facts} t={t} /><Button disabled={busy || uploadUncertain} onClick={() => {
+        setRow(reviewedVersion); pendingSave.current = null; setEditUncertain(false);
+        setSaveNeedsReview(false); setReviewedVersion(null); setQuote(null); setError(null);
+      }}>{t.keepChanges}</Button></>}</Card>}
       {current.status === "publication_pending" && (
         <div className="le-notice" role="status">
           {t.pendingBody}
         </div>
       )}
+      {current.status === "published" && form.sale_mode === "auction" && <Card><p>{t.scheduleHint}</p><ButtonLink href={scopedHref(`/${locale}/seller/auctions`, organization)}>{t.scheduleAuction}</ButtonLink></Card>}
       {current.is_hidden && (
         <div className="le-notice" role="status">
           {t.hidden}
@@ -370,7 +420,7 @@ function DraftEditor({
                   </label>
                   <label>
                     {t.saleMode}
-                    <Select value={form.sale_mode} aria-label={t.saleMode} disabled={!editable || busy} onValueChange={value => field("sale_mode", value as WatchFacts["sale_mode"])} options={(["fixed_price", "auction", "offer"] as const).map(mode => ({value:mode,label:t[mode]}))} />
+                    <Select value={form.sale_mode} aria-label={t.saleMode} disabled={!editable || busy || uploadUncertain} onValueChange={value => field("sale_mode", value as WatchFacts["sale_mode"])} options={(["fixed_price", "auction", "offer"] as const).map(mode => ({value:mode,label:t[mode]}))} />
                   </label>
                 </div>
                 <h3>{t.wear}</h3>
@@ -398,14 +448,12 @@ function DraftEditor({
                   {(["box", "papers", "links"] as const).map((item) => (
                     <Checkbox className="le-check" key={item}
                         checked={form.included.includes(item)}
-                        onChange={(e) =>
-                          field(
-                            "included",
-                            e.target.checked
-                              ? [...form.included, item]
-                              : form.included.filter((value) => value !== item),
-                          )
-                        }
+                        onChange={(e) => {
+                          const included = e.target.checked ? [...form.included, item] : form.included.filter(value => value !== item);
+                          setFacts({...form, included, no_documents: item === "papers" ? !e.target.checked : form.no_documents});
+                          setDirty(true);
+                          setQuote(null);
+                        }}
                       >
                       {t[item]}
                     </Checkbox>
@@ -413,7 +461,11 @@ function DraftEditor({
                 </div>
                 <Checkbox className="le-check"
                     checked={form.no_documents}
-                    onChange={(e) => field("no_documents", e.target.checked)}
+                    onChange={(e) => {
+                      setFacts({...form, no_documents: e.target.checked, included: e.target.checked ? form.included.filter(value => value !== "papers") : form.included});
+                      setDirty(true);
+                      setQuote(null);
+                    }}
                   >
                   {t.noDocuments}
                 </Checkbox>
@@ -437,7 +489,7 @@ function DraftEditor({
                   {t.modifiedQuestion}
                   <Select
                     aria-label={t.modifiedQuestion}
-                    disabled={!editable || busy}
+                    disabled={!factsEditable || busy}
                     value={form.modified === null ? "" : String(form.modified)}
                     onValueChange={(value) => {
                       field("modified", value === "" ? null : value === "true");
@@ -471,7 +523,7 @@ function DraftEditor({
                             </label>
                             <label>
                               {t.provenance}
-                              <Select aria-label={t.provenance} disabled={!editable || busy} value={item.provenance} onValueChange={value => modify(index, "provenance", value)} options={(["genuine", "aftermarket", "reworked", "unknown"] as const).map(kind => ({value:kind,label:t[kind]}))} />
+                              <Select aria-label={t.provenance} disabled={!factsEditable || busy} value={item.provenance} onValueChange={value => modify(index, "provenance", value)} options={(["genuine", "aftermarket", "reworked", "unknown"] as const).map(kind => ({value:kind,label:t[kind]}))} />
                             </label>
                             <label>
                               {t.modifier}
@@ -549,6 +601,14 @@ function DraftEditor({
           )}
           {step === 2 && (
             <>
+              {uploadNeedsReview && <Card role="status"><p>{t.uploadReview}</p><Button disabled={busy} onClick={() => void run(async () => {
+                const latest = await listingApi.read(id);
+                if (!alive.current) return;
+                setRow(latest); setFacts(latest.facts);
+                setPrice(latest.facts.price_minor === null ? "" : String(latest.facts.price_minor / 100));
+                setDirty(false); setQuote(null); setUploadNeedsReview(false);
+              })}>{t.reviewCurrent}</Button></Card>}
+              {retainedFile && !uploadNeedsReview && <Card role="status"><p>{editable ? t.retainedFile : t.uploadFrozen} <BidiReference>{retainedFile.file.name}</BidiReference></p>{editable && <Button disabled={busy || (!uploadUncertain && retainedFile.kind === "public_photo" && !safe)} onClick={() => void fileUpload(retainedFile.file, retainedFile.kind)}>{t.retry}</Button>}{!uploadUncertain && <Button variant="outline" disabled={busy} onClick={() => setRetainedFile(null)}>{t.discardFile}</Button>}</Card>}
               <section className="le-panel">
                 <h2>{t.publicPhotos}</h2>
                 <p>{t.photoHint}</p>
@@ -564,7 +624,7 @@ function DraftEditor({
                     aria-label={t.addPhoto}
                     type="file"
                     accept="image/jpeg,image/png"
-                    disabled={!editable || busy || !safe}
+                    disabled={!editable || busy || uploadUncertain || uploadNeedsReview || !safe}
                     onChange={(e) => {
                       void fileUpload(e.target.files?.[0], "public_photo");
                       e.target.value = "";
@@ -583,6 +643,7 @@ function DraftEditor({
                         <Button
                           variant="outline"
                           disabled={
+                            uploadUncertain ||
                             !editable ||
                             busy ||
                             dirty ||
@@ -595,7 +656,7 @@ function DraftEditor({
                         <Button
                           variant="outline"
                           aria-label={t.moveEarlier}
-                          disabled={!editable || busy || dirty || index === 0}
+                          disabled={!editable || busy || dirty || uploadUncertain || index === 0}
                           onClick={() => {
                             const ids = [...current.photo_ids];
                             [ids[index - 1], ids[index]] = [
@@ -611,6 +672,7 @@ function DraftEditor({
                           variant="outline"
                           aria-label={t.moveLater}
                           disabled={
+                            uploadUncertain ||
                             !editable ||
                             busy ||
                             dirty ||
@@ -629,7 +691,7 @@ function DraftEditor({
                         </Button>
                         <Button
                           variant="outline"
-                          disabled={!editable || busy || dirty}
+                          disabled={!editable || busy || dirty || uploadUncertain}
                           onClick={() => void remove(asset)}
                         >
                           {t.remove}
@@ -648,7 +710,7 @@ function DraftEditor({
                     type="file"
                     aria-label={t.addDocument}
                     accept="image/jpeg,image/png,application/pdf"
-                    disabled={!editable || busy}
+                    disabled={!editable || busy || uploadUncertain || uploadNeedsReview}
                     onChange={(e) => {
                       void fileUpload(e.target.files?.[0], "private_document");
                       e.target.value = "";
@@ -695,7 +757,7 @@ function DraftEditor({
                         </Button>
                         <Button
                           variant="outline"
-                          disabled={!editable || busy || dirty}
+                          disabled={!editable || busy || dirty || uploadUncertain}
                           onClick={() => void remove(asset.id)}
                         >
                           {t.remove}
@@ -738,10 +800,11 @@ function DraftEditor({
                   </dd>
                 </div>
               </dl>
+              <p>{form.no_documents ? t.noDocuments : t.papers}</p>
               <p>{t.feeHint}</p>
               <Button
                 variant="outline"
-                disabled={busy || dirty || !editable}
+                disabled={busy || uploadUncertain || dirty || !editable}
                 onClick={() =>
                   void run(async () =>
                     setQuote(
@@ -775,24 +838,19 @@ function DraftEditor({
                   </small>
                 </div>
               )}
+              <section aria-label={t.publicationTerms}>
+                <h3>{t.publicationTerms}</h3>
+                <p>{t.feeTerms}</p>
+                <p>{t.returnTerms}</p>
+                <p>{current.seller_type === "private" ? t.privateAssuranceTerms : t.businessAssuranceTerms}</p>
+                <ButtonLink variant="outline" href={scopedHref(`/${locale}/inbox`, organization)}>{t.publicationSupport}</ButtonLink>
+              </section>
               <div className="le-publish">
                 <Button
                   disabled={
-                    busy || dirty || !quote || current.status === "published"
+                    busy || uploadUncertain || dirty || !quote || current.status === "published"
                   }
-                  onClick={() =>
-                    void run(async () => {
-                      if (!quote) return;
-                      const result = await listingApi.publish(
-                        current,
-                        quote,
-                        publicationKey.current,
-                      );
-                      setRow(result);
-                      setFacts(result.facts);
-                      setNotice(t.published);
-                    })
-                  }
+                  onClick={() => void run(publish)}
                 >
                   {busy ? t.publishing : t.publish} ↗
                 </Button>
@@ -850,7 +908,7 @@ function DraftEditor({
           {labels[(step + 1) % 4]} →
         </Button>
         <Button
-          disabled={busy || !dirty || (!factsEditable&&!editUncertain) || (current.status==='published'&&editReason.trim().length<3)}
+          disabled={busy || uploadUncertain || !dirty || (!factsEditable&&!editUncertain) || (current.status==='published'&&editReason.trim().length<3)}
           onClick={() => void run(save)}
         >
           {busy ? t.working : current.status==='published'?t.saveRevision:t.save}

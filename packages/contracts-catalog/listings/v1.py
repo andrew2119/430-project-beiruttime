@@ -78,6 +78,8 @@ def incomplete(facts: WatchFacts, photo_count: int) -> list[str]:
         missing.append("modifications")
     if not facts.modified and facts.modifications:
         missing.append("modified")
+    if facts.no_documents == ("papers" in facts.included):
+        missing.append("no_documents")
     if photo_count < 1:
         missing.append("photos")
     return list(dict.fromkeys(missing))
