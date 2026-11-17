@@ -136,7 +136,7 @@ class NativeTests(unittest.TestCase):
                 child.poll.return_value = None if name in ('database', 'database-restricted') else 0
                 return child
             cap = {'python': '/tmp/python', 'postgres_bin': '/tmp/bin'}
-            with patch.object(native.shutil, 'copytree'), patch.object(native, 'available'), patch.object(native, 'launch', side_effect=launch), patch.object(native.subprocess, 'check_output', return_value=b'postgres (PostgreSQL) 17.6'), patch.object(native.subprocess, 'run', return_value=Mock(returncode=0)), patch.object(native, 'wait_ready'), patch.object(native, 'restrict_auth'), patch.object(native, 'owned', return_value=False), patch.object(native, 'supervise'):
+            with patch.object(native, 'available'), patch.object(native, 'launch', side_effect=launch), patch.object(native.subprocess, 'check_output', return_value=b'postgres (PostgreSQL) 17.6'), patch.object(native.subprocess, 'run', return_value=Mock(returncode=0)), patch.object(native, 'wait_ready'), patch.object(native, 'restrict_auth'), patch.object(native, 'owned', return_value=False), patch.object(native, 'supervise'):
                 native.start(run, [native.MANIFEST['services'][0], native.MANIFEST['services'][-1]], cap)
             initialization = next(c for c in calls if c[1][0].endswith('/initdb'))
             self.assertIn('--auth-host=reject', initialization[1])
@@ -154,6 +154,10 @@ class NativeTests(unittest.TestCase):
             self.assertNotIn('_owner:', runtime[2]['BT_DATABASE_URL'])
             web = next(c for c in calls if c[0] == 'web')
             self.assertNotIn('BT_DATABASE_URL', web[2])
+            self.assertEqual(web[1], [
+                'node', 'web/node_modules/next/dist/bin/next', 'start', 'web',
+                '--hostname', '127.0.0.1', '--port', '3000'])
+            self.assertFalse((run / 'web').exists())
             self.assertEqual(json.loads((run / 'ledger.json').read_text())['state'], 'ready')
 
     def test_interruption_cleans_owned_processes(self):

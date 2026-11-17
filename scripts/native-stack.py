@@ -12,7 +12,6 @@ import fcntl
 import json
 import os
 from pathlib import Path
-import shutil
 import signal
 import socket
 import re
@@ -386,10 +385,6 @@ def start(run, services, cap):
         save(run, ledger)
     try:
         env.update(environment(cap, run))
-        if any(s['name'] == 'web' for s in services):
-            shutil.copytree(ROOT / 'web/.next/standalone', run / 'web')
-            shutil.copytree(ROOT / 'web/.next/static', run / 'web/web/.next/static', dirs_exist_ok=True)
-            shutil.copytree(ROOT / 'web/public', run / 'web/web/public', dirs_exist_ok=True)
         version = subprocess.check_output([str(pg / 'postgres'), '--version'], env=env, timeout=5).decode()
         if not version.split()[-1].startswith('17.'):
             raise ValueError('Database major version must be 17')
@@ -428,7 +423,8 @@ def start(run, services, cap):
                 command([cap['python'], '-m', 'service_app.migrate'], environment(cap, run, s, True))
                 cmd = [cap['python'], '-m', 'uvicorn', s['factory'], '--factory', '--host', '127.0.0.1', '--port', str(s['port']), '--no-access-log']
             else:
-                cmd = ['node', str(run / 'web/web/server.js')]
+                # Resolve dependencies and assets from the existing production build.
+                cmd = s['command']
             child = launch(run, ledger, s['name'], cmd, environment(cap, run, s))
             wait_ready(f"http://127.0.0.1:{s['port']}" + ('/health/ready' if 'database' in s else '/api/health'), child, cap)
         ledger['state'] = 'ready'
