@@ -6,8 +6,7 @@ import { ThemeProvider } from '@/shell/theme-provider';
 import { BRAND_THEME_COLOR } from '@/lib/brand';
 import { direction } from '@/lib/i18n';
 import { getLocale, getPublicPath } from '@/shell/locale';
-import { Shell } from '@/shell/shell';
-import { Providers } from '@/shell/providers';
+import { FoundationProviders } from '@/shell/foundation/providers';
 import { ShellBoundary } from '@/shell/shell-boundary';
 import { navigation } from '@/registry-loader';
 import './globals.css';
@@ -22,5 +21,5 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
   const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
   const path = await getPublicPath();
-  return <html lang={locale} dir={direction(locale)} data-theme={theme} className={[lexendDeca.variable, arabic.variable].join(' ')}><body><ThemeProvider initialTheme={theme}><Providers locale={locale}><ShellBoundary serverPath={path} locale={locale} entries={navigation} legacy={<Shell locale={locale} theme={theme}>{children}</Shell>}>{children}</ShellBoundary></Providers></ThemeProvider></body></html>;
+  return <html lang={locale} dir={direction(locale)} data-theme={theme} className={[lexendDeca.variable, arabic.variable].join(' ')}><body><ThemeProvider initialTheme={theme}><FoundationProviders locale={locale}><ShellBoundary serverPath={path} locale={locale} entries={navigation}>{children}</ShellBoundary></FoundationProviders></ThemeProvider></body></html>;
 }

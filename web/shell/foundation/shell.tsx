@@ -9,6 +9,8 @@ import type { NavEntry } from '@/registry-types';
 import { PageReadProvider } from '@/lib/page-speed/provider';
 import { PageWarmingLoader } from '@/lib/page-speed/loader';
 import { ShellNavigation } from './navigation';
+import { ShellUpdates } from './updates';
+import { LocaleControl } from './locale-control';
 import { ShellProfile } from './profile';
 import { SHELL_COPY } from './copy';
 import { pageOwnsToasts } from './path';
@@ -17,10 +19,10 @@ const subscribeOnline = (run:()=>void)=>{window.addEventListener('online',run);w
 const isOnline = ()=>navigator.onLine !== false;
 const subscribePhone = (run:()=>void)=>{const media = window.matchMedia('(max-width: 850px)');media.addEventListener('change',run);return()=>media.removeEventListener('change',run);};
 const isPhone = ()=>window.matchMedia('(max-width: 850px)').matches;
-function BrandLink({locale}: {locale:Locale}) {return <Link href={`/${locale}`} prefetch={false} className="bt-shell-brand bt-pressable"><Watch aria-hidden="true"/><span>{SHELL_COPY[locale].brand}</span></Link>;}
+function BrandLink({locale}: {locale:Locale}) {return <Link href={`/${locale}`} prefetch={true} className="bt-shell-brand bt-pressable"><Watch aria-hidden="true"/><span>{SHELL_COPY[locale].brand}</span></Link>;}
 /** Same frame exists in server HTML, while identity and route answers restore.
  * There is no auth animation or duplicate boot shell to hand off at hydration. */
-export function FoundationShell({locale,entries,path,children}: {locale:Locale;entries:NavEntry[];path:string;children:ReactNode}) {
+export function FoundationShell({locale,entries,path,children,accessRevision=0}: {locale:Locale;entries:NavEntry[];path:string;children:ReactNode;accessRevision?:number}) {
   const t = SHELL_COPY[locale], content = useRef<HTMLElement|null>(null), previous = useRef(path);
   const [drawer,setDrawer] = useState<string|null>(null), navigating = useRef(false);
   const online = useSyncExternalStore(subscribeOnline,isOnline,()=>true), phone = useSyncExternalStore(subscribePhone,isPhone,()=>false);
@@ -40,7 +42,7 @@ export function FoundationShell({locale,entries,path,children}: {locale:Locale;e
     <header className="bt-shell-topbar"><Sheet open={open} onOpenChange={value=>{navigating.current = false;setDrawer(value ? path : null);}}><SheetTrigger label={t.menu}><Menu aria-hidden="true"/></SheetTrigger>
       <SheetContent form="end" title={t.navigation} closeLabel={t.close} className="bt-navigation-sheet" onCloseAutoFocus={event=>{if (navigating.current || drawer != null && drawer !== path) event.preventDefault();}}>
         {phone && <div className="bt-shell-drawer-content" onClickCapture={event=>{const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null;if (anchor && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {navigating.current = true;setDrawer(null);}}}><BrandLink locale={locale}/><ShellNavigation entries={entries} locale={locale} path={path}/><ShellProfile locale={locale} path={path}/></div>}
-      </SheetContent></Sheet><BrandLink locale={locale}/></header>
-    <PageReadProvider><main ref={content} id="main-content" className="bt-shell-content" tabIndex={-1}>{!online && <p role="status" className="bt-shell-connectivity">{t.offline}</p>}{children}</main><PageWarmingLoader/></PageReadProvider>
+      </SheetContent></Sheet><BrandLink locale={locale}/><LocaleControl locale={locale}/></header>
+    <PageReadProvider key={accessRevision}><main ref={content} id="main-content" className="pg-tray bt-shell-content" tabIndex={-1}>{!online && <p role="status" className="bt-shell-connectivity">{t.offline}</p>}<ShellUpdates locale={locale}/>{children}</main><PageWarmingLoader/></PageReadProvider>
   </div>{!pageOwnsToasts(path) && <Toaster label={t.toasts} dismissLabel={t.dismiss} contentRef={content}/>}</DirectionProvider>;
 }
