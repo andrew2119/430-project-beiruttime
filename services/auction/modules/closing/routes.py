@@ -4,7 +4,8 @@ from fastapi import APIRouter, Request
 from bt_contracts.auction.closing import CloseAuction
 from bt_contracts.auction.closing.v2 import CloseResultV2
 from bt_contracts_core.errors import PublicError, AccessDenied
-from .service import close, public
+from .service import close, public, recovery
+from bt_contracts.auction.closing.v3 import CloseResultV3
 
 router = APIRouter(tags=["auction-close-v1"])
 
@@ -140,3 +141,26 @@ async def internal_result(auction_id: UUID, request: Request):
             "order_id": str(row["order_id"]) if row["order_id"] else None,
         }
     )
+
+
+@router.post("/internal/v3/auctions/{auction_id}/close", response_model=CloseResultV3)
+async def command_v3(auction_id: UUID, body: CloseAuction, request: Request):
+    service(request, {"auction"})
+    await close(request.app, auction_id, body.expected_end_version, request.state.request_id)
+    return await recovery_result(auction_id, request)
+
+
+@router.get("/internal/v3/auctions/{auction_id}/close-result", response_model=CloseResultV3)
+async def lookup_v3(auction_id: UUID, request: Request):
+    service(request, {"auction", "communications", "pricing", "orders"})
+    return await recovery_result(auction_id, request)
+
+
+async def recovery_result(auction_id, request):
+    row = await request.app.state.pool.fetchrow(
+        "SELECT c.*,l.currency FROM l13_auction_closes c JOIN auction_lots l ON l.id=c.auction_id WHERE c.auction_id=$1",
+        auction_id,
+    )
+    if row is None:
+        raise PublicError("not_found", "Close decision not found.", status=404)
+    return recovery(row, row["currency"])

@@ -10,6 +10,23 @@ from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 
 
+def valid_total(value, price):
+    # Watch buyer surcharge is three percent, rounded half up to one cent.
+    return (
+        type(price) is int and 0 <= price <= 9_000_000_000_000_000
+        and type(value) is int and value == price + (price * 3 + 50) // 100
+    )
+
+
+def reference(value):
+    if not isinstance(value, str):
+        raise ValueError("Invalid reference")
+    parsed = UUID(value)
+    if parsed.int == 0:
+        raise ValueError("Invalid reference")
+    return parsed
+
+
 class Sources:
     def __init__(self, app):
         self.app = app
@@ -129,6 +146,8 @@ async def reconcile(app, source, auction_id):
                 or watch.get("auction_committed") is not True
                 or type(watch.get("listing_revision")) is not int
                 or type(watch.get("revision")) is not int
+                or watch["listing_revision"] < 1
+                or watch["revision"] < 1
             ):
                 raise PublicError(
                     "commitment_held",
@@ -147,8 +166,11 @@ async def reconcile(app, source, auction_id):
                 or basis.get("source") != "auction"
                 or basis.get("source_verified") is not True
                 or basis.get("kind") != "winner"
-                or type(basis.get("payable_minor")) is not int
+                or type(basis.get("price_minor")) is not int
+                or type(basis.get("listing_revision")) is not int
+                or not valid_total(basis.get("payable_minor"), row["closing_minor"])
                 or type(basis.get("revision")) is not int
+                or basis["revision"] < 1
             ):
                 raise PublicError(
                     "quote_held",
@@ -164,7 +186,7 @@ async def reconcile(app, source, auction_id):
                 "source_id": str(auction_id),
                 "kind": "winner",
                 "buyer_id": str(row["winner_id"]),
-                "quote_id": str(UUID(basis["id"])),
+                "quote_id": str(reference(basis["id"])),
                 "quote_revision": basis["revision"],
                 "currency": q["currency"],
                 "total_minor": basis["payable_minor"],
@@ -172,7 +194,7 @@ async def reconcile(app, source, auction_id):
             async with unit_of_work(app.state.pool) as tx:
                 wrote = await tx.fetchval(
                     """UPDATE l13_auction_closes SET allocation_payload=$3::jsonb
-                    WHERE auction_id=$1 AND lease=$2 RETURNING 1""",
+                    WHERE auction_id=$1 AND lease=$2 AND lease_until>clock_timestamp() RETURNING 1""",
                     auction_id,
                     lease,
                     json.dumps(payload),
@@ -193,12 +215,15 @@ async def reconcile(app, source, auction_id):
                 status=503,
             )
         order = result.get("order", {})
+        if not isinstance(order, dict):
+            raise ValueError("Invalid allocation result")
         if result["status"] == "succeeded" and (
             order.get("buyer_id") != str(row["winner_id"])
             or order.get("watch_id") != payload["watch_id"]
             or order.get("listing_id") != payload["listing_id"]
             or order.get("quote_id") != payload["quote_id"]
             or order.get("currency") != payload["currency"]
+            or type(order.get("total_minor")) is not int
             or order.get("total_minor") != payload["total_minor"]
         ):
             raise PublicError(
@@ -206,11 +231,16 @@ async def reconcile(app, source, auction_id):
                 "The original allocation result cannot be verified.",
                 status=503,
             )
-        order_id = UUID(order["id"]) if result["status"] == "succeeded" else None
+        order_id = reference(order["id"]) if result["status"] == "succeeded" else None
+        if result.get("code") is not None and (
+            not isinstance(result["code"], str) or len(result["code"]) > 200
+        ):
+            raise ValueError("Invalid outcome reason")
         async with unit_of_work(app.state.pool) as tx:
             wrote = await tx.fetchval(
                 """UPDATE l13_auction_closes SET state=$3,order_id=$4,reason=$5,lease=NULL,lease_until=NULL,
-                updated_at=clock_timestamp() WHERE auction_id=$1 AND lease=$2 AND state='allocation_pending' RETURNING 1""",
+                next_action=CASE WHEN $4::uuid IS NULL THEN 'review_allocation_denial' ELSE NULL END,
+                result_revision=result_revision+1,updated_at=clock_timestamp() WHERE auction_id=$1 AND lease=$2 AND lease_until>clock_timestamp() AND state='allocation_pending' RETURNING 1""",
                 auction_id,
                 lease,
                 "closed" if order_id else "allocation_denied",
