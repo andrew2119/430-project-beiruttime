@@ -116,3 +116,64 @@ All connected execution, nine-domain heavy checks, dependency/vulnerability
 assessment, receipt reconciliation, full 64-feature mapping, owner rehearsal,
 load, visual checks and physical-phone proof remain owed until recorded against
 the current build. No deployment or workflow change is part of this module.
+
+## Connected recovery driver
+
+From the repository root on beirut-test-1, with the native stack already running:
+
+```
+E09_MODE=rehearsal python tests/lanes/L22/E09/driver.py --run-dir "$RUN"
+```
+
+The default mode is rehearsal. The driver writes a private
+`RUN/scenarios/e09/summary.json`, including scenario identifiers, operation
+identifiers, source revision, measured seconds, outcomes and the five owner
+responsibilities. Exit zero requires every connected case. Run output belongs
+outside the source checkout. The driver does not install dependencies.
+
+The driver consumes the private `RUN/native-v1.json` directly. No external
+release executable or capabilities file is used. Settings contain `python`, `postgres_bin`, `environment` and
+`service_environment` (per-service environment dictionaries). The driver uses
+the native supervisor's runtime constructor to retain generated database settings,
+service routing, origins and scoped private settings, then rebinds release paths.
+Provider URLs must be loopback and database URLs must use port 54329.
+Settings and child output are never printed.
+
+Replacement validates the complete environment before taking `control.lock`.
+The current native supervisor retains its original process entries in memory and
+publishes no ownership transfer interface. Replacement therefore fails before
+termination with `native-supervisor-ownership-transfer`; a busy control lock fails
+with `native-supervisor-control-busy`. No disk ledger edit is treated as a handoff.
+Connected restart and rollback remain deferred until the supervisor provides an
+ownership transfer interface. The current stack is left running.
+
+Build exports the source revision into a private release directory, packages the
+contracts, compiles all nine domains and builds the production web with installed
+local dependencies. It never installs dependencies or reverses migrations.
+Execution requires a network namespace with only loopback routes; missing isolation
+is a named failure before any build command. The local simulators remain selected
+by the runtime settings. No remote provider is allowed.
+
+Authoritative reads use `e09_reads` in the runtime settings, with `receipts`,
+`journal` and `custody` bindings. Each binding contains `url` and optional private
+`headers`. Only the owning orders service on port 8105 is accepted; redirects and
+proxy settings are disabled. Each response must contain its named nonempty array
+and explicit `synthetic: false`, `seeded: false` provenance. Receipt rows contain
+`operation_id`, integer `amount_minor`, USD `currency`, `custody_reference` and
+`revision`; journal rows contain matching operation and money with `effect_count: 1`;
+custody rows contain matching operation, custody reference and revision. These
+are current reads of existing acknowledged operations, never writes or seeded
+observations. Missing mounted read bindings fail by name. Final reconciliation
+requires every baseline receipt to remain identical, permitting new receipts.
+
+E04 currently publishes a synthetic restore model rather than a connected backup
+output. The restore case therefore fails with `E04-connected-backup-output`;
+no synthetic restore counts as connected. Connected restore and authoritative
+read integration remain deferred until those owning prerequisites are available.
+The command returns nonzero for these missing capabilities while retaining the
+outcomes and measured durations of the other steps. Local checks prove orchestration
+and process handling only; the designated-host rehearsal is still required.
+
+`E09_MODE=railway` with the same entry point prints only the proposed commands
+and exits without reading settings, writing evidence, building or executing any
+command. It never deploys.
