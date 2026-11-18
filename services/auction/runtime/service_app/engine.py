@@ -127,6 +127,7 @@ class AuctionEngine:
                 raise PublicError('invalid_schedule', 'The auction must end in the future.', status=409)
             listing = await self.dependencies.listing(request, command.listing_id)
             self.published(listing, command.listing_id, principal)
+            await self.require_current_publication(tx, command.listing_id, listing['revision'])
             commitment = await self.dependencies.fence(request, listing, auction_id, key)
             now = await tx.fetchval('SELECT clock_timestamp()')
             if command.ends_at <= now:
@@ -207,6 +208,7 @@ class AuctionEngine:
             replay = await self.operation(tx, principal, key, digest)
             if replay:
                 return replay
+            await self.lock_publication(tx, preflight['listing_id'], listing['revision'])
             await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'auction:' + str(auction_id))
             lot = await tx.fetchrow('SELECT * FROM auction_lots WHERE id=$1 FOR UPDATE', auction_id)
             if not lot:
@@ -280,6 +282,8 @@ class AuctionEngine:
         if (listing['revision'] != preflight['listing_revision'] or UUID(listing['seller_id']) != preflight['seller_id']
                 or listing.get('seller_organization_id') != (str(preflight['seller_organization_id']) if preflight['seller_organization_id'] else None)):
             raise PublicError('listing_changed', 'The listing seller has changed.', status=409)
+        async with request.app.state.pool.acquire() as tx:
+            await self.require_current_publication(tx, preflight['listing_id'], listing['revision'])
         await self.dependencies.check_fence(request, preflight)
         from datetime import datetime, timezone
         fee_expires_at = await self.dependencies.fee(request, command, preflight, principal, datetime.now(timezone.utc))
@@ -303,6 +307,7 @@ class AuctionEngine:
             replay = await self.operation(tx, principal, key, digest)
             if replay and replay['status'] != 'pending':
                 return replay
+            await self.lock_publication(tx, preflight['listing_id'], listing['revision'])
             await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'auction:' + str(auction_id))
             lot = await tx.fetchrow('SELECT * FROM auction_lots WHERE id=$1 FOR UPDATE', auction_id)
             if not lot:
@@ -411,6 +416,19 @@ class AuctionEngine:
                       'revision': updated['revision'], 'end_version': updated['end_version'],
                       'ends_at': updated['ends_at'].isoformat(), 'mode': updated['mode']}), ['auction-timing-v2'])
             return outcome
+
+    async def lock_publication(self, tx, listing_id, revision):
+        # Use the receiver's listing lock even before a watermark row exists.
+        # Acquire it before the auction lock, in the same order as listing edits.
+        await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'listing:' + str(listing_id))
+        await self.require_current_publication(tx, listing_id, revision)
+
+    @staticmethod
+    async def require_current_publication(tx, listing_id, revision):
+        published_revision = await tx.fetchval(
+            'SELECT revision FROM auction_publication_watermarks WHERE listing_id=$1', listing_id)
+        if published_revision is not None and revision < published_revision:
+            raise PublicError('listing_changed', 'Reload the current listing publication.', status=409)
 
     @staticmethod
     def manual_result(state, command):
