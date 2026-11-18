@@ -6,6 +6,8 @@ import ar from './ar.json';
 import { usdCents } from '../movement-option/offering';
 import { formatMinor } from '../movement-option/money';
 import { DirectoryAvailability } from './availability';
+import type { DraftPage } from '@contracts/contracts-catalog/request-drafts';
+import type { draftApi } from '../request-drafts/api';
 import movementEn from '../movement-option/en.json';
 import requestEn from '../request-drafts/en.json';
 import requestAr from '../request-drafts/ar.json';
@@ -24,7 +26,12 @@ vi.mock('@/lib/page-speed/read',()=>({usePageRead:(read:{key:unknown[]}|null)=>{
   const movement={ id: 'movement', brand_id: brand, revision: 1, label_en: 'Synthetic movement', label_ar: 'حركة نموذجية', caliber: 'manual-01', cases: ['case'], dials: ['dial'], hands: ['hands'], functions: [], quote_minor: 15000, currency: 'USD' };
   return {error:key==='directory-choice'||key==='movement-selection'?state.privateError:null,data:!read||((state.pending||state.error)&&(!state.listOnly||key==='official-directory'))?undefined:key==='official-directory'?{items:[business],total:1000,next_after:'next'}:key==='movement-options'?{items:[movement],total:1000,next_after:null}:key==='official-business'?business:key==='movement-option'?{item:{...movement,id:'pinned-movement',caliber:'PINNED-CALIBER'}}:{choice:state.pinned?{organization_id:brand,capability:'maintenance',purpose:'servicing',revision:1}:null,selection:state.pinned?{id:'selection',brand_id:brand,option_id:'pinned-movement',option_revision:1,revision:1,configuration:{case:'PRIVATE-CASE',dial:'PRIVATE-DIAL',hands:'PRIVATE-HANDS',functions:[]},status:'manual_review',quote_impact:{minor:15000,currency:'USD'}}:null},isPending:state.pending&&(!state.listOnly||key==='official-directory'),isError:state.error&&(!state.listOnly||key==='official-directory'),isSuccess:!state.pending&&!state.error,isFetching:false,refetch:vi.fn()};
 }}));
-vi.mock('@tanstack/react-query',()=>({useQueryClient:()=>({setQueryData:vi.fn()}),useMutation:()=>({mutate:vi.fn(),reset:vi.fn()}),useQuery:({queryKey}:{queryKey:string[]})=>({data:queryKey[0]==='l08-drafts'?{items:[]}:undefined,isPending:false,isError:false}),useInfiniteQuery:()=>({data:{pages:[{status:'available',data:{items:[],next_after:null}}]},isPending:false,isError:false})}));
+vi.mock('@tanstack/react-query',()=>({useQueryClient:()=>({setQueryData:vi.fn()}),useMutation:()=>({mutate:vi.fn(),reset:vi.fn()}),useQuery:({queryKey}:{queryKey:string[]})=>({data:queryKey[0]==='l08-drafts'?{items:[]}:undefined,isPending:false,isError:false}),useInfiniteQuery:({queryKey}:{queryKey:readonly unknown[]})=>{
+  const page = queryKey[0]==='l08-drafts'
+    ? {items:[],total:1234,next_cursor:null} satisfies DraftPage
+    : {status:'available',data:{items:[],next_after:null}} satisfies Awaited<ReturnType<typeof draftApi.catalogue>>;
+  return {data:{pages:[page]},isPending:false,isError:false};
+}}));
 vi.mock('@/shell/foundation/path',()=>({usesFoundationShell:()=>true}));
 import { ApiError } from '@/lib/api/client';
 import Directory from './view';
@@ -59,6 +66,7 @@ it.each(['en', 'ar'] as const)('keeps request draft controls, native POST and tr
   expect(html).toContain('method="post"');
   for (const name of ['kind', 'brand_id', 'watch_context', 'watch_reference', 'scope_intent', 'notes']) expect(html).toContain(`name="${name}"`);
   expect(html).toContain('ui-textarea');
+  expect(html).toContain(`${locale === 'en' ? requestEn.totalDrafts : requestAr.totalDrafts}: ${(1234).toLocaleString(locale)}`);
 });
 
 it('uses server totals and real page controls rather than a loaded length',()=>{
