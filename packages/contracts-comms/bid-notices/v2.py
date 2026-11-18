@@ -15,3 +15,13 @@ class OutbidV2(Contract):
 
 
 OPERATIONS = {'auction.outbid.v2': ('auction', OutbidV2)}
+
+
+class BidOutbidV2(Contract):
+    auction_id: UUID
+    listing_id: UUID
+    sequence: StrictInt = Field(ge=1)
+    revision: StrictInt = Field(ge=1)
+    bidder_id: UUID
+    current_minor: StrictInt = Field(ge=1, le=9_000_000_000_000)
+    currency: Literal['USD']

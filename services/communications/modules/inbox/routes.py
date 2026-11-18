@@ -116,6 +116,9 @@ async def destination(notice_id: UUID, request: Request, owner=Depends(actor)):
         'payment_required': ('orders', '/v1/orders/' + resource, '/buying?reservation_id=' + resource),
         'case_update': ('trust', '/v1/cases/' + resource, '/buyer')
     }[row['kind']]
+    review_notice = row['source'] == 'identity' and row['kind'] == 'case_update'
+    if review_notice:
+        dependency, path = 'identity', '/v1/private-reviews/' + resource
     response = await getattr(request.app.state, dependency).request('GET', path, headers={'Authorization': request.headers['Authorization'], 'X-Request-ID': request.state.request_id})
     if isinstance(response, Unavailable) or response.status_code != 200:
         raise PublicError('destination_unavailable', 'This destination is not currently available.', status=503)
@@ -126,5 +129,10 @@ async def destination(notice_id: UUID, request: Request, owner=Depends(actor)):
         except (ValueError, TypeError, KeyError):
             raise PublicError('destination_unavailable', 'This destination is not currently available.', status=503) from None
         url = '/watches/' + str(listing_id)
+    if review_notice:
+        try:
+            url = '/seller/verification' if UUID(response.json()['applicant_id']) == owner else '/operations/verification'
+        except (ValueError, TypeError, KeyError):
+            raise PublicError('destination_unavailable', 'This destination is not currently available.', status=503) from None
     # The owning service checks CURRENT access. A historical notice never grants access.
     return {'url': url, 'historical_revision': row['resource_revision']}

@@ -21,3 +21,8 @@ Readiness consumes owner-authorized Orders `GET /v1/orders/:id` -> `{order,histo
 Outbox invalidation intent remains transactional under destination `personal-invalidation`. No public event bus or invented order state is exposed. The web view currently uses canonical polling rather than claiming a delivered personal stream.
 
 V2 adds immutable source-fact deduplication, authenticated outbid/quote subscriptions and payment v3 availability receipts. See [the v2 contract](V2.md) for lookup and retry semantics. Inbox lists include the server total of uncleared notices, separately from unread count and page size.
+
+Personal invalidation delivery is deferred. Pending intents stay pending while
+canonical polling serves current state. Stream delivery requires an owner-scoped
+private transport and an exact source and type subscription before the
+destination can be enabled.

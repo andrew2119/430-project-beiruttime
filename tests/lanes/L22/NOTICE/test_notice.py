@@ -230,7 +230,7 @@ def test_displaced_and_immediately_beaten_recipients_are_separate(setup):
     outbid = [r for r in pool.bids if r[3] == 'outbid']
     assert {r[2] for r in outbid} == {holder, challenger}
     assert len(outbid) == 2
-    assert all(len(row) == 11 for row in pool.bids)
+    assert all(len(row) == 12 and row[-1] == 8 for row in pool.bids)
 
 
 def test_outbid_v2_is_required_and_rejects_private_fields(setup):

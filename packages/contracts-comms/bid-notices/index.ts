@@ -11,3 +11,6 @@ export type OpenedBidNotice = {
   current_status:'available'|'unavailable';requires_new_fee_preview:true;
 };
 export type OutbidV2 = {auction_id:string;recipient_id:string;revision:number;sequence:number;reason:'displaced_holder'|'immediately_beaten_challenger';sample?:boolean};
+export type BidNoticeReceipt = {
+  event_id:string;notice_id:string;auction_id:string;sequence:number;inbox_id:string|null;
+};
