@@ -8,12 +8,12 @@ import { canScrollBoxMove } from '../../packages/ui/src/scroll-box';
 import { areaForPath, permittedEntries } from '@/shell/navigation';
 vi.mock('next/navigation',()=>({usePathname:()=>'/en/watches'}));
 const read=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
-describe('Shared design-system contract',()=>{
+describe('Beirut Time foundation contract',()=>{
  it('keeps the existing SSR cookie with a two-theme cycle and safe defaults',()=>{
   expect(parseTheme(undefined)).toBe('light');expect(parseTheme('classic')).toBe('light');expect(parseTheme('dark')).toBe('dark');expect(nextTheme('dark')).toBe('light');
   expect(themeCookieString('dark',true)).toBe('bt-theme=dark; Path=/; Max-Age=31536000; SameSite=Lax; Secure');
  });
- it('retains native button/form/label semantics and shared variants',()=>{
+ it('retains native button/form/label semantics and existing variants',()=>{
   const button=renderToStaticMarkup(h(Button,{type:'submit',disabled:true,chonk:true},'Save'));
   expect(button).toContain('type="submit"');expect(button).toContain('disabled');expect(button).toContain('pg-chonk-primary');
   expect(renderToStaticMarkup(h(Button,{className:'button-secondary'},'Cancel'))).toContain('ui-btn-outline');
@@ -48,18 +48,23 @@ describe('Shared design-system contract',()=>{
  it('keeps the bordeaux ramp and brand-mark references aligned',()=>{
   const tokens=read('../styles/tokens.css');
   const ramp={50:'97% 0.012 27',100:'91.4% 0.028 28.5',200:'85% 0.055 28',300:'76% 0.09 27.5',400:'66% 0.135 27.5',500:'58% 0.19 27.5',600:'50.6% 0.193 27.7',700:'41.6% 0.148 26.6',800:'35.6% 0.124 26.2',900:'29% 0.1 26',950:'23.3% 0.079 25.8'};
-  for(const [step,value] of Object.entries(ramp))expect(tokens).toContain(`--color-bordeaux-${step}: oklch(${value});`);
+  for(const [step,value] of Object.entries(ramp)){
+   expect(tokens).toContain(`--bt-burgundy-${step}: oklch(${value});`);
+   expect(tokens).toContain(`--color-bordeaux-${step}: var(--bt-burgundy-${step});`);
+  }
   const foundation=read('../styles/foundation.css');
   expect(foundation).toContain('color: var(--color-bordeaux-700)');
   expect(foundation).toContain('[data-theme="dark"] .bt-brand-mark { color: var(--color-bordeaux-400); }');
  });
  it('has one token owner, faithful motion steps, reduced motion and an exact 850px boundary',()=>{
   const tokens=read('../styles/tokens.css'), motion=read('../styles/motion.css');
-  expect(tokens).toContain('--ds-motion-theme: 0.45s');expect(tokens).toContain('--ds-motion-image-reveal: 0.18s');expect(tokens).toContain('--ds-hit-target: 44px');expect(tokens).toContain('--ds-phone-control: 36px');
+  expect(tokens).toContain('--ds-motion-theme: 0.45s');expect(tokens).toContain('--ds-motion-image-reveal: 0.18s');expect(tokens).toContain('--bt-touch-target: 44px');expect(tokens).toContain('--bt-phone-control: 36px');
   expect(motion).toContain('@media (prefers-reduced-motion: reduce)');expect(motion).toContain('::view-transition-new(*)');
   expect(read('../shell/theme-provider.tsx')).toContain('doc.startViewTransition(() =>');
   expect(read('../shell/phone-navigation.tsx')).toContain('(max-width: 850px)');expect(read('../styles/mobile.css')).toContain('(max-width: 850px)');
-  expect(read('../shell/shell.tsx')).toContain('</div><AppToaster');
+  expect(read('../shell/shell.tsx')).toContain('return <ShellView');
+  expect(read('../shell/shell-view.tsx')).toContain('return <ShellBoundary');
+  expect(read('../shell/foundation/shell.tsx')).toContain('</div>{!pageOwnsToasts(path) && <Toaster');
   expect(read('../shell/dashboard.tsx')).toContain('className="pg-home-page"');
   expect(read('../styles/mobile.css')).toContain('.pg-home-page .pg-dept-grid { grid-template-columns: minmax(0, 1fr); }');
   expect(read('../../packages/ui/src/button-variants.ts')).not.toContain('use client');
