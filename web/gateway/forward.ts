@@ -11,7 +11,7 @@ export function pathMatches(pattern: string, parts: string[]) {
   const expected=pattern.split('/').slice(1);
   return parts.length===expected.length && parts.every((part,i)=>/^[A-Za-z0-9_.-]{1,200}$/.test(part) && part!=='.' && part!=='..' && (expected[i].startsWith(':') || part===expected[i]));
 }
-async function readBody(request: Request, maxBytes: number) {
+export async function readBody(request: Request, maxBytes: number) {
   const reader=request.body?.getReader(); if(!reader) return undefined;
   const chunks:Uint8Array[]=[]; let size=0;
   while(true) { const next=await reader.read(); if(next.done) break; size+=next.value.length; if(size>maxBytes) { await reader.cancel(); throw new Error('body budget'); } chunks.push(next.value); }
