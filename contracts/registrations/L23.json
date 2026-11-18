@@ -1,1 +1,13 @@
-{"version":1,"lane":"L23","contracts":[]}
+{
+  "version": 1,
+  "lane": "L23",
+  "contracts": [
+    {
+      "namespace": "catalog.options.v1",
+      "path": "packages/contracts-catalog/options/movement",
+      "fixtures": [
+        "packages/contracts-catalog/options/movement/fixtures/operations.v1.json"
+      ]
+    }
+  ]
+}
