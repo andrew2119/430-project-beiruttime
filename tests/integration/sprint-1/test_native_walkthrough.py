@@ -6,6 +6,7 @@ import stat
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
+from urllib.parse import parse_qs
 
 spec = importlib.util.spec_from_file_location(
     'connected_walkthrough', Path(__file__).with_name('connected_walkthrough.py'))
@@ -36,37 +37,83 @@ class NativeWalkthroughTests(unittest.TestCase):
         self.addCleanup(client_patch.stop)
         self.walk = module.Walkthrough('http://example.test', 'native', self.run)
         self.walk.state = {'accounts': {
-            name: {'access_token': name + '-private-token'} for name in ('seller', 'dealer')},
-            'businesses': {'dealer': {'id': 'business-reference'}}}
+            name: {'access_token': name + '-private-token'} for name in ('seller', 'dealer', 'brand')},
+            'businesses': {'dealer': {'id': 'business-reference'}, 'brand': {'id': 'brand-reference'}}}
+
+    def test_reviewed_stock_media_request_survives_gateway_and_refresh(self):
+        for actor, listing_key in (('seller', 'DEMO-WATCH-01'),
+                                   ('dealer', 'DEMO-WATCH-02'), ('brand', 'DEMO-WATCH-06')):
+            with self.subTest(actor=actor):
+                root = self.run / actor
+                (root / 'demo').mkdir(parents=True)
+                (root / 'web/public/demo/watches').mkdir(parents=True)
+                asset = 'fixture asset&1'
+                content = b'fixture-image-bytes'
+                (root / 'web/public/demo/watches/fixture.jpg').write_bytes(content)
+                (root / 'demo/images-manifest.json').write_text(json.dumps({'assets': [
+                    {'id': asset, 'file': 'fixture.jpg'}]}))
+                (root / 'demo/listings.json').write_text(json.dumps({'listings': [{
+                    'id': listing_key, 'seller_type': 'private' if actor == 'seller' else 'dealer',
+                    'brand': 'Fixture', 'model': 'Fixture', 'condition': 'Fixture condition',
+                    'location': 'Beirut', 'sale_mode': 'fixed-price', 'price_minor': 100,
+                    'image_ids': [asset]}]}))
+                row = {'id': 'fixture-listing', 'status': 'draft', 'revision': 7, 'photo_ids': [], 'facts': {'price_minor': 100}}
+                self.walk.state['accounts'][actor]['refresh_cookie'] = 'test-refresh-cookie'
+                refreshed = {'access_token': 'test-refreshed-token'}
+                self.client.cookies.get.return_value = 'test-refresh-cookie'
+                self.client.request.side_effect = [
+                    module.httpx.Response(401),
+                    module.httpx.Response(201, json={'listing': {**row, 'revision': 8}})]
+                original_call = self.walk.call
+                def command(service, method, route, *args, **kwargs):
+                    if service == 'pricing':
+                        raise StopIteration
+                    if route.endswith('/refresh'):
+                        return refreshed
+                    if '/media?' in route:
+                        return original_call(service, method, route, *args, **kwargs)
+                    return row
+                with patch.object(module, 'ROOT', root), patch.object(self.walk, 'login'), \
+                        patch.object(self.walk, 'call', side_effect=command):
+                    with self.assertRaises(StopIteration):
+                        self.walk.prepare_reviewed_stock()
+                first, retry = self.client.request.call_args_list[-2:]
+                self.assertEqual(first.args[:1], ('POST',))
+                route, query = first.args[1].split('?')
+                self.assertEqual(route, '/api/web/v1/catalog/v1/seller/listings/fixture-listing/media')
+                expected = {'kind': ['public_photo'], 'public_safe': ['true'], 'demo_asset': [asset]}
+                if actor != 'seller':
+                    expected['organization_id'] = [self.walk.state['businesses'][actor]['id']]
+                self.assertEqual(parse_qs(query), expected)
+                self.assertEqual(first.kwargs['content'], content)
+                self.assertIsNone(first.kwargs['json'])
+                # These are the headers the gateway forwards to catalog.
+                forwarded = {key: value for key, value in retry.kwargs['headers'].items()
+                             if key in ('Authorization', 'Content-Type', 'Idempotency-Key', 'If-Match')}
+                self.assertEqual(forwarded, retry.kwargs['headers'])
+                self.assertEqual(forwarded['Content-Type'], 'application/octet-stream')
+                self.assertEqual(forwarded['If-Match'], '7')
+                self.assertTrue(forwarded['Idempotency-Key'])
+                self.assertEqual(first.kwargs['headers']['Idempotency-Key'], forwarded['Idempotency-Key'])
+                self.assertEqual(forwarded['Authorization'], 'Bearer test-refreshed-token')
+                self.assertEqual(retry.args, first.args)
+                self.assertEqual(retry.kwargs['content'], content)
 
     def test_publication_plan_and_real_result_checks(self):
         rows = [{'id': str(number), 'is_demo': True, 'status': 'published'}
                 for number in range(6)]
         with patch.object(self.walk, 'login'), patch.object(self.walk, 'call', side_effect=[
-            {'items': rows[:3]}, {'items': rows[3:]}, {'items': [{'demo': True}]}]), \
-                patch.object(module.subprocess, 'run', return_value=Mock(returncode=0)) as process:
+            {'items': rows[:3]}, {'items': rows[3:5]}, {'items': rows[5:]}, {'items': [{'demo': True}]}]), \
+                patch.object(self.walk, 'prepare_reviewed_stock') as prepare:
             self.walk.publication()
-        args, kwargs = process.call_args
-        command = args[0]
-        self.assertEqual(command[1:], ['-m', 'bt_runtime.fixtures', 'L03.listings', 'demo'])
-        self.assertNotIn('docker', command)
-        self.assertNotIn('private-token', ' '.join(command))
-        self.assertEqual(kwargs['cwd'], self.run)
-        env = kwargs['env']
-        self.assertEqual(env['BT_DEMO_PRIVATE_TOKEN'], 'seller-private-token')
-        self.assertEqual(env['BT_DEMO_IMPORT_ACK'], 'illustrative-stock-only')
-        self.assertEqual(env['BT_MODULES_PATH'], str(module.ROOT / 'services/catalog/modules'))
-        self.assertIn(str(self.run / 'domain-contracts'), env['PYTHONPATH'])
-        self.assertEqual(env['BT_DEMO_ROOT'], str(self.run / 'demo'))
-        self.assertEqual(env['TMPDIR'], str(self.run))
-        self.assertEqual((self.run / 'demo/listings.json').read_bytes(),
-                         (module.ROOT / 'demo/listings.json').read_bytes())
+        prepare.assert_called_once()
+        self.assertEqual(self.walk.state['listings'], rows)
         self.assertEqual(stat.S_IMODE(self.walk.path.stat().st_mode), 0o600)
         self.assertNotIn('private-token', json.dumps(self.walk.evidence))
 
     def test_incomplete_publication_is_rejected(self):
         with patch.object(self.walk, 'login'), patch.object(self.walk, 'call', return_value={'items': []}), \
-                patch.object(module.subprocess, 'run', return_value=Mock(returncode=0)):
+                patch.object(self.walk, 'prepare_reviewed_stock'):
             with self.assertRaises(AssertionError):
                 self.walk.publication()
 
@@ -309,7 +356,7 @@ class NativeWalkthroughTests(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 self.walk.run_phase('publication')
         process.assert_not_called()
-        self.assertEqual(self.client.request.call_count, 2)
+        self.assertEqual(self.client.request.call_count, 3)
 
     def test_verification_reads_ignore_old_journal_and_check_access(self):
         self.walk.phase = 'publication'
@@ -437,6 +484,65 @@ class NativeWalkthroughTests(unittest.TestCase):
                 self.walk.run_phase('onboard')
         pending.assert_not_called()
 
+    def test_authority_rejection_renews_named_actor_and_retries_once(self):
+        for refresh_cookie in (None, 'seller-refresh'):
+            for retry_status in (200, 401):
+                with self.subTest(refresh_cookie=bool(refresh_cookie), retry_status=retry_status):
+                    self.walk.state = {'accounts': {
+                        'seller': {'access_token': 'old-token', 'refresh_cookie': refresh_cookie},
+                        'dealer': {'access_token': 'dealer-token'}}}
+                    self.walk.evidence = []
+                    self.client.cookies.clear.reset_mock()
+                    self.client.cookies.set.reset_mock()
+                    self.client.cookies.get.return_value = 'renewed-refresh'
+                    calls = []
+                    renewed = {'access_token': 'new-token', 'account': {'id': 'seller'}}
+
+                    def request(method, route, **kwargs):
+                        calls.append((method, route, {**kwargs, 'headers': dict(kwargs['headers'])}))
+                        status = 401 if len(calls) == 1 else 200 if len(calls) == 2 else retry_status
+                        response = Mock(status_code=status, headers={})
+                        response.json.return_value = dict(renewed) if len(calls) == 2 else {'email_verified': True}
+                        return response
+
+                    self.client.request.side_effect = request
+                    if retry_status == 401:
+                        with self.assertRaises(AssertionError):
+                            self.walk.call('identity', 'GET', '/v1/contacts', 'seller')
+                    else:
+                        self.assertEqual(self.walk.call('identity', 'GET', '/v1/contacts', 'seller'),
+                                         {'email_verified': True})
+                    self.assertEqual(len(calls), 3)
+                    endpoint = 'refresh' if refresh_cookie else 'login'
+                    self.assertEqual(calls[1][:2], ('POST', '/api/web/v1/identity/v1/accounts/' + endpoint))
+                    self.assertNotIn('Authorization', calls[1][2]['headers'])
+                    self.assertEqual(calls[1][2]['json'], None if refresh_cookie else {
+                        'email': 'seller.s1@example.test', 'password': module.PASSWORD})
+                    self.client.cookies.clear.assert_called_once_with()
+                    if refresh_cookie:
+                        self.client.cookies.set.assert_called_once_with('bt_refresh', refresh_cookie)
+                    else:
+                        self.client.cookies.set.assert_not_called()
+                    self.assertEqual(calls[2][:2], calls[0][:2])
+                    original, retried = calls[0][2], calls[2][2]
+                    self.assertEqual(original['headers']['Authorization'], 'Bearer old-token')
+                    self.assertEqual(retried['headers']['Authorization'], 'Bearer new-token')
+                    original['headers']['Authorization'] = retried['headers']['Authorization']
+                    self.assertEqual(retried, original)
+                    self.assertEqual(self.walk.state['accounts']['seller']['access_token'], 'new-token')
+                    self.assertEqual(self.walk.state['accounts']['seller']['refresh_cookie'], 'renewed-refresh')
+                    self.assertEqual(self.walk.state['accounts']['dealer']['access_token'], 'dealer-token')
+                    self.assertEqual(json.loads(self.walk.path.read_text())['accounts'], self.walk.state['accounts'])
+                    self.assertEqual([row['status'] for row in self.walk.evidence], [401, 200, retry_status])
+
+    def test_unauthenticated_rejection_is_not_retried(self):
+        self.client.request.side_effect = None
+        self.client.request.return_value = Mock(status_code=401, headers={})
+        with self.assertRaises(AssertionError):
+            self.walk.call('identity', 'GET', '/v1/contacts')
+        self.client.request.assert_called_once()
+        self.client.cookies.clear.assert_not_called()
+
     def test_order(self):
         phases = ['accounts', 'bootstrap', 'onboard', 'contacts', 'publication',
                   'auctions', 'bids', 'purchases', 'directory', 'request']
@@ -485,3 +591,51 @@ class NativeWalkthroughTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ListingReviewWalkthroughTests(unittest.TestCase):
+    setUp = NativeWalkthroughTests.setUp
+
+    def test_private_proofs_precede_publication_and_businesses_publish(self):
+        self.walk.state['accounts']['operator'] = {'account': {'id': 'test-reviewer'}}
+        rows, calls = {}, []
+
+        def call(service, method, route, actor=None, body=None, **kwargs):
+            calls.append((service, method, route, actor, body))
+            path = route.split('?')[0]
+            if service == 'pricing':
+                return {'id': 'test-quote', 'schedule_id': 'usd-v2'}
+            if service == 'identity':
+                if path.endswith('/challenges'):
+                    return {'revision': 1, 'challenge_id': 'test-challenge', 'code': '123456'}
+                if path.endswith('/submissions'):
+                    assert actor == 'seller' and body['photo_base64']
+                    return {'revision': 2}
+                if path.endswith('/assignment'):
+                    assert actor == 'operator' and body['reviewer_id'] == 'test-reviewer'
+                    return {'revision': 3, 'assignment_revision': 1}
+                assert actor == 'operator' and body['verdict'] == 'approved'
+                return {'revision': 4}
+            if path == '/v1/seller/listings':
+                assert body['facts']['sale_mode'] in {'auction', 'fixed_price'}
+                identifier = body['demo_key']
+                rows[identifier] = dict(id=identifier, revision=1, status='draft', photo_ids=[], facts=body['facts'])
+                return rows[identifier]
+            identifier = path.split('/')[4]
+            row = rows[identifier]
+            if method == 'GET':
+                return row
+            if path.endswith('/media'):
+                row['photo_ids'] = ['test-photo']
+                return {'listing': row}
+            if kwargs.get('expected') == (503,):
+                return {'error': {'code': 'publication_review_pending'}}
+            row['status'] = 'published'
+            return row
+
+        with patch.object(self.walk, 'login'), patch.object(self.walk, 'call', side_effect=call):
+            self.walk.prepare_reviewed_stock()
+        self.assertEqual(len(rows), 6)
+        self.assertTrue(all(row['status'] == 'published' for row in rows.values()))
+        self.assertEqual(sum(route.endswith('/decision') for _, _, route, _, _ in calls), 3)
+        self.assertTrue(any(actor == 'brand' and '/publish?' in route for _, _, route, actor, _ in calls))
