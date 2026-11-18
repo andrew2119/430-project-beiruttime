@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 
 import jwt
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import Field, StrictInt, ValidationError
+from pydantic import Field, StrictBool, StrictInt, ValidationError, model_validator
 from bt_bulkheads import Unavailable
 from bt_contracts_core.models import Contract, EventEnvelope
 from .database import unit_of_work
@@ -20,7 +20,17 @@ router = APIRouter()
 class PaymentIntent(Contract):
     order_id: UUID
     buyer_id: UUID
-    order_revision: StrictInt = Field(gt=0)
+    recipient_id: UUID
+    revision: StrictInt = Field(gt=0, le=2147483647)
+    required: StrictBool
+    sample: StrictBool
+    simulated: StrictBool
+
+    @model_validator(mode='after')
+    def validate_delivery(self):
+        if self.recipient_id != self.buyer_id or not self.required or not self.simulated:
+            raise ValueError('Payment notices require the buyer as recipient and simulated delivery')
+        return self
 
 
 def fingerprint(event):
@@ -47,14 +57,11 @@ def authorize(event, request):
         raise HTTPException(403)
 
 
-def recovery_operator():
+def recovery_operator() -> UUID | None:
     try:
         return UUID(os.environ.get('BT_PAYMENT_NOTICE_OPERATOR_ID', ''))
     except ValueError:
-        raise HTTPException(503, detail={
-            'en': 'Payment notice recovery needs an assigned operator. Retry the same event.',
-            'ar': 'تتطلب متابعة إشعار الدفع تعيين مسؤول. أعد محاولة الحدث نفسه.',
-        }) from None
+        return None
 
 
 async def persist(tx, event):
@@ -73,17 +80,15 @@ async def persist(tx, event):
         if prior['fingerprint'] != digest:
             raise HTTPException(409)
         return False
-    operator_id = recovery_operator()
     notice_id = uuid4()
     notified_at = await tx.fetchval('''INSERT INTO l07_notices
         (id,recipient_id,source,occurrence_id,kind,resource_id,resource_owner_id,resource_revision,event_time,required,sample)
-        VALUES($1,$2,'orders',$3,'payment_required',$4,$2,$5,$6,true,true) RETURNING received_at''',
-        notice_id, intent.buyer_id, str(event.id), intent.order_id, intent.order_revision, event.time)
+        VALUES($1,$2,'orders',$3,'payment_required',$4,$2,$5,$6,true,$7) RETURNING received_at''',
+        notice_id, intent.buyer_id, str(event.id), intent.order_id, intent.revision, event.time, intent.sample)
     await tx.execute('''INSERT INTO l22_payment_notices
         (event_id,order_id,buyer_id,order_revision,fingerprint,notice_id,notified_at)
         VALUES($1,$2,$3,$4,$5,$6,$7)''',
-        event.id, intent.order_id, intent.buyer_id, intent.order_revision, digest, notice_id, notified_at)
-    await assign_recovery(tx, operator_id)
+        event.id, intent.order_id, intent.buyer_id, intent.revision, digest, notice_id, notified_at)
     await tx.execute('INSERT INTO inbox(consumer,event_id,source) VALUES($1,$2,$3)',
         'L22.payment-notices', event.id, event.source)
     return True
@@ -144,13 +149,13 @@ async def deliver(app, row, lease, key):
     return not isinstance(result, Unavailable) and 200 <= result.status_code < 300
 
 
-async def assign_recovery(tx, operator_id):
-    # Existing pending rows receive the same bounded recovery policy after migration.
+async def hold_for_recovery(tx, row):
     await tx.execute('''INSERT INTO l22_payment_notice_recovery
         (event_id,operator_id,held_since,response_due_at,escalation_due_at)
-        SELECT event_id,$1,notified_at,notified_at+interval '24 hours',
-            notified_at+interval '48 hours' FROM l22_payment_notices
-        WHERE acknowledged_at IS NULL ON CONFLICT (event_id) DO NOTHING''', operator_id)
+        VALUES($1,$2,$3::timestamptz,$3::timestamptz+interval '24 hours',$3::timestamptz+interval '48 hours')
+        ON CONFLICT (event_id) DO UPDATE SET operator_id=EXCLUDED.operator_id
+        WHERE l22_payment_notice_recovery.operator_id IS NULL AND EXCLUDED.operator_id IS NOT NULL''',
+        row['event_id'], recovery_operator(), row['notified_at'])
 
 
 async def update_recovery(tx):
@@ -165,13 +170,9 @@ async def update_recovery(tx):
 
 
 async def tick(app, key):
-    operator_id = recovery_operator()
     lease = uuid4()
     async with unit_of_work(app.state.pool) as tx:
-        await assign_recovery(tx, operator_id)
         await update_recovery(tx)
-        if key is None:
-            return
         rows = await tx.fetch('''WITH due AS (SELECT event_id FROM l22_payment_notices
             WHERE acknowledged_at IS NULL AND available_at<=now()
             AND (leased_until IS NULL OR leased_until<now())
@@ -179,13 +180,18 @@ async def tick(app, key):
             UPDATE l22_payment_notices n SET lease_token=$1,leased_until=now()+interval '30 seconds',attempts=attempts+1
             FROM due WHERE n.event_id=due.event_id RETURNING n.*''', lease)
     for row in rows:
-        ok = await deliver(app, row, lease, key)
+        ok = key is not None and await deliver(app, row, lease, key)
         async with unit_of_work(app.state.pool) as tx:
-            await tx.execute('''UPDATE l22_payment_notices SET
+            updated = await tx.fetchval('''UPDATE l22_payment_notices SET
                 acknowledged_at=CASE WHEN $3 THEN now() ELSE acknowledged_at END,
                 available_at=now()+$4*interval '1 second',lease_token=NULL,leased_until=NULL
-                WHERE event_id=$1 AND lease_token=$2''', row['event_id'], lease, ok,
+                WHERE event_id=$1 AND lease_token=$2 RETURNING event_id''', row['event_id'], lease, ok,
                 min(3600, 2 ** min(row['attempts'], 11)))
+            if updated is None:
+                continue
+            if not ok:
+                await hold_for_recovery(tx, row)
+                continue
             await tx.execute('''UPDATE l22_payment_notice_recovery r SET resolved_at=now()
                 FROM l22_payment_notices n WHERE r.event_id=n.event_id
                 AND n.event_id=$1 AND n.acknowledged_at IS NOT NULL

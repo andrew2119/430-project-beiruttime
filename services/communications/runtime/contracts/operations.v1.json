@@ -63,19 +63,23 @@
     "data": {
       "order_id": "UUID",
       "buyer_id": "UUID",
-      "order_revision": "positive integer"
+      "recipient_id": "UUID equal to buyer_id",
+      "revision": "positive integer up to 2147483647",
+      "required": "true",
+      "sample": "boolean",
+      "simulated": "true"
     },
-    "status": "Contract fixture pending producer integration"
+    "status": "Canonical scoped receiver for required payment notices. The alternate inbox receipt path remains deferred."
   },
   "recovery": {
     "operator_configuration": "BT_PAYMENT_NOTICE_OPERATOR_ID",
     "operator_format": "UUID",
-    "missing_operator": "Reject new events as unavailable before notice persistence. Preserve the event reference for retry.",
-    "ownership": "Persist one operator per event atomically with the notice; retries never reassign it.",
+    "missing_operator": "Keep failed deliveries held with an unassigned recovery record and continue retrying.",
+    "ownership": "Create a recovery record on failed delivery or when the signing key is missing. Assign the configured operator when available and preserve the assignment on retry.",
     "response_due": "Durable notice availability plus 24 hours.",
     "escalation_due": "Durable notice availability plus 48 hours without acknowledgement.",
     "escalation": "Record escalation and bilingual next action durably; resolve only after receipt acknowledgement.",
-    "migration": "Assign existing pending notices before delivery using their original availability time.",
-    "connected_proof": "Database migration, configured operator identity and operational response remain deferred."
+    "migration": "Allow a held recovery record to remain unassigned until an operator is configured.",
+    "connected_proof": "Configured operator identity and operational response remain deferred."
   }
 }

@@ -1,1 +1,13 @@
-{"version":1,"lane":"L22","contracts":[]}
+{
+  "version": 1,
+  "lane": "L22",
+  "contracts": [
+    {
+      "namespace": "comms.saved-searches.v1",
+      "path": "packages/contracts-comms/saved-searches",
+      "fixtures": [
+        "packages/contracts-comms/saved-searches/fixtures.json"
+      ]
+    }
+  ]
+}

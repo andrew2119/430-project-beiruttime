@@ -1,1 +1,1 @@
-{"version":1,"id":"L22.payment-notices","dependencies":["fastapi","asyncpg","PyJWT","pydantic"],"routes":["entry.py:router"],"migrations":["migrations/L22_0001_payment_notices.sql","migrations/L22_0002_payment_notice_recovery.sql"],"workers":["entry.py:run"]}
+{"version":1,"id":"L22.payment-notices","dependencies":["fastapi","asyncpg","PyJWT","pydantic"],"routes":["entry.py:router"],"migrations":["migrations/L22_0001_payment_notices.sql","migrations/L22_0002_payment_notice_recovery.sql","migrations/L22_0003_unassigned_recovery.sql"],"workers":["entry.py:run"]}

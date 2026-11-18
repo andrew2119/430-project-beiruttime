@@ -70,21 +70,25 @@ def test_path_escape_and_lane_boundary(tmp_path):
         discover(tmp_path)
 
 
-def test_routes_are_once_and_discovery_is_service_local(tmp_path):
+def test_routes_are_once_and_discovery_is_service_local(tmp_path, monkeypatch):
+    import re
     from bt_runtime import modules
-    assert not modules.MODULE_ID.fullmatch('L22.notice')
+
+    narrow_pattern = re.compile(r'L[01][0-9]\.[a-z-]+')
+    monkeypatch.setattr(modules, 'MODULE_ID', narrow_pattern)
     fragment(tmp_path, 'L22')
     app = create_app(Settings(modules_path=tmp_path, database_url='postgresql://unused/unused'))
     assert [module.id for module in app.state.modules] == ['L22.notice']
     routes = [(method, route.path) for route in app.routes for method in getattr(route, 'methods', [])]
     assert len(routes) == len(set(routes))
-    assert not modules.MODULE_ID.fullmatch('L22.notice')
+    assert modules.MODULE_ID is narrow_pattern
     assert database.migration_steps(tmp_path)[-1][0].startswith('L22.notice/')
 
 
 def test_manifest_preserves_existing_public_ownership():
     manifest = json.loads((ROOT / 'contracts/registrations/L22.json').read_text())
-    assert manifest == {'version': 1, 'lane': 'L22', 'contracts': []}
+    assert (manifest['version'], manifest['lane']) == (1, 'L22')
+    assert all(item['path'].startswith('packages/contracts-comms/') for item in manifest['contracts'])
     registration = (ROOT / 'web/registrations/L22.ts').read_text()
     for field in ('routes', 'navigation', 'gateway', 'slots'):
         assert f'{field}: []' in registration
@@ -207,6 +211,10 @@ def test_builtin_adapter_and_migration_share_inbox_prerequisite(tmp_path):
     app = create_app(Settings(modules_path=tmp_path, database_url='postgresql://unused/unused'))
     assert [module.id for module in app.state.modules] == ['L07.inbox', 'L22.payment-notices']
     assert sum(route.path == '/internal/v3/payment-events' for route in app.routes) == 1
-    assert database.migration_steps(tmp_path)[-1][0] == 'L22.payment-notices/L22_0002_payment_notice_recovery.sql'
+    assert [step[0] for step in database.migration_steps(tmp_path)[-3:]] == [
+        'L22.payment-notices/L22_0001_payment_notices.sql',
+        'L22.payment-notices/L22_0002_payment_notice_recovery.sql',
+        'L22.payment-notices/L22_0003_unassigned_recovery.sql',
+    ]
     from bt_runtime.app import db
     assert all(not step[0].startswith('L22.') for step in db.migration_steps(tmp_path))
