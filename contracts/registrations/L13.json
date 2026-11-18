@@ -50,6 +50,13 @@
       "fixtures": [
         "packages/contracts-catalog/withdrawal/fixtures/withdrawal.v1.json"
       ]
+    },
+    {
+      "namespace": "orders.cancellations.v1",
+      "path": "packages/contracts-orders/cancellations",
+      "fixtures": [
+        "packages/contracts-orders/cancellations/fixtures.json"
+      ]
     }
   ],
   "runtime": {

@@ -10,12 +10,17 @@ from bt_contracts.orders.allocation import ValidatedQuote
 
 
 class CommunicationsClient(DependencyClient):
-    """Retain unsupported payment notices until the receiver subscribes."""
+    """Route required payment notices to their scoped receiver."""
 
     async def request(self, method, path, **options):
         event = options.get("json")
-        if isinstance(event, dict) and event.get("type") == "orders.payment-action-required.v3":
-            return Unavailable("communications", "upstream")
+        if (
+            method == "POST"
+            and path == "/internal/v1/inbox/events"
+            and isinstance(event, dict)
+            and event.get("type") == "orders.payment-action-required.v3"
+        ):
+            path = "/internal/v3/payment-events"
         return await super().request(method, path, **options)
 
 

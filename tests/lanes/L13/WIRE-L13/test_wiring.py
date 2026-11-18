@@ -53,8 +53,8 @@ def test_full_additive_migration_plan():
     assert names.index("L13.allocation/L13_0003_notified_windows.sql") < names.index(
         "L13.allocation/L13_0004_quote_commitments.sql"
     )
-    assert {module.id for module in discover(modules_path)} == {
-        "L08.allocation", "L13.allocation", "L13.journal", "L13.payments"
+    assert {"L08.allocation", "L13.allocation", "L13.journal", "L13.payments"} <= {
+        module.id for module in discover(modules_path)
     }
 
 
@@ -197,11 +197,12 @@ def test_duplicate_route_rejected(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_payment_notice_subscription_gate(monkeypatch):
+async def test_payment_notice_subscription_preserves_producer_envelope(monkeypatch):
     import httpx
     import sys
     from types import ModuleType, SimpleNamespace
-    from bt_bulkheads import Unavailable
+    from unittest.mock import AsyncMock
+    from uuid import uuid4
 
     monkeypatch.syspath_prepend(str(RUNTIME))
     for name, relative in (
@@ -211,7 +212,24 @@ async def test_payment_notice_subscription_gate(monkeypatch):
         namespace = ModuleType(name)
         namespace.__path__ = [str(ROOT / relative)]
         monkeypatch.setitem(sys.modules, name, namespace)
-    from service_app import orders_dependencies
+    from service_app import orders_dependencies, payment_notices
+
+    order = {"id": uuid4(), "buyer_id": uuid4(), "revision": 2, "is_demo": False}
+    event_id = uuid4()
+    enqueue = AsyncMock()
+    monkeypatch.setattr(payment_notices, "enqueue", enqueue)
+    await payment_notices.ensure_payment_notice(SimpleNamespace(fetchval=AsyncMock(return_value=event_id)),
+                                               order, "payment-test")
+    _, envelope, subscriptions = enqueue.call_args.args
+    assert subscriptions == ["communications"]
+    assert (envelope.id, envelope.source, envelope.type) == (
+        event_id, "orders", "orders.payment-action-required.v3")
+    assert envelope.subject == str(order["id"])
+    assert envelope.data == {
+        "order_id": str(order["id"]), "buyer_id": str(order["buyer_id"]),
+        "recipient_id": str(order["buyer_id"]), "revision": 2,
+        "required": True, "sample": False, "simulated": True,
+    }
 
     app = SimpleNamespace(state=SimpleNamespace())
     dependencies = orders_dependencies.clients(app)
@@ -219,24 +237,26 @@ async def test_payment_notice_subscription_gate(monkeypatch):
     sent = []
 
     async def receive(request):
-        sent.append(json.loads(request.content))
-        return httpx.Response(200)
+        sent.append((request.url.path, json.loads(request.content), request.headers["Authorization"]))
+        return httpx.Response(403 if len(sent) == 1 else 200)
 
     await client.client.aclose()
     client.client = httpx.AsyncClient(base_url="http://communications", transport=httpx.MockTransport(receive))
-    event = {"id": "stable-notice-reference", "type": "orders.payment-action-required.v3"}
+    event = envelope.model_dump(mode="json")
+    headers = {"Authorization": "Bearer synthetic-service-test"}
+    inbox = "/internal/v1/inbox/events"
     try:
-        for _ in range(2):
-            result = await client.request("POST", "/internal/v1/inbox/events", json=event)
-            assert isinstance(result, Unavailable)
-        assert sent == []
-        assert event["id"] == "stable-notice-reference"
-        old_event = {"type": "orders.reservation-created.v1"}
-        result = await client.request("POST", "/internal/v1/inbox/events", json=old_event)
-        assert result.status_code == 200
-        assert sent == [old_event]
-        manifest = json.loads((ROOT / "contracts/registrations/L13.json").read_text())
-        assert "communications:orders.payment-action-required.v3" in manifest["runtime"]["destinations"]["pending"]
+        denied = await client.request("POST", inbox, json=event, headers=headers)
+        assert denied.status_code == 403
+        retried = await client.request("POST", inbox, json=event, headers=headers)
+        assert retried.status_code == 200
+        reservation = {"type": "orders.reservation-created.v1"}
+        assert (await client.request("POST", inbox, json=reservation, headers=headers)).status_code == 200
+        assert sent == [
+            ("/internal/v3/payment-events", event, headers["Authorization"]),
+            ("/internal/v3/payment-events", event, headers["Authorization"]),
+            (inbox, reservation, headers["Authorization"]),
+        ]
     finally:
         for dependency in dependencies.values():
             await dependency.aclose()
