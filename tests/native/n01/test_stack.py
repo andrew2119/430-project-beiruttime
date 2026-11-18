@@ -166,20 +166,36 @@ class NativeTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 native.wait_ready('http://127.0.0.1:8101/health/ready', Mock(poll=lambda: 1))
 
+    def start_with_local_preparation(self, run, services, cap, calls, exit_code, cleanup=None):
+        child = Mock(pid=123, wait=Mock(return_value=0), poll=Mock(return_value=None))
+        child.diagnostic_reader.is_alive.return_value = False
+
+        def launch(folder, ledger, name, command, env):
+            calls.append((name, command, env))
+            ledger['processes'].append({'name': name, 'pid': 123, 'start_ticks': '1'})
+            child.poll.return_value = None if name in ('database', 'database-restricted') else 0
+            child.wait.return_value = exit_code(command)
+            return child
+
+        with patch.object(native, 'available'), \
+                patch.object(native, 'launch', side_effect=launch), \
+                patch.object(native.subprocess, 'check_output', return_value=b'postgres (PostgreSQL) 17.6'), \
+                patch.object(native, 'database_ready'), patch.object(native, 'wait_ready'), \
+                patch.object(native, 'restrict_auth'), patch.object(native, 'owned', return_value=False), \
+                patch.object(native, 'supervise'), patch.object(native, 'stop', wraps=native.stop) as stop:
+            try:
+                native.start(run, services, cap)
+            finally:
+                if cleanup is not None:
+                    cleanup.append(stop.call_count)
+
     def test_successful_start_uses_owned_initializer_and_owner_only_for_migration(self):
         with tempfile.TemporaryDirectory() as directory:
             run = Path(directory) / 'new'
             calls = []
-            child = Mock(pid=123, wait=Mock(return_value=0), poll=Mock(return_value=None))
-            child.diagnostic_reader.is_alive.return_value = False
-            def launch(folder, ledger, name, command, env):
-                calls.append((name, command, env))
-                ledger['processes'].append({'name': name, 'pid': 123, 'start_ticks': '1'})
-                child.poll.return_value = None if name in ('database', 'database-restricted') else 0
-                return child
             cap = {'python': '/tmp/python', 'postgres_bin': '/tmp/bin'}
-            with patch.object(native, 'available'), patch.object(native, 'launch', side_effect=launch), patch.object(native.subprocess, 'check_output', return_value=b'postgres (PostgreSQL) 17.6'), patch.object(native.subprocess, 'run', return_value=Mock(returncode=0)), patch.object(native, 'wait_ready'), patch.object(native, 'restrict_auth'), patch.object(native, 'owned', return_value=False), patch.object(native, 'supervise'):
-                native.start(run, [native.MANIFEST['services'][0], native.MANIFEST['services'][-1]], cap)
+            self.start_with_local_preparation(run, native.select('identity,web'), cap, calls,
+                                              lambda command: 0)
             initialization = next(c for c in calls if c[1][0].endswith('/initdb'))
             self.assertIn('--encoding=UTF8', initialization[1])
             self.assertIn('--no-locale', initialization[1])
@@ -203,6 +219,67 @@ class NativeTests(unittest.TestCase):
                 '--hostname', '127.0.0.1', '--port', '3000'])
             self.assertFalse((run / 'web').exists())
             self.assertEqual(json.loads((run / 'ledger.json').read_text())['state'], 'ready')
+
+    def test_service_contract_packaging_matches_plan_and_import_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory) / 'new'
+            cap = {'python': '/tmp/python', 'postgres_bin': '/tmp/bin'}
+            services = native.select('identity,eligibility,orders')
+            calls = []
+            self.start_with_local_preparation(run, services, cap, calls, lambda command: 0)
+
+            expected = {
+                name: {'script': f'services/{name}/runtime/package_contracts.py',
+                       'output': f'contracts-{name}'}
+                for name in ('eligibility', 'orders')
+            }
+            ledger = json.loads((run / 'ledger.json').read_text())
+            self.assertEqual(native.plan(services)['service_contract_packaging'], expected)
+            self.assertEqual(ledger['service_contract_packaging'], expected)
+
+            commands = [command for _, command, _ in calls]
+            shared = [cap['python'], str(native.ROOT / 'infra/foundation/package-contracts.py'),
+                      str(run / 'contracts')]
+            self.assertEqual(commands.count(shared), 1)
+            first_migration = next(i for i, command in enumerate(commands)
+                                   if 'service_app.migrate' in command)
+            for package in expected.values():
+                invocation = [cap['python'], str(native.ROOT / package['script']),
+                              str(native.ROOT), str(run / package['output'])]
+                self.assertEqual(commands.count(invocation), 1)
+                self.assertLess(commands.index(shared), commands.index(invocation))
+                self.assertLess(commands.index(invocation), first_migration)
+
+            for service in services:
+                name = service['name']
+                directory_name = expected[name]['output'] if name in expected else 'contracts'
+                settings = [env for label, command, env in calls
+                            if label == name or ('service_app.migrate' in command
+                                                 and env['BT_SERVICE_NAME'] == name)]
+                self.assertEqual(len(settings), 2)
+                for env in settings:
+                    self.assertEqual(env['PYTHONPATH'].split(native.os.pathsep)[0],
+                                     str(run / directory_name))
+
+    def test_failed_service_contract_packaging_stops_start(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = Path(directory) / 'new'
+            cap = {'python': '/tmp/python', 'postgres_bin': '/tmp/bin'}
+            calls = []
+            cleanup = []
+            script = str(native.ROOT / 'services/eligibility/runtime/package_contracts.py')
+            with self.assertRaisesRegex(native.ContractPackagingError,
+                                        'Contract packaging failed for eligibility'):
+                self.start_with_local_preparation(
+                    run, native.select('identity,eligibility,orders'), cap, calls,
+                    lambda command: 7 if script in command else 0, cleanup)
+
+            self.assertEqual(cleanup, [1])
+            self.assertEqual(calls[-1][1][1], script)
+            ledger = json.loads((run / 'ledger.json').read_text())
+            self.assertEqual(ledger['state'], 'failed')
+            self.assertTrue(ledger['cleanup_complete'])
+            self.assertEqual(ledger['processes'][-1]['exit_code'], 7)
 
     def test_interruption_cleans_owned_processes(self):
         with tempfile.TemporaryDirectory() as directory:

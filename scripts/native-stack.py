@@ -25,6 +25,20 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = json.loads((ROOT / 'scripts/native-services.json').read_text())
 
 
+class ContractPackagingError(RuntimeError):
+    pass
+
+
+def service_packaging(services):
+    packages = {}
+    for service in services:
+        name = service['name']
+        script = f'services/{name}/runtime/package_contracts.py'
+        if (ROOT / script).is_file():
+            packages[name] = {'script': script, 'output': f'contracts-{name}'}
+    return packages
+
+
 def select(value):
     names = value.split(',')
     known = {s['name']: s for s in MANIFEST['services']}
@@ -34,11 +48,15 @@ def select(value):
 
 
 def plan(services):
-    return {'schema_version': 1, 'host': MANIFEST['host'],
+    result = {'schema_version': 1, 'host': MANIFEST['host'],
             'database': MANIFEST['database'], 'services': services,
             'phases': ['verify-pins', 'new-private-cluster', 'initialize-nine-databases',
                        'package-current-contracts', 'owner-migrations', 'runtime-only-launch', 'readiness'],
             'databases': ['bt_' + s['database'] for s in MANIFEST['services'] if 'database' in s]}
+    packages = service_packaging(services)
+    if packages:
+        result['service_contract_packaging'] = packages
+    return result
 
 
 def ticks(pid):
@@ -123,7 +141,7 @@ def capability(path):
     return cap
 
 
-def environment(cap, run, service=None, owner=False):
+def environment(cap, run, service=None, owner=False, *, contracts='contracts'):
     env = {'PATH': str(Path(cap['python']).parent) + ':' + cap['postgres_bin'] + ':/usr/bin:/bin',
            'PYTHONDONTWRITEBYTECODE': '1', 'PYTHONUNBUFFERED': '1'}
     extra = dict(cap.get('environment', {}))
@@ -151,7 +169,7 @@ def environment(cap, run, service=None, owner=False):
         env['BT_DATABASE_URL'] = f'postgresql://{role}:{password}@127.0.0.1:54329/bt_{slug}'
         env['BT_SERVICE_NAME'] = service['name']
         env['BT_MODULES_PATH'] = str(ROOT / 'services' / service['name'] / 'modules')
-        env['PYTHONPATH'] = os.pathsep.join([str(run / 'contracts'), str(ROOT / 'services' / service['name'] / 'runtime'),
+        env['PYTHONPATH'] = os.pathsep.join([str(run / contracts), str(ROOT / 'services' / service['name'] / 'runtime'),
             str(ROOT / 'services' / service['name'])] +
             [str(ROOT / 'packages' / p / 'src') for p in ('runtime', 'bulkheads', 'events', 'contracts-core')])
         env['CATALOG_MEDIA_API_URL'] = 'http://127.0.0.1:8102'
@@ -423,20 +441,32 @@ def start(run, services, cap):
                        '-D', str(run / 'data'), '-h', '127.0.0.1', '-p', '54329', '-k', str(run)], env)
         database_ready(pg, run, env, child, cap)
         command([cap['python'], str(ROOT / 'infra/foundation/package-contracts.py'), str(run / 'contracts')])
+        packages = service_packaging(services)
+        if packages:
+            ledger['service_contract_packaging'] = packages
+            save(run, ledger)
+        for name, package in packages.items():
+            try:
+                command([cap['python'], str(ROOT / package['script']), str(ROOT),
+                         str(run / package['output'])])
+            except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+                raise ContractPackagingError(f'Contract packaging failed for {name}') from error
         for s in services:
             admission(cap)
+            contracts = packages.get(s['name'], {}).get('output', 'contracts')
             if 'database' in s:
                 check = ('import importlib.metadata as m; from pathlib import Path; '
                          'rows=Path(__import__("sys").argv[1]).read_text().splitlines(); '
                          'assert all(m.version(r.split("==")[0].split("[")[0]) == r.split("==")[1] '
                          'for r in rows if r and not r.startswith("#"))')
                 command([cap['python'], '-c', check, str(ROOT / s['requirements'])])
-                command([cap['python'], '-m', 'service_app.migrate'], environment(cap, run, s, True))
+                command([cap['python'], '-m', 'service_app.migrate'],
+                        environment(cap, run, s, True, contracts=contracts))
                 cmd = [cap['python'], '-m', 'uvicorn', s['factory'], '--factory', '--host', '127.0.0.1', '--port', str(s['port']), '--no-access-log']
             else:
                 # Resolve dependencies and assets from the existing production build.
                 cmd = s['command']
-            child = launch(run, ledger, s['name'], cmd, environment(cap, run, s))
+            child = launch(run, ledger, s['name'], cmd, environment(cap, run, s, contracts=contracts))
             wait_ready(f"http://127.0.0.1:{s['port']}" + ('/health/ready' if 'database' in s else '/api/health'), child, cap)
         ledger['state'] = 'ready'
         save(run, ledger)
@@ -504,6 +534,9 @@ def main():
 if __name__ == '__main__':
     try:
         main()
+    except ContractPackagingError as error:
+        print(f'{error}. Inspect the private run directory', file=sys.stderr)
+        sys.exit(1)
     except (ValueError, OSError, RuntimeError, subprocess.SubprocessError, TypeError, KeyError):
         print('Native command failed; inspect the private run directory', file=sys.stderr)
         sys.exit(1)
