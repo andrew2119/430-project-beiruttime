@@ -160,9 +160,9 @@ async def record(tx, request, actor, key, fingerprint, row, reason, event_type):
                 "reviewer_id": str(row["reviewer_id"]),
             },
         ),
-        ["communications"]
+        ["communications-private-review"]
         if event_type == "identity.private-review-assigned.v1"
-        else ["catalog", "communications"],
+        else ["catalog", "communications-private-review"],
     )
     return result
 
