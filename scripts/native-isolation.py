@@ -7,6 +7,10 @@ all per-request state. It must never bind the host root or inherit credentials.
 The check operation is diagnostic only; run_service requires separate authority.
 """
 import argparse
+import hashlib
+import importlib.util
+import os
+import tempfile
 import json
 from pathlib import Path
 import re
@@ -15,6 +19,8 @@ import subprocess
 SERVICES = ('identity', 'catalog', 'auction', 'pricing', 'orders', 'eligibility',
             'trust', 'communications', 'service-operations')
 BACKEND = Path('/usr/libexec/bt-native-sandbox')
+LAUNCHER = Path('/usr/libexec/bt-native-launch')
+ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = ('user_namespace', 'mount_namespace', 'process_namespace',
             'private_loopback', 'restricted_database_roles', 'resource_scope',
             'readonly_root', 'clean_environment', 'no_host_root')
@@ -40,7 +46,8 @@ def safe_input(root, relative):
     if not path.exists() or path.is_symlink():
         raise IsolationError('Missing or linked input: ' + relative)
     for item in [path, *path.rglob('*')] if path.is_dir() else [path]:
-        if item.is_symlink() or not (item.is_dir() or item.is_file()):
+        if (item.is_symlink() or not (item.is_dir() or item.is_file()) or
+                item.is_file() and item.stat().st_nlink != 1):
             raise IsolationError('Unsafe input type')
         if (item.name == '.git' or item.name == '.env' or
                 item.name.startswith('.env.') and item.name != '.env.example' or
@@ -108,7 +115,7 @@ def installed_backend(request):
         raise IsolationError('Native sandbox installation is not protected')
     result = subprocess.run([str(BACKEND)], input=json.dumps(request),
                             text=True, capture_output=True, check=True,
-                            timeout=60, env={'PATH': '/usr/bin:/bin'})
+                            timeout=60 if request.get('operation') == 'check' else 610, env={'PATH': '/usr/bin:/bin'})
     return json.loads(result.stdout)
 
 
@@ -194,13 +201,154 @@ def validate_completion(result, proof_id):
         raise IsolationError('Required proof incomplete: ' + proof_id)
 
 
+def digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True,
+                                    separators=(',', ':')).encode()).hexdigest()
+
+
+def canonical_plan(root):
+    """Load the local planner, never code selected by an input request."""
+    spec = importlib.util.spec_from_file_location('native_lanes', ROOT / 'scripts/native-lanes.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.plan(root)
+
+
+def absolute_directory(value):
+    if not isinstance(value, str) or not Path(value).is_absolute() or '..' in Path(value).parts:
+        raise IsolationError('Expected absolute directory')
+    path = Path(value)
+    if any(item.is_symlink() for item in [path, *path.parents]):
+        raise IsolationError('Linked directory ancestor')
+    return path
+
+
+def provider_layout(request, root=ROOT, backend=installed_backend):
+    """Describe snapshots only; collection and execution remain separate proofs."""
+    if not isinstance(request, dict) or type(request.get('schema_version')) is not int:
+        raise IsolationError('Invalid layout request')
+    root = absolute_directory(str(root))
+    service_request = request.get('operation') == 'runtime-layout'
+    if service_request:
+        if set(request) != {'schema_version', 'operation', 'source_root', 'service', 'lane', 'run_dir'}:
+            raise IsolationError('Invalid service request fields')
+        if request['schema_version'] != 1:
+            raise IsolationError('Invalid request version')
+        root = absolute_directory(request['source_root'])
+        directory = absolute_directory(request['run_dir'])
+        if directory.is_relative_to(root):
+            raise IsolationError('Run directory must be outside the repository')
+        manifest = layout(root, request['service'], request['lane'])
+        mappings = {m['target']: m['source'] for m in manifest['mounts']}
+        if request['lane'] == 'L10':
+            mappings['/lane-tests/L10'] = safe_input(root, 'tests/lanes/L10')
+        sources = ['scripts/native-runtime-tests.py']
+        imports = []
+        working = '/app'
+        fingerprint = digest(request)
+        extra = {'empty_read_only': []}
+    else:
+        canonical = next((item for item in canonical_plan(root)['selections']
+                          if item['id'] == request.get('id')), None)
+        if canonical is None or canonical != request:
+            raise IsolationError('Selection does not match the current canonical plan')
+        topology = canonical['topology']
+        mappings = {'/app': safe_input(root, topology['runtime']),
+                    '/contracts': safe_input(root, 'contracts')}
+        modules = topology['module_roots']
+        if len(modules) == 1:
+            mappings['/app/modules'] = safe_input(root, modules[0])
+        else:
+            for module in modules:
+                mappings['/app/modules/' + Path(module).name] = safe_input(root, module)
+        for name in canonical['sources']:
+            if name.startswith('tests/foundation'):
+                mappings['/foundation-tests'] = safe_input(root, name)
+            elif name.startswith('tests/lanes/'):
+                mappings['/lane-tests/' + name.removeprefix('tests/lanes/')] = safe_input(root, name)
+        for alias, name in topology.get('path_aliases', {}).items():
+            mappings[alias] = safe_input(root, name)
+        if canonical['lane'] == 'L11':
+            for name in L11_SHARED:
+                mappings['/lane-tests/L11/' + name] = safe_input(root, 'tests/lanes/L11/' + name)
+        sources = [name for name in canonical['sources'] if name != 'packages']
+        sources += topology['import_roots']
+        sources += ['scripts/native-runtime-tests.py']
+        imports = [safe_input(root, name) for name in topology['import_roots']]
+        working = str(root)
+        fingerprint = canonical['request_fingerprint']
+        extra = {'topology': topology, 'empty_read_only': (
+            ['/app/modules'] if topology['core_baseline'] == 'empty' else [])}
+    for name in sources:
+        safe_input(root, name)
+    check_backend(backend)
+    protected_executable(LAUNCHER)
+    return {'schema_version': 1, 'service': request['service'], 'lane': request['lane'],
+            'read_only': True, 'request_fingerprint': fingerprint,
+            'launcher': [str(LAUNCHER)], 'source_root': str(root), 'mappings': mappings,
+            'sources': list(dict.fromkeys(sources)), 'import_roots': imports,
+            'working_directory': working, 'artifacts': {'inputs': [], 'outputs': []}, **extra}
+
+
+def protected_executable(path):
+    if not path.is_file():
+        raise IsolationError('Installed native sandbox contract is missing')
+    status = path.stat()
+    if path.is_symlink() or status.st_uid != 0 or status.st_mode & 0o022 or not status.st_mode & 0o111:
+        raise IsolationError('Native sandbox installation is not protected')
+
+
+def write_private(destination, value, root):
+    """Publish a fresh JSON destination atomically with private permissions."""
+    destination = Path(destination)
+    parent = absolute_directory(str(destination.parent))
+    if not destination.is_absolute() or destination.is_relative_to(root):
+        raise IsolationError('Result must be outside the repository')
+    if destination.exists() or destination.is_symlink():
+        raise IsolationError('Result already exists')
+    parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    status = parent.stat()
+    if status.st_uid != os.getuid() or status.st_mode & 0o077:
+        raise IsolationError('Result parent must be private')
+    descriptor, temporary = tempfile.mkstemp(dir=parent, prefix='.layout-')
+    try:
+        with os.fdopen(descriptor, 'w') as stream:
+            json.dump(value, stream, sort_keys=True)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(temporary, destination)
+    finally:
+        os.unlink(temporary)
+
+
+def provide(request_file, result_file):
+    if request_file.stat().st_size > 1048576:
+        raise IsolationError('Layout request too large')
+    request = json.loads(request_file.read_text())
+    envelope = provider_layout(request)
+    if request.get('operation') == 'runtime-layout':
+        destination = Path(request['run_dir']) / request['service'] / 'layout.json'
+        if destination != result_file:
+            write_private(destination, envelope, Path(envelope['source_root']))
+    write_private(result_file, envelope, Path(envelope['source_root']))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--check', required=True, action='store_true')
-    parser.add_argument('--run-dir', required=True, type=Path)
+    parser.add_argument('--check', action='store_true')
+    parser.add_argument('--request', type=Path)
+    parser.add_argument('--result', type=Path)
+    parser.add_argument('--run-dir', type=Path)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     try:
+        if args.request or args.result:
+            if not args.request or not args.result or args.check or args.run_dir:
+                raise IsolationError('Use --request FILE --result FILE')
+            provide(args.request, args.result)
+            return
+        if not args.check or not args.run_dir:
+            raise IsolationError('Use --check --run-dir DIR')
         destination = args.run_dir.resolve()
         if destination.is_relative_to(root):
             raise IsolationError('Run directory must be outside the repository')
@@ -213,8 +361,10 @@ def main():
         with output.open('x') as stream:
             json.dump({'schema_version': 1, 'layouts': manifests,
                        'unsupported': UNSUPPORTED}, stream, indent=2)
-    except (IsolationError, OSError, ValueError, subprocess.SubprocessError):
-        parser.exit(2, 'Native isolation check failed; connected proof deferred.\n')
+    except (IsolationError, OSError, ValueError, TypeError, subprocess.SubprocessError) as error:
+        message = ('Installed native sandbox contract is missing; ' if
+                   isinstance(error, IsolationError) and 'missing' in str(error) else '')
+        parser.exit(2, message + 'Native isolation check failed; connected proof deferred.\n')
 
 
 if __name__ == '__main__':
