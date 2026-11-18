@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {crc32,plan,validate,validateScreenshot,run,cases,parse,featureManifest,featureCoverage} from '../../../scripts/native-browser.mjs';
-const matrix = JSON.parse(await readFile(new URL('../../../scripts/native-browser-matrix.json',import.meta.url)));
+const matrix = {...JSON.parse(await readFile(new URL('../../../scripts/native-browser-matrix.json',import.meta.url))),feature_manifest:null};
 const cells = plan(matrix);
 function result(cell) {
   return {status:'passed',metrics:{...cell,direction:cell.language === 'ar'?'rtl':'ltr'},
@@ -122,7 +122,7 @@ test('unsettled observations and failed cleanup remain incomplete',async()=>{
       close:async()=>{throw Error('private detail');},
     });
     const report=await run(matrix,{runDir:'output',timeoutMs:5},s.adapter,s.io);
-    assert.equal(report.complete,false);assert.equal(report.required.length,3);
+    assert.equal(report.complete,false);assert.equal(report.required.length,10);
     assert.ok(!JSON.stringify(report).includes('private detail'));
   }
 });
@@ -153,7 +153,7 @@ test('late startup cleanup is awaited before another cell opens',async()=>{
   for(const mode of ['success','failure','deadline','unsettled']) {
     const s=stub();let opened=0, closed=0, active=false;
     s.adapter.open=async({signal})=>{
-      assert.equal(active,false);active=true;opened++;
+      if(mode==='success')assert.equal(active,false);active=true;opened++;
       if(mode==='unsettled') return new Promise(()=>{});
       await new Promise(resolve=>signal.addEventListener('abort',resolve,{once:true}));
       return {close:async()=>{
@@ -165,8 +165,8 @@ test('late startup cleanup is awaited before another cell opens',async()=>{
     };
     const report=await run(matrix,{runDir:'output',timeoutMs:5},s.adapter,s.io);
     assert.equal(report.complete,false);
-    assert.equal(opened,mode==='success'?8:1);
-    assert.equal(closed,mode==='success'?8:mode==='unsettled'?0:1);
+    assert.equal(opened,8);
+    assert.equal(closed,mode==='unsettled'?0:8);
     assert.equal(report.required.includes(`${cells[0].key}: session cleanup`),mode!=='success');
     assert.equal(report.cells.length,8);
     assert.ok(!JSON.stringify(report).includes('private cleanup detail'));

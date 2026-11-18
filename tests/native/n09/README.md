@@ -20,7 +20,7 @@ close completes. Late startup sessions are explicitly closed by the dispatcher.
 Each adapter call, screenshot read/validation and physical record read has a
 15-second deadline. Startup cancellation awaits late-session cleanup within a
 separate deadline. Cleanup failure or timeout records a required failure and
-prevents opening further cells; a session arriving later still receives close. The adapter must cancel its pending
+marks that cell incomplete while later cells still run; a session arriving later still receives close. The adapter must cancel its pending
 work on failure and release the isolated session, including late startup.
 No service or browser is started by offline planning or the local tests.
 

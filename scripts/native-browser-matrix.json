@@ -1,13 +1,361 @@
 {
   "schema_version": 1,
   "devices": [
-    {"id":"desktop","width":1440,"height":900,"dpr":1,"mobile":false,"touch":false},
-    {"id":"phone","width":390,"height":844,"dpr":3,"mobile":true,"touch":true}
+    {
+      "id": "desktop",
+      "width": 1440,
+      "height": 900,
+      "dpr": 1,
+      "mobile": false,
+      "touch": false
+    },
+    {
+      "id": "phone",
+      "width": 390,
+      "height": 844,
+      "dpr": 3,
+      "mobile": true,
+      "touch": true
+    }
   ],
-  "languages": ["en","ar"],
-  "themes": ["light","dark"],
-  "required_proofs": ["N01","N05"],
-  "feature_manifest": null,
-  "adapter": null,
+  "languages": [
+    "en",
+    "ar"
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "required_proofs": [
+    "N01",
+    "N05"
+  ],
+  "feature_manifest": {
+    "schema_version": 1,
+    "revision": "n09-features-1",
+    "features": [
+      {
+        "feature_id": "F1",
+        "proof_id": "f01-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F2",
+        "proof_id": "f02-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F3",
+        "proof_id": "f03-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F4",
+        "proof_id": "f04-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F5",
+        "proof_id": "f05-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F6",
+        "proof_id": "f06-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F7",
+        "proof_id": "f07-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F8",
+        "proof_id": "f08-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F9",
+        "proof_id": "f09-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F10",
+        "proof_id": "f10-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F11",
+        "proof_id": "f11-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F12",
+        "proof_id": "f12-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F13",
+        "proof_id": "f13-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F14",
+        "proof_id": "f14-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F15",
+        "proof_id": "f15-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F16",
+        "proof_id": "f16-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F17",
+        "proof_id": "f17-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F18",
+        "proof_id": "f18-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F19",
+        "proof_id": "f19-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F20",
+        "proof_id": "f20-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F21",
+        "proof_id": "f21-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F22",
+        "proof_id": "f22-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F23",
+        "proof_id": "f23-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F24",
+        "proof_id": "f24-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F25",
+        "proof_id": "f25-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F26",
+        "proof_id": "f26-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F27",
+        "proof_id": "f27-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F28",
+        "proof_id": "f28-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F29",
+        "proof_id": "f29-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F30",
+        "proof_id": "f30-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F31",
+        "proof_id": "f31-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F32",
+        "proof_id": "f32-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F33",
+        "proof_id": "f33-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F34",
+        "proof_id": "f34-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F35",
+        "proof_id": "f35-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F36",
+        "proof_id": "f36-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F37",
+        "proof_id": "f37-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F38",
+        "proof_id": "f38-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F39",
+        "proof_id": "f39-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F40",
+        "proof_id": "f40-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F41",
+        "proof_id": "f41-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F42",
+        "proof_id": "f42-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F43",
+        "proof_id": "f43-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F44",
+        "proof_id": "f44-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F45",
+        "proof_id": "f45-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F46",
+        "proof_id": "f46-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F47",
+        "proof_id": "f47-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F48",
+        "proof_id": "f48-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F49",
+        "proof_id": "f49-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F50",
+        "proof_id": "f50-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F51",
+        "proof_id": "f51-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F52",
+        "proof_id": "f52-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F53",
+        "proof_id": "f53-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F54",
+        "proof_id": "f54-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F55",
+        "proof_id": "f55-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F56",
+        "proof_id": "f56-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F57",
+        "proof_id": "f57-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F58",
+        "proof_id": "f58-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F59",
+        "proof_id": "f59-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F60",
+        "proof_id": "f60-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F61",
+        "proof_id": "f61-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F62",
+        "proof_id": "f62-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F63",
+        "proof_id": "f63-proof",
+        "proof_revision": "1"
+      },
+      {
+        "feature_id": "F64",
+        "proof_id": "f64-proof",
+        "proof_revision": "1"
+      }
+    ]
+  },
+  "adapter": "scripts/native-browser-adapter.mjs",
   "physical_device_record": null
 }

@@ -148,9 +148,7 @@ export async function run(matrix, options, adapter, io = {readFile,writeFile,mkd
         try { await bounded(()=>cleanup,options.timeoutMs ?? 15000); }
         catch {
           report.required.push(`${cell.key}: session cleanup`);
-          for(const remaining of cells.slice(report.cells.length)) {
-            report.cells.push({key:remaining.key,state:'incomplete',reason:'cleanup-unconfirmed'});
-          }
+          Object.assign(report.cells.at(-1),{state:'incomplete',reason:'cleanup-unconfirmed'});
         }
       }
     }
