@@ -1,15 +1,12 @@
 import { normalizeDigits, type Locale } from '@beirut-time/i18n';
+import { parseUsdInput } from '@beirut-time/ui/foundation';
 import type { Currency } from '@contracts/contracts-pricing/quotes';
-const MAX = 9_000_000_000_000n;
+const MAX = 9_000_000_000_000;
 export function parseMinor(input:string, currency:Currency):number {
   if(currency!=='USD') throw new Error('invalidMoney');
-  const text=normalizeDigits(input).trim();
-  if(!/^\d+(?:\.\d{1,2})?$/.test(text) || text.length>20) throw new Error('invalidMoney');
-  const [whole,fraction='']=text.split('.');
-  const scale=100n;
-  const value=BigInt(whole)*scale+BigInt(fraction.padEnd(2,'0'));
-  if(value<=0n || value>MAX) throw new Error('invalidMoney');
-  return Number(value);
+  const parsed=parseUsdInput(input);
+  if(parsed.state!=='valid' || parsed.minor<=0 || parsed.minor>MAX) throw new Error('invalidMoney');
+  return parsed.minor;
 }
 export function money(minor:number,currency:Currency,locale:Locale):string {
   if(currency!=='USD'||!Number.isSafeInteger(minor)||minor<0) throw new Error('Invalid USD cents');
