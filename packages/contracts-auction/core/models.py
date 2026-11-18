@@ -87,3 +87,9 @@ def next_minimum(auction, bands) -> int:
     if auction['accepted_sequence'] == 0:
         return auction['opening_minor']
     return auction['current_minor'] + step_at(bands, auction['current_minor'])
+
+
+class BidSourceReceipt(Contract):
+    event_id: UUID
+    auction_id: UUID
+    sequence: StrictInt = Field(ge=1)

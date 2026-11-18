@@ -1,8 +1,8 @@
 from uuid import UUID
 from fastapi import APIRouter, Query, Request
-from bt_contracts.auction.core.models import BidCommand
+from bt_contracts.auction.core.models import BidCommand, BidSourceReceipt
 from bt_contracts_core.errors import PublicError
-from service_app.engine import decoded, mask, public_lot
+from service_app.engine import decoded, mask, public_lot, time_denial
 
 router = APIRouter()
 
@@ -72,3 +72,35 @@ async def mine(request: Request, limit: int = Query(default=50, ge=1, le=100), c
             'my_status': 'leading' if row['leader_id'] == principal.actor.subject_id else 'outbid',
             'next_action': 'auction_ended' if now >= row['ends_at'] else 'review_bid'} for row in rows[:limit]],
             'next_cursor': str(rows[limit - 1]['id']) if len(rows) > limit else None}
+
+
+@router.get('/v1/auctions/{auction_id}/bid-receipts/{sequence}', response_model=BidSourceReceipt)
+async def bid_receipt(auction_id: UUID, sequence: int, request: Request):
+    principal = await request.app.state.auction.dependencies.principal(request)
+    if principal.actor.organization_id is not None:
+        raise PublicError('not_found', 'Bid receipt not found.', status=404)
+    async with request.app.state.pool.acquire() as tx:
+        row = await tx.fetchrow('''SELECT event_id FROM outbox
+            WHERE destination='communications' AND envelope->>'source'='auction'
+            AND envelope->>'type'='auction.bid-accepted.v1'
+            AND envelope->>'subject'=$1 AND envelope->'data'->>'sequence'=$2
+            AND envelope->'data'->>'bidder_id'=$3''', str(auction_id), str(sequence),
+            str(principal.actor.subject_id))
+    if not row:
+        raise PublicError('not_found', 'Bid receipt not found.', status=404)
+    return {'event_id': str(row['event_id']), 'auction_id': str(auction_id),
+            'sequence': sequence}
+
+
+@router.get('/v1/auctions/{auction_id}/deadline-boundary')
+async def deadline_boundary(auction_id: UUID, request: Request):
+    principal = await request.app.state.auction.dependencies.principal(request)
+    async with request.app.state.pool.acquire() as tx:
+        lot = await tx.fetchrow('SELECT * FROM auction_lots WHERE id=$1', auction_id)
+    if (not lot or principal.actor.organization_id is not None
+            or principal.actor.subject_id != lot['seller_id']):
+        raise PublicError('not_found', 'Auction not found.', status=404)
+    return {'auction_id': str(auction_id), 'ends_at': lot['ends_at'].isoformat(),
+            'evaluated_at': lot['ends_at'].isoformat(),
+            'code': time_denial(lot, lot['ends_at']),
+            'revision': lot['revision'], 'accepted_sequence': lot['accepted_sequence']}
