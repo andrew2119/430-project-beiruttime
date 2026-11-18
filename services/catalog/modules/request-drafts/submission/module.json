@@ -1,1 +1,1 @@
-{"version":1,"id":"L15.request-submissions","dependencies":["fastapi","asyncpg","pydantic"],"routes":["routes.py:router"],"migrations":["migrations/L15_0001_submitted_requests.sql"]}
+{"version":1,"id":"L15.request-submissions","dependencies":["fastapi","asyncpg","pydantic"],"routes":["routes.py:router","bindings.py:router"],"migrations":["migrations/L15_0001_submitted_requests.sql","migrations/L15_0002_request_bindings.sql"]}
