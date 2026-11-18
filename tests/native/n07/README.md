@@ -18,9 +18,11 @@ links retain their installed targets; other source symlinks are refused. Only th
 fixture routes change. For the nested proof, each other lane registration is
 wrapped in the run copy to filter the two fixture paths while preserving all
 other entries; its original bytes remain in a sibling module. The fixture is
-the sole owner of those paths during the proof. Existing pages for the exact proof routes, including
-route-group variants, are removed only from the fingerprinted run copy before
-the fixture pages are installed. Unrelated pages and layouts are retained. Builds and probes fail nonzero on errors. Builds have a 900-second deadline
+the sole owner of those paths during the proof. Existing pages for the exact
+proof routes, including route-group variants, are renamed in the fingerprinted
+run copy before the fixture pages are installed. An index module at each former
+page's import path re-exports the original page without registering a route.
+Unrelated pages and layouts are retained. Builds and probes fail nonzero on errors. Builds have a 900-second deadline
 and an isolated process group, terminated and reaped on success, failure, timeout
 or interruption; remaining descendants receive a final kill signal.
 

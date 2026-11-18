@@ -124,19 +124,27 @@ def prepare(root, run_dir, kind):
             entry.rename(original)
             entry.write_text(
                 f"import original from './{original.stem}';\n"
+                f"export * from './{original.stem}';\n"
                 "export default { ...original, routes: original.routes.filter(\n"
-                f"  route => !{json.dumps(ROUTES)}.includes(route.path)\n"
+                f"  (route: {{ path: string }}) => !{json.dumps(ROUTES)}.includes(route.path)\n"
                 ") };\n")
         app = source / 'web/app'
-        for page in app.rglob('page.*'):
+        for page in list(app.rglob('page.*')):
             if page.suffix not in {'.js', '.jsx', '.ts', '.tsx'}:
                 continue
             segments = page.parent.relative_to(app).parts
             route = '/' + '/'.join(part for part in segments
                                    if not (part.startswith('(') and part.endswith(')')))
             if route in ROUTES:
-                # Remove conflicting pages only in the fingerprinted run copy.
-                page.unlink()
+                # Keep relative imports in the original module and resolve page imports
+                # through an index file that does not register an app route.
+                original = page.with_stem('page.foundation-original')
+                page.rename(original)
+                module = page.with_suffix('')
+                module.mkdir(exist_ok=True)
+                module.joinpath('index' + page.suffix).write_text(
+                    f"export {{ default }} from '../{original.stem}';\n"
+                    f"export * from '../{original.stem}';\n")
         for route in ROUTES:
             destination = source / 'web/app/(foundation-proxy-proof)' / route.lstrip('/') / 'page.tsx'
             destination.parent.mkdir(parents=True)

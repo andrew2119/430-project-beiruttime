@@ -4,6 +4,7 @@ import io
 import json
 import re
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -276,6 +277,9 @@ class NativeProofTests(unittest.TestCase):
             for name in existing:
                 self.assertEqual((root / name).read_text(), name)
                 self.assertFalse((source / name).exists())
+                self.assertEqual(
+                    (source / name).with_stem('page.foundation-original').read_text(), name)
+                self.assertTrue((source / name).with_suffix('').is_dir())
                 self.assertEqual(fingerprints[name], proof.hashlib.sha256(name.encode()).hexdigest())
             for name in retained:
                 self.assertEqual((source / name).read_text(), name)
@@ -283,6 +287,59 @@ class NativeProofTests(unittest.TestCase):
                 page = source / 'web/app/(foundation-proxy-proof)' / route.lstrip('/') / 'page.tsx'
                 self.assertEqual(page.read_text(), 'nested fixture')
             self.assertEqual(registration.read_text(), 'original registration')
+
+    def test_proxy_overlay_typechecks_and_preserves_page_imports(self):
+        compiler = proof.ROOT / 'web/node_modules/.bin/tsc'
+        if not compiler.is_file():
+            self.skipTest('TypeScript compiler is unavailable')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'input'
+            files = {
+                'web/registrations/L00.ts': 'export default { routes: [] };',
+                'web/registrations/L16.ts': (
+                    'export const lane = "L16"; export default { routes: [] };'
+                ),
+                'web/registrations/L17.ts': (
+                    'export default { routes: ['
+                    '{ path: "/operations/moderation" }, { path: "/seller/dashboard" }, '
+                    '{ path: "/seller/dashboard/details", visible: true }] };'
+                ),
+                'web/app/(seller)/seller/dashboard/value.ts': 'export const value = 42 as const;',
+                'web/app/(seller)/seller/dashboard/page.tsx': (
+                    'import { value } from "./value";\n'
+                    'export { value };\n'
+                    'export default function Page() { return value; }'
+                ),
+                'tests/foundation/fixtures/web/nested-registration.ts': 'export default { routes: [] };',
+                'tests/foundation/fixtures/web/nested-page.tsx': 'export default function Fixture() {}',
+                'web/features/check.ts': """
+import empty, { lane } from '../registrations/L16';
+import populated from '../registrations/L17';
+import Page, { value } from '../app/(seller)/seller/dashboard/page';
+
+const originalValue: 42 = Page();
+const [remaining] = populated.routes;
+if (lane !== 'L16' || empty.routes.length !== 0 || populated.routes.length !== 1
+    || remaining.path !== '/seller/dashboard/details' || remaining.visible !== true
+    || originalValue !== value) {
+  throw new Error('Unexpected proxy overlay');
+}
+""",
+            }
+            for name, content in files.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content)
+            source = proof.prepare(root, Path(directory) / 'run', 'proxy')
+            output = Path(directory) / 'compiled'
+            result = subprocess.run(
+                [str(compiler), '--strict', '--target', 'es2022', '--module', 'commonjs',
+                 '--jsx', 'react', '--outDir', str(output), 'features/check.ts'],
+                cwd=source / 'web', capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            result = subprocess.run(['node', str(output / 'features/check.js')],
+                                    capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_proxy_overlay_current_registration_inventory(self):
         registrations = proof.ROOT / 'web/registrations'
@@ -302,8 +359,13 @@ class NativeProofTests(unittest.TestCase):
                     (proof.ROOT / 'tests/foundation/fixtures/web' / name).read_bytes())
             source = proof.prepare(root, Path(directory) / 'run', 'proxy')
             copied = source / 'web/registrations'
-            def paths(text):
-                start = re.search(r"\broutes\s*:\s*\[", text).end()
+            def paths(text, name=None):
+                literal = re.search(r"\broutes\s*:\s*\[", text)
+                if literal is None:
+                    manifest = proof.ROOT / 'contracts/registrations' / Path(name).with_suffix('.json')
+                    modules = json.loads(manifest.read_text())['modules']
+                    return [route['path'] for module in modules for route in module['routes']]
+                start = literal.end()
                 depth = 1
                 end = start
                 while depth:
@@ -324,10 +386,11 @@ class NativeProofTests(unittest.TestCase):
                 # Match the whole wrapper: only the exact fixture paths are filtered.
                 self.assertEqual((copied / name).read_text(),
                     f"import original from './{original.stem}';\n"
+                    f"export * from './{original.stem}';\n"
                     "export default { ...original, routes: original.routes.filter(\n"
-                    f"  route => !{json.dumps(proof.ROUTES)}.includes(route.path)\n"
+                    f"  (route: {{ path: string }}) => !{json.dumps(proof.ROUTES)}.includes(route.path)\n"
                     ") };\n")
-                for route in paths(content.decode()):
+                for route in paths(content.decode(), name):
                     if route in proof.ROUTES:
                         removed.append(route)
                     else:
