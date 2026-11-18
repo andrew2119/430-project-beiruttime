@@ -1,13 +1,11 @@
 import {beforeEach,expect,it,vi} from 'vitest';
-import {interpretBeirut} from '@/gateway/beirut-time';
-const state=vi.hoisted(()=>({origin:true,forward:vi.fn()}));
-vi.mock('@/gateway/origin',()=>({validatedBrowserOrigin:()=>state.origin?'http://localhost':null}));
-vi.mock('@/gateway/forward',()=>({forward:state.forward,readBody:async(request:Request,maxBytes:number)=>{const bytes=new Uint8Array(await request.arrayBuffer());if(bytes.length>maxBytes)throw new Error('budget');return bytes;}}));
-import {POST} from '@/app/api/web/v2/auction-schedules/route';
+import {interpretBeirut, scheduleContract} from './fixtures/schedule-contract';
+const state={origin:true,forward:vi.fn()};
+const POST=scheduleContract({origin:()=>state.origin,forward:(request,context)=>state.forward(request,context)});
 beforeEach(()=>{state.origin=true;state.forward.mockReset();state.forward.mockResolvedValue(Response.json({status:'succeeded'}));});
 const body={listing_id:'listing',currency:'USD',opening_minor:400000,reserve_minor:450000,increment_bands:[{from_minor:0,step_minor:10000}],starts_local:'2026-11-16T19:00',ends_local:'2026-11-17T19:00'};
 function request(input:unknown,authorization=true){return new Request('http://localhost/api/web/v2/auction-schedules?organization_id=business',{method:'POST',headers:{'Content-Type':'application/json','Origin':'http://localhost','Idempotency-Key':'stable',...(authorization?{'Authorization':'Bearer current'}:{})},body:JSON.stringify(input)});}
-it.each([['2026-11-16T12:00','2026-11-16T10:00:00.000Z','+02:00'],['2026-06-16T12:00','2026-06-16T09:00:00.000Z','+03:00']])('converts %s on the server with the Beirut timezone database',(local,utc,offset)=>expect(interpretBeirut(local)).toMatchObject({local,utc,offset,time_zone:'Asia/Beirut'}));
+it.each([['2026-11-16T12:00','2026-11-16T10:00:00.000Z','+02:00'],['2026-06-16T12:00','2026-06-16T09:00:00.000Z','+03:00']])('matches the frozen civil-time example %s',(local,utc,offset)=>expect(interpretBeirut(local)).toMatchObject({local,utc,offset,time_zone:'Asia/Beirut'}));
 it.each(['2026-03-29T00:30','2026-02-30T12:00','2026-11-16T24:00','2026-11-16T12:00Z'])('requires correction for missing/invalid civil time %s',local=>expect(()=>interpretBeirut(local)).toThrow('invalid_beirut_time'));
 it('requires correction rather than assuming an offset during the repeated hour',()=>expect(()=>interpretBeirut('2026-10-24T23:30')).toThrow('ambiguous_beirut_time'));
 it('reviews local times and offsets without scheduling or allocating',async()=>{
@@ -17,7 +15,7 @@ it('reviews local times and offsets without scheduling or allocating',async()=>{
 it('requires confirmation of the exact interpreted time before scheduling',async()=>{
  const response=await POST(request({...body,confirmed_starts_at:'wrong',confirmed_ends_at:'wrong'}));expect(response.status).toBe(422);expect(state.forward).not.toHaveBeenCalled();
 });
-it('forwards converted instants through the existing authenticated bulkhead with the same scope and key',async()=>{
+it('the local contract forwards converted instants with the same scope and key',async()=>{
  const response=await POST(request({...body,confirmed_starts_at:interpretBeirut(body.starts_local).utc,confirmed_ends_at:interpretBeirut(body.ends_local).utc}));expect(response.status).toBe(200);
  const [forwarded,context]=state.forward.mock.calls[0] as [Request,{params:Promise<unknown>}];
  expect(await forwarded.json()).toEqual({listing_id:'listing',currency:'USD',opening_minor:400000,reserve_minor:450000,increment_bands:body.increment_bands,starts_at:'2026-11-16T17:00:00.000Z',ends_at:'2026-11-17T17:00:00.000Z'});

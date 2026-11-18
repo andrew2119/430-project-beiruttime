@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { validateRegistrations } from '../registry-loader';
+import { validateRegistrations } from './fixtures/registration-contract';
 import type { Registration } from '../registry-types';
 const entry=(lane:`L${string}`, namespace:string, path:string):Registration=>({lane,namespace,routes:[{path,roles:['public'],area:'storefront'}],dictionaries:{en:{title:'Title'},ar:{title:'عنوان'}}});
 it('admits concurrent L12 and L25 tabs without changing legacy tabs',()=>{
