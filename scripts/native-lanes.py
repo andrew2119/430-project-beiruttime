@@ -12,6 +12,8 @@ import hashlib
 import json
 import os
 import signal
+import shutil
+import tempfile
 from pathlib import Path
 import subprocess
 import sys
@@ -93,9 +95,12 @@ def plan(root=ROOT):
         selection['source_fingerprint'] = fingerprint(root, selection['sources'])
         selection['dependency_fingerprint'] = fingerprint(root, manifest['dependencies'])
         selection['request_fingerprint'] = digest(selection)
-    result['shared_source_fingerprint'] = fingerprint(root, ['web', 'tests/lanes', 'infra/foundation',
-                                                           'scripts/native-lanes.py',
-                                                           'scripts/native-lanes.json'])
+    shared_inputs = [*manifest['shared_inputs'], *manifest['dependencies']]
+    registrations = root / 'contracts/registrations'
+    for registration in sorted(registrations.glob('L[0-9][0-9].json')):
+        for contract in json.loads(registration.read_text()).get('contracts', []):
+            shared_inputs.extend(contract.get('fixtures', []))
+    result['shared_source_fingerprint'] = fingerprint(root, shared_inputs)
     result['fingerprint'] = digest(result)
     return result
 
@@ -242,11 +247,14 @@ def validate_all(request, records, checks, collections=None):
         raise ValueError('Missing shared checks')
 
 
-def run_provider(argv, *, check, timeout):
+def run_provider(argv, *, check, timeout, **options):
     """Bound one exchange and reap its process group on timeout or cancellation."""
     previous_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
     try:
-        process = subprocess.Popen(argv, start_new_session=True)
+        process = subprocess.Popen(
+            argv, start_new_session=True,
+            preexec_fn=lambda: signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask),
+            **options)
     except BaseException:
         signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
         raise
@@ -259,6 +267,12 @@ def run_provider(argv, *, check, timeout):
         # Finish bounded cleanup before delivering another termination request.
         signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
         try:
+            # Let a provider reap its nested exchanges before the final group kill.
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+                process.wait(timeout=2 * CLEANUP_TIMEOUT_SECONDS)
+            except (ProcessLookupError, subprocess.TimeoutExpired):
+                pass
             # Also remove descendants left behind by a completed provider.
             try:
                 os.killpg(process.pid, signal.SIGKILL)
@@ -272,7 +286,7 @@ def run_provider(argv, *, check, timeout):
 def exchange(provider, request, directory, name, runner):
     source = directory / (name + '-request.json')
     target = directory / (name + '-result.json')
-    source.write_text(json.dumps(request, indent=2) + '\n')
+    private_json(source, request)
     if target.exists():
         target.unlink()
     previous_handler = signal.getsignal(signal.SIGTERM)
@@ -298,7 +312,7 @@ def exchange(provider, request, directory, name, runner):
 
 
 def execute(request, directory, layout_provider, collection_provider, runner=run_provider):
-    directory.mkdir(parents=True, exist_ok=False)
+    directory.mkdir(parents=True, exist_ok=False, mode=0o700)
     records = {}
     collections = {}
     failures = {}
@@ -341,9 +355,231 @@ def execute(request, directory, layout_provider, collection_provider, runner=run
     return summary
 
 
+def private_json(path, value):
+    """Publish fresh private JSON without following an existing destination."""
+    descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix='.native-')
+    try:
+        with os.fdopen(descriptor, 'w') as stream:
+            json.dump(value, stream)
+            stream.write('\n')
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def configuration(root):
+    """Validate the native service configuration without starting services."""
+    manifest = json.loads((root / 'scripts/native-services.json').read_text())
+    schema = json.loads((root / 'scripts/native-stack.schema.json').read_text())
+    properties = schema['properties']
+    if (schema['type'] != 'object' or schema['additionalProperties'] is not False
+            or set(schema['required']) != set(properties)
+            or set(manifest) != set(properties)
+            or any(set(rule) != {'const'} for rule in properties.values())
+            or any(digest(manifest[key]) != digest(rule['const'])
+                   for key, rule in properties.items())):
+        raise ValueError('Invalid native service configuration')
+    names, ports = set(), set()
+    for service in manifest['services']:
+        if service['name'] in names or service['port'] in ports:
+            raise ValueError('Duplicate native service or port')
+        names.add(service['name'])
+        ports.add(service['port'])
+        if 'requirements' in service:
+            path = (root / service['requirements']).resolve()
+            if root.resolve() not in path.parents or not path.is_file():
+                raise ValueError('Invalid native requirements path')
+            for line in path.read_text().splitlines():
+                value = line.split('#', 1)[0].strip()
+                if value:
+                    Requirement(value)
+    return {'operation': 'native-configuration-v1', 'exit_code': 0}
+
+
+def private_dependencies(source, destination, work, ancestors=frozenset()):
+    """Copy dependency bytes and keep workspace links within the private tree."""
+    if source.is_symlink():
+        resolved = source.resolve(strict=True)
+        if resolved.is_relative_to(ROOT):
+            target = work / resolved.relative_to(ROOT)
+            destination.symlink_to(os.path.relpath(target, destination.parent),
+                                   target_is_directory=resolved.is_dir())
+            return
+        source = resolved
+    if source.is_dir():
+        identity = source.resolve()
+        if identity in ancestors:
+            raise ValueError('Cyclic dependency directory')
+        destination.mkdir()
+        for child in source.iterdir():
+            if child.name not in {'.vite', '.cache', '__pycache__'}:
+                private_dependencies(child, destination / child.name, work,
+                                     ancestors | {identity})
+    elif source.is_file():
+        shutil.copy2(source, destination)
+    else:
+        raise ValueError('Invalid dependency file')
+
+
+def private_source_links(work):
+    """Reject escaping source links and redirect internal aliases before execution."""
+    for parent, directories, files in os.walk(work, followlinks=False):
+        for name in directories + files:
+            path = Path(parent) / name
+            if not path.is_symlink():
+                continue
+            original = ROOT / path.relative_to(work)
+            resolved = original.resolve(strict=True)
+            if not resolved.is_relative_to(ROOT):
+                raise ValueError('Source link escapes private tree')
+            target = work / resolved.relative_to(ROOT)
+            path.unlink()
+            path.symlink_to(os.path.relpath(target, path.parent),
+                            target_is_directory=resolved.is_dir())
+
+
+def shared_checks(request, canonical, directory, runner):
+    if (set(request) != {'schema_version', 'checks', 'request_fingerprint'}
+            or request['checks'] != canonical['checks']
+            or request['request_fingerprint'] != canonical['fingerprint']):
+        raise ValueError('Invalid shared request')
+    work = directory / 'source'
+    shutil.copytree(ROOT, work, symlinks=True, ignore=shutil.ignore_patterns(
+        '.git', 'node_modules', '.next', '__pycache__', '.pytest_cache', '.ruff_cache',
+        '.env*', '.aws', '.ssh'))
+    private_source_links(work)
+    # Dependency files and generated outputs stay in the private copy.
+    for parent, children, _ in os.walk(ROOT):
+        if 'node_modules' in children:
+            source = Path(parent) / 'node_modules'
+            destination = work / source.relative_to(ROOT)
+            if source.exists() and destination.parent.exists():
+                private_dependencies(source, destination, work)
+        children[:] = [name for name in children if name not in {
+            'node_modules', '.git', '.next', '__pycache__', '.aws', '.ssh'}]
+    environment = {key: os.environ[key] for key in ('PATH', 'LANG') if key in os.environ}
+    environment.update({'HOME': str(directory), 'CI': '1', 'COREPACK_ENABLE_NETWORK': '0',
+                        'npm_config_offline': 'true', 'NEXT_TELEMETRY_DISABLED': '1',
+                        'XDG_CACHE_HOME': str(directory / 'cache'),
+                        'npm_config_cache': str(directory / 'cache' / 'npm'),
+                        'TMPDIR': str(directory / 'tmp'),
+                        'PYTHONDONTWRITEBYTECODE': '1'})
+    (directory / 'tmp').mkdir(mode=0o700)
+    evidence = {}
+    for check in canonical['checks']:
+        if check['argv'] == ['native-configuration-v1']:
+            detail = configuration(work)
+        else:
+            with (directory / (check['id'] + '.log')).open('xb') as output:
+                os.chmod(output.name, 0o600)
+                try:
+                    runner(check['argv'], check=True, timeout=PROVIDER_TIMEOUT_SECONDS,
+                           cwd=work, env=environment, stdout=output, stderr=subprocess.STDOUT)
+                except subprocess.SubprocessError as error:
+                    evidence[check['id']] = {
+                        'argv': check['argv'], 'exit_code': getattr(error, 'returncode', None),
+                        'state': 'failed', 'request_fingerprint': canonical['fingerprint']}
+                    private_json(directory / 'shared-execution.json', evidence)
+                    raise
+            detail = {'exit_code': 0}
+        evidence[check['id']] = {**detail, 'argv': check['argv'],
+                                'request_fingerprint': canonical['fingerprint']}
+        private_json(directory / 'shared-execution.json', evidence)
+    if plan()['fingerprint'] != canonical['fingerprint']:
+        raise ValueError('Shared source changed during execution')
+    return {'schema_version': 1, 'request_fingerprint': canonical['fingerprint'],
+            'checks': {check['id']: 'passed' for check in canonical['checks']}}
+
+
+def provide(request, directory, runner=run_provider):
+    """Construct strict envelopes solely from independently observed results."""
+    if request.get('schema_version') != 1:
+        raise ValueError('Invalid request version')
+    canonical = plan()
+    if 'operation' not in request:
+        return shared_checks(request, canonical, directory, runner)
+    operation = request['operation']
+    keys = {'schema_version', 'operation', 'selection', 'layout'}
+    if operation == 'execute':
+        keys |= {'collection', 'collection_fingerprint'}
+    if operation not in ('collect', 'execute') or set(request) != keys:
+        raise ValueError('Invalid observation request')
+    selection = request['selection']
+    if selection not in canonical['selections']:
+        raise ValueError('Selection differs from current plan')
+    layout = request['layout']
+    if (not isinstance(layout, dict) or layout.get('schema_version') != 1
+            or layout.get('read_only') is not True
+            or layout.get('request_fingerprint') != selection['request_fingerprint']):
+        raise ValueError('Invalid read-only layout')
+    if operation == 'execute':
+        validate_collection(selection, request['collection'])
+        if request['collection_fingerprint'] != digest(request['collection']):
+            raise ValueError('Stale collection fingerprint')
+    observed = exchange(ROOT / 'scripts/native-runtime-tests.py', request,
+                        directory, 'observation', runner)
+    if selection not in plan()['selections']:
+        raise ValueError('Selection changed during observation')
+    if (observed.get('schema_version') != 1 or observed.get('operation') != operation
+            or observed.get('complete') is not True
+            or observed.get('request_fingerprint') != selection['request_fingerprint']
+            or observed.get('lifecycle_policy') != selection['topology']['lifecycle_policy']):
+        raise ValueError('Incomplete native observation')
+    if operation == 'collect':
+        response = {key: observed[key] for key in (
+            'schema_version', 'request_fingerprint', 'lifecycle_policy',
+            'complete', 'collected_nodeids')}
+        validate_collection(selection, response)
+        return response
+    if type(observed.get('exit_code')) is not int or observed['exit_code'] != 0:
+        raise ValueError('Unsuccessful native execution')
+    response = {'schema_version': 1, 'selection_id': selection['id'], 'result': 'passed',
+                **{key: selection[key] for key in ('request_fingerprint', 'source_fingerprint',
+                                                  'dependency_fingerprint', 'topology')},
+                **{key: observed[key] for key in ('counts', 'skips', 'collected_nodeids',
+                                                  'nodes', 'check_execution')},
+                'collection_fingerprint': request['collection_fingerprint'],
+                'checks': {name: 'passed' for name in selection['checks']}}
+    validate_record(selection, response, request['collection'])
+    return response
+
+
+def provider_files(source, target):
+    target = target.parent.resolve() / target.name
+    if ROOT == target or ROOT in target.parents or target.is_symlink():
+        raise ValueError('Result must be outside source')
+    target.unlink(missing_ok=True)
+    previous_handler = signal.getsignal(signal.SIGTERM)
+
+    def terminate(signum, frame):
+        signal.signal(signum, signal.SIG_IGN)
+        raise SystemExit(128 + signum)
+
+    signal.signal(signal.SIGTERM, terminate)
+    try:
+        request = json.loads(source.read_text())
+        if not isinstance(request, dict):
+            raise ValueError('Invalid request')
+        directory = Path(tempfile.mkdtemp(prefix='native-execution-', dir=target.parent))
+        response = provide(request, directory)
+        private_json(target, response)
+        return 0
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+        target.unlink(missing_ok=True)
+        print('Native provider incomplete; connected proof deferred.', file=sys.stderr)
+        return 2
+    except BaseException:
+        target.unlink(missing_ok=True)
+        raise
+    finally:
+        signal.signal(signal.SIGTERM, previous_handler)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--all', action='store_true', required=True)
+    parser.add_argument('--all', action='store_true')
+    parser.add_argument('--request', type=Path)
+    parser.add_argument('--result', type=Path)
     parser.add_argument('--plan', action='store_true')
     parser.add_argument('--run-dir', type=Path)
     parser.add_argument('--require-all', action='store_true',
@@ -351,6 +587,12 @@ def main(argv=None):
     parser.add_argument('--layout-provider', type=Path)
     parser.add_argument('--collection-provider', type=Path)
     args = parser.parse_args(argv)
+    if args.request or args.result:
+        if not args.request or not args.result or args.all or args.plan or args.run_dir:
+            parser.error('--request and --result are required together in provider mode')
+        return provider_files(args.request, args.result)
+    if not args.all:
+        parser.error('--all is required')
     request = plan()
     if args.plan:
         print(json.dumps(request, indent=2))

@@ -7,6 +7,16 @@
     "execution": "Sequential; separately authorized execution only; shared checks run once per batch",
     "configuration": "native-configuration-v1 validates configuration without launching services; no legacy runner invocation"
   },
+  "shared_inputs": [
+    "web",
+    "tests",
+    "infra/foundation",
+    "scripts",
+    "services",
+    "contracts",
+    "packages",
+    "tsconfig.base.json"
+  ],
   "dependencies": [
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",

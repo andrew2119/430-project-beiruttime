@@ -318,10 +318,12 @@ class DispatchTests(unittest.TestCase):
                     patch.object(dispatch.os, 'killpg') as kill:
                 process = launch.return_value
                 process.pid = 123
-                process.wait.side_effect = [error, 0]
+                process.wait.side_effect = [error, 0, 0]
                 with self.assertRaises(type(error)):
                     dispatch.run_provider(['provider'], check=True, timeout=1)
-                kill.assert_called_once_with(123, dispatch.signal.SIGKILL)
+                self.assertEqual(kill.call_args_list, [
+                    unittest.mock.call(123, dispatch.signal.SIGTERM),
+                    unittest.mock.call(123, dispatch.signal.SIGKILL)])
                 self.assertEqual(process.wait.call_args_list[-1].kwargs,
                                  {'timeout': dispatch.CLEANUP_TIMEOUT_SECONDS})
 
@@ -361,8 +363,8 @@ class DispatchTests(unittest.TestCase):
                 target = directory / 'sample-result.json'
                 process = launch.return_value
                 process.pid = 123
-                waits = iter((lambda **kwargs: 0,) if during_launch else
-                             (terminate_during_wait, lambda **kwargs: 0))
+                waits = iter((lambda **kwargs: 0, lambda **kwargs: 0) if during_launch else
+                             (terminate_during_wait, lambda **kwargs: 0, lambda **kwargs: 0))
                 process.wait.side_effect = lambda **kwargs: next(waits)(**kwargs)
                 with self.assertRaises(SystemExit) as caught:
                     dispatch.exchange(Path('provider.py'), {}, directory, 'sample',
@@ -370,7 +372,9 @@ class DispatchTests(unittest.TestCase):
                 self.assertEqual(caught.exception.code, 128 + dispatch.signal.SIGTERM)
                 launch.assert_called_once()
                 self.assertTrue(launch.call_args.kwargs['start_new_session'])
-                kill.assert_called_once_with(123, dispatch.signal.SIGKILL)
+                self.assertEqual(kill.call_args_list, [
+                    unittest.mock.call(123, dispatch.signal.SIGTERM),
+                    unittest.mock.call(123, dispatch.signal.SIGKILL)])
                 self.assertEqual(process.wait.call_args_list[-1].kwargs,
                                  {'timeout': dispatch.CLEANUP_TIMEOUT_SECONDS})
                 self.assertFalse(target.exists())
