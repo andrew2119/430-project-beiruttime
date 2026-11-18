@@ -12,7 +12,12 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
+import sys
+import tempfile
+import threading
 from uuid import uuid4
+from urllib.parse import urlencode
 
 import httpx
 
@@ -23,26 +28,260 @@ ACCOUNTS = ['operator', 'seller', 'dealer', 'brand', 'colleague', 'buyer-a', 'bu
 
 
 class Walkthrough:
-    def __init__(self, origin):
+    def __init__(self, origin, backend='container', run_dir=None):
+        if backend == 'native' and run_dir is None:
+            raise ValueError('Native execution requires --run-dir')
+        self.backend = backend
+        self.run_dir = Path(run_dir).resolve() if run_dir else STATE
+        self.run_dir.mkdir(parents=True, exist_ok=True)
         self.origin = origin.rstrip('/')
-        self.client = httpx.Client(base_url=self.origin, headers={'Origin':self.origin}, timeout=30)
-        self.path = STATE / 'walkthrough.local.json'
+        self.path = self.run_dir / 'walkthrough.local.json'
+        if self.path.exists() and self.path.stat().st_mode & 0o077:
+            raise ValueError('Walkthrough state must be private (0600)')
         self.state = json.loads(self.path.read_text()) if self.path.exists() else {}
         self.evidence = []
+        self.phase = None
+        self.positions = {}
+        self.reconciling = False
+        self.journal_lock = threading.RLock()
+        self.client = httpx.Client(base_url=self.origin, headers={'Origin':self.origin}, timeout=30)
 
     def save(self):
-        STATE.mkdir(parents=True, exist_ok=True)
-        self.path.touch(mode=0o600, exist_ok=True)
-        self.path.write_text(json.dumps(self.state, indent=2))
+        descriptor, temporary = tempfile.mkstemp(dir=self.run_dir)
+        try:
+            with os.fdopen(descriptor, 'w') as stream:
+                json.dump(self.state, stream, indent=2)
+            os.replace(temporary, self.path)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
 
-    def call(self, service, method, route, actor=None, body=None, *, headers=None, expected=(200,201), content=None):
-        h = {'Idempotency-Key':str(uuid4()), **(headers or {})}
+    def native_plan(self, service, arguments, extra=None):
+        """Consume native-v1.json: {schema_version: 1, services: {name: {env}}}.
+
+        The private 0600 file supplies owning runtime settings and provider URLs.
+        Versioned packages must be prepared at run-dir/domain-contracts beforehand.
+        No provisioning or service lifecycle operation is performed here.
+        """
+        config_path = self.run_dir / 'native-v1.json'
+        if config_path.stat().st_mode & 0o077:
+            raise ValueError('Native configuration must be private (0600)')
+        config = json.loads(config_path.read_text())
+        if config.get('schema_version') != 1:
+            raise ValueError('Unsupported native configuration')
+        configured = config['services'][service]['env']
+        if not isinstance(configured, dict) or not all(
+            isinstance(key, str) and isinstance(value, str)
+            for key, value in configured.items()
+        ):
+            raise ValueError('Native environment must contain string settings')
+        contracts = self.run_dir / 'domain-contracts'
+        if not (contracts / 'bt_contracts').is_dir():
+            raise ValueError('Prepared versioned contracts are required')
+        source = ROOT / 'services' / service
+        paths = [source, source / 'runtime', contracts]
+        paths += [ROOT / 'packages' / name / 'src'
+                  for name in ('runtime', 'contracts-core', 'bulkheads', 'events')]
+        env = {key: os.environ[key] for key in ('PATH', 'LANG') if key in os.environ}
+        env.update(configured)
+        env.update(extra or {})
+        env.update({
+            'PYTHONPATH': os.pathsep.join(map(str, paths)),
+            'PYTHONDONTWRITEBYTECODE': '1',
+            'BT_MODULES_PATH': str(source / 'modules'),
+            'BT_SERVICE_NAME': service,
+            'TMPDIR': str(self.run_dir),
+        })
+        return [sys.executable, '-m', *arguments], env
+
+    def execute(self, command, env):
+        try:
+            result = subprocess.run(command, cwd=self.run_dir, env=env,
+                                    capture_output=True, text=True, timeout=120)
+        except subprocess.TimeoutExpired:
+            self.evidence.append({'transport': self.backend, 'status': 'timeout'})
+            raise RuntimeError('Local command timed out; connected proof incomplete') from None
+        self.evidence.append({'transport': self.backend, 'status': result.returncode})
+        if result.returncode:
+            raise RuntimeError('Local command failed; private diagnostic review required')
+
+    def bootstrap(self):
+        if self.backend != 'native':
+            raise ValueError('Bootstrap requires native execution')
+        def fresh_authority():
+            self.state.get('accounts', {}).pop('operator', None)
+            self.client.cookies.clear()
+            self.login('operator')
+            return 'identity.businesses.manage' in self.state['accounts']['operator']['principal']['permissions']
+
+        # Current authority reconciles a committed command even without a checkpoint.
+        if fresh_authority():
+            self.state['operator_bootstrapped'] = True
+            self.state.pop('operator_bootstrap_pending', None)
+            self.save()
+            return
+        if self.state.get('operator_bootstrap_pending') or self.state.get('operator_bootstrapped'):
+            raise RuntimeError('Operator authority unresolved; connected proof incomplete')
+        command, env = self.native_plan('identity', [
+            'service_app.bootstrap_operator', '--email', 'operator.s1@example.test',
+            '--reason', 'Authorize initial synthetic demonstration operator'])
+        self.state['operator_bootstrap_pending'] = True
+        self.save()
+        self.execute(command, env)
+        if not fresh_authority():
+            raise RuntimeError('Operator authority unresolved; connected proof incomplete')
+        self.state['operator_bootstrapped'] = True
+        self.state.pop('operator_bootstrap_pending', None)
+        self.save()
+
+    def run_phase(self, phase):
+        """Resume the private call journal; completed phases are checkpoints only.
+
+        Mutation receipts reconcile an interrupted sequence; reads always reach
+        current services. Completed phases require current reads or remain
+        incomplete. Pending calls retain their exact payload and operation key.
+        Use one walkthrough process per run directory.
+        """
+        self.reconciling = phase in self.state.get('completed_phases', [])
+        self.phase, self.positions = phase, {}
+        try:
+            if self.reconciling and phase != 'bootstrap':
+                for name in list(self.state.get('accounts', {})):
+                    self.state['accounts'].pop(name)
+                    self.client.cookies.clear()
+                    self.login(name)
+            if self.reconciling and phase == 'contacts':
+                for name in ['seller', 'dealer', 'brand', 'buyer-a', 'buyer-b']:
+                    contact = self.call('identity', 'GET', '/v1/contacts', name)
+                    if not contact['email_verified']:
+                        raise RuntimeError('Current contact unverified; connected proof incomplete')
+            elif self.reconciling and phase not in ('accounts', 'bootstrap', 'publication'):
+                self.reconcile_phase(phase)
+            else:
+                getattr(self, phase)()
+            if not self.reconciling:
+                self.state.setdefault('completed_phases', []).append(phase)
+            self.save()
+        finally:
+            self.phase = None
+            self.reconciling = False
+
+    def reconcile_phase(self, phase):
+        """Read current prerequisites without replaying completed mutations."""
+        if phase == 'onboard':
+            operator = self.state['accounts']['operator']
+            assert 'identity.businesses.manage' in operator['principal']['permissions']
+            required = {'business.stock.write', 'business.jobs.write',
+                        'business.records.read', 'business.staff.manage'}
+            for kind in ('dealer', 'brand'):
+                identifier = self.state['businesses'][kind]['id']
+                business = self.call('identity', 'GET', '/v1/businesses/' + identifier)
+                assert business['state'] == 'active' and business['kind'] == kind
+                members = self.call('identity', 'GET',
+                                    '/v1/businesses/' + identifier + '/memberships', 'operator')
+                for name in [kind] + (['colleague'] if kind == 'dealer' else []):
+                    subject = self.state['accounts'][name]['account']['id']
+                    member = next(row for row in members['items'] if row['subject_id'] == subject)
+                    assert member['state'] == 'active' and required <= set(member['capabilities'])
+            application = self.call('identity', 'GET', '/v1/private-seller/applications/me', 'seller')['application']
+            assert application['id'] == self.state['application']['id']
+            assert application['status'] == 'approved'
+        elif phase in ('auctions', 'bids'):
+            for auction in self.state['auctions'].values():
+                identifier = auction.get('auction_id') or auction.get('resource_id') or auction['auction']['id']
+                current = self.call('auction', 'GET', '/v1/auctions/' + identifier)
+                assert current['status'] in ('scheduled', 'live', 'ended')
+            if phase == 'bids':
+                proof = self.state['bid_proof']
+                current = self.call('auction', 'GET', '/v1/auctions/' + proof['auction_id'])
+                assert current['current_minor'] == proof['results'][-1]['current_minor']
+                history = self.call('auction', 'GET', '/v1/auctions/' + proof['auction_id'] + '/history')
+                assert history == proof['history']
+        elif phase == 'purchases':
+            reservation = self.state['reservation']
+            current = self.call('orders', 'GET', '/v1/orders/' + reservation['resource_id'], reservation['winner'])['order']
+            assert current['state'] == 'awaiting_payment'
+            assert current['quote_id'] == reservation['quote']['id']
+            assert current['total_minor'] == reservation['quote']['payable_minor']
+        elif phase == 'directory':
+            public = self.call('service-operations', 'GET', '/v1/directory/businesses')
+            assert {row['organization_id'] for row in public['items']} == {
+                row['id'] for row in self.state['businesses'].values()}
+            current = self.call('service-operations', 'GET', '/v1/directory/choices/current', 'buyer-a')
+            assert current['choice'] == self.state['service_choice']
+        elif phase == 'request':
+            raise RuntimeError('Current phase reconciliation unavailable; connected proof incomplete')
+        else:
+            raise ValueError('Unknown completed phase')
+
+    def all(self):
+        phases = ['accounts']
+        if self.backend == 'native':
+            phases.append('bootstrap')
+        phases += ['onboard', 'contacts', 'publication', 'auctions', 'bids',
+                   'purchases', 'directory', 'request']
+        for phase in phases:
+            self.run_phase(phase)
+        print('First-sprint walkthrough only; financial and work acceptance remain unverified.')
+
+    def call(self, service, method, route, actor=None, body=None, *, headers=None, expected=(200,201), content=None, operation=None, durable=True):
+        # Authentication always obtains current credentials and is not replayed.
+        authentication = service == 'identity' and route in (
+            '/v1/accounts/login', '/v1/accounts/refresh')
+        entry = None
+        h = dict(headers or {})
+        if self.phase and not authentication and durable and method.upper() not in ('GET', 'HEAD', 'OPTIONS'):
+            if content is not None:
+                raise ValueError('Binary calls require a separate durable upload contract')
+            with self.journal_lock:
+                sequence = (service, method, route, actor)
+                position = self.positions.get(sequence, 0)
+                self.positions[sequence] = position + 1
+                key = json.dumps([self.phase, *sequence, operation if operation is not None else position])
+                journal = self.state.setdefault('call_journal', {})
+                entry = journal.get(key)
+                if entry is None:
+                    if self.reconciling:
+                        raise RuntimeError('Unrecorded mutation during reconciliation; connected proof incomplete')
+                    entry = {'service': service, 'method': method, 'route': route,
+                             'body': body, 'headers': h, 'operation_id': str(uuid4())}
+                    journal[key] = entry
+                    self.save()
+                if (entry['service'], entry['method'], entry['route']) != (service, method, route):
+                    raise RuntimeError('Walkthrough sequence changed; reconciliation required')
+                if 'response' in entry:
+                    assert entry['status'] in expected
+                    return entry['response']
+                body, h = entry['body'], dict(entry['headers'])
+                h['Idempotency-Key'] = entry['operation_id']
+        h.setdefault('Idempotency-Key', str(uuid4()))
         if actor:
             h['Authorization'] = 'Bearer ' + self.state['accounts'][actor]['access_token']
         response = self.client.request(method, f'/api/web/v1/{service}'+route, json=body, content=content, headers=h)
         self.evidence.append({'service':service,'method':method,'route':route.split('?')[0],'status':response.status_code,'request_id':response.headers.get('x-request-id')})
-        assert response.status_code in expected, (service,method,route,response.status_code,response.text[:600])
-        return response.json()
+        if response.status_code == 401 and actor:
+            # Current authority can invalidate even an unexpired access token.
+            self.client.cookies.clear()
+            refresh_cookie = self.state['accounts'][actor].get('refresh_cookie')
+            if refresh_cookie:
+                self.client.cookies.set('bt_refresh', refresh_cookie)
+                result = self.call('identity', 'POST', '/v1/accounts/refresh')
+            else:
+                result = self.call('identity', 'POST', '/v1/accounts/login',
+                                   body={'email':actor+'.s1@example.test','password':PASSWORD})
+            result['refresh_cookie'] = self.client.cookies.get('bt_refresh')
+            self.state['accounts'][actor] = result
+            self.save()
+            h['Authorization'] = 'Bearer ' + result['access_token']
+            response = self.client.request(method, f'/api/web/v1/{service}'+route, json=body, content=content, headers=h)
+            self.evidence.append({'service':service,'method':method,'route':route.split('?')[0],'status':response.status_code,'request_id':response.headers.get('x-request-id')})
+        assert response.status_code in expected, (service,method,route.split('?')[0],response.status_code)
+        result = response.json()
+        if entry is not None:
+            with self.journal_lock:
+                entry.update(response=result, status=response.status_code)
+                self.save()
+        return result
 
     def login(self, name):
         existing=self.state.get('accounts',{}).get(name)
@@ -70,7 +309,7 @@ class Walkthrough:
     def accounts(self):
         for name in ACCOUNTS:
             if name not in self.state.get('accounts',{}):
-                result = self.call('identity','POST','/v1/accounts/register',body={'email':name+'.s1@example.test','password':PASSWORD,'display_name':'Sample '+name.title()}, expected=(201,409))
+                result = self.call('identity','POST','/v1/accounts/register',body={'email':name+'.s1@example.test','password':PASSWORD,'display_name':'Sample '+name.title()}, expected=(201,409), operation='register:' + name)
                 if 'account' in result:
                     self.state.setdefault('accounts',{})[name] = result
                     self.save()
@@ -86,15 +325,16 @@ class Walkthrough:
                 business = self.call('identity','POST','/v1/businesses','operator',{
                     'legal_name':'Sample '+kind.title()+' Demonstration','public_name':'Sample '+kind.title(),
                     'kind':kind,'capabilities':['sales','servicing']+(['customization'] if kind=='brand' else []),
-                    'assurance_reference':'SAMPLE-COURSE-ONBOARDING','reason':'Synthetic course business explicitly onboarded','sample':True})
+                    'assurance_reference':'SAMPLE-COURSE-ONBOARDING','reason':'Synthetic course business explicitly onboarded','sample':True}, operation='business:' + kind)
                 self.state['businesses'][kind]=business
                 self.save()
-                for name in [kind]+(['colleague'] if kind=='dealer' else []):
-                    self.call('identity','POST','/v1/memberships','operator',{
-                        'business_id':business['id'],'subject_id':self.state['accounts'][name]['account']['id'],
-                        'capabilities':['business.stock.write','business.jobs.write','business.records.read','business.staff.manage'],
-                        'qualifications':['Sample authorized course colleague'],'intervention_scope':'Synthetic demonstration records only',
-                        'reason':'Authorize sample business colleague for course demonstration'})
+            business = self.state['businesses'][kind]
+            for name in [kind]+(['colleague'] if kind=='dealer' else []):
+                self.call('identity','POST','/v1/memberships','operator',{
+                    'business_id':business['id'],'subject_id':self.state['accounts'][name]['account']['id'],
+                    'capabilities':['business.stock.write','business.jobs.write','business.records.read','business.staff.manage'],
+                    'qualifications':['Sample authorized course colleague'],'intervention_scope':'Synthetic demonstration records only',
+                    'reason':'Authorize sample business colleague for course demonstration'}, operation='membership:' + kind + ':' + name)
             self.login(kind)
         self.login('seller')
         if 'application' not in self.state:
@@ -144,43 +384,88 @@ class Walkthrough:
                 'listing_id':listing['id'],'currency':'USD','opening_minor':10000,
                 'increment_bands':[{'from_minor':0,'step_minor':1000}],
                 'starts_at':(now+timedelta(seconds=3) if reference=='DEMO-WATCH-01' else now+timedelta(hours=1)).isoformat(),
-                'ends_at':(now+timedelta(hours=2)).isoformat()})
+                'ends_at':(now+timedelta(hours=2)).isoformat()}, operation='auction:' + reference)
             assert result['status']=='succeeded',result
             self.state['auctions'][reference]=result
             self.save()
         print('Real private open and scheduled auctions created with Orders sale fences.')
 
     def quote(self, name, subject, revision, amount, purpose='bid', source='sample'):
-        body={'subject_id':subject,'subject_revision':revision,'purpose':purpose,'source':source,'schedule_id':'sample-v1','currency':'USD','price_minor':amount}
+        body={'subject_id':subject,'subject_revision':revision,'purpose':purpose,'source':source,'schedule_id':'usd-v2','currency':'USD','price_minor':amount}
         quote=self.call('pricing','POST','/v1/quotes',name,body)
         reviewed=self.call('pricing','POST','/v1/quotes/'+quote['id']+'/review',name,{**body,'quote_revision':quote['revision'],'payable_minor':quote['payable_minor']})
         assert reviewed['reviewed_at']
         return reviewed
 
+    def wait_for_live(self, auction_id):
+        for attempt in range(10):
+            lot = self.call('auction', 'GET', '/v1/auctions/' + auction_id, durable=False)
+            if lot['status'] == 'live':
+                return
+            if lot['status'] != 'scheduled':
+                raise RuntimeError('Auction is not live')
+            if attempt < 9:
+                time.sleep(1)
+        raise RuntimeError('Auction remains scheduled; connected proof incomplete')
+
     def bids(self):
         for name in ['buyer-a','buyer-b']:
             self.login(name)
         auction=self.state['auctions']['DEMO-WATCH-01']
-        # No repeat after completion: use another fresh auction for a second run.
+        # The call journal resumes an interrupted competition with the same keys.
+        # Equal-ceiling provider compatibility remains deferred to connected proof.
         auction_id=auction.get('auction_id') or auction.get('resource_id')
         if not auction_id:
             auction_id=auction['auction']['id']
-        expected_prices=[10000,11000,12000,16000,20000,21000]
+        self.wait_for_live(auction_id)
+        expected_prices=[10000,11000,12000,16000,20000,20000]
         steps=[('buyer-a','bids',10000),('buyer-b','bids',11000),('buyer-a','maximum',20000),('buyer-b','maximum',15000),('buyer-b','maximum',20000),('buyer-b','maximum',22000)]
+        leaders=['buyer-a','buyer-b','buyer-a','buyer-a','buyer-b','buyer-b']
         results=[]
-        for (name,kind,amount),price in zip(steps,expected_prices):
+        participants=set()
+        before_raise=self.state.get('bid_history_before_raise')
+        recorded = []
+        for key in self.state.get('call_journal', {}):
+            fields = json.loads(key)
+            if fields[0] == 'bids' and fields[1] == 'auction' and fields[2] == 'POST':
+                recorded.append((fields[3], fields[4], fields[5]))
+        counts = {}
+        furthest = -1
+        for index, (name, kind, _) in enumerate(steps):
+            route = f'/v1/auctions/{auction_id}/{kind}'
+            sequence = (route, name)
+            position = counts.get(sequence, 0)
+            counts[sequence] = position + 1
+            if (route, name, position) in recorded:
+                furthest = index
+        for index,((name,kind,amount),price,leader) in enumerate(zip(steps,expected_prices,leaders)):
+            if index==len(steps)-1 and before_raise is None:
+                before_raise=self.call('auction','GET',f'/v1/auctions/{auction_id}/history')
+                assert before_raise['has_more'] is False
+                self.state['bid_history_before_raise'] = before_raise
+                self.save()
             lot=self.call('auction','GET','/v1/auctions/'+auction_id)
             quote=self.quote(name,auction_id,lot['revision'],amount)
             result=self.call('auction','POST',f'/v1/auctions/{auction_id}/{kind}',name,{'amount_minor':amount,'fee_quote_id':quote['id'],'expected_revision':lot['revision']})
             assert result['status']=='succeeded',result
+            participants.add(name)
+            if index < furthest:
+                continue
             current=self.call('auction','GET','/v1/auctions/'+auction_id)
             assert current['current_minor']==price,current
+            participants.add(name)
+            for buyer in participants:
+                own=self.call('auction','GET','/v1/my-bids',buyer)
+                entry=next(row for row in own['items'] if row['auction_id']==auction_id)
+                assert entry['my_status']==('leading' if buyer==leader else 'outbid')
             results.append({'actor':name,'kind':kind,'current_minor':price,'revision':current['revision']})
         history=self.call('auction','GET',f'/v1/auctions/{auction_id}/history')
+        assert history['has_more'] is False
+        assert history['items']==before_raise['items'], 'Ceiling-only raise created a public bid'
         assert 'maximum_minor' not in json.dumps(history) and 'maxima' not in json.dumps(history)
         self.state['bid_proof']={'auction_id':auction_id,'results':results,'history':history}
         self.save()
-        print('Manual and private maximum bidding passed: 100,110,120,160,200,210 USD; earlier equal cap retained leadership.')
+        print('Manual and private maximum bidding passed: 100,110,120,160,200,200 USD; later equal cap leads, ceiling-only raise preserves public price.')
 
     def purchases(self):
         from concurrent.futures import ThreadPoolExecutor
@@ -195,12 +480,21 @@ class Walkthrough:
             results=list(pool.map(reserve,['buyer-a','buyer-b']))
         assert sorted(result['status'] for _,result in results)==['denied','succeeded'],results
         name,winner=next((name,result) for name,result in results if result['status']=='succeeded')
-        assert winner['order']['quote_id']==quotes[name]['id'] and winner['order']['state']=='awaiting_payment'
+        # The order opens awaiting its payment notice; the payment clock starts only once that notice is delivered
+        # (MONEY), so wait, bounded, for the real transition instead of assuming it.
+        assert winner['order']['state'] in ('awaiting_notification','awaiting_payment'), winner['order']['state']
+        deadline=time.monotonic()+60
+        current=winner['order']
+        while current['state']=='awaiting_notification' and time.monotonic()<deadline:
+            time.sleep(0.5)
+            current=self.call('orders','GET','/v1/orders/'+winner['resource_id'],name,durable=False)['order']
+        winner={**winner,'order':current}
+        assert winner['order']['quote_id']==quotes[name]['id'] and winner['order']['state']=='awaiting_payment', winner['order']['state']
         assert winner['order']['total_minor']==quotes[name]['payable_minor'] and winner['order']['payment_authority'] is False
         self.state['reservation']={'winner':name,**winner,'quote':quotes[name]}
         self.save()
         self.call('orders','GET','/v1/orders/'+winner['resource_id'],'buyer-b' if name=='buyer-a' else 'buyer-a',expected=(403,404))
-        self.call('orders','POST','/v1/orders/'+winner['resource_id']+'/transitions',name,{'state':'paid','expected_revision':1,'reason':'Premature payment must be denied'},expected=(403,409,422))
+        self.call('orders','POST','/v1/orders/'+winner['resource_id']+'/transitions',name,{'state':'paid','expected_revision':winner['order']['revision'],'reason':'Premature payment must be denied'},expected=(403,409,422))
         print('Two real buyers raced: exactly one awaiting-payment reservation, retained exact quote, other buyer denied.')
 
     def directory(self):
@@ -240,21 +534,73 @@ class Walkthrough:
             self.state['request_draft']=result;self.save()
         result=self.state['request_draft']; print('DRAFT',json.dumps(result)[:1600])
 
+    def prepare_reviewed_stock(self):
+        import struct
+        import zlib
+        def chunk(kind, data):
+            return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
+        photo = (b'\x89PNG\r\n\x1a\n'
+                 + chunk(b'IHDR', struct.pack('>IIBBBBB', 32, 32, 8, 2, 0, 0, 0))
+                 + chunk(b'IDAT', zlib.compress((b'\0' + b'\x80' * 96) * 32)) + chunk(b'IEND', b''))
+        private_photo = base64.b64encode(photo).decode()
+        fixtures = json.loads((ROOT / 'demo/listings.json').read_text())
+        assets = {item['id']: item for item in json.loads((ROOT / 'demo/images-manifest.json').read_text())['assets']}
+        self.login('operator')
+        for item in fixtures['listings']:
+            name = 'seller' if item['seller_type'] == 'private' else ('brand' if item['id'] == 'DEMO-WATCH-06' else 'dealer')
+            selected = '?organization_id=' + self.state['businesses'][name]['id'] if name != 'seller' else ''
+            facts = dict(brand=item['brand'], model=item['model'], reference=item['id'], year=2020,
+                         condition=item['condition'], component_wear={'case': 'Synthetic condition'},
+                         location=item['location'], included=[], no_documents=True, modified=False,
+                         modifications=[], ownership_confirmed=True, sale_mode=item['sale_mode'].replace('-', '_'),
+                         currency='USD', price_minor=item['price_minor'])
+            created = self.call('catalog', 'POST', '/v1/seller/listings' + selected, name,
+                                {'facts': facts, 'demo_key': item['id']})
+            path = '/v1/seller/listings/' + created['id']
+            row = self.call('catalog', 'GET', path + selected, name)
+            if row['status'] == 'published':
+                continue
+            if not row['photo_ids']:
+                asset = assets[item['image_ids'][0]]
+                content = (ROOT / 'web/public/demo/watches' / Path(asset['file']).name).read_bytes()
+                # The gateway forwards query parameters but drops media-specific headers.
+                media_route = path + '/media' + (selected + '&' if selected else '?') + urlencode({
+                    'kind': 'public_photo', 'public_safe': 'true', 'demo_asset': asset['id']})
+                row = self.call('catalog', 'POST', media_route, name,
+                                headers={'If-Match': str(row['revision']), 'Content-Type': 'application/octet-stream'},
+                                content=content, durable=False)['listing']
+            quote = self.call('pricing', 'POST', '/v1/quotes', name,
+                              dict(subject_id=row['id'], subject_revision=row['revision'], purpose='purchase',
+                                   source='sample', schedule_id='usd-v2', price_minor=row['facts']['price_minor'], currency='USD'))
+            publication = {'fee_quote_id': quote['id'], 'rules_version': quote['schedule_id']}
+            headers = {'If-Match': str(row['revision'])}
+            if name == 'seller':
+                pending = self.call('catalog', 'POST', path + '/publish' + selected, name,
+                                    publication, headers=headers, expected=(503,), operation='unreviewed')
+                assert pending['error']['code'] == 'publication_review_pending'
+                assert self.call('catalog', 'GET', path + selected, name)['status'] != 'published'
+                review = '/v1/listing-reviews/' + row['id']
+                challenge = self.call('identity', 'POST', review + '/challenges', name, {'revision': 0})
+                proof = self.call('identity', 'POST', review + '/submissions', name,
+                                  {'revision': challenge['revision'], 'challenge_id': challenge['challenge_id'],
+                                                'code': challenge['code'], 'photo_base64': private_photo})
+                assigned = self.call('identity', 'POST', review + '/assignment', 'operator',
+                                     {'revision': proof['revision'], 'reviewer_id': self.state['accounts']['operator']['account']['id']})
+                self.call('identity', 'POST', review + '/decision', 'operator',
+                          {'revision': assigned['revision'], 'assignment_revision': assigned['assignment_revision'],
+                           'verdict': 'approved', 'reason': 'Synthetic private watch photo and code inspected'})
+            published = self.call('catalog', 'POST', path + '/publish' + selected, name,
+                                  publication, headers=headers, operation='reviewed')
+            assert published['status'] == 'published'
+
     def publication(self):
-        for name in ['seller','dealer']:
+        for name in ['seller','dealer','brand']:
             self.login(name)
-        # The owning Catalog importer uses the actual create/upload/fee/publish APIs.
-        result = subprocess.run(['docker','compose','-f',str(STATE/'compose.local.json'),'exec','-T',
-            '-e','BT_ENVIRONMENT=demo','-e','BT_DEMO_IMPORT_ACK=illustrative-stock-only',
-            '-e','BT_DEMO_PRIVATE_TOKEN='+self.state['accounts']['seller']['access_token'],
-            '-e','BT_DEMO_DEALER_TOKEN='+self.state['accounts']['dealer']['access_token'],
-            '-e','BT_DEMO_DEALER_ORGANIZATION_ID='+self.state['businesses']['dealer']['id'],
-            'catalog','python','-m','bt_runtime.fixtures','L03.listings','demo'],cwd=ROOT,capture_output=True,text=True)
-        assert result.returncode==0, result.stderr[-2000:]
-        print(result.stdout)
+        if not self.reconciling:
+            self.prepare_reviewed_stock()
         listings=[]
-        for name in ['seller','dealer']:
-            org='?organization_id='+self.state['businesses']['dealer']['id'] if name=='dealer' else ''
+        for name in ['seller','dealer','brand']:
+            org='?organization_id='+self.state['businesses'][name]['id'] if name!='seller' else ''
             listings.extend(item for item in self.call('catalog','GET','/v1/seller/listings'+org,name)['items'] if item['is_demo'])
         self.state['listings']=listings
         assert len(listings)==6 and all(item['status']=='published' for item in listings)
@@ -266,16 +612,24 @@ class Walkthrough:
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('phase', choices=['accounts','onboard','publication','contacts','auctions','bids','purchases','directory','request'])
+    parser.add_argument('phase', choices=['all','accounts','onboard','publication','contacts','auctions','bids','purchases','directory','request'])
     parser.add_argument('--origin',default='http://127.0.0.1:3300')
+    parser.add_argument('--backend', choices=['container', 'native'], default='container')
+    parser.add_argument('--run-dir', type=Path)
     args=parser.parse_args()
-    walk=Walkthrough(args.origin)
+    if args.backend == 'native' and args.run_dir is None:
+        parser.error('--backend native requires --run-dir')
+    walk=Walkthrough(args.origin, args.backend, args.run_dir)
     try:
-        getattr(walk,args.phase)()
+        if args.phase == 'all':
+            walk.all()
+        else:
+            walk.run_phase(args.phase)
     finally:
-        STATE.mkdir(parents=True,exist_ok=True)
-        (STATE/(args.phase+'-evidence.json')).write_text(json.dumps(walk.evidence,indent=2))
-        walk.client.close()
+        try:
+            (walk.run_dir/(args.phase+'-evidence.json')).write_text(json.dumps(walk.evidence,indent=2))
+        finally:
+            walk.client.close()
 
 
 if __name__=='__main__':
