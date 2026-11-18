@@ -20,6 +20,14 @@ native = load('native-runtime-tests')
 dispatch = load('test-services')
 
 
+def service_layout(service, run_dir, lane='L00'):
+    request = native.service_request(service, lane, Path(run_dir))
+    return {'schema_version': 1, 'service': service, 'lane': lane,
+            'source_root': str(ROOT), 'read_only': True,
+            'request_fingerprint': native.digest(request),
+            'mappings': native.mappings(service, lane=lane), 'launcher': [native.LAUNCHER]}
+
+
 class DispatchTests(unittest.TestCase):
     def test_native_service_processes(self):
         with patch.object(dispatch, 'run') as run, patch.object(dispatch.subprocess, 'check_output') as config, \
@@ -54,7 +62,7 @@ class DispatchTests(unittest.TestCase):
                 captured = []
                 fake = Mock()
                 fake.main.side_effect = lambda args: captured.extend(args) or 0
-                with patch.dict('sys.modules', {'pytest': fake}), patch.dict('os.environ', {
+                with patch.dict('sys.modules', {'pytest': fake, 'service_app': Mock(), 'service_app.discovery': Mock()}), patch.dict('os.environ', {
                         'BT_SERVICE_NAME': service, 'BT_TEST_LANE': lane}), \
                         patch.object(Path, 'is_dir', return_value=False):
                     with self.assertRaises(SystemExit):
@@ -80,15 +88,14 @@ class DispatchTests(unittest.TestCase):
     def test_missing_layout_is_nonzero(self):
         with tempfile.TemporaryDirectory() as folder, patch.object(native.subprocess, 'run') as run:
             self.assertEqual(native.main(['orders', '--run-dir', folder, '--require-all']), 2)
-            run.assert_not_called()
+            self.assertEqual(run.call_count, 1)
 
     def test_layout_check_is_read_only(self):
         with tempfile.TemporaryDirectory() as folder:
             target = Path(folder) / 'orders'
             target.mkdir()
             layout = target / 'layout.json'
-            layout.write_text(json.dumps({'schema_version': 1, 'service': 'orders', 'read_only': True,
-                                         'mappings': native.mappings('orders'), 'launcher': ['test-layout']}))
+            layout.write_text(json.dumps(service_layout('orders', folder)))
             before = layout.read_bytes()
             with patch.object(native.subprocess, 'run') as run:
                 self.assertEqual(native.main(['orders', '--run-dir', folder, '--check-layout']), 0)
@@ -101,19 +108,18 @@ class DispatchTests(unittest.TestCase):
             target = Path(folder) / 'orders'
             target.mkdir()
             layout = target / 'layout.json'
-            layout.write_text(json.dumps({'schema_version': 1, 'service': 'orders', 'read_only': True,
-                                         'mappings': native.mappings('orders'), 'launcher': ['test-layout']}))
-            with patch.object(native, 'database_environment', return_value={}), \
+            layout.write_text(json.dumps(service_layout('orders', folder)))
+            with patch.object(native, 'obtain_layout'), \
                     patch.object(native.subprocess, 'run', return_value=Mock(returncode=7)) as run:
                 self.assertEqual(native.main(['orders', '--run-dir', folder]), 7)
                 self.assertIn('--worker', run.call_args.args[0])
                 self.assertEqual(run.call_args.kwargs['env']['BT_TEST_LANE'], 'L00')
-            with patch.object(native, 'database_environment', return_value={}), \
+            with patch.object(native, 'obtain_layout'), \
                     patch.object(native.subprocess, 'run', return_value=Mock(returncode=0)):
                 self.assertEqual(native.main(['orders', '--run-dir', folder]), 2)
 
     def test_worker_requires_namespace(self):
-        options = Mock(service='orders')
+        options = Mock(service='orders', lane='L00')
         with patch.object(Path, 'samefile', return_value=False), patch.object(native.os, 'chdir') as change:
             with self.assertRaises(ValueError):
                 native.worker(options)

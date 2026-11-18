@@ -28,12 +28,7 @@ def main(argv=None):
         if options.run_dir is None:
             parser.error('--run-dir is required for native execution')
         for name in selected:
-            key = 'TEST_RUNTIME_URL_' + name.upper().replace('-', '_')
             env = dict(os.environ)
-            if key in env:
-                env['TEST_RUNTIME_URL'] = env[key]
-            elif len(selected) > 1:
-                parser.error('Each selected service requires its own restricted test database URL')
             run(os.sys.executable, str(Path(__file__).with_name('native-runtime-tests.py')),
                 name, '--lane', options.lane, '--run-dir', str(options.run_dir), '--require-all', env=env)
         return
