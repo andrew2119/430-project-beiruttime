@@ -25,6 +25,7 @@ function BrandLink({locale}: {locale:Locale}) {return <Link href={`/${locale}`} 
 export function FoundationShell({locale,entries,path,children,accessRevision=0}: {locale:Locale;entries:NavEntry[];path:string;children:ReactNode;accessRevision?:number}) {
   const t = SHELL_COPY[locale], content = useRef<HTMLElement|null>(null), previous = useRef(path);
   const [drawer,setDrawer] = useState<string|null>(null), navigating = useRef(false);
+  const topbar = useRef<HTMLElement|null>(null), menuTrigger = useRef<HTMLButtonElement|null>(null), escaped = useRef(false);
   const online = useSyncExternalStore(subscribeOnline,isOnline,()=>true), phone = useSyncExternalStore(subscribePhone,isPhone,()=>false);
   const open = phone && drawer === path;
   const attachFrame = useCallback((node:HTMLDivElement|null)=>{if (node) return fitVisualViewport(node);},[]);
@@ -39,8 +40,8 @@ export function FoundationShell({locale,entries,path,children,accessRevision=0}:
   return <DirectionProvider dir={locale === 'ar' ? 'rtl' : 'ltr'}><div ref={attachFrame} className="bt-shell" dir={locale === 'ar' ? 'rtl' : 'ltr'} lang={locale}>
     <a href="#main-content" className="bt-shell-skip">{t.skip}</a>
     {!phone && <aside className="bt-shell-rail"><BrandLink locale={locale}/><ShellNavigation entries={entries} locale={locale} path={path}/><ShellProfile locale={locale} path={path}/></aside>}
-    <header className="bt-shell-topbar"><Sheet open={open} onOpenChange={value=>{navigating.current = false;setDrawer(value ? path : null);}}><SheetTrigger label={t.menu}><Menu aria-hidden="true"/></SheetTrigger>
-      <SheetContent form="end" title={t.navigation} closeLabel={t.close} className="bt-navigation-sheet" onCloseAutoFocus={event=>{if (navigating.current || drawer != null && drawer !== path) event.preventDefault();}}>
+    <header ref={topbar} className="bt-shell-topbar"><Sheet open={open} onOpenChange={value=>{if (value) {menuTrigger.current = topbar.current?.querySelector<HTMLButtonElement>('button[aria-haspopup="dialog"]') ?? null;escaped.current = false;}navigating.current = false;setDrawer(value ? path : null);}}><SheetTrigger label={t.menu}><Menu aria-hidden="true"/></SheetTrigger>
+      <SheetContent form="end" title={t.navigation} closeLabel={t.close} className="bt-navigation-sheet" onEscapeKeyDown={()=>{escaped.current = true;}} onCloseAutoFocus={event=>{if (navigating.current || drawer != null && drawer !== path) {event.preventDefault();return;}if (escaped.current && menuTrigger.current?.isConnected) {event.preventDefault();menuTrigger.current.focus({preventScroll:true});}escaped.current = false;}}>
         {phone && <div className="bt-shell-drawer-content" onClickCapture={event=>{const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null;if (anchor && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {navigating.current = true;setDrawer(null);}}}><BrandLink locale={locale}/><ShellNavigation entries={entries} locale={locale} path={path}/><ShellProfile locale={locale} path={path}/></div>}
       </SheetContent></Sheet><BrandLink locale={locale}/><LocaleControl locale={locale}/></header>
     <PageReadProvider key={accessRevision}><main ref={content} id="main-content" className="pg-tray bt-shell-content" tabIndex={-1}>{!online && <p role="status" className="bt-shell-connectivity">{t.offline}</p>}<ShellUpdates locale={locale}/>{children}</main><PageWarmingLoader/></PageReadProvider>

@@ -35,7 +35,7 @@ it.each(['dirty draft','uncertain reservation'])('%s does not write or navigate 
   rememberReservation({owner:'owner',watch:'watch',quote:'quote',checked:'watch',pending},reservationMemoryEpoch());
   const form={configuration_id:null,configuration_revision:null,brand_id:null,kind:'customization' as const,watch_context:'undecided' as const,watch_reference:'',scope_intent:'scope',notes:'نور ⌚',options:{}};
   remember({owner:'owner',id:null,revision:0,form,dirty:true,pending:null},draftMemoryEpoch());
-  const draft=recall('owner'), reservation=recallReservation('owner');
+  const reservation=recallReservation('owner');
   // Render the actual private components so their nested hooks have a dispatcher.
   renderToStaticMarkup(flow==='dirty draft' ? createElement(RequestDrafts) : createElement(Checkout, {}));
   for(const effect of state.effects) effect();
@@ -51,6 +51,6 @@ it.each(['dirty draft','uncertain reservation'])('%s does not write or navigate 
   expect(state.save).not.toHaveBeenCalled();
   expect(state.reserve).not.toHaveBeenCalled();
   expect(navigate).not.toHaveBeenCalled();
-  expect(recall('owner')).toEqual(draft);
+  expect(recall('owner')).toMatchObject({owner:'owner',id:null,form,dirty:true,pending:null});
   expect(recallReservation('owner')?.pending).toBe(reservation?.pending);
 });

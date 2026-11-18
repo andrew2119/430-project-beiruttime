@@ -22,6 +22,8 @@
   :where(.bt-shell-skip) { position: fixed; inset-block-start: max(var(--bt-space-4), env(safe-area-inset-top)); inset-inline-start: max(var(--bt-space-4), env(safe-area-inset-left), env(safe-area-inset-right)); z-index: var(--bt-layer-skip); transform: translateY(-250%); padding: var(--bt-space-3) var(--bt-space-4); border-radius: var(--bt-radius-lg); background: var(--bt-background); color: var(--bt-foreground); }
   :where(.bt-shell-skip:focus) { transform: none; }
   :where(.bt-page) { min-inline-size: 0; min-block-size: 100%; }
+  /* Trim the sticky strip at the page edges without creating a scroll container. */
+  :where(.bt-page:has([data-sx-root])) { overflow-x: clip; }
   :where(.bt-page-header:not(.hx-wrap)) { display: grid; gap: var(--bt-space-4); min-inline-size: 0; padding: var(--bt-pad-header-block) var(--bt-pad-header-inline); border-block-end: var(--bt-border-width) solid var(--bt-border); }
   :where(.bt-page-title-row) { display: flex; align-items: start; justify-content: space-between; flex-wrap: wrap; gap: var(--bt-space-4); }
   :where(.bt-page-heading) { flex: 1 1 18rem; display: grid; gap: var(--bt-space-2); min-inline-size: 0; }
