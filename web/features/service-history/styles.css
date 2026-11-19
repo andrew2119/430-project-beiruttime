@@ -1,0 +1,5 @@
+.history-form { display: grid; gap: var(--space-4); }
+.history-form label { display: grid; gap: var(--space-2); min-width: 0; }
+.history-record, .history-reference { overflow-wrap: anywhere; }
+.history-record { margin-block: var(--space-4); }
+.history-pagination { display: flex; flex-wrap: wrap; gap: var(--space-3); }
