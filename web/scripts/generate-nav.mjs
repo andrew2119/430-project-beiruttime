@@ -7,7 +7,7 @@ const repo = resolve(root,'..');
 const contracts=[]; const namespaces=new Set();
 for (const file of (await readdir(`${repo}/contracts/registrations`)).filter(f=>/^L\d\d\.json$/.test(f)).sort()) {
   const entry=JSON.parse(await readFile(`${repo}/contracts/registrations/${file}`,'utf8'));
-  if(entry.version!==1 || `${entry.lane}.json`!==file || !/^L(0[0-9]|1[01])$/.test(entry.lane)) throw new Error('Invalid contract registration');
+  if(entry.version!==1 || `${entry.lane}.json`!==file || !/^L(0[0-9]|1[0-9]|2[0-5])$/.test(entry.lane)) throw new Error('Invalid contract registration');
   for(const contract of entry.contracts??[]) {
     const path=resolve(repo,contract.path);
     if(!path.startsWith(`${repo}/packages${sep}`) || !/^[a-z][a-z0-9.-]*\.v[1-9][0-9]*$/.test(contract.namespace) || namespaces.has(contract.namespace)) throw new Error('Invalid contract namespace/path');

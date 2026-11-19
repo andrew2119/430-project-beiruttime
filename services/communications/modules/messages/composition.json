@@ -1,0 +1,1 @@
+{"version":1,"id":"L22.messages","dependencies":["fastapi"],"routes":["routes.py:router"],"migrations":[]}

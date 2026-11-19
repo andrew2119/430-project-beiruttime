@@ -1,0 +1,9 @@
+export const custodyVersion = 'custody.v1' as const;
+export const custodyStates = ['awaiting_prerequisites','prepared','in_transit','ready_for_pickup','expert_received','job_received','received','investigation','return_held','returned'] as const;
+export type CustodyState = typeof custodyStates[number];
+export type CurrentBinding = {watch_id:string;watch_revision:number;source_revision:number;quote_id:string;quote_revision:number;policy_revision:number;actor_id:string;organization_id:string|null};
+export type CustodyRecord = {schema_version:typeof custodyVersion;subject_id:string;operation_id:string;watch_id:string;revision:number;state:CustodyState;route:'private'|'dealer'|'brand'|'job';held:boolean;pending_reason:string|null;next_actor:string|null;next_review_at:string|null;buyer_received_at:string|null;dispute_deadline:string|null;window_hours:72|168|null;custodian:string;current:CurrentBinding;due_actions:{code:string;due_at:string;next_actor:string}[]};
+export type ReceiptProof = {watch_id:string;recipient:string;condition:string;accessories:string[];location:string;address:string;received_at:string;signed_handoff:true;source:'buyer_acknowledgement'};
+export type BuyerReceiptCommand = CurrentBinding & {schema_version:typeof custodyVersion;subject_id:string;operation_id:string;expected_revision:number;action:'buyer_receipt';proof:ReceiptProof};
+export type HistoryRow = Pick<CustodyRecord,'operation_id'|'revision'|'state'|'held'|'buyer_received_at'|'dispute_deadline'>;
+export type CustodyHistory = {subject_id:string;items:HistoryRow[];total:number;offset:number;limit:number};

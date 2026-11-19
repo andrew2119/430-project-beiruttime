@@ -4,7 +4,7 @@ import zlib
 from uuid import uuid4
 from PIL import Image
 import pytest
-from .test_listing_lifecycle import headers, facts, image, draft, photo, ready, publish
+from .test_listing_lifecycle import headers, facts, image, draft, photo, ready, publish, catalog_modules
 
 pytestmark = pytest.mark.asyncio
 
@@ -144,11 +144,10 @@ async def test_cancelled_decode_retains_its_native_thread_budget(monkeypatch):
     import asyncio
     import sys
     import threading
-    from pathlib import Path
     from bt_runtime.modules import discover
     from bt_contracts_core.errors import PublicError
 
-    module = next(m for m in discover(Path("/app/modules")) if m.id == "L03.media")
+    module = next(m for m in discover(catalog_modules()) if m.id == "L03.media")
     decode = module.load("routes.py:decode")
     routes = sys.modules[decode.__module__]
     started, finish = threading.Event(), threading.Event()

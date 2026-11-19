@@ -1,0 +1,94 @@
+{
+  "synthetic": true,
+  "context": {
+    "operation_id": "synthetic-read-1",
+    "actor_id": "synthetic-buyer",
+    "organization_id": "synthetic-brand",
+    "subject_id": "synthetic-buyer",
+    "watch_id": "synthetic-watch",
+    "buyer_id": "synthetic-buyer",
+    "order_id": "synthetic-job",
+    "order_kind": "job",
+    "quote_id": "synthetic-quote",
+    "quote_revision": 2,
+    "request_revision": 3,
+    "authority_revision": 4,
+    "payment_revision": 5,
+    "currency": "USD",
+    "total_minor": 500000
+  },
+  "payment": {
+    "buyer_id": "synthetic-buyer",
+    "order_id": "synthetic-job",
+    "order_kind": "job",
+    "watch_id": "synthetic-watch",
+    "quote_id": "synthetic-quote",
+    "quote_revision": 2,
+    "currency": "USD",
+    "total_minor": 500000,
+    "payment_revision": 5,
+    "payment_operation_id": "synthetic-payment",
+    "state": "paid_held"
+  },
+  "cases": [
+    {
+      "name": "exact",
+      "changes": {},
+      "expected": "paid"
+    },
+    {
+      "name": "wrong_buyer",
+      "changes": {
+        "buyer_id": "other"
+      },
+      "expected": "denied"
+    },
+    {
+      "name": "wrong_quote",
+      "changes": {
+        "quote_id": "other"
+      },
+      "expected": "denied"
+    },
+    {
+      "name": "wrong_amount",
+      "changes": {
+        "total_minor": 499999
+      },
+      "expected": "denied"
+    },
+    {
+      "name": "stale",
+      "changes": {
+        "quote_revision": 1
+      },
+      "expected": "denied"
+    },
+    {
+      "name": "unknown",
+      "changes": {
+        "state": "unknown"
+      },
+      "expected": "pending"
+    },
+    {
+      "name": "unpaid",
+      "changes": {
+        "state": "unpaid"
+      },
+      "expected": "unpaid"
+    },
+    {
+      "name": "lost_response",
+      "unavailable": true,
+      "changes": {},
+      "expected": "pending"
+    }
+  ],
+  "support": {
+    "operation_id": "synthetic-read-1",
+    "operator_id": "synthetic-support-operator",
+    "opened_at": "2026-11-16T10:00:00+00:00",
+    "last_progress_at": "2026-11-16T10:00:00+00:00"
+  }
+}

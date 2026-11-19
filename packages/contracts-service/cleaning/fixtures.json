@@ -1,0 +1,255 @@
+{
+  "label": "Synthetic contract cases; no connected acceptance proof.",
+  "now": "2026-11-16T12:00:00Z",
+  "request": {
+    "schema_version": "cleaning.v1",
+    "operation_id": "00000000-0000-4000-8000-000000000001",
+    "subject_id": "00000000-0000-4000-8000-000000000002",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "actor_id": "00000000-0000-4000-8000-000000000004",
+    "organization_id": "00000000-0000-4000-8000-000000000005",
+    "expected_revision": 0,
+    "source_revision": 1,
+    "policy_revision": 1,
+    "action": "request",
+    "areas": [
+      "case",
+      "bracelet"
+    ],
+    "condition": "Synthetic condition: coated case, worn engraving.",
+    "preservation_limits": "Preserve coating and engraving. No opening or polishing.",
+    "assessment_permission": true,
+    "no_submersion_promise": true,
+    "no_movement_service": true,
+    "quote_id": null,
+    "quote_revision": null,
+    "terms_revision": null
+  },
+  "facts": {
+    "actor_id": "00000000-0000-4000-8000-000000000004",
+    "subject_id": "00000000-0000-4000-8000-000000000002",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "organization_id": "00000000-0000-4000-8000-000000000005",
+    "source_revision": 1,
+    "policy_revision": 1,
+    "authorized": true,
+    "supported": true
+  },
+  "quote": {
+    "quote_id": "00000000-0000-4000-8000-000000000006",
+    "quote_revision": 1,
+    "request_revision": 1,
+    "assessment_id": "00000000-0000-4000-8000-000000000007",
+    "assessment_revision": 1,
+    "assessor_id": "00000000-0000-4000-8000-000000000008",
+    "approver_id": "00000000-0000-4000-8000-000000000009",
+    "assignment_revision": 1,
+    "capability_revision": 1,
+    "buyer_id": "00000000-0000-4000-8000-000000000004",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "organization_id": "00000000-0000-4000-8000-000000000005",
+    "line_id": "00000000-0000-4000-8000-000000000010",
+    "scope": "external_case_bracelet_cleaning",
+    "areas": [
+      "case",
+      "bracelet"
+    ],
+    "process": "Synthetic assessed dry surface cleaning only. No immersion.",
+    "limitations": "No opening, polishing or movement service. Preserve coating and engraving.",
+    "condition": "Synthetic condition: coated case, worn engraving.",
+    "preservation_limits": "Preserve coating and engraving. No opening or polishing.",
+    "lead_time": "Synthetic estimate: two business days after authorized intake.",
+    "terms": "Synthetic assessed line only; no work before current execution prerequisites. No extra customer surcharge.",
+    "terms_revision": 1,
+    "currency": "USD",
+    "base_minor": 500000,
+    "buyer_fee_minor": 0,
+    "business_fee_minor": 25000,
+    "total_minor": 500000,
+    "expires_at": "2026-11-16T12:15:00Z",
+    "accepted_at": null,
+    "request_id": "00000000-0000-4000-8000-000000000002"
+  },
+  "accept": {
+    "schema_version": "cleaning.v1",
+    "operation_id": "00000000-0000-4000-8000-000000000011",
+    "subject_id": "00000000-0000-4000-8000-000000000002",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "actor_id": "00000000-0000-4000-8000-000000000004",
+    "organization_id": "00000000-0000-4000-8000-000000000005",
+    "expected_revision": 1,
+    "source_revision": 1,
+    "policy_revision": 1,
+    "action": "accept",
+    "areas": [
+      "case",
+      "bracelet"
+    ],
+    "condition": "Synthetic condition: coated case, worn engraving.",
+    "preservation_limits": "Preserve coating and engraving. No opening or polishing.",
+    "assessment_permission": true,
+    "no_submersion_promise": true,
+    "no_movement_service": true,
+    "quote_id": "00000000-0000-4000-8000-000000000006",
+    "quote_revision": 1,
+    "terms_revision": 1
+  },
+  "cases": [
+    {
+      "name": "success",
+      "command": {
+        "schema_version": "cleaning.v1",
+        "operation_id": "00000000-0000-4000-8000-000000000001",
+        "subject_id": "00000000-0000-4000-8000-000000000002",
+        "watch_id": "00000000-0000-4000-8000-000000000003",
+        "actor_id": "00000000-0000-4000-8000-000000000004",
+        "organization_id": "00000000-0000-4000-8000-000000000005",
+        "expected_revision": 0,
+        "source_revision": 1,
+        "policy_revision": 1,
+        "action": "request",
+        "areas": [
+          "case",
+          "bracelet"
+        ],
+        "condition": "Synthetic condition: coated case, worn engraving.",
+        "preservation_limits": "Preserve coating and engraving. No opening or polishing.",
+        "assessment_permission": true,
+        "no_submersion_promise": true,
+        "no_movement_service": true,
+        "quote_id": null,
+        "quote_revision": null,
+        "terms_revision": null
+      },
+      "facts": {
+        "actor_id": "00000000-0000-4000-8000-000000000004",
+        "subject_id": "00000000-0000-4000-8000-000000000002",
+        "watch_id": "00000000-0000-4000-8000-000000000003",
+        "organization_id": "00000000-0000-4000-8000-000000000005",
+        "source_revision": 1,
+        "policy_revision": 1,
+        "authorized": true,
+        "supported": true
+      },
+      "expected": "requested",
+      "retry_same_operation": false
+    },
+    {
+      "name": "denied",
+      "command": {
+        "schema_version": "cleaning.v1",
+        "operation_id": "00000000-0000-4000-8000-000000000001",
+        "subject_id": "00000000-0000-4000-8000-000000000002",
+        "watch_id": "00000000-0000-4000-8000-000000000003",
+        "actor_id": "00000000-0000-4000-8000-000000000004",
+        "organization_id": "00000000-0000-4000-8000-000000000005",
+        "expected_revision": 0,
+        "source_revision": 1,
+        "policy_revision": 1,
+        "action": "request",
+        "areas": [
+          "case",
+          "bracelet"
+        ],
+        "condition": "Synthetic condition: coated case, worn engraving.",
+        "preservation_limits": "Preserve coating and engraving. No opening or polishing.",
+        "assessment_permission": true,
+        "no_submersion_promise": true,
+        "no_movement_service": true,
+        "quote_id": null,
+        "quote_revision": null,
+        "terms_revision": null
+      },
+      "facts": {
+        "actor_id": "00000000-0000-4000-8000-000000000004",
+        "subject_id": "00000000-0000-4000-8000-000000000002",
+        "watch_id": "00000000-0000-4000-8000-000000000003",
+        "organization_id": "00000000-0000-4000-8000-000000000005",
+        "source_revision": 1,
+        "policy_revision": 1,
+        "authorized": false,
+        "supported": true
+      },
+      "expected": "denied",
+      "retry_same_operation": false
+    },
+    {
+      "name": "stale",
+      "command": {
+        "schema_version": "cleaning.v1",
+        "operation_id": "00000000-0000-4000-8000-000000000001",
+        "subject_id": "00000000-0000-4000-8000-000000000002",
+        "watch_id": "00000000-0000-4000-8000-000000000003",
+        "actor_id": "00000000-0000-4000-8000-000000000004",
+        "organization_id": "00000000-0000-4000-8000-000000000005",
+        "expected_revision": 0,
+        "source_revision": 1,
+        "policy_revision": 1,
+        "action": "request",
+        "areas": [
+          "case",
+          "bracelet"
+        ],
+        "condition": "Synthetic condition: coated case, worn engraving.",
+        "preservation_limits": "Preserve coating and engraving. No opening or polishing.",
+        "assessment_permission": true,
+        "no_submersion_promise": true,
+        "no_movement_service": true,
+        "quote_id": null,
+        "quote_revision": null,
+        "terms_revision": null
+      },
+      "facts": {
+        "actor_id": "00000000-0000-4000-8000-000000000004",
+        "subject_id": "00000000-0000-4000-8000-000000000002",
+        "watch_id": "00000000-0000-4000-8000-000000000003",
+        "organization_id": "00000000-0000-4000-8000-000000000005",
+        "source_revision": 2,
+        "policy_revision": 1,
+        "authorized": true,
+        "supported": true
+      },
+      "expected": "stale_source",
+      "retry_same_operation": false
+    },
+    {
+      "name": "lost_response",
+      "command": {
+        "schema_version": "cleaning.v1",
+        "operation_id": "00000000-0000-4000-8000-000000000001",
+        "subject_id": "00000000-0000-4000-8000-000000000002",
+        "watch_id": "00000000-0000-4000-8000-000000000003",
+        "actor_id": "00000000-0000-4000-8000-000000000004",
+        "organization_id": "00000000-0000-4000-8000-000000000005",
+        "expected_revision": 0,
+        "source_revision": 1,
+        "policy_revision": 1,
+        "action": "request",
+        "areas": [
+          "case",
+          "bracelet"
+        ],
+        "condition": "Synthetic condition: coated case, worn engraving.",
+        "preservation_limits": "Preserve coating and engraving. No opening or polishing.",
+        "assessment_permission": true,
+        "no_submersion_promise": true,
+        "no_movement_service": true,
+        "quote_id": null,
+        "quote_revision": null,
+        "terms_revision": null
+      },
+      "facts": {
+        "actor_id": "00000000-0000-4000-8000-000000000004",
+        "subject_id": "00000000-0000-4000-8000-000000000002",
+        "watch_id": "00000000-0000-4000-8000-000000000003",
+        "organization_id": "00000000-0000-4000-8000-000000000005",
+        "source_revision": 1,
+        "policy_revision": 1,
+        "authorized": true,
+        "supported": true
+      },
+      "expected": "requested",
+      "retry_same_operation": true
+    }
+  ]
+}

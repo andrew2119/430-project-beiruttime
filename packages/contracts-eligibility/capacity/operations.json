@@ -1,0 +1,15 @@
+{
+  "schema_version": "eligibility.capacity.operations.v1",
+  "operations": {
+    "eligibility.capacity.read.v1": {
+      "kind": "read",
+      "input": "context.schema.json",
+      "source": "payment.schema.json",
+      "output": "result.schema.json",
+      "retry": "same operation_id; current facts rechecked",
+      "timeout_ms": 1000,
+      "runtime_registered": false,
+      "support": "support.schema.json"
+    }
+  }
+}

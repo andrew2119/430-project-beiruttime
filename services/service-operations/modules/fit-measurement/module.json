@@ -1,0 +1,1 @@
+{"version":1,"id":"L25.fit-measurement","dependencies":["fastapi","asyncpg"],"routes":["routes.py:router"],"migrations":["migrations/L25_0001_fit_measurement.sql"]}

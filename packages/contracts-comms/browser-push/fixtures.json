@@ -1,0 +1,83 @@
+{
+  "schema_version": "browser-push.v1",
+  "device_id": "10000000-0000-4000-8000-000000000001",
+  "operation_id": "20000000-0000-4000-8000-000000000001",
+  "success": {
+    "schema_version": "browser-push.v1",
+    "operation_id": "20000000-0000-4000-8000-000000000001",
+    "device_id": "10000000-0000-4000-8000-000000000001",
+    "state": "active",
+    "revision": 1
+  },
+  "denied": {
+    "code": "denied",
+    "status": 403,
+    "request": {
+      "schema_version": "browser-push.v1",
+      "operation_id": "20000000-0000-4000-8000-000000000001",
+      "device_id": "10000000-0000-4000-8000-000000000001",
+      "expected_revision": 0,
+      "action": "opt_in",
+      "permission": "denied",
+      "subscription": {
+        "endpoint": "https://push.beirut-time.invalid/device",
+        "p256dh": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "auth": "bbbbbbbbbbbbbbbbbbbbbb"
+      }
+    }
+  },
+  "stale": {
+    "code": "stale_revision",
+    "status": 409,
+    "request": {
+      "schema_version": "browser-push.v1",
+      "operation_id": "20000000-0000-4000-8000-000000000001",
+      "device_id": "10000000-0000-4000-8000-000000000001",
+      "expected_revision": 2,
+      "action": "opt_in",
+      "permission": "granted",
+      "subscription": {
+        "endpoint": "https://push.beirut-time.invalid/device",
+        "p256dh": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "auth": "bbbbbbbbbbbbbbbbbbbbbb"
+      }
+    }
+  },
+  "lost_response": {
+    "state": "pending",
+    "next_action": "lookup_same_operation",
+    "request": {
+      "schema_version": "browser-push.v1",
+      "operation_id": "20000000-0000-4000-8000-000000000001",
+      "device_id": "10000000-0000-4000-8000-000000000001",
+      "expected_revision": 0,
+      "action": "opt_in",
+      "permission": "granted",
+      "subscription": {
+        "endpoint": "https://push.beirut-time.invalid/device",
+        "p256dh": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "auth": "bbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    "lookup_result": {
+      "schema_version": "browser-push.v1",
+      "operation_id": "20000000-0000-4000-8000-000000000001",
+      "device_id": "10000000-0000-4000-8000-000000000001",
+      "state": "active",
+      "revision": 1
+    }
+  },
+  "command": {
+    "schema_version": "browser-push.v1",
+    "operation_id": "20000000-0000-4000-8000-000000000001",
+    "device_id": "10000000-0000-4000-8000-000000000001",
+    "expected_revision": 0,
+    "action": "opt_in",
+    "permission": "granted",
+    "subscription": {
+      "endpoint": "https://push.beirut-time.invalid/device",
+      "p256dh": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "auth": "bbbbbbbbbbbbbbbbbbbbbb"
+    }
+  }
+}

@@ -28,10 +28,10 @@ export function Button({children, className, variant = 'default', size = 'defaul
   </button>;
 }
 
-export function ButtonLink({href, children, className, variant = 'default', size = 'default', disabled = false, 'aria-label': label}: {href:string; children:ReactNode; className?:string; variant?:ButtonVariant; size?:ButtonSize; disabled?:boolean; 'aria-label'?:string}) {
-  return <Link href={href} aria-label={label} aria-disabled={disabled || undefined} tabIndex={disabled ? -1 : undefined}
+export function ButtonLink({href, children, className, variant = 'default', size = 'default', disabled = false, prefetch, onClick, 'aria-current': current, 'aria-label': label}: {href:string; children:ReactNode; className?:string; variant?:ButtonVariant; size?:ButtonSize; disabled?:boolean; prefetch?:boolean; onClick?:MouseEventHandler<HTMLAnchorElement>; 'aria-current'?:'page'|'location'; 'aria-label'?:string}) {
+  return <Link href={href} prefetch={disabled ? false : prefetch} aria-current={current} aria-label={label} aria-disabled={disabled || undefined} tabIndex={disabled ? -1 : undefined}
     data-variant={variant} data-size={size} className={cn('bt-button bt-pressable', className)}
-    onClick={event => {if (disabled) event.preventDefault();}}
+    onClick={event => {if (disabled) event.preventDefault(); else onClick?.(event);}}
     onPointerDown={event => markMotionInput(event.currentTarget, 'pointer')}
     onKeyDown={event => {markMotionInput(event.currentTarget, 'keyboard'); if (disabled && ['Enter',' '].includes(event.key)) event.preventDefault();}}>
     <span className="bt-button-label">{children}</span>

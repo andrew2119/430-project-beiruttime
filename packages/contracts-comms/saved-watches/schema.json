@@ -1,0 +1,14 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Saved watch command v1",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema_version","operation_id","expected_revision","saved","alerts"],
+  "properties":{
+    "schema_version":{"const":"communications.saved-watches.v1"},
+    "operation_id":{"type":"string","minLength":1,"maxLength":128},
+    "expected_revision":{"type":"integer","minimum":0},
+    "saved":{"type":"boolean"},
+    "alerts":{"type":"array","uniqueItems":true,"maxItems":4,"items":{"enum":["price","bid","ending","sold"]}}
+  }
+}

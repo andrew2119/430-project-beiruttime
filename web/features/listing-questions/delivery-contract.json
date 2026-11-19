@@ -1,0 +1,10 @@
+{
+  "route": "/questions",
+  "file": "web/app/(questions)/questions/page.tsx",
+  "view": "web/features/listing-questions/view.tsx",
+  "kind": "reads",
+  "reason": "Public listing questions with current scoped seller and moderation actions.",
+  "content": "[data-page-answer]",
+  "read": "listing-questions.v1",
+  "proof": "owed"
+}
