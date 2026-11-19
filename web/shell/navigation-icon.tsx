@@ -5,7 +5,7 @@ import { Home, Watch, Search, Building2, CircleDollarSign, SlidersHorizontal, Wr
 
 export type NavigationMotion = 'greet' | 'notice' | 'adjust' | 'wind' | 'reveal' | 'arrive' | 'hands' | 'strike' | 'lift' | 'balance' | 'confirm';
 export const navigationIcons = {
-  'auction-policy': {icon:Gavel, motion:'strike'}, 'brand-customizations': {icon:Wrench, motion:'adjust'}, 'brand-quotes': {icon:CircleDollarSign, motion:'balance'}, 'l13-withdrawals': {icon:ClipboardList, motion:'notice'}, offers: {icon:ShoppingBag, motion:'balance'}, 'repair-quotes': {icon:Wrench, motion:'adjust'},
+  'auction-policy': {icon:Gavel, motion:'strike'},
   home: {icon:Home, motion:'greet'}, settings: {icon:Settings, motion:'wind'}, about: {icon:Info, motion:'notice'},
   account: {icon:UserRound, motion:'greet'}, 'private-verification': {icon:ShieldCheck, motion:'confirm'}, 'private-consent': {icon:CheckCheck, motion:'confirm'},
   'official-businesses': {icon:Building2, motion:'reveal'}, 'seller-listings': {icon:Watch, motion:'adjust'}, 'seller-dashboard': {icon:LayoutDashboard, motion:'balance'},
