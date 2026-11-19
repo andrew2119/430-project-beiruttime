@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Orders job payment fact v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "buyer_id",
+    "order_id",
+    "order_kind",
+    "watch_id",
+    "quote_id",
+    "quote_revision",
+    "currency",
+    "total_minor",
+    "payment_revision",
+    "payment_operation_id",
+    "state"
+  ],
+  "properties": {
+    "buyer_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "order_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "order_kind": {
+      "const": "job"
+    },
+    "watch_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "quote_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "quote_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "currency": {
+      "const": "USD"
+    },
+    "total_minor": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "payment_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "payment_operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "state": {
+      "enum": [
+        "paid_held",
+        "pending",
+        "unpaid"
+      ]
+    }
+  }
+}

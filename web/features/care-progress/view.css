@@ -1,0 +1,5 @@
+.care-progress-search { display: grid; gap: var(--space-3); }
+.care-progress-lines { display: grid; gap: var(--space-4); padding: 0; list-style: none; }
+.care-progress-lines li, .care-progress-lines dd { min-inline-size: 0; overflow-wrap: anywhere; }
+.care-progress-lines dd { margin-inline-start: 0; }
+.care-progress-lines dt { font-weight: 600; }

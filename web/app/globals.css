@@ -16,6 +16,7 @@
 @import "../styles/patterns.css";
 @import "../styles/shell.css";
 @import "../styles/bt-shell.css";
+@import "../styles/bt-settings.css";
 @import "../styles/bt-page-examples.css";
 @import "../styles/faces.css" layer(components);
 @import "../styles/foundation.css";

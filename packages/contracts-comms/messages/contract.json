@@ -1,0 +1,52 @@
+{
+  "schema_version": "communications.messages.v1",
+  "base": "/v1/messages",
+  "operations": {
+    "threads": "GET /threads",
+    "open": "POST /threads",
+    "read": "GET /threads/{id}",
+    "command": "POST /threads/{id}/commands",
+    "lookup": "GET /threads/{id}/operations/{operation_id}",
+    "status": "GET /threads/{id}/status",
+    "delivery": "GET /threads/{id}/delivery"
+  },
+  "commands": [
+    "send",
+    "read",
+    "block",
+    "unblock",
+    "report",
+    "appeal",
+    "delivery"
+  ],
+  "limits": {
+    "text": 4000,
+    "reason": 1000,
+    "page": 50,
+    "delivery": 500,
+    "dependency_seconds": 2,
+    "retry_attempts": 2
+  },
+  "bindings": [
+    "operation_id",
+    "actor_id",
+    "organization_id",
+    "subject_id",
+    "watch_id",
+    "expected_revision",
+    "source_revision",
+    "quote_revision",
+    "policy_revision"
+  ],
+  "states": [
+    "accepted",
+    "denied",
+    "stale",
+    "pending",
+    "unavailable"
+  ],
+  "membership": "Current authority and [joined_at, left_at) gate every read and command. History is restricted to the current membership interval. Listing, opening and status admit currently authorized blocked members for block management without exposing messages or receipts.",
+  "privacy": "No message body, contact field, evidence reference or report reason enters an event, notification envelope or log. Pre-sale previews mask recognizable contacts. Delivery fields require current paid-held authority.",
+  "retry": "After a lost reply reconcile the same operation; one retry uses identical bytes. Conflicting reuse denies. Current access is rechecked before returning a receipt. Blocked members may recover only their own committed block receipt; messages and other receipts remain restricted.",
+  "revision": "New commands require current thread and source revisions. An identical committed retry returns its original receipt after current access checks."
+}

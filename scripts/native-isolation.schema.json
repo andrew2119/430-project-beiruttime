@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Beirut Time native layout v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "service": {
+      "enum": [
+        "identity",
+        "catalog",
+        "auction",
+        "pricing",
+        "orders",
+        "eligibility",
+        "trust",
+        "communications",
+        "service-operations"
+      ]
+    },
+    "lane": {
+      "type": "string",
+      "pattern": "^L(0[0-9]|1[01])$"
+    },
+    "profile": {
+      "enum": [
+        "service",
+        "l05-cross-runtime"
+      ]
+    },
+    "mounts": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^(/(app|foundation-tests|lane-tests|contracts)(/.*)?|/workspace-module)$"
+          },
+          "read_only": {
+            "const": true
+          }
+        },
+        "required": [
+          "source",
+          "target",
+          "read_only"
+        ]
+      }
+    },
+    "empty_read_only": {
+      "type": "array",
+      "items": {
+        "const": "/lane-tests/L10"
+      },
+      "uniqueItems": true
+    },
+    "contracts_target": {
+      "const": "/opt/domain-contracts"
+    },
+    "working_directory": {
+      "const": "/app"
+    },
+    "writable_tmp": {
+      "const": "/tmp"
+    },
+    "limits": {
+      "const": {
+        "memory_bytes": 268435456,
+        "cpu_quota": 0.5,
+        "pids": 128
+      }
+    },
+    "network": {
+      "const": "private_loopback"
+    },
+    "required_capabilities": {
+      "const": [
+        "user_namespace",
+        "mount_namespace",
+        "process_namespace",
+        "private_loopback",
+        "restricted_database_roles",
+        "resource_scope",
+        "readonly_root",
+        "clean_environment",
+        "no_host_root"
+      ]
+    },
+    "unsupported": {
+      "const": [
+        "image_build_context",
+        "image_content"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "profile": {
+            "const": "l05-cross-runtime"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "service": {
+            "const": "communications"
+          },
+          "lane": {
+            "const": "L05"
+          }
+        }
+      }
+    }
+  ],
+  "required": [
+    "schema_version",
+    "service",
+    "lane",
+    "profile",
+    "mounts",
+    "empty_read_only",
+    "contracts_target",
+    "working_directory",
+    "writable_tmp",
+    "limits",
+    "network",
+    "required_capabilities",
+    "unsupported"
+  ],
+  "$defs": {
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "proof_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "enum": [
+            "complete",
+            "deferred",
+            "failed"
+          ]
+        },
+        "collected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deferred": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "proof_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "proof_id",
+              "reason"
+            ]
+          }
+        }
+      },
+      "required": [
+        "proof_id",
+        "state",
+        "collected",
+        "passed",
+        "skipped",
+        "failed",
+        "errors",
+        "deferred"
+      ]
+    }
+  }
+}

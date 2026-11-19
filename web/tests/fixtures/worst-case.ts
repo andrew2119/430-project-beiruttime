@@ -62,7 +62,7 @@ function watch(index: number, worst: boolean): WatchSummary {
     brand: worst && index % 3 === 0 ? 'Manufacture Jaeger-LeCoultre' : 'Omega',
     model: worst && index % 3 === 0 ? 'Master Ultra Thin Perpetual Calendar — boutique edition with original accessories' : 'Aqua Terra',
     location: worst && index % 2 ? 'بيروت — الأشرفية، منطقة المتحف الوطني' : 'Beirut',
-    price: worst && index % 3 === 1 ? null : { amount: worst ? VALUES.amount : '4500.00', currency: index % 2 ? 'LBP' : 'USD' },
+    price: worst && index % 3 === 1 ? null : { amount: worst ? VALUES.amount : '4500.00', currency: 'USD' },
     sale_mode: (['fixed', 'auction', 'offer'] as const)[index % 3],
     sale_state: saleStates[index % saleStates.length],
     thumbnail: worst && index % 2 ? { ...MEDIA.broken, id: `missing-${index}` } : null,

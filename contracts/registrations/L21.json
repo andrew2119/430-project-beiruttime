@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "lane": "L21",
+  "contracts": [
+    {
+      "namespace": "service.cleaning.v1",
+      "path": "packages/contracts-service/cleaning",
+      "fixtures": [
+        "packages/contracts-service/cleaning/fixtures.json"
+      ]
+    }
+  ]
+}

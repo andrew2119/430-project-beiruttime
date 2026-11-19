@@ -20,12 +20,12 @@ function DestinationIcon({id,active,path,owner}: {id:NavigationDestination;activ
   const {pending} = useLinkStatus();
   return pending ? <DelayedIcon key={path} id={id} active={active} owner={owner}/> : <NavigationIcon id={id} active={active}/>;
 }
-/** Full Next prefetch remains until the lazy warmer has installed listeners.
- * Non-adopted routes never warm from this shell. Native links keep new-tab and
+/** Full-route prefetch remains until the lazy warmer has installed listeners.
+ * Registered destinations share route intent. Native links keep new-tab and
  * modified-click behavior; pending feedback never replaces or moves the label. */
 export function DestinationLink({href,label,icon,active=false,disabled=false,path,appearance='row'}: {href:string;label:string;icon:NavigationDestination;active?:boolean;disabled?:boolean;path:string;appearance?:'row'|'tab'}) {
   const running = usePageWarmingRunning(), owner = useRef<HTMLAnchorElement|null>(null);
-  return <Link ref={owner} href={href} prefetch={!disabled && pageFor(href) ? (running ? false : true) : false} aria-current={active ? 'page' : undefined} aria-disabled={disabled || undefined} tabIndex={disabled ? -1 : undefined}
+  return <Link ref={owner} href={href} prefetch={disabled ? false : pageFor(href) && running ? false : true} aria-current={active ? 'page' : undefined} aria-disabled={disabled || undefined} tabIndex={disabled ? -1 : undefined}
     className={appearance === 'tab' ? 'bt-destination bt-destination-tab bt-pressable' : 'bt-destination bt-pressable'}
     onClick={event=>{if (disabled) event.preventDefault();}} onPointerDown={event=>markMotionInput(event.currentTarget,'pointer')} onKeyDown={event=>{markMotionInput(event.currentTarget,'keyboard');if (disabled && ['Enter',' '].includes(event.key)) event.preventDefault();}} onFocus={event=>{if (event.currentTarget.matches(':focus-visible')) markMotionInput(event.currentTarget,'keyboard');}}>
     <DestinationIcon id={icon} active={active} path={path} owner={owner}/><span className="bt-destination-label">{label}</span>

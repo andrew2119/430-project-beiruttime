@@ -4,6 +4,7 @@ const config: NextConfig = {
   outputFileTracingRoot: process.cwd().replace(/[/\\]web$/, ''),
   transpilePackages: ['@beirut-time/contracts-core','@beirut-time/i18n','@beirut-time/ui'],
   poweredByHeader: false,
+  agentRules: false,
   // Preserve the raw loopback origin: NextURL normalizes 127.0.0.1 to localhost,
   // which otherwise turns an internal locale rewrite into a recursive HTTP proxy.
   skipProxyUrlNormalize: true,

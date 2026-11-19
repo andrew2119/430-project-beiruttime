@@ -1,0 +1,100 @@
+{
+  "schema_version": "brand-assessment.v1",
+  "cases": [
+    {
+      "name": "success",
+      "synthetic": true,
+      "response": {
+        "schema_version": "brand-assessment.v1",
+        "operation_id": "synthetic-operation-1",
+        "subject_id": "synthetic-request",
+        "watch_id": "synthetic-watch",
+        "actor_id": "synthetic-assessor",
+        "organization_id": "synthetic-brand",
+        "expected_revision": 1,
+        "request_revision": 1,
+        "assignment_revision": 1,
+        "capability_revision": 1,
+        "revision": 2,
+        "pending_reason": null,
+        "next_actor": "synthetic-assessor",
+        "next_review_at": null,
+        "state": "assessed",
+        "claimant": "synthetic-assessor",
+        "assessment_id": "synthetic-assessment",
+        "assessment_revision": 1,
+        "assessor_id": "synthetic-assessor",
+        "feasibility": "manual",
+        "parts": [],
+        "limitations": "Synthetic case fit measurement required",
+        "lead_time_basis": "Synthetic supplier confirmation pending"
+      }
+    },
+    {
+      "name": "denied",
+      "synthetic": true,
+      "response": {
+        "detail": {
+          "code": "denied"
+        }
+      },
+      "http_status": 403
+    },
+    {
+      "name": "stale",
+      "synthetic": true,
+      "response": {
+        "detail": {
+          "code": "stale"
+        }
+      },
+      "http_status": 409
+    },
+    {
+      "name": "lost_response",
+      "synthetic": true,
+      "response": {
+        "schema_version": "brand-assessment.v1",
+        "operation_id": "synthetic-operation-1",
+        "subject_id": "synthetic-request",
+        "watch_id": "synthetic-watch",
+        "actor_id": "synthetic-assessor",
+        "organization_id": "synthetic-brand",
+        "expected_revision": 1,
+        "request_revision": 1,
+        "assignment_revision": 1,
+        "capability_revision": 1,
+        "revision": 2,
+        "pending_reason": "catalog_receipt",
+        "next_actor": "catalog",
+        "next_review_at": "2026-11-17T12:00:00+00:00",
+        "state": "correction_pending",
+        "claimant": "synthetic-assessor",
+        "responsible_operator_id": "synthetic-responsible-person",
+        "next_action": "recover_catalog_receipt",
+        "escalation_at": "2026-11-18T12:00:00+00:00"
+      }
+    }
+  ],
+  "followup_assignment": {
+    "schema_version": "brand-assessment.followup.v1",
+    "synthetic": true,
+    "operation_id": "synthetic-operation-1",
+    "organization_id": "synthetic-brand",
+    "subject_id": "synthetic-request",
+    "responsible_operator_id": "synthetic-responsible-person",
+    "next_action": "recover_catalog_receipt",
+    "next_review_at": "2026-11-17T12:00:00+00:00",
+    "escalation_at": "2026-11-18T12:00:00+00:00"
+  },
+  "followup_unavailable": {
+    "synthetic": true,
+    "http_status": 503,
+    "response": {
+      "detail": {
+        "code": "unavailable"
+      }
+    },
+    "record_created": false
+  }
+}

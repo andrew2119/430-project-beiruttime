@@ -1,0 +1,1 @@
+{"version":1,"id":"L24.progress","dependencies":["fastapi","asyncpg"],"routes":["routes.py:router"],"migrations":["migrations/L24_0001_progress.sql"],"workers":[],"fixtures":{}}

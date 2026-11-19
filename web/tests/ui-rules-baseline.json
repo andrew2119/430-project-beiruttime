@@ -244,18 +244,6 @@
       "bt-title-format": 2
     }
   },
-  "web/app/(home)/about/page.tsx": {
-    "sha256": "ef569409714e32cf5658268fc6daa5effc2fe75c780168f75e035f7036619758",
-    "counts": {
-      "bt-title-absent": 1
-    }
-  },
-  "web/app/(home)/page.tsx": {
-    "sha256": "7beba23e58540f036d4dbf61601f1f3caffbd415f8bb15706b445ba8c8b38598",
-    "counts": {
-      "bt-title-absent": 1
-    }
-  },
   "web/app/(image-credits)/image-credits/page.tsx": {
     "sha256": "7df04119115dd3e2691368e599547281647612b5c4b695d6a41d0ed02cc2e157",
     "counts": {
@@ -330,12 +318,6 @@
   },
   "web/app/(service-directory)/services/page.tsx": {
     "sha256": "c764e732ad218f4a4a044fc703c74ad7a0ce8c5c7fbb07fcbf5c87e07ef2e7d2",
-    "counts": {
-      "bt-title-absent": 1
-    }
-  },
-  "web/app/(settings)/settings/page.tsx": {
-    "sha256": "891fb26330256ca587244898ed76c70166792e6eea213a90737ef7977ad0d7ce",
     "counts": {
       "bt-title-absent": 1
     }
@@ -455,12 +437,6 @@
   },
   "web/shell/route-icon.tsx": {
     "sha256": "b4506cd05af9d05776355e9282568730f9a99edb1db0603fe5af97300bdd98c6",
-    "counts": {
-      "bt-style-opaque": 1
-    }
-  },
-  "web/shell/shell.tsx": {
-    "sha256": "75c9343ca1841dd6040baf5cca33dab4637d10b54e8836fc95667031b2a57497",
     "counts": {
       "bt-style-opaque": 1
     }
