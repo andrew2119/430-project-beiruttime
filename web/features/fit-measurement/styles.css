@@ -1,0 +1,4 @@
+.fit-measurement-size input {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
