@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "lane": "L24",
+  "contracts": [
+    {
+      "namespace": "orders.refunds.v1",
+      "path": "packages/contracts-orders/refunds",
+      "fixtures": [
+        "packages/contracts-orders/refunds/fixtures.json"
+      ]
+    }
+  ]
+}
