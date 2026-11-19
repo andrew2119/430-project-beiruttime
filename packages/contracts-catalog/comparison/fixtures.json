@@ -1,0 +1,146 @@
+{
+  "request": {
+    "schema_version": "comparison.v1",
+    "selections": [
+      {
+        "watch_id": "demo-13",
+        "expected_revision": 1
+      }
+    ]
+  },
+  "success": {
+    "schema_version": "comparison.v1",
+    "operation_id": "demo-operation-13",
+    "server_time": "2026-11-17T12:00:00Z",
+    "columns": [
+      {
+        "watch_id": "demo-13",
+        "expected_revision": 1,
+        "state": "available",
+        "revision": 1,
+        "facts": {
+          "title": {
+            "en": "Synthetic watch ⌚",
+            "ar": "ساعة تجريبية ⌚"
+          },
+          "brand": {
+            "en": "Sample maker",
+            "ar": "صانع تجريبي"
+          },
+          "model": {
+            "en": "Sample model",
+            "ar": "طراز تجريبي"
+          },
+          "reference": "DEMO-13",
+          "year": 2024,
+          "condition": {
+            "en": "Visible case wear",
+            "ar": "آثار استعمال ظاهرة على العلبة"
+          },
+          "component_wear": [
+            {
+              "en": "Crystal: no declared damage",
+              "ar": "الزجاج: لم يُصرّح بضرر"
+            }
+          ],
+          "included": [
+            "box"
+          ],
+          "seller_type": "private",
+          "modified": false,
+          "modifications": [],
+          "authentication": "not_inspected",
+          "price_minor": 500000,
+          "buyer_fee_minor": 15000,
+          "total_minor": 515000,
+          "currency": "USD",
+          "price_basis": "fixed",
+          "economics_revision": "demo-price-1",
+          "demo": true
+        }
+      }
+    ]
+  },
+  "denied": {
+    "schema_version": "comparison.v1",
+    "operation_id": "demo-operation-13",
+    "server_time": "2026-11-17T12:00:00Z",
+    "columns": [
+      {
+        "watch_id": "demo-13",
+        "expected_revision": 1,
+        "state": "denied",
+        "revision": null,
+        "facts": null
+      }
+    ]
+  },
+  "stale": {
+    "schema_version": "comparison.v1",
+    "operation_id": "demo-operation-13",
+    "server_time": "2026-11-17T12:00:00Z",
+    "columns": [
+      {
+        "watch_id": "demo-13",
+        "expected_revision": 1,
+        "state": "stale",
+        "revision": 2,
+        "facts": null
+      }
+    ]
+  },
+  "pending": {
+    "schema_version": "comparison.v1",
+    "operation_id": "demo-operation-13",
+    "server_time": "2026-11-17T12:00:00Z",
+    "columns": [
+      {
+        "watch_id": "demo-13",
+        "expected_revision": 1,
+        "state": "pending",
+        "revision": null,
+        "facts": null
+      }
+    ]
+  },
+  "unavailable": {
+    "schema_version": "comparison.v1",
+    "operation_id": "demo-operation-13",
+    "server_time": "2026-11-17T12:00:00Z",
+    "columns": [
+      {
+        "watch_id": "demo-13",
+        "expected_revision": 1,
+        "state": "unavailable",
+        "revision": null,
+        "facts": null
+      }
+    ]
+  },
+  "lost_response": {
+    "retry_operation_id": "demo-operation-13",
+    "retry_request": {
+      "schema_version": "comparison.v1",
+      "selections": [
+        {
+          "watch_id": "demo-13",
+          "expected_revision": 1
+        }
+      ]
+    },
+    "current_result": {
+      "schema_version": "comparison.v1",
+      "operation_id": "demo-operation-13",
+      "server_time": "2026-11-17T12:00:00Z",
+      "columns": [
+        {
+          "watch_id": "demo-13",
+          "expected_revision": 1,
+          "state": "pending",
+          "revision": null,
+          "facts": null
+        }
+      ]
+    }
+  }
+}
