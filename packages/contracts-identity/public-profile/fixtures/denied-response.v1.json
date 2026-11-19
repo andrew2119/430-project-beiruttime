@@ -1,0 +1,23 @@
+{
+  "schema_version": "public-profile.v1",
+  "operation_id": "sample-read-1",
+  "subject_id": "seller-1",
+  "revision": 0,
+  "state": "denied",
+  "identity": null,
+  "sales": {
+    "state": "unavailable",
+    "released_count": null
+  },
+  "reviews": {
+    "state": "unavailable",
+    "distribution": null
+  },
+  "listings": {
+    "state": "unavailable",
+    "items": [],
+    "total": null,
+    "page": 1,
+    "page_size": 20
+  }
+}

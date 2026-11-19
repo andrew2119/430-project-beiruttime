@@ -1,0 +1,35 @@
+{
+  "identity": {
+    "state": "ready",
+    "subject_id": "seller-1",
+    "active": true,
+    "public_permitted": true,
+    "kind": "private",
+    "public_name": "Sample seller بائع ⌚",
+    "city": "Beirut",
+    "city_permitted": true,
+    "member_since": "2026-01-01T00:00:00Z",
+    "verification": "private_seller_approved",
+    "revision": 1
+  },
+  "sales": {
+    "state": "ready",
+    "subject_id": "seller-1",
+    "identity_revision": 1,
+    "items": []
+  },
+  "reviews": {
+    "state": "ready",
+    "subject_id": "seller-1",
+    "identity_revision": 1,
+    "items": []
+  },
+  "listings": {
+    "state": "ready",
+    "subject_id": "seller-1",
+    "identity_revision": 1,
+    "items": [],
+    "total": 0,
+    "page": 1
+  }
+}
