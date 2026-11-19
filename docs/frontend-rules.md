@@ -154,3 +154,14 @@ Every page eventually has an explicit entry proving six methods: code and the fu
 The internal route prefix alone adopts the canonical shell while other routes rebuild. `ShellBoundary` selects one family using the trusted server path and committed client path; providers and language-switch behavior remain unchanged. The component board keeps its existing canonical outlet as the sole outlet on that exact route; other adopted pages use the shell's canonical outlet. The template, shared read/intent policy, explicit frozen-route inventory and byte-exact page-size comparison are documented in [Page delivery](page-delivery.md). Every new page needs a contract; none can join frozen debt. An unmeasured row is always owed, never a passing verdict.
 
 Lint, types, this checker and focused unit tests are quick local evidence. Production builds, page-size comparison, browser/keyboard/contrast/RTL screenshot matrices, slow-network speed measurements, assistive technology and real-phone traces are **owed**, not passed by this document. Existing Sprint 1 rendering is preserved by leaving page implementations unchanged during this slice. Do not infer runtime parity from a static pass.
+
+A feature declares its product pages in `web/features/<feature>/delivery-contract.json`
+as one object or an array, with exactly `route`, `file`, `view`, `kind`, `reason`,
+`content`, `read` and `proof`. The route matches the page file without route groups;
+the view stays in that feature folder and composes shared `PageFrame` and
+`PageHeader`. Static pages use `read: "none"`; reads pages name their read and use
+shared `usePageRead`. Keep `proof: "owed"` until separate acceptance. Routes and
+files must be unique across all declarations and tables; internal, home and
+settings pages remain with the foundation. The root shell supplies the same
+access-scoped read provider on feature routes without shared registration edits.
+A declaration alone does not implement data warming or certify connected speed.

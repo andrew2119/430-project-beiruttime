@@ -1,0 +1,20 @@
+export const copy = {
+  en:{support:'Contact support',termsUnavailable:'Exact terms are unavailable. Refresh before accepting.',title:'Counteroffer',lead:'Review the current price and fees before responding.',amount:'Proposed price (USD)',
+    propose:'Send counteroffer',accept:'Accept current counteroffer',reject:'Decline',review:'I reviewed this exact price, fees and terms.',
+    price:'Watch price',fee:'Buyer fee',commission:'Seller commission',total:'Buyer total',terms:'Terms revision',expires:'Expires at (UTC)',
+    denied:'Access denied. Refresh your account permissions before continuing.',empty:'No current counteroffer.',
+    loading:'Loading the current counteroffer.',pending:'Outcome pending. Check the same action reference before continuing.',
+    replay:'Retry the same action',stale:'This version or its fees changed. Refresh and review the current offer before responding.',retry:'Check action',refresh:'Refresh current offer',unavailable:'Currently unavailable. Retry to check the current offer.',
+    closed:'This counteroffer is closed. Refresh for the current offer.',invalid:'Enter an exact positive dollar amount with at most two decimal places.',
+    quote:'Review new exact fees',reference:'Action reference',sent:'Current counteroffer',done:'Response recorded.',
+    retained:'Fees are non-refundable once collected. Payment is simulated.'},
+  ar:{support:'التواصل مع الدعم',termsUnavailable:'الشروط الدقيقة غير متاحة. حدّث قبل القبول.',title:'عرض مقابل',lead:'راجع السعر والرسوم الحالية قبل الرد.',amount:'السعر المقترح (دولار أمريكي)',
+    propose:'إرسال عرض مقابل',accept:'قبول العرض المقابل الحالي',reject:'رفض',review:'راجعت هذا السعر والرسوم والشروط بدقة.',
+    price:'سعر الساعة',fee:'رسوم المشتري',commission:'عمولة البائع',total:'إجمالي المشتري',terms:'إصدار الشروط',expires:'ينتهي في (UTC)',
+    denied:'الوصول مرفوض. حدّث صلاحيات حسابك قبل المتابعة.',empty:'لا يوجد عرض مقابل حالي.',
+    loading:'جارٍ تحميل العرض المقابل الحالي.',pending:'النتيجة معلّقة. تحقّق من مرجع الإجراء نفسه قبل المتابعة.',
+    replay:'إعادة محاولة الإجراء نفسه',stale:'تغيّر هذا الإصدار أو رسومه. حدّث العرض الحالي وراجعه قبل الرد.',retry:'التحقق من الإجراء',refresh:'تحديث العرض الحالي',unavailable:'غير متاح حالياً. أعد المحاولة للتحقق من العرض الحالي.',
+    closed:'هذا العرض المقابل مغلق. حدّث للحصول على العرض الحالي.',invalid:'أدخل مبلغاً موجباً دقيقاً بالدولار بمنزلتين عشريتين كحد أقصى.',
+    quote:'مراجعة الرسوم الدقيقة الجديدة',reference:'مرجع الإجراء',sent:'العرض المقابل الحالي',done:'تم تسجيل الرد.',
+    retained:'لا تُرد الرسوم بعد تحصيلها. الدفع محاكاة.'}
+} as const;

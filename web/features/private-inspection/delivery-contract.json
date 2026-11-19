@@ -1,0 +1,10 @@
+{
+  "route": "/operations/inspections",
+  "file": "web/app/(inspections)/operations/inspections/page.tsx",
+  "view": "web/features/private-inspection/view.tsx",
+  "kind": "reads",
+  "reason": "Assigned private-sale inspection requires current access, paid readiness and expert custody.",
+  "content": "form",
+  "read": "private-inspection",
+  "proof": "owed"
+}

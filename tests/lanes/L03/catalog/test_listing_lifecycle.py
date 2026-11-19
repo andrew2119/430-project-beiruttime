@@ -3,6 +3,7 @@
 import asyncio
 import io
 import json
+import runpy
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
@@ -18,6 +19,13 @@ from PIL import Image
 from bt_bulkheads import DependencyClient
 from bt_runtime.app.main import create_app
 from bt_runtime.app.settings import Settings
+
+_paths = runpy.run_path(str(Path(__file__).resolve().parents[2] / "L04/browser_fixture.py"))
+
+
+def catalog_modules():
+    return _paths["catalog_modules"](__file__)
+
 
 pytestmark = pytest.mark.asyncio
 
@@ -167,7 +175,7 @@ async def api(database_url, monkeypatch):
         Settings(
             service_name="catalog",
             database_url=database_url,
-            modules_path=Path("/app/modules"),
+            modules_path=catalog_modules(),
             request_body_limit=8_500_000,
         )
     )

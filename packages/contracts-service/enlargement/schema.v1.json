@@ -1,0 +1,71 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "enlargement.v1",
+      "default": "enlargement.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "operation_id": {
+      "pattern": "^[A-Za-z0-9_-]{8,128}$",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "request_id": {
+      "maxLength": 36,
+      "title": "Request Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "maxLength": 36,
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "maxLength": 36,
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "expected_revision": {
+      "maximum": 2147483647,
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "source_revision": {
+      "minimum": 1,
+      "title": "Source Revision",
+      "type": "integer"
+    },
+    "kind": {
+      "enum": [
+        "request",
+        "assess",
+        "accept",
+        "work",
+        "fit"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    }
+  },
+  "required": [
+    "operation_id",
+    "request_id",
+    "watch_id",
+    "organization_id",
+    "expected_revision",
+    "source_revision",
+    "kind",
+    "payload"
+  ],
+  "title": "Command",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,5 @@
+export type Question = {id:string;question:string;answer:string|null;seller:string;revision:number};
+export type ListingQuestions = {items:Question[];total:number;page:number;watch_id:string;source_revision:number;can_answer:boolean;can_moderate:boolean;assigned_question_ids:string[]};
+export type Command = {operation_id:string;kind:'ask'|'answer'|'report'|'hide'|'appeal';watch_id:string;source_revision:number;expected_revision:number;question_id:string;text:string};
+export type Receipt = {schema_version:'listing-questions.v1';operation_id:string;question_id:string;state:'published'|'held'|'reported'|'hidden';revision:number;subject_id:string;watch_id:string;actor_id:string;organization_id:string|null;expected_revision:number;source_revision:number;pending_reason:'content_review'|null;next_actor:'moderator'|null;next_review_at:null};
+export type PrivateReview = Question & {state:string;reports_total:number;reports_page:number;appeals_total:number;appeals_page:number;reports:{reason:string;created_at:string}[];appeals:{reason:string;created_at:string}[]};

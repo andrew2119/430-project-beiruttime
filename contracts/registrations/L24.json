@@ -3,10 +3,41 @@
   "lane": "L24",
   "contracts": [
     {
+      "namespace": "comms.audit-references.v1",
+      "path": "packages/contracts-comms/audit-references",
+      "fixtures": [
+        "packages/contracts-comms/audit-references/fixtures.json"
+      ]
+    },
+    {
       "namespace": "orders.refunds.v1",
       "path": "packages/contracts-orders/refunds",
       "fixtures": [
         "packages/contracts-orders/refunds/fixtures.json"
+      ]
+    },
+    {
+      "namespace": "orders.releases.v1",
+      "path": "packages/contracts-orders/releases",
+      "fixtures": [
+        "packages/contracts-orders/releases/fixtures.json"
+      ]
+    },
+    {
+      "namespace": "service.progress.v1",
+      "path": "packages/contracts-service/progress",
+      "fixtures": []
+    },
+    {
+      "namespace": "service.reduction.v1",
+      "path": "packages/contracts-service/reduction",
+      "fixtures": [
+        "packages/contracts-service/reduction/fixtures/accepted-exception.json",
+        "packages/contracts-service/reduction/fixtures/accepted-strap.json",
+        "packages/contracts-service/reduction/fixtures/denied.json",
+        "packages/contracts-service/reduction/fixtures/lost-response.json",
+        "packages/contracts-service/reduction/fixtures/stale.json",
+        "packages/contracts-service/reduction/fixtures/success.json"
       ]
     }
   ]

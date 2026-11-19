@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Transaction review command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "watch_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "actor_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "organization_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,128}$"
+    },
+    "expected_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "source_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "quote_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "policy_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "kind": {
+      "enum": [
+        "create",
+        "reply",
+        "report",
+        "decide"
+      ]
+    },
+    "rating": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "visible": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "operation_id",
+    "subject_id",
+    "watch_id",
+    "actor_id",
+    "organization_id",
+    "expected_revision",
+    "source_revision",
+    "quote_revision",
+    "policy_revision",
+    "kind"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "create"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "rating",
+          "text"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "reply"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "text"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "report"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "reason"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "decide"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "reason",
+          "visible"
+        ]
+      }
+    }
+  ]
+}

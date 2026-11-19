@@ -41,6 +41,7 @@ describe('shared marketplace review data', () => {
     expect(page.items.some(item => item.thumbnail?.url === MEDIA.broken.url)).toBe(true);
     for (const item of page.items) {
       expect(item.demo).toBe(true);
+      if (item.price) expect(item.price.currency).toBe('USD');
       expect(item.title.length).toBeLessThanOrEqual(LIMITS.title);
       expect(item.model.length).toBeLessThanOrEqual(LIMITS.model);
     }

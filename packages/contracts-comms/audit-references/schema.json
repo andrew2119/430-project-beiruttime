@@ -1,0 +1,568 @@
+{
+  "query": {
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "audit-references.v1",
+        "default": "audit-references.v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "operation_id": {
+        "format": "uuid",
+        "title": "Operation Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "format": "uuid",
+        "title": "Organization Id",
+        "type": "string"
+      },
+      "actor_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Actor Id"
+      },
+      "resource_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Resource Id"
+      },
+      "outcome": {
+        "anyOf": [
+          {
+            "enum": [
+              "accepted",
+              "denied",
+              "pending",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Outcome"
+      },
+      "after": {
+        "format": "date-time",
+        "title": "After",
+        "type": "string"
+      },
+      "before": {
+        "format": "date-time",
+        "title": "Before",
+        "type": "string"
+      },
+      "offset": {
+        "default": 0,
+        "maximum": 10000,
+        "minimum": 0,
+        "title": "Offset",
+        "type": "integer"
+      },
+      "limit": {
+        "default": 20,
+        "maximum": 50,
+        "minimum": 1,
+        "title": "Limit",
+        "type": "integer"
+      },
+      "expected_revision": {
+        "anyOf": [
+          {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Expected Revision"
+      }
+    },
+    "required": [
+      "operation_id",
+      "organization_id",
+      "after",
+      "before"
+    ],
+    "title": "AuditQuery",
+    "type": "object"
+  },
+  "page": {
+    "$defs": {
+      "AuditQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": "audit-references.v1",
+            "default": "audit-references.v1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "operation_id": {
+            "format": "uuid",
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor Id"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Resource Id"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "enum": [
+                  "accepted",
+                  "denied",
+                  "pending",
+                  "cancelled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Outcome"
+          },
+          "after": {
+            "format": "date-time",
+            "title": "After",
+            "type": "string"
+          },
+          "before": {
+            "format": "date-time",
+            "title": "Before",
+            "type": "string"
+          },
+          "offset": {
+            "default": 0,
+            "maximum": 10000,
+            "minimum": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "limit": {
+            "default": 20,
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Revision"
+          }
+        },
+        "required": [
+          "operation_id",
+          "organization_id",
+          "after",
+          "before"
+        ],
+        "title": "AuditQuery",
+        "type": "object"
+      },
+      "AuditReference": {
+        "additionalProperties": false,
+        "properties": {
+          "operation_id": {
+            "format": "uuid",
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "subject_id": {
+            "format": "uuid",
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "watch_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Watch Id"
+          },
+          "actor_id": {
+            "format": "uuid",
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "expected_revision": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "accepted",
+              "denied",
+              "pending",
+              "cancelled"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "revision": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "reason_code": {
+            "enum": [
+              "scope_changed",
+              "permission_changed",
+              "record_changed",
+              "review_recorded",
+              "awaiting_owner"
+            ],
+            "title": "Reason Code",
+            "type": "string"
+          },
+          "reason_reference": {
+            "format": "uuid",
+            "title": "Reason Reference",
+            "type": "string"
+          },
+          "pending_reason": {
+            "anyOf": [
+              {
+                "const": "owner_pending",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending Reason"
+          },
+          "next_actor": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Actor"
+          },
+          "next_review_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Review At"
+          }
+        },
+        "required": [
+          "operation_id",
+          "subject_id",
+          "watch_id",
+          "actor_id",
+          "organization_id",
+          "expected_revision",
+          "state",
+          "revision",
+          "occurred_at",
+          "reason_code",
+          "reason_reference",
+          "pending_reason",
+          "next_actor",
+          "next_review_at"
+        ],
+        "title": "AuditReference",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "audit-references.v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "operation_id": {
+        "format": "uuid",
+        "title": "Operation Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "format": "uuid",
+        "title": "Organization Id",
+        "type": "string"
+      },
+      "reader_id": {
+        "format": "uuid",
+        "title": "Reader Id",
+        "type": "string"
+      },
+      "query": {
+        "$ref": "#/$defs/AuditQuery"
+      },
+      "revision": {
+        "maximum": 9007199254740991,
+        "minimum": 1,
+        "title": "Revision",
+        "type": "integer"
+      },
+      "items": {
+        "items": {
+          "$ref": "#/$defs/AuditReference"
+        },
+        "maxItems": 50,
+        "title": "Items",
+        "type": "array"
+      },
+      "total": {
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "title": "Total",
+        "type": "integer"
+      },
+      "next_offset": {
+        "anyOf": [
+          {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Next Offset"
+      }
+    },
+    "required": [
+      "schema_version",
+      "operation_id",
+      "organization_id",
+      "reader_id",
+      "query",
+      "revision",
+      "items",
+      "total",
+      "next_offset"
+    ],
+    "title": "OwnerPage",
+    "type": "object"
+  },
+  "operation": {
+    "additionalProperties": false,
+    "properties": {
+      "operation_id": {
+        "format": "uuid",
+        "title": "Operation Id",
+        "type": "string"
+      },
+      "subject_id": {
+        "format": "uuid",
+        "title": "Subject Id",
+        "type": "string"
+      },
+      "watch_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Watch Id"
+      },
+      "actor_id": {
+        "format": "uuid",
+        "title": "Actor Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "format": "uuid",
+        "title": "Organization Id",
+        "type": "string"
+      },
+      "expected_revision": {
+        "maximum": 9007199254740991,
+        "minimum": 0,
+        "title": "Expected Revision",
+        "type": "integer"
+      },
+      "state": {
+        "enum": [
+          "accepted",
+          "denied",
+          "pending",
+          "cancelled"
+        ],
+        "title": "State",
+        "type": "string"
+      },
+      "revision": {
+        "maximum": 9007199254740991,
+        "minimum": 1,
+        "title": "Revision",
+        "type": "integer"
+      },
+      "occurred_at": {
+        "format": "date-time",
+        "title": "Occurred At",
+        "type": "string"
+      },
+      "reason_code": {
+        "enum": [
+          "scope_changed",
+          "permission_changed",
+          "record_changed",
+          "review_recorded",
+          "awaiting_owner"
+        ],
+        "title": "Reason Code",
+        "type": "string"
+      },
+      "reason_reference": {
+        "format": "uuid",
+        "title": "Reason Reference",
+        "type": "string"
+      },
+      "pending_reason": {
+        "anyOf": [
+          {
+            "const": "owner_pending",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Pending Reason"
+      },
+      "next_actor": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Next Actor"
+      },
+      "next_review_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Next Review At"
+      }
+    },
+    "required": [
+      "operation_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "state",
+      "revision",
+      "occurred_at",
+      "reason_code",
+      "reason_reference",
+      "pending_reason",
+      "next_actor",
+      "next_review_at"
+    ],
+    "title": "AuditReference",
+    "type": "object"
+  }
+}

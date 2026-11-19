@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "lane": "L18",
+  "contracts": [
+    {
+      "namespace": "pricing.counteroffers.v1",
+      "path": "packages/contracts-pricing/counteroffers",
+      "fixtures": [
+        "packages/contracts-pricing/counteroffers/fixtures/denied.v1.json",
+        "packages/contracts-pricing/counteroffers/fixtures/lost-response.v1.json",
+        "packages/contracts-pricing/counteroffers/fixtures/stale.v1.json",
+        "packages/contracts-pricing/counteroffers/fixtures/success.v1.json"
+      ]
+    }
+  ]
+}

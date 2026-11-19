@@ -1,0 +1,10 @@
+import type { Command, Notice, Page, Receipt, SavedSearch } from '@contracts/contracts-comms/saved-searches';
+import { authenticatedRequest } from '@/features/identity/session';
+import { definePageRead } from '@/lib/page-speed/definition';
+const base='/api/web/v1/communications/v1/saved-searches';
+export const searchesRead=definePageRead({key:(fingerprint:string,offset:number)=>['saved-searches',fingerprint,'searches',offset],ask:(signal,fingerprint:string,offset:number)=>authenticatedRequest<Page<SavedSearch>>(`${base}?offset=${offset}&limit=20`,{signal,accessFingerprint:fingerprint}),warm:'open-only',fresh:0});
+export const noticesRead=definePageRead({key:(fingerprint:string,offset:number)=>['saved-searches',fingerprint,'notices',offset],ask:(signal,fingerprint:string,offset:number)=>authenticatedRequest<Page<Notice>>(`${base}/notices?offset=${offset}&limit=20`,{signal,accessFingerprint:fingerprint}),warm:'open-only',fresh:0});
+export const sendCommand=(body:Command,fingerprint:string,signal:AbortSignal)=>authenticatedRequest<Receipt>(`${base}/commands`,{method:'POST',accessFingerprint:fingerprint,signal,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+export const lookup=(id:string,fingerprint:string,signal:AbortSignal)=>authenticatedRequest<Receipt>(`${base}/operations/${id}`,{accessFingerprint:fingerprint,signal});
+export const mutateNotice=(id:string,kind:'read'|'clear',revision:number,fingerprint:string,signal:AbortSignal)=>authenticatedRequest(`${base}/notices/${id}/${kind}`,{method:'POST',accessFingerprint:fingerprint,signal,headers:{'Content-Type':'application/json'},body:JSON.stringify({expected_revision:revision})});
+export const destination=(id:string,fingerprint:string,signal:AbortSignal)=>authenticatedRequest<{href:string}>(`${base}/notices/${id}/destination`,{accessFingerprint:fingerprint,signal});

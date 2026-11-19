@@ -5,24 +5,78 @@ transport adapters; connected owning-service acceptance is a separate gate.
 """
 import asyncio
 import inspect
+import json
 import os
 from pathlib import Path
 from types import SimpleNamespace
 from contextlib import asynccontextmanager
 from datetime import datetime,timezone
 from uuid import UUID
-import uvicorn
-from fastapi import HTTPException,Request
-from fastapi.responses import Response
-from bt_runtime.testing import database_access
-from bt_runtime.app.main import create_app
-from bt_runtime.app.settings import Settings
-from fixture_data import source_row,listing_id,reference,change_mode
-from fixture_reads import State
-from test_discovery import provider,PROVIDER_AUCTION
+def repository_root(source):
+    for parent in Path(source).resolve().parents:
+        if (parent / 'contracts/registrations/L04.json').is_file():
+            return parent
+    return None
+
+
+def _module(path, identifier):
+    manifest = path / 'module.json'
+    return manifest.is_file() and json.loads(manifest.read_text())['id'] == identifier
+
+
+def catalog_modules(source):
+    explicit = os.environ.get('BT_MODULES_PATH')
+    repo = repository_root(source)
+    candidates = [Path(explicit)] if explicit else (
+        ([repo / 'services/catalog/modules'] if repo else []) + [Path('/app/modules')]
+    )
+    for root in candidates:
+        # Discovery-only invocations must still resolve the owning Catalog tree.
+        if _module(root, 'L04.discovery'):
+            root = root.parent
+        if all(_module(root / name, identifier) for name, identifier in (
+            ('listings', 'L03.listings'), ('media', 'L03.media'), ('discovery', 'L04.discovery')
+        )):
+            return root
+    raise RuntimeError('Verified Catalog modules unavailable')
+
+
+def discovery_modules(source):
+    return catalog_modules(source) / 'discovery'
+
+
+def contract_fixtures(source):
+    explicit = os.environ.get('BT_NATIVE_CONTRACT_ROOT')
+    repo = repository_root(source)
+    names = ['watch.v1.json', 'auction.v1.json', 'provider-auction.v1.json', 'provider-history.v1.json']
+    native = []
+    if repo:
+        registration = json.loads((repo / 'contracts/registrations/L04.json').read_text())
+        contract = next(c for c in registration['contracts'] if c['namespace'] == 'catalog.discovery.v1')
+        names = [Path(name).name for name in contract['fixtures']]
+        native = [repo / contract['path'] / 'fixtures']
+    candidates = [Path(explicit) / 'bt_contracts/catalog/discovery/fixtures'] if explicit else native + [
+        Path('/opt/domain-contracts/bt_contracts/catalog/discovery/fixtures'),
+    ]
+    for root in candidates:
+        if all((root / name).is_file() for name in names):
+            return root
+    raise RuntimeError('Registered Discovery contract fixtures unavailable')
+
+
 
 async def main():
-    os.environ['BT_MODULES_PATH']='/app/modules/discovery'
+    import uvicorn
+    from fastapi import HTTPException,Request
+    from fastapi.responses import Response
+    from bt_runtime.testing import database_access
+    from bt_runtime.app.main import create_app
+    from bt_runtime.app.settings import Settings
+    from fixture_data import source_row,listing_id,reference,change_mode
+    from fixture_reads import State
+    from test_discovery import provider,PROVIDER_AUCTION
+
+    os.environ['BT_MODULES_PATH']=str(discovery_modules(__file__))
     wrapped=database_access.__wrapped__
     access_generator=wrapped(SimpleNamespace(param='service'),Path('/tmp'))if inspect.signature(wrapped).parameters else wrapped()
     access=await anext(access_generator)
