@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "lane": "L24",
+  "contracts": [
+    {
+      "namespace": "orders.releases.v1",
+      "path": "packages/contracts-orders/releases",
+      "fixtures": [
+        "packages/contracts-orders/releases/fixtures.json"
+      ]
+    }
+  ]
+}
