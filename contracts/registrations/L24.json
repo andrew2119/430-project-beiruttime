@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "lane": "L24",
+  "contracts": [
+    {
+      "namespace": "comms.audit-references.v1",
+      "path": "packages/contracts-comms/audit-references",
+      "fixtures": [
+        "packages/contracts-comms/audit-references/fixtures.json"
+      ]
+    }
+  ]
+}
