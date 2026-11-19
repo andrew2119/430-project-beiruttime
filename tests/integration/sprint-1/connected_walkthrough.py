@@ -17,7 +17,6 @@ import sys
 import tempfile
 import threading
 from uuid import uuid4
-from urllib.parse import urlencode
 
 import httpx
 
@@ -391,7 +390,7 @@ class Walkthrough:
         print('Real private open and scheduled auctions created with Orders sale fences.')
 
     def quote(self, name, subject, revision, amount, purpose='bid', source='sample'):
-        body={'subject_id':subject,'subject_revision':revision,'purpose':purpose,'source':source,'schedule_id':'usd-v2','currency':'USD','price_minor':amount}
+        body={'subject_id':subject,'subject_revision':revision,'purpose':purpose,'source':source,'schedule_id':'sample-v1','currency':'USD','price_minor':amount}
         quote=self.call('pricing','POST','/v1/quotes',name,body)
         reviewed=self.call('pricing','POST','/v1/quotes/'+quote['id']+'/review',name,{**body,'quote_revision':quote['revision'],'payable_minor':quote['payable_minor']})
         assert reviewed['reviewed_at']
@@ -534,73 +533,36 @@ class Walkthrough:
             self.state['request_draft']=result;self.save()
         result=self.state['request_draft']; print('DRAFT',json.dumps(result)[:1600])
 
-    def prepare_reviewed_stock(self):
-        import struct
-        import zlib
-        def chunk(kind, data):
-            return struct.pack('>I', len(data)) + kind + data + struct.pack('>I', zlib.crc32(kind + data))
-        photo = (b'\x89PNG\r\n\x1a\n'
-                 + chunk(b'IHDR', struct.pack('>IIBBBBB', 32, 32, 8, 2, 0, 0, 0))
-                 + chunk(b'IDAT', zlib.compress((b'\0' + b'\x80' * 96) * 32)) + chunk(b'IEND', b''))
-        private_photo = base64.b64encode(photo).decode()
-        fixtures = json.loads((ROOT / 'demo/listings.json').read_text())
-        assets = {item['id']: item for item in json.loads((ROOT / 'demo/images-manifest.json').read_text())['assets']}
-        self.login('operator')
-        for item in fixtures['listings']:
-            name = 'seller' if item['seller_type'] == 'private' else ('brand' if item['id'] == 'DEMO-WATCH-06' else 'dealer')
-            selected = '?organization_id=' + self.state['businesses'][name]['id'] if name != 'seller' else ''
-            facts = dict(brand=item['brand'], model=item['model'], reference=item['id'], year=2020,
-                         condition=item['condition'], component_wear={'case': 'Synthetic condition'},
-                         location=item['location'], included=[], no_documents=True, modified=False,
-                         modifications=[], ownership_confirmed=True, sale_mode=item['sale_mode'].replace('-', '_'),
-                         currency='USD', price_minor=item['price_minor'])
-            created = self.call('catalog', 'POST', '/v1/seller/listings' + selected, name,
-                                {'facts': facts, 'demo_key': item['id']})
-            path = '/v1/seller/listings/' + created['id']
-            row = self.call('catalog', 'GET', path + selected, name)
-            if row['status'] == 'published':
-                continue
-            if not row['photo_ids']:
-                asset = assets[item['image_ids'][0]]
-                content = (ROOT / 'web/public/demo/watches' / Path(asset['file']).name).read_bytes()
-                # The gateway forwards query parameters but drops media-specific headers.
-                media_route = path + '/media' + (selected + '&' if selected else '?') + urlencode({
-                    'kind': 'public_photo', 'public_safe': 'true', 'demo_asset': asset['id']})
-                row = self.call('catalog', 'POST', media_route, name,
-                                headers={'If-Match': str(row['revision']), 'Content-Type': 'application/octet-stream'},
-                                content=content, durable=False)['listing']
-            quote = self.call('pricing', 'POST', '/v1/quotes', name,
-                              dict(subject_id=row['id'], subject_revision=row['revision'], purpose='purchase',
-                                   source='sample', schedule_id='usd-v2', price_minor=row['facts']['price_minor'], currency='USD'))
-            publication = {'fee_quote_id': quote['id'], 'rules_version': quote['schedule_id']}
-            headers = {'If-Match': str(row['revision'])}
-            if name == 'seller':
-                pending = self.call('catalog', 'POST', path + '/publish' + selected, name,
-                                    publication, headers=headers, expected=(503,), operation='unreviewed')
-                assert pending['error']['code'] == 'publication_review_pending'
-                assert self.call('catalog', 'GET', path + selected, name)['status'] != 'published'
-                review = '/v1/listing-reviews/' + row['id']
-                challenge = self.call('identity', 'POST', review + '/challenges', name, {'revision': 0})
-                proof = self.call('identity', 'POST', review + '/submissions', name,
-                                  {'revision': challenge['revision'], 'challenge_id': challenge['challenge_id'],
-                                                'code': challenge['code'], 'photo_base64': private_photo})
-                assigned = self.call('identity', 'POST', review + '/assignment', 'operator',
-                                     {'revision': proof['revision'], 'reviewer_id': self.state['accounts']['operator']['account']['id']})
-                self.call('identity', 'POST', review + '/decision', 'operator',
-                          {'revision': assigned['revision'], 'assignment_revision': assigned['assignment_revision'],
-                           'verdict': 'approved', 'reason': 'Synthetic private watch photo and code inspected'})
-            published = self.call('catalog', 'POST', path + '/publish' + selected, name,
-                                  publication, headers=headers, operation='reviewed')
-            assert published['status'] == 'published'
 
     def publication(self):
-        for name in ['seller','dealer','brand']:
+        for name in ['seller','dealer']:
             self.login(name)
+        # The owning Catalog importer uses the actual create/upload/fee/publish APIs.
+        private = {
+            'BT_ENVIRONMENT': 'demo', 'BT_DEMO_IMPORT_ACK': 'illustrative-stock-only',
+            'BT_DEMO_PRIVATE_TOKEN': self.state['accounts']['seller']['access_token'],
+            'BT_DEMO_DEALER_TOKEN': self.state['accounts']['dealer']['access_token'],
+            'BT_DEMO_DEALER_ORGANIZATION_ID': self.state['businesses']['dealer']['id'],
+        }
+        if self.backend == 'native':
+            demo = self.run_dir / 'demo'
+            demo.mkdir(exist_ok=True)
+            for filename in ('images-manifest.json', 'listings.json'):
+                shutil.copyfile(ROOT / 'demo' / filename, demo / filename)
+            shutil.copytree(ROOT / 'web/public/demo/watches', demo / 'watches', dirs_exist_ok=True)
+            private['BT_DEMO_ROOT'] = str(demo)
+            command, env = self.native_plan('catalog', ['bt_runtime.fixtures', 'L03.listings', 'demo'], private)
+        else:
+            command = ['docker', 'compose', '-f', str(self.run_dir / 'compose.local.json'), 'exec', '-T']
+            for key in private:
+                command.extend(['-e', key])
+            command.extend(['catalog', 'python', '-m', 'bt_runtime.fixtures', 'L03.listings', 'demo'])
+            env = {**os.environ, **private}
         if not self.reconciling:
-            self.prepare_reviewed_stock()
+            self.execute(command, env)
         listings=[]
-        for name in ['seller','dealer','brand']:
-            org='?organization_id='+self.state['businesses'][name]['id'] if name!='seller' else ''
+        for name in ['seller','dealer']:
+            org='?organization_id='+self.state['businesses']['dealer']['id'] if name=='dealer' else ''
             listings.extend(item for item in self.call('catalog','GET','/v1/seller/listings'+org,name)['items'] if item['is_demo'])
         self.state['listings']=listings
         assert len(listings)==6 and all(item['status']=='published' for item in listings)
