@@ -39,8 +39,8 @@ it.each(['dirty draft','uncertain reservation'])('%s does not write or navigate 
   // Render the actual private components so their nested hooks have a dispatcher.
   renderToStaticMarkup(flow==='dirty draft' ? createElement(RequestDrafts) : createElement(Checkout, {}));
   for(const effect of state.effects) effect();
-  // The current checkout no longer installs a legacy locale-link listener.
-  expect(listeners).toHaveLength(flow==='dirty draft' ? 1 : 0);
+  // Both current private flows retain their locale-link listener.
+  expect(listeners).toHaveLength(1);
   const control=LocaleControl({});
   expect(control.type).toBe(Button);
   const event={target:new Target(),button:0,preventDefault:vi.fn(),stopPropagation:vi.fn()};
