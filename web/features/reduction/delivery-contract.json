@@ -1,0 +1,10 @@
+{
+  "route": "/care/reduction",
+  "file": "web/app/(reduction)/care/reduction/page.tsx",
+  "view": "web/features/reduction/view.tsx",
+  "kind": "reads",
+  "reason": "Current private reduction facts require fresh scoped authorization.",
+  "content": "[data-page-answer]",
+  "read": "reduction.v1",
+  "proof": "owed"
+}

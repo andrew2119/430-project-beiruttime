@@ -1,0 +1,11 @@
+{
+  "synthetic": true,
+  "part": {
+    "id": "accepted-strap",
+    "choice_id": "strap-scope",
+    "source_revision": 1,
+    "quote_revision": 1,
+    "policy_revision": 1,
+    "compatible": true
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": "reduction.operations.v1",
+  "commands": {"method": "POST", "path": "/v1/reduction/records/{record_id}/commands", "schema": "command.schema.v1.json"},
+  "detail": {"method": "GET", "path": "/v1/reduction/records/{record_id}?organization_id={organization_id}"},
+  "lookup": {"method": "GET", "path": "/v1/reduction/operations/{operation_id}?record_id={record_id}&organization_id={organization_id}"},
+  "errors": {"403": "denied", "409": "stale_or_operation_conflict", "422": "correction_required", "503": "unavailable_retry_same_operation"}, "pending": "An absent receipt is pending, never success. Retry identical command and operation reference.",
+  "revision": "New request requires zero; actual work requires current record revision. Source revision is checked separately."
+}
