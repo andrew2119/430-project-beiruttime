@@ -10,6 +10,13 @@
       ]
     },
     {
+      "namespace": "orders.releases.v1",
+      "path": "packages/contracts-orders/releases",
+      "fixtures": [
+        "packages/contracts-orders/releases/fixtures.json"
+      ]
+    },
+    {
       "namespace": "service.progress.v1",
       "path": "packages/contracts-service/progress",
       "fixtures": []
