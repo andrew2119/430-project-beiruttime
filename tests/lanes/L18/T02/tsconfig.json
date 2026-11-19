@@ -1,0 +1,6 @@
+{
+ "extends":"../../../../web/tsconfig.json",
+ "compilerOptions":{"incremental":false},
+ "include":["../../../../web/features/disputes/**/*.ts","../../../../web/features/disputes/**/*.tsx"],
+ "exclude":["../../../../web/node_modules"]
+}
