@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "lane": "L24",
+  "contracts": [
+    {
+      "namespace": "service.progress.v1",
+      "path": "packages/contracts-service/progress",
+      "fixtures": []
+    }
+  ]
+}
