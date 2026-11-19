@@ -1,0 +1,26 @@
+export const messages = {
+  en: {
+    title: 'Business quality', intro: 'Record actual work checks. Failed checks require rework.',
+    unavailable: 'Current work and review authority are unavailable. Retry when the business record is available.',
+    loading: 'Checking current work and review permission…', denied: 'Access is denied. Ask the business to confirm your current assignment.',
+    empty: 'There are no accepted lines awaiting quality review.', retry: 'Retry', save: 'Record quality',
+    pending: 'The result is uncertain. Retry the same operation reference.', satisfactory: 'Quality satisfactory. Current handover prerequisites still apply.',
+    rejected: 'The record was not accepted. Correct the findings and submit again. Start each finding without whitespace.',
+    rework: 'Rework required. Complete the corrections and request a new current check.', stale: 'The record changed. Reload and review the current work.',
+    tests: 'Actual applicable tests and readings', condition: 'Final condition', fit: 'Actual fit and measurement', returned_parts: 'Returned links and parts, recipient or accepted exception',
+    pass: 'Satisfactory', fail: 'Requires rework', choose: 'Choose a result', result: 'Result', previous: 'Previous', next: 'Next',
+    reload: 'Reload current work', operation: 'Operation reference', actual: 'Record actual findings, including a reason for any inapplicable check.',
+  },
+  ar: {
+    title: 'جودة أعمال المنشأة', intro: 'سجّل فحوص العمل الفعلية. تتطلب النتائج غير المرضية إعادة العمل.',
+    unavailable: 'العمل الحالي وصلاحية المراجعة غير متاحين. أعد المحاولة عند توفر سجل المنشأة.',
+    loading: 'جارٍ التحقق من العمل الحالي وصلاحية المراجعة…', denied: 'الوصول مرفوض. اطلب من المنشأة تأكيد تكليفك الحالي.',
+    empty: 'لا توجد بنود مقبولة تنتظر مراجعة الجودة.', retry: 'إعادة المحاولة', save: 'تسجيل الجودة',
+    pending: 'النتيجة غير مؤكدة. أعد المحاولة بمرجع العملية نفسه.', satisfactory: 'الجودة مرضية. تبقى متطلبات التسليم الحالية واجبة.',
+    rejected: 'لم يُقبل السجل. صحّح النتائج ثم أرسلها مجددًا. ابدأ كل نتيجة دون مسافة بيضاء.',
+    rework: 'إعادة العمل مطلوبة. أكمل التصحيحات واطلب فحصًا حاليًا جديدًا.', stale: 'تغيّر السجل. أعد تحميل العمل الحالي وراجعه.',
+    tests: 'الاختبارات والقراءات الفعلية المنطبقة', condition: 'الحالة النهائية', fit: 'الملاءمة والقياس الفعليان', returned_parts: 'الوصلات والقطع المعادة والمستلم أو الاستثناء المقبول',
+    pass: 'مرضٍ', fail: 'يتطلب إعادة العمل', choose: 'اختر النتيجة', result: 'النتيجة', previous: 'السابق', next: 'التالي',
+    reload: 'إعادة تحميل العمل الحالي', operation: 'مرجع العملية', actual: 'سجّل النتائج الفعلية، مع سبب لأي فحص غير منطبق.',
+  },
+} as const;
