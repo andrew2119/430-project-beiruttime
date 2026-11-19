@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Brand job receipt v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "operation_id",
+    "subject_id",
+    "watch_id",
+    "actor_id",
+    "organization_id",
+    "expected_revision",
+    "state",
+    "revision",
+    "pending_reason",
+    "next_actor",
+    "next_review_at"
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "subject_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "watch_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "actor_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "organization_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "schema_version": {
+      "const": "orders.brand-jobs.v1"
+    },
+    "state": {
+      "enum": [
+        "authorized",
+        "denied",
+        "stale",
+        "pending",
+        "unavailable"
+      ]
+    },
+    "expected_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "pending_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "next_actor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "next_review_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "assignee_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "permitted_start_state": {
+      "const": "requires_current_start_check"
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operator_id",
+        "next_action",
+        "escalation_actor_id",
+        "opened_at",
+        "next_review_at",
+        "escalate_at"
+      ],
+      "properties": {
+        "operator_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "next_action": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "escalation_actor_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "opened_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "next_review_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "escalate_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "authorized"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "job_id",
+          "assignee_id",
+          "permitted_start_state"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "pending",
+              "stale",
+              "denied"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "recovery"
+        ]
+      }
+    }
+  ]
+}
