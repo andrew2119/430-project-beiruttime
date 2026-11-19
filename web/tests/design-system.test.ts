@@ -62,7 +62,9 @@ describe('Beirut Time foundation contract',()=>{
   expect(motion).toContain('@media (prefers-reduced-motion: reduce)');expect(motion).toContain('::view-transition-new(*)');
   expect(read('../shell/theme-provider.tsx')).toContain('doc.startViewTransition(() =>');
   expect(read('../shell/phone-navigation.tsx')).toContain('(max-width: 850px)');expect(read('../styles/mobile.css')).toContain('(max-width: 850px)');
-  expect(read('../shell/shell.tsx')).toContain('</div><AppToaster');
+  expect(read('../shell/shell.tsx')).toContain('return <ShellView');
+  expect(read('../shell/shell-view.tsx')).toContain('return <ShellBoundary');
+  expect(read('../shell/foundation/shell.tsx')).toContain('</div>{!pageOwnsToasts(path) && <Toaster');
   expect(read('../shell/dashboard.tsx')).toContain('className="pg-home-page"');
   expect(read('../styles/mobile.css')).toContain('.pg-home-page .pg-dept-grid { grid-template-columns: minmax(0, 1fr); }');
   expect(read('../../packages/ui/src/button-variants.ts')).not.toContain('use client');

@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Transaction review result v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "operation_id",
+    "subject_id",
+    "watch_id",
+    "actor_id",
+    "organization_id",
+    "expected_revision",
+    "state",
+    "revision",
+    "pending_reason",
+    "next_actor",
+    "next_review_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "transaction-reviews.v1"
+    },
+    "operation_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "subject_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "watch_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "actor_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "organization_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "expected_revision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "state": {
+      "enum": [
+        "confirmed",
+        "pending",
+        "denied",
+        "stale",
+        "unavailable"
+      ]
+    },
+    "revision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "pending_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "next_actor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "next_review_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

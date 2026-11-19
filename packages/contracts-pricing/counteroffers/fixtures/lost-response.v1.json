@@ -1,0 +1,96 @@
+{
+  "synthetic": true,
+  "command": {
+    "schema_version": "counteroffers.v1",
+    "operation_id": "00000000-0000-0000-0000-000000000007",
+    "subject_id": "00000000-0000-0000-0000-000000000002",
+    "watch_id": "00000000-0000-0000-0000-000000000003",
+    "actor_id": "00000000-0000-0000-0000-000000000004",
+    "organization_id": "00000000-0000-0000-0000-000000000006",
+    "expected_revision": 1,
+    "source_revision": 3,
+    "authority_revision": 2,
+    "kind": "propose",
+    "economics": {
+      "quote_id": "00000000-0000-0000-0000-000000000008",
+      "quote_revision": 1,
+      "policy_revision": 1,
+      "currency": "USD",
+      "price_minor": 500000,
+      "buyer_fee_minor": 15000,
+      "seller_commission_minor": 25000,
+      "total_minor": 515000,
+      "terms_revision": 1
+    },
+    "reviewed_revision": null
+  },
+  "current": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "subject_id": "00000000-0000-0000-0000-000000000002",
+    "watch_id": "00000000-0000-0000-0000-000000000003",
+    "seller_id": "00000000-0000-0000-0000-000000000004",
+    "buyer_id": "00000000-0000-0000-0000-000000000005",
+    "organization_id": "00000000-0000-0000-0000-000000000006",
+    "revision": 1,
+    "state": "sent",
+    "economics": {
+      "quote_id": "00000000-0000-0000-0000-000000000008",
+      "quote_revision": 1,
+      "policy_revision": 1,
+      "currency": "USD",
+      "price_minor": 500000,
+      "buyer_fee_minor": 15000,
+      "seller_commission_minor": 25000,
+      "total_minor": 515000,
+      "terms_revision": 1
+    },
+    "sent_at": "2026-11-17T00:00:00Z",
+    "expires_at": "2026-11-19T00:00:00Z",
+    "predecessor_id": null
+  },
+  "operation": {
+    "schema_version": "counteroffers.v1",
+    "operation_id": "00000000-0000-0000-0000-000000000007",
+    "state": "pending",
+    "code": "retry_same_operation",
+    "revision": 1,
+    "current": null,
+    "next_actor": "support",
+    "pending_reason": "outcome_unknown",
+    "next_review_at": "2026-11-18T01:00:00Z",
+    "order_id": null,
+    "subject_id": "00000000-0000-0000-0000-000000000002",
+    "watch_id": "00000000-0000-0000-0000-000000000003",
+    "actor_id": "00000000-0000-0000-0000-000000000004",
+    "organization_id": "00000000-0000-0000-0000-000000000006",
+    "expected_revision": 1
+  },
+  "authority": {
+    "actor_id": "00000000-0000-0000-0000-000000000004",
+    "organization_id": "00000000-0000-0000-0000-000000000006",
+    "permitted": true,
+    "seller_approved": true,
+    "scope_revision": 2
+  },
+  "facts": {
+    "watch_id": "00000000-0000-0000-0000-000000000003",
+    "subject_id": "00000000-0000-0000-0000-000000000002",
+    "source_revision": 3,
+    "mode": "fixed",
+    "available": true,
+    "blocked": false,
+    "quote_current": true,
+    "economics": {
+      "quote_id": "00000000-0000-0000-0000-000000000008",
+      "quote_revision": 1,
+      "policy_revision": 1,
+      "currency": "USD",
+      "price_minor": 500000,
+      "buyer_fee_minor": 15000,
+      "seller_commission_minor": 25000,
+      "total_minor": 515000,
+      "terms_revision": 1
+    }
+  },
+  "now": "2026-11-17T01:00:00Z"
+}

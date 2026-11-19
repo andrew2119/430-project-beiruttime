@@ -1,0 +1,32 @@
+[
+  {
+    "route": "/",
+    "file": "web/app/(home)/page.tsx",
+    "view": "web/shell/foundation/home.tsx",
+    "kind": "static",
+    "reason": "Navigation labels and current access visibility only; no market answer is fabricated.",
+    "content": "[data-page-answer]",
+    "read": "none",
+    "proof": "owed"
+  },
+  {
+    "route": "/about",
+    "file": "web/app/(home)/about/page.tsx",
+    "view": "web/shell/foundation/about.tsx",
+    "kind": "static",
+    "reason": "Bilingual product information has no remote read.",
+    "content": "[data-page-answer]",
+    "read": "none",
+    "proof": "owed"
+  },
+  {
+    "route": "/settings",
+    "file": "web/app/(settings)/settings/page.tsx",
+    "view": "web/shell/settings.tsx",
+    "kind": "static",
+    "reason": "Memory-only identity summary and local preferences; identity restoration remains the session owner.",
+    "content": "[data-page-answer]",
+    "read": "none",
+    "proof": "owed"
+  }
+]

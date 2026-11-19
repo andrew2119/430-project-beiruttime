@@ -1,0 +1,17 @@
+# Transaction reviews v1
+
+The operation lookup and command vocabulary are in `v1.json`. The deterministic examples are synthetic contract fixtures. They are not proof of a completed purchase.
+
+The host supplies current authenticated actor, selected organization, scoped record permission and a bounded authoritative purchase read. The purchase fact includes purchase/watch/buyer/seller/organization, release state and authoritative UTC release time, source revision and retained quote/policy revisions. No projection grants permission. Source failure is unavailable; a lost command response is pending and retains its operation reference. Retry unchanged bytes. A changed payload requires a new operation after the old result is known.
+
+The module serializes writes with durable receipts and an atomic privacy-safe outbox. One purchase key permits one review and one reply. Reports do not hide criticism. Reply authorship is retained privately. A reply author cannot adjudicate that content; older replies without retained authorship deny adjudication until resolved. Decisions require current independent assignment and retain their private reason. Public totals and distribution count visible reviews only; seller replies have no rating weight. Lists use twenty rows per page and server totals. Identity references, reports and decision reasons are excluded from public results.
+
+Runtime registration, authenticated provider integration and production database composition remain with their respective owners. The included local durable repository supports isolated boundary checks. Provider integration must repeat denial, stale revision, timeout, duplicate and restart cases before acceptance.
+
+The screen has no live transport until the runtime owner supplies an access-bound implementation. It presents unavailable recovery rather than synthetic success. The same mounted form retains locale changes and the pending reference in memory. The owner must remount its private scope on identity or access changes.
+
+The read key will bind seller, page and current access scope. No retained public or private read is implemented yet. Ready-before-press, data-on-intent, retained answers, refresh-content retention, first-load skeletons and single arrival use the existing shared delivery boundary when registered. Warming, first-frame timing and per-page size measurement remain unmeasured. No second provider or shell is introduced.
+
+The screen uses canonical page composition. No route entry is supplied: the current delivery registry accepts only internal routes, and its shared files are outside this module's ownership. A reachable review page and its delivery registration remain owed together to the shared owner before connected acceptance. This module does not extend frozen page debt. The focused component command is `pnpm --filter beirut-time-web exec vitest run --config features/transaction-reviews/vitest.config.ts`. Locale transitions and pending retries have state-boundary coverage; mounted browser verification remains owed.
+
+Public rows include a stable opaque `review_ref`, never the purchase reference. The report action passes this reference to its access-bound host. Report commands use it as `subject_id`; the module resolves the purchase internally before checking current record authority and source bindings. Lookup uses the same reference and operation. Other commands retain their purchase binding. Request serialization is bounded at 24,000 Unicode characters, accommodating all bounded text fields without language-dependent escaping.

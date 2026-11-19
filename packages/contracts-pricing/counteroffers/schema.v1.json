@@ -1,0 +1,634 @@
+{
+  "command": {
+    "$defs": {
+      "Economics": {
+        "additionalProperties": false,
+        "properties": {
+          "quote_id": {
+            "format": "uuid",
+            "title": "Quote Id",
+            "type": "string"
+          },
+          "quote_revision": {
+            "minimum": 1,
+            "title": "Quote Revision",
+            "type": "integer"
+          },
+          "policy_revision": {
+            "minimum": 1,
+            "title": "Policy Revision",
+            "type": "integer"
+          },
+          "currency": {
+            "const": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "price_minor": {
+            "exclusiveMinimum": 0,
+            "maximum": 9000000000000,
+            "title": "Price Minor",
+            "type": "integer"
+          },
+          "buyer_fee_minor": {
+            "minimum": 0,
+            "title": "Buyer Fee Minor",
+            "type": "integer"
+          },
+          "seller_commission_minor": {
+            "minimum": 0,
+            "title": "Seller Commission Minor",
+            "type": "integer"
+          },
+          "total_minor": {
+            "exclusiveMinimum": 0,
+            "title": "Total Minor",
+            "type": "integer"
+          },
+          "terms_revision": {
+            "minimum": 1,
+            "title": "Terms Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quote_id",
+          "quote_revision",
+          "policy_revision",
+          "currency",
+          "price_minor",
+          "buyer_fee_minor",
+          "seller_commission_minor",
+          "total_minor",
+          "terms_revision"
+        ],
+        "title": "Economics",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "counteroffers.v1",
+        "default": "counteroffers.v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "operation_id": {
+        "format": "uuid",
+        "title": "Operation Id",
+        "type": "string"
+      },
+      "subject_id": {
+        "format": "uuid",
+        "title": "Subject Id",
+        "type": "string"
+      },
+      "watch_id": {
+        "format": "uuid",
+        "title": "Watch Id",
+        "type": "string"
+      },
+      "actor_id": {
+        "format": "uuid",
+        "title": "Actor Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Organization Id"
+      },
+      "expected_revision": {
+        "minimum": 1,
+        "title": "Expected Revision",
+        "type": "integer"
+      },
+      "source_revision": {
+        "minimum": 1,
+        "title": "Source Revision",
+        "type": "integer"
+      },
+      "authority_revision": {
+        "minimum": 1,
+        "title": "Authority Revision",
+        "type": "integer"
+      },
+      "kind": {
+        "enum": [
+          "propose",
+          "accept",
+          "reject"
+        ],
+        "title": "Kind",
+        "type": "string"
+      },
+      "economics": {
+        "$ref": "#/$defs/Economics"
+      },
+      "reviewed_revision": {
+        "anyOf": [
+          {
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Reviewed Revision"
+      }
+    },
+    "required": [
+      "operation_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "source_revision",
+      "authority_revision",
+      "kind",
+      "economics"
+    ],
+    "title": "Command",
+    "type": "object"
+  },
+  "offer": {
+    "$defs": {
+      "Economics": {
+        "additionalProperties": false,
+        "properties": {
+          "quote_id": {
+            "format": "uuid",
+            "title": "Quote Id",
+            "type": "string"
+          },
+          "quote_revision": {
+            "minimum": 1,
+            "title": "Quote Revision",
+            "type": "integer"
+          },
+          "policy_revision": {
+            "minimum": 1,
+            "title": "Policy Revision",
+            "type": "integer"
+          },
+          "currency": {
+            "const": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "price_minor": {
+            "exclusiveMinimum": 0,
+            "maximum": 9000000000000,
+            "title": "Price Minor",
+            "type": "integer"
+          },
+          "buyer_fee_minor": {
+            "minimum": 0,
+            "title": "Buyer Fee Minor",
+            "type": "integer"
+          },
+          "seller_commission_minor": {
+            "minimum": 0,
+            "title": "Seller Commission Minor",
+            "type": "integer"
+          },
+          "total_minor": {
+            "exclusiveMinimum": 0,
+            "title": "Total Minor",
+            "type": "integer"
+          },
+          "terms_revision": {
+            "minimum": 1,
+            "title": "Terms Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quote_id",
+          "quote_revision",
+          "policy_revision",
+          "currency",
+          "price_minor",
+          "buyer_fee_minor",
+          "seller_commission_minor",
+          "total_minor",
+          "terms_revision"
+        ],
+        "title": "Economics",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "format": "uuid",
+        "title": "Id",
+        "type": "string"
+      },
+      "watch_id": {
+        "format": "uuid",
+        "title": "Watch Id",
+        "type": "string"
+      },
+      "subject_id": {
+        "format": "uuid",
+        "title": "Subject Id",
+        "type": "string"
+      },
+      "seller_id": {
+        "format": "uuid",
+        "title": "Seller Id",
+        "type": "string"
+      },
+      "buyer_id": {
+        "format": "uuid",
+        "title": "Buyer Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Organization Id"
+      },
+      "revision": {
+        "minimum": 1,
+        "title": "Revision",
+        "type": "integer"
+      },
+      "state": {
+        "enum": [
+          "sent",
+          "superseded",
+          "rejected",
+          "closed",
+          "accepted"
+        ],
+        "title": "State",
+        "type": "string"
+      },
+      "economics": {
+        "$ref": "#/$defs/Economics"
+      },
+      "sent_at": {
+        "format": "date-time",
+        "title": "Sent At",
+        "type": "string"
+      },
+      "expires_at": {
+        "format": "date-time",
+        "title": "Expires At",
+        "type": "string"
+      },
+      "predecessor_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Predecessor Id"
+      }
+    },
+    "required": [
+      "id",
+      "watch_id",
+      "subject_id",
+      "seller_id",
+      "buyer_id",
+      "organization_id",
+      "revision",
+      "state",
+      "economics",
+      "sent_at",
+      "expires_at"
+    ],
+    "title": "Offer",
+    "type": "object"
+  },
+  "operation": {
+    "$defs": {
+      "Economics": {
+        "additionalProperties": false,
+        "properties": {
+          "quote_id": {
+            "format": "uuid",
+            "title": "Quote Id",
+            "type": "string"
+          },
+          "quote_revision": {
+            "minimum": 1,
+            "title": "Quote Revision",
+            "type": "integer"
+          },
+          "policy_revision": {
+            "minimum": 1,
+            "title": "Policy Revision",
+            "type": "integer"
+          },
+          "currency": {
+            "const": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "price_minor": {
+            "exclusiveMinimum": 0,
+            "maximum": 9000000000000,
+            "title": "Price Minor",
+            "type": "integer"
+          },
+          "buyer_fee_minor": {
+            "minimum": 0,
+            "title": "Buyer Fee Minor",
+            "type": "integer"
+          },
+          "seller_commission_minor": {
+            "minimum": 0,
+            "title": "Seller Commission Minor",
+            "type": "integer"
+          },
+          "total_minor": {
+            "exclusiveMinimum": 0,
+            "title": "Total Minor",
+            "type": "integer"
+          },
+          "terms_revision": {
+            "minimum": 1,
+            "title": "Terms Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quote_id",
+          "quote_revision",
+          "policy_revision",
+          "currency",
+          "price_minor",
+          "buyer_fee_minor",
+          "seller_commission_minor",
+          "total_minor",
+          "terms_revision"
+        ],
+        "title": "Economics",
+        "type": "object"
+      },
+      "Offer": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "watch_id": {
+            "format": "uuid",
+            "title": "Watch Id",
+            "type": "string"
+          },
+          "subject_id": {
+            "format": "uuid",
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "seller_id": {
+            "format": "uuid",
+            "title": "Seller Id",
+            "type": "string"
+          },
+          "buyer_id": {
+            "format": "uuid",
+            "title": "Buyer Id",
+            "type": "string"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "revision": {
+            "minimum": 1,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "sent",
+              "superseded",
+              "rejected",
+              "closed",
+              "accepted"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "economics": {
+            "$ref": "#/$defs/Economics"
+          },
+          "sent_at": {
+            "format": "date-time",
+            "title": "Sent At",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "predecessor_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Predecessor Id"
+          }
+        },
+        "required": [
+          "id",
+          "watch_id",
+          "subject_id",
+          "seller_id",
+          "buyer_id",
+          "organization_id",
+          "revision",
+          "state",
+          "economics",
+          "sent_at",
+          "expires_at"
+        ],
+        "title": "Offer",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "counteroffers.v1",
+        "default": "counteroffers.v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "operation_id": {
+        "format": "uuid",
+        "title": "Operation Id",
+        "type": "string"
+      },
+      "subject_id": {
+        "format": "uuid",
+        "title": "Subject Id",
+        "type": "string"
+      },
+      "watch_id": {
+        "format": "uuid",
+        "title": "Watch Id",
+        "type": "string"
+      },
+      "actor_id": {
+        "format": "uuid",
+        "title": "Actor Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Organization Id"
+      },
+      "expected_revision": {
+        "minimum": 1,
+        "title": "Expected Revision",
+        "type": "integer"
+      },
+      "state": {
+        "enum": [
+          "succeeded",
+          "denied",
+          "pending",
+          "unavailable"
+        ],
+        "title": "State",
+        "type": "string"
+      },
+      "code": {
+        "title": "Code",
+        "type": "string"
+      },
+      "revision": {
+        "minimum": 1,
+        "title": "Revision",
+        "type": "integer"
+      },
+      "current": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Offer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "next_actor": {
+        "enum": [
+          "buyer",
+          "seller",
+          "support"
+        ],
+        "title": "Next Actor",
+        "type": "string"
+      },
+      "pending_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Pending Reason"
+      },
+      "next_review_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Next Review At"
+      },
+      "order_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Order Id"
+      }
+    },
+    "required": [
+      "operation_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "state",
+      "code",
+      "revision",
+      "next_actor"
+    ],
+    "title": "Result",
+    "type": "object"
+  }
+}

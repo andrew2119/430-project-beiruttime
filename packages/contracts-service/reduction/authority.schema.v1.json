@@ -1,0 +1,354 @@
+{
+  "$defs": {
+    "AcceptedStrap": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "choice_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Choice Id",
+          "type": "string"
+        },
+        "source_revision": {
+          "minimum": 1,
+          "title": "Source Revision",
+          "type": "integer"
+        },
+        "quote_revision": {
+          "minimum": 1,
+          "title": "Quote Revision",
+          "type": "integer"
+        },
+        "policy_revision": {
+          "minimum": 1,
+          "title": "Policy Revision",
+          "type": "integer"
+        },
+        "compatible": {
+          "title": "Compatible",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "choice_id",
+        "source_revision",
+        "quote_revision",
+        "policy_revision",
+        "compatible"
+      ],
+      "title": "AcceptedStrap",
+      "type": "object"
+    },
+    "Choice": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "removable_links",
+            "strap_change"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "compatible": {
+          "title": "Compatible",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "compatible"
+      ],
+      "title": "Choice",
+      "type": "object"
+    },
+    "ReturnException": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "accepted_by": {
+          "format": "uuid",
+          "title": "Accepted By",
+          "type": "string"
+        },
+        "accepted_at": {
+          "format": "date-time",
+          "title": "Accepted At",
+          "type": "string"
+        },
+        "source_revision": {
+          "minimum": 1,
+          "title": "Source Revision",
+          "type": "integer"
+        },
+        "quote_revision": {
+          "minimum": 1,
+          "title": "Quote Revision",
+          "type": "integer"
+        },
+        "recipient_id": {
+          "format": "uuid",
+          "title": "Recipient Id",
+          "type": "string"
+        },
+        "link_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Link Ids",
+          "type": "array"
+        },
+        "basis": {
+          "enum": [
+            "supplier_exchange",
+            "non_buyer_owned"
+          ],
+          "title": "Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "accepted_by",
+        "accepted_at",
+        "source_revision",
+        "quote_revision",
+        "recipient_id",
+        "link_ids",
+        "basis"
+      ],
+      "title": "ReturnException",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "subject_id": {
+      "format": "uuid",
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "source_revision": {
+      "minimum": 1,
+      "title": "Source Revision",
+      "type": "integer"
+    },
+    "quote_id": {
+      "format": "uuid",
+      "title": "Quote Id",
+      "type": "string"
+    },
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "reduction.authority.v1",
+      "default": "reduction.authority.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "assignment_revision": {
+      "minimum": 1,
+      "title": "Assignment Revision",
+      "type": "integer"
+    },
+    "permission": {
+      "enum": [
+        "buyer_request",
+        "assigned_work"
+      ],
+      "title": "Permission",
+      "type": "string"
+    },
+    "current": {
+      "title": "Current",
+      "type": "boolean"
+    },
+    "checked_at": {
+      "format": "date-time",
+      "title": "Checked At",
+      "type": "string"
+    },
+    "valid_until": {
+      "format": "date-time",
+      "title": "Valid Until",
+      "type": "string"
+    },
+    "commitment_id": {
+      "format": "uuid",
+      "title": "Commitment Id",
+      "type": "string"
+    },
+    "accepted_scope": {
+      "title": "Accepted Scope",
+      "type": "boolean"
+    },
+    "custody_current": {
+      "title": "Custody Current",
+      "type": "boolean"
+    },
+    "payment_state": {
+      "enum": [
+        "paid_held",
+        "pending",
+        "unpaid"
+      ],
+      "title": "Payment State",
+      "type": "string"
+    },
+    "fit_confirmed": {
+      "title": "Fit Confirmed",
+      "type": "boolean"
+    },
+    "incident_open": {
+      "title": "Incident Open",
+      "type": "boolean"
+    },
+    "currency": {
+      "const": "USD",
+      "title": "Currency",
+      "type": "string"
+    },
+    "total_minor": {
+      "maximum": 999999999999,
+      "minimum": 0,
+      "title": "Total Minor",
+      "type": "integer"
+    },
+    "responsible_actor_id": {
+      "format": "uuid",
+      "title": "Responsible Actor Id",
+      "type": "string"
+    },
+    "next_review_at": {
+      "format": "date-time",
+      "title": "Next Review At",
+      "type": "string"
+    },
+    "choices": {
+      "items": {
+        "$ref": "#/$defs/Choice"
+      },
+      "maxItems": 100,
+      "title": "Choices",
+      "type": "array"
+    },
+    "removable_link_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Removable Link Ids",
+      "type": "array"
+    },
+    "buyer_owned_link_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Buyer Owned Link Ids",
+      "type": "array"
+    },
+    "authorized_recipient_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Authorized Recipient Ids",
+      "type": "array"
+    },
+    "accepted_straps": {
+      "items": {
+        "$ref": "#/$defs/AcceptedStrap"
+      },
+      "maxItems": 100,
+      "title": "Accepted Straps",
+      "type": "array"
+    },
+    "accepted_exceptions": {
+      "items": {
+        "$ref": "#/$defs/ReturnException"
+      },
+      "maxItems": 100,
+      "title": "Accepted Exceptions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "subject_id",
+    "watch_id",
+    "organization_id",
+    "source_revision",
+    "quote_id",
+    "quote_revision",
+    "policy_revision",
+    "actor_id",
+    "assignment_revision",
+    "permission",
+    "current",
+    "checked_at",
+    "valid_until",
+    "commitment_id",
+    "accepted_scope",
+    "custody_current",
+    "payment_state",
+    "fit_confirmed",
+    "incident_open",
+    "currency",
+    "total_minor",
+    "responsible_actor_id",
+    "next_review_at",
+    "choices",
+    "removable_link_ids",
+    "buyer_owned_link_ids",
+    "authorized_recipient_ids"
+  ],
+  "title": "Authority",
+  "type": "object"
+}

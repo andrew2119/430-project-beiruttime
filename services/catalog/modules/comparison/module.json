@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "id": "L13.comparison",
+  "dependencies": ["fastapi", "pydantic"],
+  "routes": ["routes.py:router"],
+  "migrations": [],
+  "workers": []
+}

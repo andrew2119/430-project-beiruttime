@@ -1,0 +1,11 @@
+# Saved-watch view
+
+The deferred `/saved` page uses the existing root shell, locale, theme and shared page frame/header and controls. Language changes preserve the mounted form, choices, pagination and exact pending command in memory. Access fingerprint changes remount the private form. No private list or command is written to browser storage.
+
+The read is `saved-watches.v1`, access fingerprint and offset, nested in the shared access-scoped page cache. Pages have 20 rows and server totals. Warming is open-only: private data is not fetched for public hover intent. Freshness is zero; an existing scoped answer remains visible during a same-page refresh. A different page receives only its own answer. Only first load draws placeholders, and shared AnswerArrival handles one arrival per view and access. The root owns the first frame and theme; no local provider or shell is introduced.
+
+A confirmed write refreshes the current read. Uncertain writes retain the exact command and action reference and disable competing edits. Definitive stale or denied responses require current review. Removing a saved row never erases its underlying watch. Dollars are displayed from exact integer cents in either language.
+
+Shared page-delivery registration, navigation intent registration and the account return-path allowlist are outside this module's composition boundary. Until they include `/saved`, sign-in requires returning to the saved page explicitly. No measured size, first-frame, phone, browser or connected acceptance verdict is asserted by these local definitions.
+
+The page entry is retained as `deferred-page.tsx`, which does not expose a route. Its default view renders bilingual unavailable recovery without accessing the shared read scope. `ComposedSavedPage` is reserved for mounting inside the registered shared scope. Route composition is blocked: the shared shell selector currently mounts the page-read scope only for internal routes. The shared composition owner must adopt `/saved` in the existing shell and extend the delivery-contract registry to accept and register its private read before this route can render authenticated content. The view checks replace the read boundary and do not certify mounted route composition. No feature-local provider is permitted.

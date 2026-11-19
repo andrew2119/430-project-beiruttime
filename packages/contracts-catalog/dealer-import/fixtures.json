@@ -1,0 +1,74 @@
+{
+  "schema_version": "dealer-import.v1",
+  "synthetic": true,
+  "csv": "brand,model,reference,year,condition,location,price_usd,serial\nSample,Sample,R1,2020,Used,Beirut,5000.00,SYNTHETIC-001\n=1,Sample,R2,2020,Used,Beirut,5,SYNTHETIC-002\n",
+  "success": {
+    "schema_version": "dealer-import.v1",
+    "operation_id": "synthetic-import-1",
+    "subject_id": null,
+    "watch_id": null,
+    "actor_id": "00000000-0000-4000-8000-000000000001",
+    "organization_id": "00000000-0000-4000-8000-000000000002",
+    "expected_revision": 0,
+    "state": "succeeded",
+    "revision": 1,
+    "pending_reason": null,
+    "next_actor": null,
+    "next_review_at": null,
+    "total": 2,
+    "items": [
+      {
+        "row": 1,
+        "state": "draft",
+        "listing_id": "00000000-0000-4000-8000-000000000003"
+      },
+      {
+        "row": 2,
+        "state": "invalid",
+        "listing_id": null
+      }
+    ],
+    "offset": 0,
+    "limit": 50
+  },
+  "denied": {
+    "status": 403,
+    "code": "dealer_required"
+  },
+  "stale": {
+    "status": 409,
+    "code": "stale_revision"
+  },
+  "lost_response": {
+    "retry": "same operation and identical bytes",
+    "result": {
+      "schema_version": "dealer-import.v1",
+      "operation_id": "synthetic-import-1",
+      "subject_id": null,
+      "watch_id": null,
+      "actor_id": "00000000-0000-4000-8000-000000000001",
+      "organization_id": "00000000-0000-4000-8000-000000000002",
+      "expected_revision": 0,
+      "state": "succeeded",
+      "revision": 1,
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null,
+      "total": 2,
+      "items": [
+        {
+          "row": 1,
+          "state": "draft",
+          "listing_id": "00000000-0000-4000-8000-000000000003"
+        },
+        {
+          "row": 2,
+          "state": "invalid",
+          "listing_id": null
+        }
+      ],
+      "offset": 0,
+      "limit": 50
+    }
+  }
+}

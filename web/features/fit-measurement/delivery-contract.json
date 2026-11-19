@@ -1,0 +1,10 @@
+{
+  "route": "/care/fit",
+  "file": "web/app/(fit-measurement)/care/fit/page.tsx",
+  "view": "web/features/fit-measurement/view.tsx",
+  "kind": "reads",
+  "reason": "Private buyer wrist target; current scoped authority is required on every read and write.",
+  "content": "[data-page-answer]",
+  "read": "fit-measurement.v1",
+  "proof": "owed"
+}
