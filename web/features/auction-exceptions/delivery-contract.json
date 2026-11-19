@@ -1,0 +1,10 @@
+{
+  "route": "/operations/auction-exceptions",
+  "file": "web/app/(auction-exceptions)/operations/auction-exceptions/page.tsx",
+  "view": "web/features/auction-exceptions/view.tsx",
+  "kind": "static",
+  "reason": "Current private provider connection is deferred; the route renders the unavailable recovery state without reading private records.",
+  "content": "Bilingual exceptional auction action screen composed with shared PageFrame and PageHeader; current access and bound receipts are required before a request form is available.",
+  "read": "none",
+  "proof": "owed"
+}
