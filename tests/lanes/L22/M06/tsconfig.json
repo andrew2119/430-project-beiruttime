@@ -1,0 +1,41 @@
+{
+  "extends": "../../../../web/tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "plugins": [],
+    "baseUrl": "../../../../web",
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@contracts/*": [
+        "../packages/*"
+      ],
+      "vitest": [
+        "./node_modules/vitest"
+      ],
+      "vitest/config": [
+        "./node_modules/vitest/config"
+      ],
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "react/jsx-runtime": [
+        "./node_modules/@types/react/jsx-runtime"
+      ],
+      "@beirut-time/ui/foundation": [
+        "../packages/ui/src/foundation/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "../../../../web/features/saved-searches/**/*.ts",
+    "../../../../web/features/saved-searches/**/*.tsx",
+    "../../../../web/app/(saved-searches)/saved-searches/**/*.tsx",
+    "./*.ts",
+    "./*.tsx"
+  ],
+  "exclude": [
+    "../../../../web/node_modules"
+  ]
+}
