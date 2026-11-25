@@ -1,0 +1,10 @@
+{
+  "route": "/passports/[passport_id]",
+  "file": "web/app/(passports)/passports/[passport_id]/page.tsx",
+  "view": "web/features/passports/view.tsx",
+  "kind": "reads",
+  "reason": "Public signed inspection summaries only; signature verification precedes display.",
+  "content": "section[aria-label]",
+  "read": "web/features/passports/reads.ts#passportRead",
+  "proof": "owed"
+}

@@ -1,0 +1,12 @@
+{
+  "title":"Verify inspection summary", "boundary":"This verifies the signed summary, not the watch in your hand or a factory endorsement.",
+  "summary":"Signed inspection summary", "historical":"Historical inspection. Later changes are outside this recorded scope.",
+  "issuer":"Issuer reference", "date":"Inspection date", "utc":"UTC", "scope":"Scope", "inspection":"Independent private-sale inspection", "reference":"Safe watch reference",
+  "privacy":"Full serials, private owners and raw evidence are not public.", "loading":"Checking summary",
+  "empty":"No passport found", "emptyBody":"A recorded independent pass and released completion are required. Check the reference and try again.",
+  "denied":"Access denied", "deniedBody":"Private fields are restricted. Use the public summary reference only.",
+  "pending":"Verification pending", "pendingBody":"The result is uncertain. Retry using the same action reference.",
+  "unavailable":"Verification unavailable", "unavailableBody":"The current source could not be reached. Retry before relying on this summary.",
+  "invalid":"Signature verification failed", "invalidBody":"The issuer or summary could not be verified. Ask the issuer for the original reference.",
+  "operation":"Action reference", "retry":"Check again"
+}
