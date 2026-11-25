@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS l24_outcomes (
+ operation TEXT PRIMARY KEY, result TEXT NOT NULL);
