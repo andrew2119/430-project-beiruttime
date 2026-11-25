@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "synthetic": true,
+  "cases": [
+    {
+      "name": "confirmed",
+      "state": "enabled",
+      "revision": 2,
+      "envelope": {
+        "schema_version": 1,
+        "operation_id": "synthetic-operation-0001",
+        "subject_id": "synthetic-person",
+        "watch_id": null,
+        "actor_id": "synthetic-person",
+        "organization_id": null,
+        "expected_revision": 1,
+        "revision": 2,
+        "state": "enabled",
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null
+      }
+    },
+    {
+      "name": "denied",
+      "error": "denied",
+      "envelope": {
+        "schema_version": 1,
+        "operation_id": "synthetic-operation-0001",
+        "subject_id": "synthetic-person",
+        "watch_id": null,
+        "actor_id": "synthetic-person",
+        "organization_id": null,
+        "expected_revision": 1,
+        "revision": 1,
+        "state": "pending",
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null
+      }
+    },
+    {
+      "name": "stale",
+      "error": "stale_revision",
+      "envelope": {
+        "schema_version": 1,
+        "operation_id": "synthetic-operation-0001",
+        "subject_id": "synthetic-person",
+        "watch_id": null,
+        "actor_id": "synthetic-person",
+        "organization_id": null,
+        "expected_revision": 1,
+        "revision": 1,
+        "state": "pending",
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null
+      }
+    },
+    {
+      "name": "lost_response",
+      "retry": "same_operation_id",
+      "lookup": "private_current_authority",
+      "envelope": {
+        "schema_version": 1,
+        "operation_id": "synthetic-operation-0001",
+        "subject_id": "synthetic-person",
+        "watch_id": null,
+        "actor_id": "synthetic-person",
+        "organization_id": null,
+        "expected_revision": 1,
+        "revision": 1,
+        "state": "pending",
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null
+      }
+    },
+    {
+      "name": "lost_factor",
+      "state": "pending",
+      "pending_reason": "session_revocation",
+      "envelope": {
+        "schema_version": 1,
+        "operation_id": "synthetic-operation-0001",
+        "subject_id": "synthetic-person",
+        "watch_id": null,
+        "actor_id": "synthetic-person",
+        "organization_id": null,
+        "expected_revision": 1,
+        "revision": 1,
+        "state": "pending",
+        "pending_reason": "session_revocation",
+        "next_actor": "identity",
+        "next_review_at": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "route": "/account/security",
+  "file": "web/app/(two-factor)/account/security/page.tsx",
+  "view": "web/features/two-factor/view.tsx",
+  "kind": "static",
+  "reason": "The route renders an unavailable state until current identity and shared read composition are connected.",
+  "content": ".bt-page",
+  "read": "none",
+  "proof": "owed"
+}
