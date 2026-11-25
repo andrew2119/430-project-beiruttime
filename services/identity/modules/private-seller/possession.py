@@ -57,8 +57,14 @@ def current(proof, authority, now):
                 or not isinstance(review['reason'], str) or not review['reason'].strip()
                 or any(type(review[k]) is not int or review[k] < 1 for k in ('assignment_revision', 'review_revision'))):
             deny('unavailable', 503)
-        result.update(state=review['verdict'], review=copy.deepcopy(review), pending_reason=None,
+        if authority.get('approval_authority_lapsed'):
+            result.update(state='stale', next_actor='seller', pending_reason='fresh_proof_required',
+                          next_review_at=None)
+            return result
+        result.update(state=review['verdict'], pending_reason=None,
                       next_actor='seller', next_review_at=None)
+        if authority.get('review_details_visible', True):
+            result['review'] = copy.deepcopy(review)
     return result
 
 

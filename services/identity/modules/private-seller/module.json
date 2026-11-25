@@ -13,7 +13,8 @@
   ],
   "migrations": [
     "migrations/L01_0001_private_seller.sql",
-    "migrations/L01_0002_evidence_binding.sql"
+    "migrations/L01_0002_evidence_binding.sql",
+    "migrations/L01_0003_photo_tombstones.sql"
   ],
   "workers": []
 }
