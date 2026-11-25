@@ -26,7 +26,8 @@ afterEach(() => {
 it.each([
   ['publication succeeds within its budget', 'POST', path, 1500, 200, 'published'],
   ['publication exceeds its budget', 'POST', path, 18701, 503, 'unavailable'],
-  ['listing read keeps its original budget', 'GET', listingPath, 1201, 503, 'unavailable'],
+  ['seller listing read succeeds within its budget', 'GET', listingPath, 1201, 200, 'published'],
+  ['seller listing read exceeds its budget', 'GET', listingPath, 8701, 503, 'unavailable'],
   ['early publication review remains pending', 'POST', path, 100, 503, 'publication_review_pending'],
 ] as const)('%s', async (_label, method, route, responseMs, expectedStatus, outcome) => {
   vi.useFakeTimers();
@@ -71,7 +72,7 @@ it.each([
   expect(response.status).toBe(expectedStatus);
   if (outcome === 'unavailable') expect((await response.json()).error.code).toBe(outcome);
   else expect(await response.text()).toBe(body);
-  expect(deadline).toHaveBeenCalledWith(method === 'POST' ? 18700 : 1200);
+  expect(deadline).toHaveBeenCalledWith(method === 'POST' ? 18700 : 8700);
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 

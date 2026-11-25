@@ -17,9 +17,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function delayedResponse(ms: number) {
+function delayedResponse(ms: number, status = 200) {
   const upstream = vi.fn((_url: URL, options: RequestInit) => new Promise<Response>((resolve, reject) => {
-    const timer = setTimeout(() => resolve(Response.json({ accepted: true })), ms);
+    const timer = setTimeout(() => resolve(Response.json({ accepted: true }, { status })), ms);
     options.signal!.addEventListener('abort', () => {
       clearTimeout(timer);
       reject(options.signal!.reason);
@@ -47,10 +47,9 @@ it.each(['login', 'register', 'reauthenticate', 'password', 'reset', 'refresh'])
 });
 
 it.each([
-  ['identity', 'GET', '/v1/accounts/me'],
+  ['identity', 'GET', '/v1/businesses/test-business'],
   ['identity', 'GET', '/internal/v1/principal'],
-  ['identity', 'POST', '/v1/accounts/logout'],
-  ['identity', 'POST', '/v1/accounts/recovery'],
+  ['identity', 'GET', '/v1/accounts/recovery'],
   ['catalog', 'POST', '/v1/accounts/login'],
   ['identity', 'GET', '/v1/accounts/login'],
 ])('retains the read budget for %s %s %s', async (service, method, path) => {
@@ -79,4 +78,20 @@ it('bounds credential calls at eight seconds without retrying', async () => {
   await vi.advanceTimersByTimeAsync(10000);
   expect(upstream).toHaveBeenCalledTimes(1);
   expect(dependency.active).toBe(0);
+});
+
+it('returns a quote created after the former quote deadline', async () => {
+  const upstream = delayedResponse(12000, 201);
+  const dependency = new Dependency('pricing', 'https://pricing.test');
+  const pending = dependency.request('POST', '/v1/quotes', 'test-request', {
+    headers: { 'Idempotency-Key': 'test-quote-operation' }, body: '{}',
+  });
+  await vi.advanceTimersByTimeAsync(12000);
+  const response = await pending;
+  expect(response).toBeInstanceOf(Response);
+  expect((response as Response).status).toBe(201);
+  expect(await (response as Response).json()).toEqual({ accepted: true });
+  expect(AbortSignal.timeout).toHaveBeenCalledExactlyOnceWith(28600);
+  expect(upstream).toHaveBeenCalledTimes(1);
+  expect(new Headers(upstream.mock.calls[0][1].headers).get('Idempotency-Key')).toBe('test-quote-operation');
 });
