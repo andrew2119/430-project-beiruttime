@@ -1,0 +1,47 @@
+{
+  "synthetic": true,
+  "connected_proof": false,
+  "binding": {
+    "schema_version": "L22.E09.v1",
+    "operation_id": "operation-001",
+    "subject_id": "buyer-001",
+    "watch_id": "watch-001",
+    "actor_id": "buyer-001",
+    "organization_id": "business-001",
+    "expected_revision": 3,
+    "revision": 4,
+    "retained_quote_id": "quote-001",
+    "policy_revision": "policy-003",
+    "state": "pending",
+    "pending_reason": "response-lost",
+    "next_actor": "operator-001",
+    "next_review_at": "2026-11-18T10:00:00Z"
+  },
+  "responses": {
+    "success": {"state": "accepted"},
+    "denied": {"state": "denied"},
+    "stale": {"state": "stale"},
+    "timeout": {"state": "pending"},
+    "lost-response": {"state": "pending"},
+    "duplicate": {"state": "accepted"}
+  },
+  "economics": {
+    "currency": "USD",
+    "watch_price_minor": 500000,
+    "watch_buyer_total_minor": 515000,
+    "seller_commission_minor": 25000,
+    "watch_refund_max_minor": 500000,
+    "job_total_minor": 500000,
+    "job_business_fee_minor": 25000,
+    "job_business_net_minor": 475000,
+    "job_refund_max_minor": 500000
+  },
+  "payment_clock": {
+    "notified_at": "2026-11-17T10:00:00Z",
+    "card_deadline": "2026-11-18T10:00:00Z",
+    "other_deadline": "2026-11-19T10:00:00Z",
+    "attempt_before": "2026-11-18T09:59:59Z",
+    "attempt_equal": "2026-11-18T10:00:00Z",
+    "attempt_after": "2026-11-18T10:00:01Z"
+  }
+}
