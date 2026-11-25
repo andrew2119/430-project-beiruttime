@@ -1,0 +1,149 @@
+{
+  "schema_version": "help-policies.v1",
+  "revision": "2026-11-16.1",
+  "articles": [
+    {
+      "id": "buyer",
+      "en": {
+        "title": "Buying a watch",
+        "body": "Browse publicly. Sign in for private saves, offers, bids and purchases. You cannot buy or bid on your own stock. One physical watch has one exclusive sale or job commitment. Saved, accepted, reserved, paid, received and paid out are separate states. An uncertain action stays pending: retry the same action reference. Offline access never confirms a transaction."
+      },
+      "ar": {
+        "title": "شراء ساعة",
+        "body": "يمكن التصفح علناً. يلزم تسجيل الدخول للحفظ الخاص والعروض والمزايدات والشراء. لا يجوز شراء مخزونك أو المزايدة عليه. لكل ساعة فعلية التزام حصري واحد للبيع أو للعمل. الحفظ والقبول والحجز والدفع والاستلام والصرف حالات منفصلة. تبقى العملية غير المؤكدة معلقة: أعد المحاولة بالمرجع نفسه. لا يؤكد الوصول دون اتصال أي معاملة."
+      }
+    },
+    {
+      "id": "seller",
+      "en": {
+        "title": "Private sellers",
+        "body": "Drafting is not publication permission. Seller approval does not authenticate each watch. Every listing needs fresh single-use possession proof within 24 hours of its code, checked by an assigned reviewer. Changed watch identity and relisting require fresh proof. Public photos must exclude identity documents, full serials and former-owner details. Photo metadata is removed; a declaration does not detect sensitive pixels. Missing documents must be disclosed."
+      },
+      "ar": {
+        "title": "البائعون الأفراد",
+        "body": "إعداد المسودة ليس إذناً بالنشر. اعتماد البائع لا يوثق أصالة كل ساعة. يحتاج كل إعلان إلى إثبات حيازة جديد برمز يستخدم مرة واحدة خلال 24 ساعة من إصداره، يراجعه المراجع المكلف. تغيير هوية الساعة وإعادة الإعلان يتطلبان إثباتاً جديداً. يجب ألا تتضمن الصور العامة وثائق الهوية أو الأرقام التسلسلية الكاملة أو بيانات المالكين السابقين. تزال البيانات الوصفية للصور؛ ولا يكشف الإقرار وحده المحتوى الحساس. يجب إظهار المستندات المفقودة."
+      }
+    },
+    {
+      "id": "business",
+      "en": {
+        "title": "Dealers, brands and colleagues",
+        "body": "Dealers sell and service only within recorded authority; dealership does not grant brand customization permission. Official brands assess and perform only authorized work. Demonstration capabilities are synthetic, not proof of a real brand agreement or factory endorsement. Colleagues act only for the selected business and permitted records. Assessment, brand approval and quality require three distinct people on the same job, with a separate independent eligibility reviewer. Platform-arranged review coverage is included in the fee."
+      },
+      "ar": {
+        "title": "التجار والعلامات والزملاء",
+        "body": "يبيع التجار ويقدمون الصيانة ضمن الصلاحيات المسجلة فقط؛ ولا تمنح صفة التاجر إذناً بتخصيص العلامة. تقيّم العلامات الرسمية وتنفذ العمل المأذون به فقط. قدرات العرض التجريبية مصطنعة وليست إثباتاً لاتفاق حقيقي مع علامة أو اعتماد من المصنع. يعمل الزملاء للشركة المختارة والسجلات المسموح بها فقط. يتطلب التقييم واعتماد العلامة وفحص الجودة ثلاثة أشخاص مختلفين في العمل نفسه، مع مراجع أهلية مستقل منفصل. تغطية المراجعة التي ترتبها المنصة مشمولة بالرسم."
+      }
+    },
+    {
+      "id": "fees",
+      "en": {
+        "title": "Exact watch fees and refunds",
+        "body": "All active prices are US dollars, stored as integer cents; percentages round half up to one cent. The buyer pays watch price plus 3%. Every private seller, dealer and brand owes 5% of watch price. At $5,000 the buyer pays $5,150; seller commission is $250 and ordinary seller net is $4,750. No collected fee is refunded, even after failed authentication, cancellation or a successful buyer dispute. A full watch-price refund is $5,000, never $5,150. A receivable is not collected cash. Retained accepted economics and policy versions never change silently. Uncommitted previews last 15 minutes; retained committed prices do not expire, but execution permission and payment deadlines are separate."
+      },
+      "ar": {
+        "title": "رسوم الساعة والمبالغ المستردة بدقة",
+        "body": "جميع الأسعار النشطة بالدولار الأميركي وتخزن كسنتات صحيحة؛ وتقرب النسب إلى أقرب سنت مع تقريب النصف إلى الأعلى. يدفع المشتري سعر الساعة مضافاً إليه 3%. ويلتزم كل بائع فرد أو تاجر أو علامة بنسبة 5% من سعر الساعة. بسعر 5,000 دولار يدفع المشتري 5,150 دولاراً؛ والعمولة 250 دولاراً وصافي البائع المعتاد 4,750 دولاراً. لا يسترد أي رسم محصل حتى عند فشل التوثيق أو الإلغاء أو كسب المشتري للنزاع. استرداد سعر الساعة كاملاً هو 5,000 دولار وليس 5,150 دولاراً. المبلغ المستحق ليس نقداً محصلاً. لا تتغير الأسعار والشروط المقبولة المحفوظة بصمت. تنتهي المعاينات غير الملتزم بها بعد 15 دقيقة؛ ولا تنتهي الأسعار الملتزم بها، لكن إذن التنفيذ ومواعيد الدفع منفصلة."
+      }
+    },
+    {
+      "id": "jobs",
+      "en": {
+        "title": "Servicing and customization",
+        "body": "The accepted job amount includes accepted parts, labor and assessment lines. The business pays one 5% platform fee on that job base and receives 95%. There is no extra 3% buyer surcharge: a $5,000 job costs the customer $5,000; the business pays one $250 platform fee and receives $4,750. Separately disclosed return transport is not counted twice. Unaccepted or unperformed lines are not charged. Partial refunds cover accepted unperformed labor and unused returnable parts at retained amounts; completed work and consumed accepted parts are not refundable by default. A permitted full job refund returns the gross job amount, without deducting the business fee from the customer. Collected fees remain non-refundable; an unpaid business fee remains separately owed. Buying then customizing requires two linked orders: complete purchase authentication, receipt and dispute window first, then a separate accepted job quote and platform payment. Appointments need explicit business confirmation in Asia/Beirut civil time, including confirmation of repeated or missing times."
+      },
+      "ar": {
+        "title": "الصيانة والتخصيص",
+        "body": "يشمل مبلغ العمل المقبول بنود القطع والأجور والتقييم المقبولة. تدفع الشركة رسم منصة واحداً بنسبة 5% من أساس العمل وتتلقى 95%. لا تضاف نسبة 3% على المشتري: يكلف عمل بقيمة 5,000 دولار العميل 5,000 دولار؛ وتدفع الشركة رسم منصة واحداً قدره 250 دولاراً وتتلقى 4,750 دولاراً. لا يحتسب نقل الإرجاع المعلن منفصلاً مرتين. لا تفرض رسوم على بند غير مقبول أو غير منفذ. يشمل الاسترداد الجزئي الأجور المقبولة غير المنفذة والقطع غير المستخدمة القابلة للإرجاع بالمبالغ المحفوظة؛ ولا يسترد العمل المنجز والقطع المقبولة المستهلكة افتراضياً. يعيد الاسترداد الكامل المسموح مبلغ العمل الإجمالي دون خصم رسم الشركة من العميل. تبقى الرسوم المحصلة غير قابلة للاسترداد والرسم غير المدفوع مستحقاً على الشركة منفصلاً. يتطلب الشراء ثم التخصيص طلبين مرتبطين: إكمال توثيق الشراء والاستلام وفترة النزاع أولاً، ثم عرض عمل مقبول ودفع عبر المنصة منفصلان. تتطلب المواعيد تأكيد الشركة الصريح بالتوقيت المدني لبيروت، مع تأكيد الأوقات المتكررة أو المفقودة."
+      }
+    },
+    {
+      "id": "payments",
+      "en": {
+        "title": "Simulated payment and deadlines",
+        "body": "Payments, refunds, payouts and contact delivery are simulated in this release. Allowed simulated methods are card, Whish Money and OMT Pay. A clock begins only after the required notice is durably available in the buyer inbox and simulated verified delivery is recorded. Card has 24 hours; Whish Money, OMT Pay and no selected method have 48 hours from the same notice time. Switching methods never restarts time. An attempt strictly before its deadline gets one additional 24-hour window, once. At equality time has elapsed. Pending or unknown money stays held with support follow-up within 24 hours. Only no attempt or final declines permit atomic unpaid release; late conflicting confirmation requires reconciliation/refund review, never another sale."
+      },
+      "ar": {
+        "title": "الدفع التجريبي والمواعيد",
+        "body": "الدفع والاسترداد والصرف وتسليم رسائل الاتصال تجريبية في هذا الإصدار. الوسائل التجريبية المسموحة هي البطاقة وWhish Money وOMT Pay. لا يبدأ العد إلا بعد إتاحة الإشعار المطلوب بصورة دائمة في صندوق المشتري وتسجيل التسليم التجريبي المتحقق منه. للبطاقة 24 ساعة؛ ولـWhish Money وOMT Pay وعدم اختيار وسيلة 48 ساعة من وقت الإشعار نفسه. تغيير الوسيلة لا يعيد العد. تمنح محاولة بدأت قبل الموعد حصراً نافذة إضافية واحدة قدرها 24 ساعة. عند تساوي الوقت مع الموعد تكون المهلة منتهية. تبقى الأموال المعلقة أو المجهولة محتجزة مع متابعة الدعم خلال 24 ساعة. وحده غياب المحاولة أو الرفض النهائي يسمح بفك الالتزام غير المدفوع ذرياً؛ والتأكيد المتأخر المتعارض يحتاج مراجعة تسوية أو استرداد، وليس بيعاً آخر."
+      }
+    },
+    {
+      "id": "auction",
+      "en": {
+        "title": "Auctions and offers",
+        "body": "The canonical auction admission order and fixed scheduled end govern bids. Opening bids may equal the opening price. Private ceilings are visible only to their owner; a ceiling-only increase is not a public bid. Accepted maxima may be raised, not lowered or removed; retraction needs a reasoned independent exception before close and retained history. Increments use the challenger amount and a full-step automatic response. An insufficient displaced ceiling remains inactive until its owner raises it. Public bid rows never reveal ceilings. Offers apply only to fixed-price or offers-only listings, never auctions. Sent offers last 48 hours with retained economics; a counteroffer supersedes its predecessor with a fresh lifetime. No automatic runner-up, penalty or relisting follows unpaid expiry. Viewer-update and notice timing targets are not proven delivery promises."
+      },
+      "ar": {
+        "title": "المزادات والعروض",
+        "body": "يحكم ترتيب قبول المزاد المعتمد وموعد نهايته المجدول الثابت المزايدات. يمكن أن تساوي المزايدة الافتتاحية سعر الافتتاح. لا يرى السقف الخاص إلا صاحبه؛ ورفع السقف وحده ليس مزايدة عامة. يمكن رفع الحدود القصوى المقبولة لا خفضها أو حذفها؛ والسحب يحتاج استثناء مستقلاً مسبباً قبل الإغلاق مع حفظ التاريخ. تحتسب الزيادة عند مبلغ المتحدي ويكون الرد الآلي بخطوة كاملة. يبقى السقف المزاح غير الكافي غير نشط حتى يرفعه صاحبه. لا تكشف المزايدات العامة السقوف. تنطبق العروض على السعر الثابت أو إعلانات العروض فقط، لا المزادات. تدوم العروض المرسلة 48 ساعة بأسعار محفوظة؛ ويحل العرض المقابل محل السابق بمدة جديدة. لا ينتج عن انتهاء مهلة عدم الدفع فائز تالٍ أو عقوبة أو إعادة إعلان آلية. أهداف زمن تحديث المشاهد والإشعارات ليست وعود تسليم مثبتة."
+      }
+    },
+    {
+      "id": "authentication",
+      "en": {
+        "title": "Independent authentication and custody",
+        "body": "Private-sale inspection happens only after paid held funds and actual expert receipt. The expert is independent of the seller; no business-sale pass is invented. Use the assigned expert’s declared Beirut intake location and the approved simulated courier route chosen at checkout. Inspector and trip costs must be quoted before payment; pickup after a pass may be offered. No platform premises are implied. Dispatch is due within 3 calendar days of confirmed held payment; inspection within 2 Monday–Friday Beirut business days of expert receipt. Pickup stays ready 7 calendar days, with a reminder after 48 hours. Missed limits trigger support review, never automatic receipt or payout. A passport follows an actual independent pass and verifies only its signed summary, not the object in hand; later modifications leave it historical."
+      },
+      "ar": {
+        "title": "التوثيق المستقل والحيازة",
+        "body": "يتم فحص البيع الخاص بعد احتجاز الدفع واستلام الخبير الفعلي فقط. الخبير مستقل عن البائع؛ ولا يختلق نجاح توثيق لبيع تجاري. يستخدم موقع الاستلام المعلن للخبير المكلف في بيروت ومسار الناقل التجريبي المعتمد المختار عند الدفع. يجب عرض تكاليف الفاحص والرحلات قبل الدفع؛ ويمكن إتاحة الاستلام بعد النجاح. لا يفترض وجود مقر للمنصة. يستحق الإرسال خلال 3 أيام تقويمية من تأكيد احتجاز الدفع؛ والفحص خلال يومي عمل من الاثنين إلى الجمعة بتوقيت بيروت من استلام الخبير. يبقى الاستلام جاهزاً 7 أيام تقويمية مع تذكير بعد 48 ساعة. التأخير يفتح مراجعة دعم ولا ينشئ استلاماً أو صرفاً آلياً. يأتي جواز الساعة بعد نجاح مستقل فعلي ويتحقق من ملخصه الموقع فقط لا من الساعة في اليد؛ والتعديلات اللاحقة تجعله تاريخياً."
+      }
+    },
+    {
+      "id": "failed-inspection",
+      "en": {
+        "title": "Failed authentication and return",
+        "body": "A private seller whose watch fails independent authentication still owes 5% of watch price plus the disclosed failed-return trip. Charge the saved simulated method once; return requires confirmed collection and a custody instruction. Decline or uncertainty keeps the return held with support follow-up within 24 hours and restricts new private publication until resolved. There is no automatic disposal or invented payout deduction. The recorded custodian remains responsible until the next signed custody receipt. Loss or damage opens a held incident and simulated declared-value insurance review; no actual insurance coverage is claimed."
+      },
+      "ar": {
+        "title": "فشل التوثيق والإرجاع",
+        "body": "يبقى البائع الفرد الذي تفشل ساعته في التوثيق المستقل مديناً بنسبة 5% من سعر الساعة إضافة إلى رحلة الإرجاع المعلنة. تحصّل مرة واحدة من الوسيلة التجريبية المحفوظة؛ ويتطلب الإرجاع تأكيد التحصيل وتعليمات حيازة. الرفض أو عدم اليقين يبقي الإرجاع معلقاً مع متابعة الدعم خلال 24 ساعة ويقيد النشر الخاص الجديد حتى الحل. لا يوجد تصرف تلقائي بالساعة أو خصم مختلق من الصرف. يبقى الحائز المسجل مسؤولاً حتى إيصال الحيازة الموقع التالي. يفتح الفقد أو التلف حادثاً معلقاً ومراجعة تأمين تجريبية بالقيمة المعلنة؛ ولا تدعى أي تغطية تأمينية فعلية."
+      }
+    },
+    {
+      "id": "returns",
+      "en": {
+        "title": "Cancellation, receipt and disputes",
+        "body": "Unpaid cancellation releases the commitment only without an uncertain attempt. Paid cancellation before dispatch pauses fulfilment for a permitted price/job-only refund. After custody transfer, controlled return or a recorded failure exception is required before refund. Collected fees never return. Receipt needs buyer acknowledgement or approved proof naming the watch, authorized recipient, actual delivery time and custody handoff; a dispatch scan alone is insufficient. Missing receipt stays held for support. Disputes run from recorded receipt: 72 hours for inspected private-watch sales; 168 hours for dealer/brand sales and service/custom jobs. Business assurance covers listed identity, condition, provenance, disclosed modifications and accepted work, with reasoned price/job-only remedies."
+      },
+      "ar": {
+        "title": "الإلغاء والاستلام والنزاعات",
+        "body": "يفك الإلغاء غير المدفوع الالتزام فقط عند عدم وجود محاولة غير مؤكدة. يوقف الإلغاء بعد الدفع وقبل الإرسال التنفيذ لاسترداد مسموح لسعر الساعة أو مبلغ العمل فقط. بعد نقل الحيازة يلزم إرجاع مضبوط أو استثناء فشل مسجل قبل الاسترداد. لا تعاد الرسوم المحصلة. يحتاج الاستلام إقرار المشتري أو إثباتاً معتمداً يحدد الساعة والمستلم المخول ووقت التسليم الفعلي وتسليم الحيازة؛ ولا يكفي مسح الإرسال وحده. يبقى الاستلام المفقود معلقاً للدعم. تبدأ النزاعات من الاستلام المسجل: 72 ساعة لبيع الساعة الخاصة المفحوصة؛ و168 ساعة لمبيعات التاجر أو العلامة وأعمال الصيانة والتخصيص. يشمل ضمان الأعمال الهوية والحالة والمنشأ والتعديلات المعلنة والعمل المقبول مع معالجات مسببة لسعر الساعة أو مبلغ العمل فقط."
+      }
+    },
+    {
+      "id": "warranty",
+      "en": {
+        "title": "Warranty issuer and manual aftercare",
+        "body": "A warranty is only the actual issuer’s recorded promise with its scope, exclusions, dates and claim route. Seller approval, an inspection summary, quality review and business assurance are different from a manufacturer warranty. Missing issuer or documents means warranty details unavailable, never factory endorsement. For aftercare, use the original order’s permitted business conversation or assigned support route, quoting the order and accepted work version; arrange manual review and custody before sending a watch. Never post private proof publicly."
+      },
+      "ar": {
+        "title": "جهة الضمان والمتابعة اليدوية",
+        "body": "الضمان هو وعد الجهة المصدرة الفعلية المسجل بنطاقه واستثناءاته وتواريخه ومسار المطالبة. يختلف اعتماد البائع وملخص الفحص ومراجعة الجودة وضمان الأعمال عن ضمان المصنع. غياب الجهة أو الوثائق يعني أن تفاصيل الضمان غير متاحة وليس اعتماداً من المصنع. للمتابعة استخدم محادثة الشركة المسموحة في الطلب الأصلي أو مسار الدعم المكلف مع مرجع الطلب ونسخة العمل المقبولة؛ ورتب مراجعة يدوية وحيازة قبل إرسال الساعة. لا تنشر الإثبات الخاص علناً."
+      }
+    },
+    {
+      "id": "support",
+      "en": {
+        "title": "Support, access recovery and operators",
+        "body": "Public help remains readable when signed out or locked out. Contact details have not been supplied: telephone, email, premises and reset delivery are unavailable here. Do not send documents to an invented address. Use the existing sign-in recovery entry when available; if unavailable, keep your action reference and retry later. For an active transaction use its permitted support conversation even if ordinary messaging is blocked. Every held case needs one responsible operator and next action: first response within 24 hours, escalation after 48 hours without progress. These are follow-up requirements, not claims that a case or message has been delivered. Operators cannot bypass money, custody or private-evidence controls. Moderation decisions and their application are separate; appeals require independent review."
+      },
+      "ar": {
+        "title": "الدعم واستعادة الوصول والمشغلون",
+        "body": "تبقى المساعدة العامة قابلة للقراءة دون تسجيل الدخول أو عند تعذر الوصول. لم تزود تفاصيل الاتصال: الهاتف والبريد والمقر وتسليم الاستعادة غير متاحة هنا. لا ترسل وثائق إلى عنوان مختلق. استخدم مدخل استعادة تسجيل الدخول القائم عند توفره؛ وإذا تعذر، احتفظ بمرجع العملية وأعد المحاولة لاحقاً. للمعاملة النشطة استخدم محادثة الدعم المسموحة لها حتى مع حظر الرسائل العادية. تحتاج كل حالة معلقة إلى مشغل مسؤول وخطوة تالية: استجابة أولى خلال 24 ساعة وتصعيد بعد 48 ساعة دون تقدم. هذه متطلبات متابعة وليست ادعاء بتسليم حالة أو رسالة. لا يستطيع المشغل تجاوز ضوابط الأموال والحيازة والإثبات الخاص. قرار الإشراف وتطبيقه منفصلان؛ والاستئناف يحتاج مراجعة مستقلة."
+      }
+    },
+    {
+      "id": "terms",
+      "en": {
+        "title": "Accepted terms and privacy",
+        "body": "This guidance is not consent and does not replace your early E03 accepted policy artifact. The exact accepted English/Arabic text, policy revision and acceptance time must be read from the authorized record. That connection is unavailable on this page; use the original record when available. Current identity, business, assignment and revision govern every private read, even from an old screen. Unsubmitted private uploads clear after 7 days; synthetic proof clears 30 days after final review unless an active case needs it. Minimal transaction references remain 1 year; export within 7 days and deletion/redaction within 30 days after obligations close. Language changes preserve entered data and action references; passwords and private file bytes stay only in memory."
+      },
+      "ar": {
+        "title": "الشروط المقبولة والخصوصية",
+        "body": "هذه الإرشادات ليست موافقة ولا تستبدل وثيقة شروط E03 المبكرة المقبولة. يجب قراءة النص العربي والإنجليزي المقبول بدقة ونسخة الشروط ووقت القبول من السجل المأذون به. هذا الاتصال غير متاح في هذه الصفحة؛ استخدم السجل الأصلي عند توفره. تحكم الهوية والشركة والتكليف والنسخة الحالية كل قراءة خاصة حتى من شاشة قديمة. تمحى المرفقات الخاصة غير المرسلة بعد 7 أيام؛ والإثباتات المصطنعة بعد 30 يوماً من المراجعة النهائية إلا لحاجة حالة نشطة. تحفظ مراجع المعاملات الدنيا سنة؛ والتصدير خلال 7 أيام والحذف أو التنقيح خلال 30 يوماً بعد انتهاء الالتزامات. يحفظ تغيير اللغة البيانات المدخلة ومراجع العمليات؛ وتبقى كلمات المرور وبيانات الملفات الخاصة في الذاكرة فقط."
+      }
+    }
+  ]
+}
