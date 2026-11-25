@@ -1,0 +1,3 @@
+@layer components {
+  .l25-private-photo { max-inline-size: 100%; block-size: auto; }
+}

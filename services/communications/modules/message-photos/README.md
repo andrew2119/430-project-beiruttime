@@ -1,0 +1,7 @@
+# Conversation photo module
+
+`Store` owns photo bytes, attachment records, idempotency receipts and a transactional invalidation outbox. The additive `l25_001_photos.sql` is the local schema. The storage path must be a persistent, access-restricted service volume; the supplied clock returns authoritative UTC epoch seconds. Restarting with the same volume preserves acknowledged commands. Storage failures fail closed. Only sanitized bytes are persisted.
+
+`create_router(store, authenticated_scope)` supplies the additive v1 HTTP boundary. Composition must authenticate before resolving scope, enforce same-origin command protection, suppress request-body logging, apply request time and rate limits, and apply private headers to authentication and validation errors as well. Upload request bodies are bounded while streaming. The host owns the regular orphan sweep and bounded outbox delivery. The local outbox does not publish evidence references.
+
+The current-access lease contract is specified in the owned contracts directory. It is mandatory for reads and writes, including retries; a cached conversation projection cannot implement it. The local store is a standalone durable implementation for focused checks, not proof of the composed service database or conversation provider. Mounting routes, resolving current scope, deployment storage, case-retention lifecycle and outbox dispatch belong to runtime composition.
