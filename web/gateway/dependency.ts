@@ -1,3 +1,5 @@
+import { publicationPath, routeBudget } from './route-budgets';
+
 function isPublicationPending(bytes: Uint8Array): boolean {
   try {
     const value = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
@@ -12,11 +14,6 @@ function isPublicationPending(bytes: Uint8Array): boolean {
 }
 
 export type Unavailable = { kind: 'unavailable'; dependency: string };
-const credentialPaths = new Set(['login', 'register', 'reauthenticate', 'password', 'reset', 'refresh'].map(operation => `/v1/accounts/${operation}`));
-// Catalog publication makes seven sequential calls at 2500 ms each:
-// two authority reads, one quote read, three eligibility checks and one watch registration.
-// Allow the standard 1200 ms gateway budget in addition for Catalog's local work and transport.
-const catalogPublicationTimeoutMs = 7 * 2500 + 1200;
 // Independent per-dependency budgets; bounded body/deadline, no retry or waiting queue.
 export class Dependency {
   active = 0; failures = 0; openedAt = 0; probing = false;
@@ -31,11 +28,8 @@ export class Dependency {
       const {maxResponseBytes=2*1024*1024,...requestOptions}=options;
       const url = new URL(path, this.origin);
       const isCatalogPublication = this.name === 'catalog' && method === 'POST'
-        && /^\/v1\/seller\/listings\/[A-Za-z0-9_-]{1,200}\/publish$/.test(url.pathname);
-      let timeoutMs = this.timeoutMs;
-      // Password hashing needs a separate bounded budget, including during busy periods.
-      if (this.name === 'identity' && method === 'POST' && credentialPaths.has(url.pathname)) timeoutMs = 8000;
-      if (isCatalogPublication) timeoutMs = catalogPublicationTimeoutMs;
+        && publicationPath.test(url.pathname);
+      const timeoutMs = routeBudget(this.name, method, url.pathname) ?? this.timeoutMs;
       const response = await fetch(url, { method, ...requestOptions, signal: AbortSignal.timeout(timeoutMs), redirect: 'error', headers, cache: 'no-store' });
       const pendingCandidate = isCatalogPublication
         && response.status === 503 && response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() === 'application/json';
