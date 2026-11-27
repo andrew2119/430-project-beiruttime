@@ -29,6 +29,7 @@ def view(row):
         "status": "draft",
         "approved": False,
         "payment_authority": False,
+        "submitted_request_id": str(row["submitted_request_id"]) if row["submitted_request_id"] else None,
     }
 
 
@@ -50,6 +51,16 @@ async def save(request, actor, key, body, draft_id=None):
             {"id": str(draft_id), "revision": revision, "content": content}, sort_keys=True, separators=(",", ":")
         ).encode()
     ).hexdigest()
+    # Source binding is intent only. Keep bounded HTTP outside the SQL unit of
+    # work, and preserve stable replay even while the source is unavailable.
+    prior = await request.app.state.pool.fetchrow(
+        "SELECT digest,result FROM l08_draft_operations WHERE owner_id=$1 AND operation_key=$2", owner_id, key
+    )
+    if prior:
+        if prior['digest'] != digest:
+            raise PublicError('idempotency_conflict', 'This operation key has different content.', status=409)
+        return json.loads(prior['result'])
+    content = await bind(request, content)
     async with unit_of_work(request.app.state.pool, lock_key="l08-draft-op:" + str(owner_id) + ":" + key) as tx:
         prior = await tx.fetchrow(
             "SELECT digest,result FROM l08_draft_operations WHERE owner_id=$1 AND operation_key=$2", owner_id, key
@@ -58,7 +69,6 @@ async def save(request, actor, key, body, draft_id=None):
             if prior["digest"] != digest:
                 raise PublicError("idempotency_conflict", "This operation key has different content.", status=409)
             return json.loads(prior["result"])
-        content = await bind(request, content)
         if draft_id is None:
             row = await tx.fetchrow(
                 "INSERT INTO l08_request_drafts(id,owner_id,content) VALUES($1,$2,$3::jsonb) RETURNING *",
@@ -73,6 +83,8 @@ async def save(request, actor, key, body, draft_id=None):
             )
             if not row:
                 raise HTTPException(404)
+            if row["submitted_request_id"]:
+                raise PublicError("already_submitted", "The submitted source draft is immutable. Start a new draft.", status=409)
             if row["revision"] != revision:
                 raise PublicError("stale_revision", "A newer draft exists. Reload before saving.", status=409)
             row = await tx.fetchrow(

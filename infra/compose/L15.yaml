@@ -1,0 +1,18 @@
+services:
+  catalog:
+    image: beirut-time/catalog:local
+    build:
+      context: .
+      dockerfile: services/catalog/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/catalog
+    environment:
+      BT_SERVICE_OPERATIONS_URL: ${BT_SERVICE_OPERATIONS_URL:-http://service-operations:8000}
+      BT_ELIGIBILITY_URL: ${BT_ELIGIBILITY_URL:-http://eligibility:8000}
+  catalog-migrate:
+    image: beirut-time/catalog:local
+    build:
+      context: .
+      dockerfile: services/catalog/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/catalog
