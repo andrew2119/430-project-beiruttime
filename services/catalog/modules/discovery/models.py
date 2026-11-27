@@ -18,6 +18,7 @@ class PublicModel(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
 class PublicMoney(Money):
+    currency: Literal['USD']
     @model_validator(mode='after')
     def exact_minor(self):
         scale = Decimal(100)
@@ -56,16 +57,44 @@ class WatchSummary(PublicModel):
     demo: bool = False
 
 class Seller(PublicModel):
+    id: str | None = None
+    city: str | None = Field(default=None, max_length=160)
     display_name: str = Field(min_length=1, max_length=160)
     kind: Literal['private', 'dealer', 'brand']
     completed_sales: StrictInt | None = Field(default=None, ge=0, le=MAX_MINOR)
     joined_at: AwareDatetime | None = None
+    review_distribution: list[StrictInt] | None = Field(default=None, min_length=5, max_length=5)
+
+    @field_validator('review_distribution')
+    @classmethod
+    def valid_ratings(cls, values):
+        if values is not None and any(value < 0 or value > MAX_MINOR for value in values):
+            raise ValueError('Invalid rating counts')
+        return values
 
 class Assurance(PublicModel):
     kind: Literal['private_inspection', 'official_business']
     status: Literal['pending', 'passed', 'failed', 'inconclusive', 'onboarded', 'unavailable']
 
+class HistoryEntry(PublicModel):
+    occurred_at: AwareDatetime
+    summary_en: str = Field(min_length=1, max_length=1000)
+    summary_ar: str = Field(min_length=1, max_length=1000)
+    user_note: str | None = Field(default=None, max_length=1000)
+
+
+class HistoryPage(PublicModel):
+    history: list[HistoryEntry] = Field(max_length=100)
+    next_cursor: str | None = Field(max_length=1024, min_length=1)
+    revision: StrictInt = Field(ge=1)
+    listing_revision: StrictInt = Field(ge=1)
+
+
 class WatchDetail(WatchSummary):
+    history_next_cursor: str | None = None
+    history_revision: StrictInt | None = Field(default=None, ge=1)
+    no_documents: bool | None = None
+    history: list[HistoryEntry] | None = Field(default=None, max_length=100)
     reference: str | None = Field(default=None, max_length=100)
     year: StrictInt | None = Field(default=None, ge=1800, le=2100)
     component_wear: dict[Literal['case', 'dial', 'crystal', 'bracelet', 'movement'], str] = Field(default_factory=dict, max_length=5)
@@ -74,7 +103,7 @@ class WatchDetail(WatchSummary):
     included_items: list[str] = Field(max_length=30)
     modified: bool
     modified_parts: list[str] = Field(max_length=30)
-    photos: list[Photo] = Field(max_length=20)
+    photos: list[Photo] = Field(max_length=12)
     media_state: Literal['available','unavailable'] = 'available'
     seller: Seller
     assurance: Assurance
@@ -107,6 +136,7 @@ class WatchDetail(WatchSummary):
         return self
 
 class SearchPage(PublicModel):
+    total: StrictInt | None = Field(default=None, ge=0, le=MAX_MINOR)
     items: list[WatchSummary]
     next_cursor: str | None
     server_time: AwareDatetime

@@ -1,0 +1,173 @@
+{
+  "$defs": {
+    "HistoryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "summary_en": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Summary En",
+          "type": "string"
+        },
+        "summary_ar": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Summary Ar",
+          "type": "string"
+        },
+        "user_note": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Note"
+        }
+      },
+      "required": [
+        "occurred_at",
+        "summary_en",
+        "summary_ar"
+      ],
+      "title": "HistoryEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "catalog-public-facts.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "seller_id": {
+      "format": "uuid",
+      "title": "Seller Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Organization Id"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "listing_revision": {
+      "minimum": 1,
+      "title": "Listing Revision",
+      "type": "integer"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "city": {
+      "anyOf": [
+        {
+          "maxLength": 160,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "City"
+    },
+    "released_sales": {
+      "maximum": 9000000000000000,
+      "minimum": 0,
+      "title": "Released Sales",
+      "type": "integer"
+    },
+    "joined_at": {
+      "format": "date-time",
+      "title": "Joined At",
+      "type": "string"
+    },
+    "review_distribution": {
+      "items": {
+        "type": "integer"
+      },
+      "maxItems": 5,
+      "minItems": 5,
+      "title": "Review Distribution",
+      "type": "array"
+    },
+    "history": {
+      "items": {
+        "$ref": "#/$defs/HistoryEntry"
+      },
+      "maxItems": 100,
+      "title": "History",
+      "type": "array"
+    },
+    "history_next_cursor": {
+      "anyOf": [
+        {
+          "maxLength": 1024,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "History Next Cursor"
+    },
+    "inspection": {
+      "anyOf": [
+        {
+          "enum": [
+            "passed",
+            "failed",
+            "inconclusive"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Inspection"
+    }
+  },
+  "required": [
+    "schema_version",
+    "seller_id",
+    "organization_id",
+    "watch_id",
+    "listing_revision",
+    "revision",
+    "city",
+    "released_sales",
+    "joined_at",
+    "review_distribution",
+    "history",
+    "history_next_cursor",
+    "inspection"
+  ],
+  "title": "PublicFacts",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

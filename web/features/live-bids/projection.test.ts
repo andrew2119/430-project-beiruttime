@@ -15,7 +15,7 @@ describe('canonical auction projection',()=>{
   it('rejects older end versions and unexplained deadline changes',()=>{
     expect(reconcileSnapshot(snapshot,{...snapshot,end_version:0})).toBeNull();
     expect(reconcileSnapshot(snapshot,{...snapshot,ends_at:'2026-01-01T00:02:00Z'})).toBeNull();
-    expect(reconcileSnapshot(snapshot,{...snapshot,revision:3,end_version:2,ends_at:'2026-01-01T00:02:00Z'})).not.toBeNull();
+    expect(reconcileSnapshot(snapshot,{...snapshot,revision:3,end_version:2,ends_at:'2026-01-01T00:02:00Z'})).toBeNull();
   });
   it('rejects changed price or sequence under an unchanged canonical revision',()=>{
     expect(reconcileSnapshot(snapshot,{...snapshot,current_price:{amount:'4400.00',currency:'USD'}})).toBeNull();

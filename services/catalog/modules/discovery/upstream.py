@@ -71,7 +71,7 @@ async def _read(client, identifier: str, request_id: str | None) -> AuctionRead:
                 return AuctionRead(state='unavailable')
             history = History.model_validate_json(response.content)
             current = history.snapshot
-            if current.id != canonical.id or current.listing_id != identifier or current.revision < canonical.revision or current.accepted_sequence < canonical.accepted_sequence:
+            if current.id != canonical.id or current.listing_id != identifier or current.revision < canonical.revision or current.accepted_sequence < canonical.accepted_sequence or current.ends_at != canonical.ends_at or current.starts_at != canonical.starts_at:
                 return AuctionRead(state='unavailable')
             sequences = [bid.sequence for bid in history.items]
             if (sequences != sorted(set(sequences))

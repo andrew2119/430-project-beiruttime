@@ -4,6 +4,9 @@ import os
 from pathlib import Path
 import re
 import pytest
+from service_app.discovery import configure
+
+configure()
 
 lane = os.environ.get("BT_TEST_LANE", "L00")
 if not re.fullmatch(r"L(0[0-9]|1[0-9]|2[0-5])", lane):
