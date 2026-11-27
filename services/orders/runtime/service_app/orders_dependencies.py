@@ -9,10 +9,20 @@ from bt_runtime.principal import current_principal, CurrentPrincipal
 from bt_contracts.orders.allocation import ValidatedQuote
 
 
+class CommunicationsClient(DependencyClient):
+    """Retain unsupported payment notices until the receiver subscribes."""
+
+    async def request(self, method, path, **options):
+        event = options.get("json")
+        if isinstance(event, dict) and event.get("type") == "orders.payment-action-required.v3":
+            return Unavailable("communications", "upstream")
+        return await super().request(method, path, **options)
+
+
 def clients(app):
     if not hasattr(app.state, "allocation_clients"):
         app.state.allocation_clients = {
-            name: DependencyClient(
+            name: (CommunicationsClient if name == "communications" else DependencyClient)(
                 name,
                 os.environ.get("BT_" + name.upper() + "_URL", "http://" + name + ":8000"),
                 timeout=1.2,

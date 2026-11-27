@@ -1,4 +1,5 @@
 services:
   orders:
     environment:
+      BT_SERVICE_NAME: orders
       BT_SIMULATED_PAYMENT_SECRET: ${BT_SIMULATED_PAYMENT_SECRET:-}
