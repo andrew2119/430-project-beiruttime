@@ -1,0 +1,3 @@
+# The existing service runtime owns module loading and transaction boundaries.
+# No destination is enabled before its receiver is available.
+services: {}
