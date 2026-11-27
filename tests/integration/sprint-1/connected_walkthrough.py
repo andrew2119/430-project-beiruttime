@@ -412,17 +412,17 @@ class Walkthrough:
             self.login(name)
         auction=self.state['auctions']['DEMO-WATCH-01']
         # The call journal resumes an interrupted competition with the same keys.
-        # Equal-ceiling provider compatibility remains deferred to connected proof.
+        # Equal maximums follow the current proxy rule: the earlier equal maximum keeps the lead.
         auction_id=auction.get('auction_id') or auction.get('resource_id')
         if not auction_id:
             auction_id=auction['auction']['id']
         self.wait_for_live(auction_id)
-        expected_prices=[10000,11000,12000,16000,20000,20000]
-        steps=[('buyer-a','bids',10000),('buyer-b','bids',11000),('buyer-a','maximum',20000),('buyer-b','maximum',15000),('buyer-b','maximum',20000),('buyer-b','maximum',22000)]
-        leaders=['buyer-a','buyer-b','buyer-a','buyer-a','buyer-b','buyer-b']
+        expected_prices=[10000,11000,12000,16000,20000,21000,21000]
+        steps=[('buyer-a','bids',10000),('buyer-b','bids',11000),('buyer-a','maximum',20000),('buyer-b','maximum',15000),('buyer-b','maximum',20000),('buyer-b','maximum',22000),('buyer-b','maximum',25000)]
+        leaders=['buyer-a','buyer-b','buyer-a','buyer-a','buyer-a','buyer-b','buyer-b']
         results=[]
         participants=set()
-        before_raise=self.state.get('bid_history_before_raise')
+        before_raise=self.state.get('bid_history_before_ceiling_raise')
         recorded = []
         for key in self.state.get('call_journal', {}):
             fields = json.loads(key)
@@ -441,7 +441,7 @@ class Walkthrough:
             if index==len(steps)-1 and before_raise is None:
                 before_raise=self.call('auction','GET',f'/v1/auctions/{auction_id}/history')
                 assert before_raise['has_more'] is False
-                self.state['bid_history_before_raise'] = before_raise
+                self.state['bid_history_before_ceiling_raise'] = before_raise
                 self.save()
             lot=self.call('auction','GET','/v1/auctions/'+auction_id)
             quote=self.quote(name,auction_id,lot['revision'],amount)
@@ -456,7 +456,8 @@ class Walkthrough:
             for buyer in participants:
                 own=self.call('auction','GET','/v1/my-bids',buyer)
                 entry=next(row for row in own['items'] if row['auction_id']==auction_id)
-                assert entry['my_status']==('leading' if buyer==leader else 'outbid')
+                status='leading' if buyer==leader else 'outbid'
+                assert entry['my_status']==status, f"step {index+1}: {buyer} My bids status {entry['my_status']!r}, expected {status!r}"
             results.append({'actor':name,'kind':kind,'current_minor':price,'revision':current['revision']})
         history=self.call('auction','GET',f'/v1/auctions/{auction_id}/history')
         assert history['has_more'] is False
@@ -464,7 +465,7 @@ class Walkthrough:
         assert 'maximum_minor' not in json.dumps(history) and 'maxima' not in json.dumps(history)
         self.state['bid_proof']={'auction_id':auction_id,'results':results,'history':history}
         self.save()
-        print('Manual and private maximum bidding passed: 100,110,120,160,200,200 USD; later equal cap leads, ceiling-only raise preserves public price.')
+        print('Manual and private maximum bidding passed: 100,110,120,160,200,210,210 USD; earlier equal cap keeps the lead, ceiling-only raise preserves public price.')
 
     def purchases(self):
         from concurrent.futures import ThreadPoolExecutor
