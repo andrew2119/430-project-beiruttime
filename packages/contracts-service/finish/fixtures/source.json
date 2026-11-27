@@ -1,0 +1,48 @@
+{
+  "subject_id": "00000000-0000-0000-0000-000000000001",
+  "watch_id": "00000000-0000-0000-0000-000000000002",
+  "buyer_id": "00000000-0000-0000-0000-000000000003",
+  "organization_id": "00000000-0000-0000-0000-000000000004",
+  "source_revision": 1,
+  "assessment_revision": 1,
+  "quote_id": "00000000-0000-0000-0000-000000000005",
+  "quote_revision": 1,
+  "policy_revision": 1,
+  "commitment_id": "00000000-0000-0000-0000-000000000006",
+  "current": true,
+  "assigned": true,
+  "retained": true,
+  "currency": "USD",
+  "total_minor": 500000,
+  "valid_until": "2026-11-17T00:00:00Z",
+  "areas": [
+    {
+      "area_id": "00000000-0000-0000-0000-000000000007",
+      "name_en": "Case side — synthetic example",
+      "name_ar": "جانب العلبة — مثال اصطناعي",
+      "original": "brushed",
+      "desired": "brushed",
+      "material_en": "Steel",
+      "material_ar": "فولاذ",
+      "coating": "absent",
+      "plating": "absent",
+      "engraving": "absent",
+      "preservation_en": "Preserve edges and geometry; no other area.",
+      "preservation_ar": "الحفاظ على الحواف والشكل؛ لا تشمل أي منطقة أخرى.",
+      "assessed_action": "brush",
+      "suitable": true,
+      "material_known": true,
+      "preservation_assessed": true
+    }
+  ],
+  "terms": {
+    "revision": 1,
+    "fee_en": "Synthetic terms: $5,000 job total; $250 business-paid platform fee, no customer surcharge. Collected fees are not refundable.",
+    "fee_ar": "شروط اصطناعية: إجمالي الخدمة ٥٬٠٠٠ دولار؛ رسم المنصة ٢٥٠ دولاراً تدفعه المنشأة دون زيادة على العميل. الرسوم المحصلة غير قابلة للاسترداد.",
+    "return_en": "Synthetic terms: declined work follows controlled unrepaired return. Return transport is not accepted or charged by this consent.",
+    "return_ar": "شروط اصطناعية: العمل المرفوض يتبع إعادة مضبوطة دون إصلاح. هذه الموافقة لا تقبل أجرة نقل الإعادة ولا تفرضها.",
+    "assurance_en": "Synthetic terms: assurance covers only the accepted finish scope and disclosed condition. This consent promises no authenticity certificate or execution permission.",
+    "assurance_ar": "شروط اصطناعية: يقتصر الضمان على نطاق التشطيب المقبول والحالة المفصح عنها. هذه الموافقة لا تعد بشهادة أصالة أو إذن تنفيذ.",
+    "support_path": "/inbox"
+  }
+}

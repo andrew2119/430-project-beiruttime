@@ -1,0 +1,8 @@
+.finish-scope,
+.finish-scope h2,
+.finish-scope dd,
+.finish-scope p,
+.finish-scope bdi {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
