@@ -1,0 +1,52 @@
+[
+  {
+    "route": "/business",
+    "file": "web/app/(business)/business/page.tsx",
+    "view": "web/features/business/directory.tsx",
+    "kind": "reads",
+    "reason": "Current scoped business records; private evidence opens only by explicit action.",
+    "content": ".business-content",
+    "read": "directoryRead",
+    "proof": "owed"
+  },
+  {
+    "route": "/business/contacts",
+    "file": "web/app/(business)/business/contacts/page.tsx",
+    "view": "web/features/business/contacts.tsx",
+    "kind": "reads",
+    "reason": "Current scoped business records; private evidence opens only by explicit action.",
+    "content": ".business-content",
+    "read": "contactsRead",
+    "proof": "owed"
+  },
+  {
+    "route": "/business/membership",
+    "file": "web/app/(business)/business/membership/page.tsx",
+    "view": "web/features/business/membership.tsx",
+    "kind": "reads",
+    "reason": "Current scoped business records; private evidence opens only by explicit action.",
+    "content": ".business-content",
+    "read": "businessRead",
+    "proof": "owed"
+  },
+  {
+    "route": "/business/review-history",
+    "file": "web/app/(business)/business/review-history/page.tsx",
+    "view": "web/features/business/review-history.tsx",
+    "kind": "reads",
+    "reason": "Current scoped business records; private evidence opens only by explicit action.",
+    "content": ".business-content",
+    "read": "ownReviewsRead",
+    "proof": "owed"
+  },
+  {
+    "route": "/operations/verification",
+    "file": "web/app/(verification)/operations/verification/page.tsx",
+    "view": "web/features/business/verification.tsx",
+    "kind": "reads",
+    "reason": "Current scoped business records; private evidence opens only by explicit action.",
+    "content": ".business-content",
+    "read": "reviewQueueRead",
+    "proof": "owed"
+  }
+]

@@ -1,0 +1,1 @@
+{"version":1,"id":"L20.scope-confirmation","migration_dependencies":["L02.businesses"],"migrations":["migrations/L20_0001_scope_confirmation.sql"]}
