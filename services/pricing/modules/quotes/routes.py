@@ -9,6 +9,7 @@ from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from service_app.security import actor, idempotency
+from service_app.current import require_usd
 from .calculation import calculate
 from .catalog import current_listing
 
@@ -22,6 +23,7 @@ def digest(body):
 
 def project(row):
     snapshot = json.loads(row['snapshot']) if isinstance(row['snapshot'], str) else row['snapshot']
+    require_usd(snapshot)
     return {'source': 'sample', 'source_verified': False, **snapshot, 'reviewed_at': row['reviewed_at'].isoformat() if row['reviewed_at'] else None}
 
 async def owned(tx, quote_id, owner):
@@ -61,7 +63,7 @@ async def create(body: QuoteRequest, request: Request, owner=Depends(actor), key
 @router.get('')
 async def list_quotes(request: Request, owner=Depends(actor)):
     async with request.app.state.pool.acquire() as tx:
-        rows = await tx.fetch('SELECT * FROM l07_quotes WHERE owner_id=$1 ORDER BY created_at DESC,id DESC LIMIT 30', owner)
+        rows = await tx.fetch("SELECT * FROM l07_quotes WHERE owner_id=$1 AND snapshot->>'currency'='USD' ORDER BY created_at DESC,id DESC LIMIT 30", owner)
         return {'items': [project(row) for row in rows]}
 
 @router.get('/{quote_id}')

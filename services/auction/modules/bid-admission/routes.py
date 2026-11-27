@@ -59,7 +59,7 @@ async def by_key(key: str, request: Request):
 async def mine(request: Request, limit: int = Query(default=50, ge=1, le=100), cursor: UUID | None = None):
     principal = await request.app.state.auction.dependencies.principal(request)
     async with request.app.state.pool.acquire() as tx:
-        rows = await tx.fetch('''SELECT a.* FROM auction_lots a WHERE EXISTS
+        rows = await tx.fetch('''SELECT a.* FROM auction_lots a WHERE a.currency='USD' AND EXISTS
             (SELECT 1 FROM auction_operations o WHERE o.auction_id=a.id AND o.subject_id=$1
              AND o.outcome->>'status'='succeeded' AND o.outcome->>'code'='bid_accepted')
              AND ($3::uuid IS NULL OR (a.ends_at,a.id)<(SELECT c.ends_at,c.id FROM auction_lots c

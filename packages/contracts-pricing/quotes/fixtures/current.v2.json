@@ -1,0 +1,23 @@
+{
+  "quote_id": "00000000-0000-4000-8000-000000000010",
+  "quote_revision": 1,
+  "buyer_id": "00000000-0000-4000-8000-000000000003",
+  "source_id": "00000000-0000-4000-8000-000000000006",
+  "source_revision": 4,
+  "kind": "repair",
+  "assessment_id": "00000000-0000-4000-8000-000000000007",
+  "assessment_revision": 2,
+  "organization_id": "00000000-0000-4000-8000-000000000005",
+  "currency": "USD",
+  "total_minor": 11330,
+  "expires_at": "2026-11-05T11:00:00Z",
+  "accepted_at": "2026-11-05T10:00:00Z",
+  "selected_line_ids": [
+    "00000000-0000-4000-8000-000000000008"
+  ],
+  "terms_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "schedule_id": "sample-v1",
+  "policy_revision": 1,
+  "rounding": "half_up",
+  "status": "valid"
+}
