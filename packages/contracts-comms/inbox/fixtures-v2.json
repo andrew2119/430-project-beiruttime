@@ -1,0 +1,77 @@
+{
+  "success": {
+    "event": {
+      "id": "10000000-0000-4000-8000-000000000001",
+      "type": "orders.payment-action-required.v3",
+      "source": "orders",
+      "subject": "20000000-0000-4000-8000-000000000001",
+      "time": "2026-11-17T10:00:00Z",
+      "request_id": "notice-fixture",
+      "data": {
+        "order_id": "20000000-0000-4000-8000-000000000001",
+        "buyer_id": "30000000-0000-4000-8000-000000000001",
+        "revision": 1,
+        "sample": true
+      }
+    },
+    "receipt": {
+      "event_id": "10000000-0000-4000-8000-000000000001",
+      "notice_id": "f83291fd-6b2b-5a12-ab2a-7b2933946609",
+      "order_id": "20000000-0000-4000-8000-000000000001",
+      "buyer_id": "30000000-0000-4000-8000-000000000001",
+      "notified_at": "2026-11-17T10:00:03+00:00",
+      "verified_delivery_recorded": true
+    }
+  },
+  "duplicate": {
+    "receipt": {
+      "event_id": "10000000-0000-4000-8000-000000000001",
+      "notice_id": "f83291fd-6b2b-5a12-ab2a-7b2933946609",
+      "order_id": "20000000-0000-4000-8000-000000000001",
+      "buyer_id": "30000000-0000-4000-8000-000000000001",
+      "notified_at": "2026-11-17T10:00:03+00:00",
+      "verified_delivery_recorded": true
+    }
+  },
+  "denied": {
+    "producer": "pricing",
+    "status": 403
+  },
+  "stale": {
+    "revision": 2,
+    "status": 409
+  },
+  "lost_response": {
+    "state": "pending",
+    "retry_receipt": {
+      "event_id": "10000000-0000-4000-8000-000000000001",
+      "notice_id": "f83291fd-6b2b-5a12-ab2a-7b2933946609",
+      "order_id": "20000000-0000-4000-8000-000000000001",
+      "buyer_id": "30000000-0000-4000-8000-000000000001",
+      "notified_at": "2026-11-17T10:00:03+00:00",
+      "verified_delivery_recorded": true
+    }
+  },
+  "timeout": {
+    "state": "pending",
+    "retry_receipt": {
+      "event_id": "10000000-0000-4000-8000-000000000001",
+      "notice_id": "f83291fd-6b2b-5a12-ab2a-7b2933946609",
+      "order_id": "20000000-0000-4000-8000-000000000001",
+      "buyer_id": "30000000-0000-4000-8000-000000000001",
+      "notified_at": "2026-11-17T10:00:03+00:00",
+      "verified_delivery_recorded": true
+    }
+  },
+  "quote_success": {
+    "occurrence_id": "quote-fixture",
+    "recipient_id": "30000000-0000-4000-8000-000000000001",
+    "kind": "quote_ready",
+    "resource_id": "60000000-0000-4000-8000-000000000001",
+    "resource_owner_id": "30000000-0000-4000-8000-000000000001",
+    "resource_revision": 1,
+    "event_time": "2026-11-17T10:00:00Z",
+    "required": false,
+    "sample": true
+  }
+}
