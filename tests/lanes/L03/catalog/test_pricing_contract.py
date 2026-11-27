@@ -108,7 +108,7 @@ async def test_business_publication_uses_personal_quote_without_org_context(api)
     # The verified selected organization is sent to Identity/Orders, never Pricing.
     answer = await api.client.post(
         f"/v1/seller/listings/{row['id']}/publish?organization_id={api.tokens['dealer']['actor']['organization_id']}",
-        json={"fee_quote_id": str(api.quote_id), "rules_version": "sample-v1"},
+        json={"fee_quote_id": str(api.quote_id), "rules_version": "usd-v2"},
         headers=headers("dealer", row["revision"]),
     )
     assert answer.status_code == 200, answer.text

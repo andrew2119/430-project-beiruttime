@@ -36,7 +36,7 @@
   "more": "More activity is available in the owning service.",
   "loading": "Loading your activity…",
   "privateMaximum": "Private maximum bid",
-  "privacy": "Only you can see your ceiling. We compete only as needed, never above it. Earlier equal maximums take priority.",
+  "privacy": "Only you can see your ceiling. We compete only as needed, never above it. To stay ahead, your maximum must top a rival bid by a full step, so later equal maximums take priority.",
   "maximumLabel": "Your maximum",
   "setMaximum": "Set private maximum",
   "sending": "Submitting…",

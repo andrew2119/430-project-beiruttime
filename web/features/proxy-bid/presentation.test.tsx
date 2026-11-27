@@ -2,6 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LocaleContext } from '@/shell/locale-context';
+import { optionsFor } from '@/lib/page-speed/definition';
+import { PageReadProvider, usePageReadScope } from '@/lib/page-speed/provider';
+import type { Inbox, Readiness } from '@contracts/contracts-comms/inbox';
+import type { Availability } from '@contracts/contracts-orders/allocation';
+import { inboxRead, noticePreferencesRead } from '../inbox/reads';
+import inboxEn from '../inbox/en.json';
+import inboxAr from '../inbox/ar.json';
+import buyingCopy from '../pricing/en.json';
+import { connectedCopy } from '../buy-now/connected-copy';
 import PricingPage from '../pricing/quotes';
 import BuyingPage from '../pricing/buying';
 import InboxPage from '../inbox/page';
@@ -11,6 +20,7 @@ import { Select } from '@beirut-time/ui';
 
 const session=vi.hoisted(()=>({access_fingerprint:'visual-owner',principal:{actor:{subject_id:'00000000-0000-4000-8000-000000000001'},permissions:['orders.intake','orders.manage'],organization_grants:[]}}));
 vi.mock('@/features/identity/session',()=>({useSession:()=>session,authenticatedRequest:vi.fn(),refreshSession:vi.fn(),signInHref:(next:string,locale:string)=>`/${locale}/account?next=${encodeURIComponent(next)}`}));
+vi.mock('@/shell/access-context',()=>({useAccessContext:()=>({fingerprint:session.access_fingerprint,roles:['buyer']})}));
 vi.mock('next/navigation',()=>({useRouter:()=>({push:vi.fn()})}));
 const id='00000000-0000-4000-8000-000000000005';
 const order={id,watch_id:'00000000-0000-4000-8000-000000000006',quote_id:'00000000-0000-4000-8000-000000000004',organization_id:null,state:'awaiting_payment',revision:1,currency:'USD',total_minor:515000,deadline:'2099-01-01T00:00:00Z',is_demo:true};
@@ -18,6 +28,17 @@ let client:QueryClient;
 beforeEach(()=>{client=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:Infinity}}});});
 function render(children:React.ReactNode,locale:'en'|'ar'='en') {
   return renderToStaticMarkup(<LocaleContext value={locale}><QueryClientProvider client={client}>{children}</QueryClientProvider></LocaleContext>);
+}
+function button(html:string,label:string) {
+  const match=html.match(/<button\b[^>]*>.*?<\/button>/gs)?.find(node=>node.includes(`>${label}<`));
+  expect(match,`Expected button: ${label}`).toBeDefined();
+  return match!;
+}
+function InboxFixture({notices}:{notices:Inbox}) {
+  const scope=usePageReadScope(),owner=session.access_fingerprint;
+  scope.client.setQueryData(optionsFor(scope,inboxRead(owner,null)).queryKey,notices);
+  scope.client.setQueryData(optionsFor(scope,noticePreferencesRead(owner)).queryKey,{optional_enabled:true,revision:2});
+  return <InboxPage/>;
 }
 describe('Buyer-area presentation contract',()=>{
   it.each(['en','ar'] as const)('uses shared page headers, true navigation links and menu-backed selects in %s',locale=>{
@@ -40,25 +61,49 @@ describe('Buyer-area presentation contract',()=>{
     expect(onValueChange).not.toHaveBeenCalled();
   });
   it('retains non-binding readiness, disabled payment and offer-send controls',()=>{
-    client.setQueryData(['l07','visual-owner','readiness',{reservation:'',quote:''}],{reservation:{status:'not_selected'},quote:{status:'not_selected'},routes:[],drafts:[{id:'draft-A',subject_id:id,subject_revision:1,currency:'USD',amount_minor:50000,revision:1}]});
+    const draftSubject='00000000-0000-4000-8000-000000000007';
+    client.setQueryData<Readiness>(['l07','visual-owner','readiness',{reservation:'',quote:''}],{
+      release:{payment:false,send_offer:false,accept_offer:false},reservation:{status:'not_selected'},
+      quote:{status:'not_selected'},routes:[],drafts:[{id:'draft-A',subject_id:draftSubject,subject_revision:1,
+        currency:'USD',amount_minor:50000,revision:1,updated_at:'2030-01-01T00:00:00Z',status:'draft'}],
+    });
     const html=render(<BuyingPage/>);
-    expect(html).toContain('pg-list-item');expect(html).toContain('disabled=""');
-    expect(html).toContain('Send offer');
-    expect(html).toContain('ui-select');
+    expect(html).toContain('pg-list-item');expect(html).toContain('ui-select');
+    expect(html).toContain(draftSubject);expect(html).toContain(buyingCopy.draft);
+    expect(button(html,buyingCopy.edit)).not.toContain('disabled=""');
+    expect(button(html,buyingCopy.sendOffer)).toContain('disabled=""');
+    expect(button(html,buyingCopy.pay)).toContain('disabled=""');
   });
-  it.each(['en','ar'] as const)('renders the shared switch, unread dot and independent notice actions in %s',locale=>{
-    client.setQueryData(['l07','visual-owner','notice-preferences'],{optional_enabled:true,revision:2});
-    client.setQueryData(['l07','visual-owner','inbox'],{pages:[{items:[{id:'notice-A',kind:'outbid',required:true,read_at:null,event_time:'2030-01-01T00:00:00Z',resource_id:id,resource_revision:1,sample:true,destination:'/buyer'}],unread_count:1,next_cursor:null}],pageParams:[null]});
-    const html=render(<InboxPage/>,locale);
-    expect(html).toContain('role="switch"');expect(html).toContain('aria-checked="true"');
-    expect(html).toContain('l07-inbox-dot');expect(html).toContain('pg-list-item');
-    expect(html).toContain('data-read="false"');expect(html).not.toContain('type="checkbox"');
+  it.each(['en','ar'] as const)('renders the shared switch, unread status and independent notice actions in %s',locale=>{
+    const copy=locale==='ar'?inboxAr:inboxEn;
+    const html=render(<PageReadProvider><InboxFixture notices={{items:[{id:'notice-A',kind:'outbid',required:true,
+      revision:1,read_at:null,cleared_at:null,event_time:'2030-01-01T00:00:00Z',resource_id:id,
+      resource_revision:1,sample:true,destination:'/buyer'}],unread_count:1,total_count:1,next_cursor:null}}/></PageReadProvider>,locale);
+    const switches=(html.match(/<input\b[^>]*>/g)??[]).filter(input=>/\srole="switch"/.test(input));
+    expect(switches).toHaveLength(1);
+    const [noticeSwitch]=switches;
+    // The native checkbox supplies the switch's checked and enabled semantics.
+    expect(noticeSwitch).toMatch(/\stype="checkbox"/);
+    expect(noticeSwitch).toMatch(/\schecked=""/);
+    expect(noticeSwitch).not.toMatch(/\sdisabled(?:=|\s|\/?>)|\saria-disabled="true"|\saria-checked="false"/);
+    expect(html).toContain('role="listitem"');expect(html).toContain(copy.outbid);
+    expect(html).toContain(`>${copy.unread}<`);
+    for(const label of [copy.markRead,copy.clearNotice,copy.openRecord]) {
+      expect(button(html,label)).not.toContain('disabled=""');
+    }
   });
-  it('keeps real order links inside the shared checkout card/list composition',()=>{
-    client.setQueryData(['l08-orders','visual-owner'],{items:[order]});
-    const html=render(<Checkout/>);
+  it('resolves the selected watch to its listing and keeps real order links in the shared checkout list',()=>{
+    const owner=session.access_fingerprint,listingId='00000000-0000-4000-8000-000000000008';
+    const watch:Availability={watch_id:order.watch_id,listing_id:listingId,revision:3,status:'available',sale_mode:'fixed'};
+    client.setQueryData(['l08-orders',owner],{items:[order]});
+    client.setQueryData(['l13-checkout-watch',owner,watch.watch_id],watch);
+    client.setQueryData(['l13-context',owner,listingId],{watch,listing:{id:listingId,revision:2,
+      physical_watch_id:watch.watch_id,is_demo:true,facts:{brand:'Test Brand',model:'Selected Model',currency:'USD',price_minor:500000}}});
+    const html=render(<Checkout watchId={watch.watch_id}/>);
     expect(html).toContain('hx-head');expect(html).toContain('ui-card');expect(html).toContain('pg-list-item');
-    expect(html).toContain(`/en/checkout/${id}`);expect(html).toContain('name="watch_id"');
+    expect(html).toContain(`href="/en/checkout/${id}"`);
+    expect(html).toContain('Test Brand Selected Model');expect(html).not.toContain('name="watch_id"');
+    expect(button(html,connectedCopy.en.review)).not.toContain('disabled=""');
   });
   it('retains permission-gated hold and intake forms with the shared textarea',()=>{
     client.setQueryData(['l08-order','visual-owner',id,null],{order,history:[{action:'reserve',revision:1,occurred_at:'2030-01-01T00:00:00Z'}]});

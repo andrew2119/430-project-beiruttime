@@ -1,0 +1,28 @@
+{
+  "request": {
+    "operation_id": "publication-001",
+    "listing_id": "listing-001",
+    "watch_id": "watch-001",
+    "listing_revision": 2,
+    "actor_id": "seller-001",
+    "organization_id": null
+  },
+  "success": {
+    "operation_id": "publication-001",
+    "listing_id": "listing-001",
+    "watch_id": "watch-001",
+    "listing_revision": 2,
+    "status": "aborted",
+    "actor_id": "seller-001",
+    "organization_id": null
+  },
+  "denied": {
+    "status": "denied",
+    "code": "committed"
+  },
+  "stale": {
+    "status": "denied",
+    "code": "binding_conflict"
+  },
+  "lost_response": null
+}

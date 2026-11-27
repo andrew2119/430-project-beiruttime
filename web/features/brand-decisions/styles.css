@@ -1,0 +1,4 @@
+.bd-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--ds-gap-content)}.bd-card{display:grid;gap:var(--ds-gap-block);padding:var(--ds-pad-card-block) var(--ds-pad-card-inline);min-inline-size:0;overflow-wrap:anywhere}.bd-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ds-gap-row)}.bd-card dl>div{min-inline-size:0}.bd-card dd{margin:0;color:var(--muted-foreground)}.bd-card label{display:grid;gap:var(--ds-gap-group)}.bd-actions{display:flex;gap:var(--ds-gap-group);flex-wrap:wrap}.bd-card p{margin:0}.bd-org{display:grid;gap:var(--ds-gap-group);min-inline-size:0}.bd-grid ul{padding-inline-start:var(--ds-space-5)}
+/* Reuse the configurator's reserved private-reference thumbnail recipe. */
+.bd-private-reference{inline-size:7.5rem;block-size:7.5rem;object-fit:contain;border-radius:var(--radius-lg);box-shadow:var(--ds-shadow-border)}
+@media(max-width:850px){.bd-card dl{grid-template-columns:minmax(0,1fr)}}

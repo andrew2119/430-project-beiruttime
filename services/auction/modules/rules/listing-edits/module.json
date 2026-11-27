@@ -1,0 +1,1 @@
+{"version":1,"id":"L14.b-listing-edits","dependencies":["fastapi","asyncpg","pydantic","PyJWT"],"routes":["routes.py:router","recovery.py:router"],"workers":["workers.py:run"]}

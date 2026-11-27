@@ -2,16 +2,17 @@ import hashlib
 import json
 from typing import Literal
 from uuid import UUID, uuid4
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 from pydantic import Field, field_validator
 from bt_contracts_core.models import Contract, EventEnvelope
 from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from bt_runtime.principal import CurrentPrincipal, require_scope
-from service_app.identity import lock_accounts
+from service_app.identity import live_actor, lock_accounts
 from .security import principal, require_current
 from .identity_store import sync_member
+from .administration import responsibility_reducing
 
 router = APIRouter(tags=["business-membership"])
 
@@ -324,6 +325,14 @@ async def change(
                 if body.capabilities is not None
                 else row["capabilities"],
             )
+        # This endpoint has no current responsibility or replacement boundary.
+        # Keep responsibility-reducing edits held until that boundary is available.
+        if responsibility_reducing(row, body):
+            raise PublicError(
+                "responsibilities_unavailable",
+                "Current responsibilities and replacement are required. / يلزم التحقق من المسؤوليات الحالية والبديل.",
+                status=409,
+            )
         row = await tx.fetchrow(
             """UPDATE l02_memberships SET state=$2,
             capabilities=COALESCE($3,capabilities),qualifications=COALESCE($4,qualifications),
@@ -372,3 +381,115 @@ async def change(
             ["catalog", "service-operations", "auction"],
         )
     return result
+
+
+@router.get("/v2/businesses/{business_id}/memberships")
+async def members_v2(business_id: UUID, request: Request,
+                     actor: CurrentPrincipal = Depends(principal),
+                     page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=25)):
+    platform = "identity.membership.manage" in actor.permissions
+    if not platform:
+        require_scope(actor, "business.staff.manage", business_id)
+    async with unit_of_work(request.app.state.pool) as tx:
+        await tx.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        await live_actor(tx, request, lock=True)
+        if platform:
+            await require_current(tx, request, "identity.membership.manage", actor.actor.subject_id)
+        await assert_business(tx, business_id, require_active=not platform)
+        if not platform and not await tx.fetchval(
+            """SELECT id FROM l02_memberships WHERE business_id=$1 AND subject_id=$2
+            AND state='active' AND 'business.staff.manage'=ANY(capabilities)""",
+            business_id, actor.actor.subject_id):
+            raise AccessDenied("Current business permission required / يلزم إذن حالي للنشاط التجاري")
+        total = await tx.fetchval("SELECT count(*) FROM l02_memberships WHERE business_id=$1", business_id)
+        rows = await tx.fetch(
+            "SELECT * FROM l02_memberships WHERE business_id=$1 ORDER BY id LIMIT $2 OFFSET $3",
+            business_id, page_size, (page - 1) * page_size)
+    return {"items": [dto(row) for row in rows], "total": total, "page": page, "page_size": page_size}
+
+
+class EligibilityPrivilege(Contract):
+    operation_id: UUID
+    subject_id: UUID
+    business_id: UUID | None = None
+    permission: Literal['eligibility.identity.assign', 'eligibility.identity.review',
+                        'eligibility.grants.prepare',
+                        'eligibility.grants.consume', 'eligibility.grants.revoke',
+                        'identity.private-seller.review', 'identity.data-requests.restore',
+                        'identity.data-requests.oversight']
+    reason: str = Field(min_length=10, max_length=500)
+    revoke: bool = Field(default=False, strict=True)
+
+    @field_validator('reason', mode='before')
+    @classmethod
+    def trim_reason(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
+@router.post('/v1/memberships/eligibility-privileges')
+async def eligibility_privilege(body: EligibilityPrivilege, request: Request,
+                                actor: CurrentPrincipal = Depends(principal)):
+    require_scope(actor, 'identity.membership.manage')
+    if actor.actor.subject_id == body.subject_id:
+        raise AccessDenied('Independent privilege administration required')
+    possession_review = body.permission == 'identity.private-seller.review'
+    restore = body.permission == 'identity.data-requests.restore'
+    individual = possession_review or restore or body.permission in {
+        'eligibility.identity.assign', 'eligibility.identity.review', 'identity.data-requests.oversight',
+    }
+    if individual != (body.business_id is None):
+        raise PublicError('invalid_scope', 'Select the permission scope.', status=422)
+    fingerprint = hashlib.sha256(body.model_dump_json().encode()).hexdigest()
+    async with unit_of_work(request.app.state.pool, lock_key='eligibility-privilege:' + str(body.operation_id)) as tx:
+        if body.business_id:
+            await tx.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended($1,0))",
+                "l02.business-target:" + str(body.business_id),
+            )
+        await lock_accounts(tx, actor.actor.subject_id, body.subject_id)
+        await require_current(tx, request, 'identity.membership.manage', actor.actor.subject_id)
+        previous = await tx.fetchrow('SELECT * FROM identity_eligibility_privileges WHERE operation_id=$1', body.operation_id)
+        if previous:
+            if previous['fingerprint'] != fingerprint or previous['actor_id'] != actor.actor.subject_id:
+                raise PublicError('idempotency_conflict', 'Operation key already used.', status=409)
+            return {'operation_id': str(body.operation_id), 'grant_id': str(previous['grant_id'])}
+        target = await tx.fetchrow('SELECT status FROM identity_accounts WHERE id=$1', body.subject_id)
+        if not target or target['status'] != 'active':
+            raise AccessDenied('Current active recipient required')
+        if body.business_id:
+            await assert_business(tx, body.business_id)
+            member = await tx.fetchval('''SELECT id FROM l02_memberships WHERE subject_id=$1
+                AND business_id=$2 AND state='active' ''', body.subject_id, body.business_id)
+            if not member:
+                raise AccessDenied('Current business membership required')
+        role, audit_action = {
+            'identity.private-seller.review': ('private-seller:review', 'private-seller.review.privilege'),
+            'identity.data-requests.oversight': ('data-requests:oversight', 'data-request.oversight.privilege'),
+            'identity.data-requests.restore': ('data-requests:restore', 'data-request.restore.privilege'),
+        }.get(body.permission, ('eligibility:' + body.permission, 'eligibility.privilege'))
+        if body.revoke:
+            await tx.execute('''UPDATE identity_access_grants
+                SET permissions=array_remove(permissions,$3),
+                    revoked_at=CASE WHEN cardinality(array_remove(permissions,$3))=0 THEN now() END
+                WHERE subject_id=$1 AND organization_id IS NOT DISTINCT FROM $2
+                AND revoked_at IS NULL AND $3=ANY(permissions)''',
+                body.subject_id, body.business_id, body.permission)
+        else:
+            await tx.execute('''UPDATE identity_access_grants SET revoked_at=now()
+                WHERE subject_id=$1 AND organization_id IS NOT DISTINCT FROM $2
+                AND revoked_at IS NULL AND role=$3''', body.subject_id, body.business_id, role)
+        grant_id = uuid4()
+        if not body.revoke:
+            await tx.execute('''INSERT INTO identity_access_grants(id,subject_id,organization_id,role,permissions)
+                VALUES($1,$2,$3,$4,$5)''', grant_id, body.subject_id, body.business_id, role, [body.permission])
+        await tx.execute('UPDATE identity_accounts SET access_revision=access_revision+1 WHERE id=$1', body.subject_id)
+        await tx.execute('''INSERT INTO identity_eligibility_privileges
+            (operation_id,actor_id,subject_id,business_id,permission,reason,revoked,fingerprint,grant_id)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)''', body.operation_id, actor.actor.subject_id,
+            body.subject_id, body.business_id, body.permission, body.reason, body.revoke, fingerprint, grant_id)
+        await tx.execute('''INSERT INTO identity_security_audit
+            (id,actor_id,resource_id,action,outcome,request_id)
+            VALUES($1,$2,$3,$4,'accepted',$5)''',
+            uuid4(), actor.actor.subject_id, body.subject_id,
+            audit_action, request.state.request_id)
+        return {'operation_id': str(body.operation_id), 'grant_id': str(grant_id)}

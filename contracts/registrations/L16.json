@@ -1,0 +1,314 @@
+{
+  "version": 1,
+  "lane": "L16",
+  "contracts": [],
+  "wiring": {
+    "schema_version": "lane-wiring.v1",
+    "discovery_lanes": {
+      "first": "L00",
+      "last": "L25"
+    },
+    "missing_fragment": "omit",
+    "operation_lookup": "web/registrations/L16.ts#lookupL16Operation",
+    "operations": {
+      "intake.read.v1": {
+        "module": "L09.intake",
+        "method": "GET",
+        "path": "/v1/intake/records/:id"
+      },
+      "intake.update.v1": {
+        "module": "L09.intake",
+        "method": "PUT",
+        "path": "/v1/intake/records/:id"
+      },
+      "options.configuration.read.v1": {
+        "module": "L10.options-color",
+        "method": "GET",
+        "path": "/v1/brand-options/configurations/:id"
+      },
+      "options.configuration.update.v1": {
+        "module": "L10.options-color",
+        "method": "PUT",
+        "path": "/v1/brand-options/configurations/:id/:kind"
+      },
+      "operations.queue.read.v1": {
+        "module": "L09.operator-workspace",
+        "method": "GET",
+        "path": "/v1/operator-workspace/queues/:key"
+      }
+    },
+    "migration_policy": {
+      "scope": "all-discovered-modules-per-service",
+      "order": [
+        "discover",
+        "validate-unique-method-path",
+        "apply-additive-migrations",
+        "mount-receivers",
+        "verify-subscriptions",
+        "enable-destinations"
+      ],
+      "edit_applied": false,
+      "transaction_owner": "destination-service"
+    },
+    "delivery": {
+      "receiver": "L07.inbox",
+      "path": "/internal/v1/inbox/events",
+      "enabled": false,
+      "required_subscriptions": [
+        "trust.case-updated.v1",
+        "catalog.brand-option-published.v1",
+        "catalog.brand-selection-saved.v1",
+        "catalog.brand-reference-saved.v1"
+      ],
+      "retry": "same-operation-reference",
+      "receipt": "atomic-inbox-and-domain-write"
+    },
+    "result_policy": {
+      "authority": "current-provider-only",
+      "denied": "clear-private-view",
+      "stale": "review-current-revision",
+      "timeout": "pending",
+      "lost_response": "lookup-same-operation",
+      "duplicate": "same-result",
+      "missing_provider": "unavailable"
+    },
+    "fixtures": [
+      {
+        "scenario": "success",
+        "operation_id": "sample-operation-1",
+        "expected_revision": 1,
+        "state": "saved",
+        "revision": 2,
+        "schema_version": "lane-wiring-result.v1",
+        "subject_id": "sample-subject-1",
+        "watch_id": "sample-watch-1",
+        "actor_id": "sample-actor-1",
+        "organization_id": "sample-business-1",
+        "pending_reason": null,
+        "next_actor": "sample-actor-1",
+        "next_review_at": "2026-11-17T12:00:00Z"
+      },
+      {
+        "scenario": "denied",
+        "operation_id": "sample-operation-1",
+        "expected_revision": 1,
+        "state": "denied",
+        "revision": 1,
+        "schema_version": "lane-wiring-result.v1",
+        "subject_id": "sample-subject-1",
+        "watch_id": "sample-watch-1",
+        "actor_id": "sample-actor-1",
+        "organization_id": "sample-business-1",
+        "pending_reason": null,
+        "next_actor": "sample-actor-1",
+        "next_review_at": "2026-11-17T12:00:00Z"
+      },
+      {
+        "scenario": "stale",
+        "operation_id": "sample-operation-1",
+        "expected_revision": 1,
+        "state": "stale",
+        "revision": 2,
+        "schema_version": "lane-wiring-result.v1",
+        "subject_id": "sample-subject-1",
+        "watch_id": "sample-watch-1",
+        "actor_id": "sample-actor-1",
+        "organization_id": "sample-business-1",
+        "pending_reason": null,
+        "next_actor": "sample-actor-1",
+        "next_review_at": "2026-11-17T12:00:00Z"
+      },
+      {
+        "scenario": "lost-response",
+        "operation_id": "sample-operation-1",
+        "expected_revision": 1,
+        "state": "pending",
+        "revision": null,
+        "schema_version": "lane-wiring-result.v1",
+        "subject_id": "sample-subject-1",
+        "watch_id": "sample-watch-1",
+        "actor_id": "sample-actor-1",
+        "organization_id": "sample-business-1",
+        "pending_reason": "response-unconfirmed",
+        "next_actor": "sample-actor-1",
+        "next_review_at": "2026-11-17T12:00:00Z"
+      },
+      {
+        "scenario": "duplicate",
+        "operation_id": "sample-operation-1",
+        "expected_revision": 1,
+        "state": "saved",
+        "revision": 2,
+        "schema_version": "lane-wiring-result.v1",
+        "subject_id": "sample-subject-1",
+        "watch_id": "sample-watch-1",
+        "actor_id": "sample-actor-1",
+        "organization_id": "sample-business-1",
+        "pending_reason": null,
+        "next_actor": "sample-actor-1",
+        "next_review_at": "2026-11-17T12:00:00Z"
+      }
+    ],
+    "fixture_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "operation_id",
+        "subject_id",
+        "watch_id",
+        "actor_id",
+        "organization_id",
+        "state",
+        "pending_reason",
+        "next_actor",
+        "next_review_at",
+        "expected_revision",
+        "revision",
+        "scenario"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "lane-wiring-result.v1"
+        },
+        "operation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "watch_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "organization_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pending_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "next_actor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "next_review_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expected_revision": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "revision": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "scenario": {
+          "enum": [
+            "success",
+            "denied",
+            "stale",
+            "lost-response",
+            "duplicate"
+          ]
+        }
+      }
+    },
+    "runtime_integration": {
+      "state": "unavailable",
+      "required_readers": [
+        "web/scripts/generate-nav.mjs",
+        "web/registry-loader.ts",
+        "infra/foundation/compose.sh"
+      ],
+      "required_lane_range": {
+        "first": "L00",
+        "last": "L25"
+      },
+      "connected_proof": "deferred",
+      "destinations_enabled": false,
+      "prerequisites": [
+        {
+          "reader": "web/scripts/generate-nav.mjs",
+          "required": "accept-contract-fragments-L00-through-L25",
+          "state": "deferred",
+          "owner": "runtime-steward"
+        },
+        {
+          "reader": "web/registry-loader.ts",
+          "required": "accept-registration-fragments-L00-through-L25",
+          "state": "deferred",
+          "owner": "runtime-steward"
+        },
+        {
+          "reader": "infra/foundation/compose.sh",
+          "required": "discover-L00-through-L25-and-clear-absent-fragments",
+          "state": "deferred",
+          "owner": "runtime-steward"
+        }
+      ],
+      "activation_policy": "require-all-readers-and-subscriptions-before-enabling-destinations",
+      "discovery_contract": {
+        "schema_version": "lane-discovery.v1",
+        "accepted_lanes": [
+          "L00",
+          "L01",
+          "L02",
+          "L03",
+          "L04",
+          "L05",
+          "L06",
+          "L07",
+          "L08",
+          "L09",
+          "L10",
+          "L11",
+          "L12",
+          "L13",
+          "L14",
+          "L15",
+          "L16",
+          "L17",
+          "L18",
+          "L19",
+          "L20",
+          "L21",
+          "L22",
+          "L23",
+          "L24",
+          "L25"
+        ],
+        "unsupported_lane": "reject",
+        "absent_registration": "omit",
+        "absent_compose_fragment": "unset-inherited-fragment-variable",
+        "generated_indexes": "uncommitted",
+        "acceptance": "production-readers-must-pass-discovery-regressions"
+      }
+    }
+  }
+}

@@ -24,3 +24,37 @@ Seller pages compose the shared design system without changing routes, API behav
 - Reduced motion is owned by the shared kit; no feature keyframes.
 
 See [the design contract](../../../docs/design-system.md) and [validation](VALIDATION.md).
+
+## Editor read and recovery behavior
+
+The detail read key is `listing-editor, access fingerprint, organization, listing id`.
+The media and history keys include that scope and the acknowledged listing revision.
+Private reads use the root query provider; no second provider or shell is mounted.
+The detail read retains its answer with infinite freshness and disables automatic
+focus/reconnect refresh. Explicit recovery reloads only when there are no dirty
+facts or retained files. First-load placeholders appear only without a detail answer.
+
+The language changes labels in the mounted form. Facts, dollar input, chosen step,
+private file and exact uncertain upload command remain in memory. An access or
+organization change replaces the form identity and clears those private values.
+An uncertain upload blocks competing form/media mutations until the original
+file, listing revision and operation reference are reconciled. Definitive file
+validation errors allow correction. No private file is written to browser storage.
+
+Published auctions link to the scheduling page; publication does not schedule or
+open an auction. The scheduling page reviews its own current authority and terms.
+Route warming, data-on-intent, arrival motion and size budgets remain shared
+composition responsibilities. The editor does not introduce private warming,
+cache or first-frame theme behavior.
+
+A stale upload response follows receipt lookup under the listing lock and confirms
+that the original command did not commit. Keep its file in memory, load the current
+version for explicit review, then permit a new correction reference. Never replace
+an uncertain command merely because a newer version is available. Retained edit
+abort and reconciliation run before new possession admission checks. Published
+revision recovery describes the existing public version separately from publication.
+
+A receipt-checked frozen-listing upload denial settles the original command.
+Keep its file in memory and require a current-version review. If media is no
+longer editable, offer file discard instead of another upload; a reviewed draft
+may use a new correction reference. Unknown outcomes retain the original reference.

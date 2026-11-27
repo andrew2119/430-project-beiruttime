@@ -18,10 +18,10 @@ class PublicationQuote(BaseModel):
     revision: StrictInt = Field(ge=1)
     subject_id: UUID
     subject_revision: StrictInt = Field(ge=1)
-    purpose: Literal["business_quote"]
+    purpose: Literal["purchase"]
     source: Literal["sample"]
     source_verified: Literal[False]
-    schedule_id: Literal["sample-v1"]
+    schedule_id: Literal["usd-v2"]
     currency: Literal["USD"]
     price_minor: StrictInt = Field(gt=0, le=MAX_MINOR)
     minor_unit_exponent: Literal[2]
@@ -49,6 +49,7 @@ class PublicationQuote(BaseModel):
         if self.expires_at <= self.created_at:
             raise ValueError("Invalid quote lifetime")
         if self.policy != {
+            "revision": 2,
             "buyer_fee_bps": 300,
             "seller_commission_bps": 500,
             "shipping": "sample_zero",
@@ -56,7 +57,7 @@ class PublicationQuote(BaseModel):
             "fx": "not_applied",
             "currency_exponents": {"USD": 2, "LBP": 2},
         }:
-            raise ValueError("Unknown sample schedule")
+            raise ValueError("Unknown publication schedule")
         return self
 
 

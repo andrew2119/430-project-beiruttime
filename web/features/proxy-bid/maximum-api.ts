@@ -5,6 +5,7 @@ import {authenticatedRequest} from './session';
 
 // pricing.quotes.v1 bound; the Auction engine independently supports larger caps.
 export const MAX_QUOTE_MINOR=9_000_000_000_000;
+const BID_SCHEDULE='usd-v2';
 export type BuyerScope=Readonly<{subjectId:string;accessFingerprint:string}>;
 export type MaximumQuote={
   fee_quote_id:string;amount_minor:number;currency:'USD'|'LBP';buyer_fee_minor:number;total_minor:number;
@@ -19,7 +20,7 @@ function validateQuote(snapshot:Quote,binding:QuoteInput,owner:BuyerScope,fresh:
   const policy=snapshot?.policy;
   if(!snapshot||!uuid.test(snapshot.id??'')||snapshot.owner_id!==owner.subjectId||snapshot.subject_id!==binding.subject_id||
     snapshot.subject_revision!==binding.subject_revision||snapshot.purpose!=='bid'||snapshot.currency!==binding.currency||
-    snapshot.price_minor!==binding.price_minor||snapshot.schedule_id!=='sample-v1'||snapshot.source!=='sample'||
+    snapshot.price_minor!==binding.price_minor||snapshot.schedule_id!==BID_SCHEDULE||snapshot.source!=='sample'||
     snapshot.source_verified!==false||snapshot.sample!==true||snapshot.minor_unit_exponent!==2||
     !Number.isSafeInteger(snapshot.revision)||snapshot.revision<1||snapshot.rounding!=='half_up'||snapshot.fx!==null||
     snapshot.commission_basis!=='price_excluding_buyer_fee_shipping_tax'||
@@ -47,8 +48,9 @@ export async function previewMaximum(auction:Pick<AuctionSnapshot,'id'|'revision
   signal.throwIfAborted();
   if(!owner.subjectId||!owner.accessFingerprint) throw new ApiError(401,'unauthorized','');
   if(!Number.isSafeInteger(amount)||amount<=0||amount>MAX_QUOTE_MINOR) throw new ApiError(422,'invalid_amount','');
+  if(auction.currency!=='USD') throw new ApiError(422,'invalid_currency','');
   const binding:QuoteInput={subject_id:auction.id,subject_revision:auction.revision,purpose:'bid',currency:auction.currency,
-    price_minor:amount,schedule_id:'sample-v1',source:'sample'};
+    price_minor:amount,schedule_id:BID_SCHEDULE,source:'sample'};
   const snapshot=await authenticatedRequest<Quote>('/api/web/v1/pricing/v1/quotes',{
     signal,accessFingerprint:owner.accessFingerprint,method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},body:JSON.stringify(binding),
   });

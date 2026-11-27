@@ -12,8 +12,8 @@ COPY packages/runtime /tmp/packages/runtime
 RUN pip install --no-cache-dir /tmp/packages/contracts-core /tmp/packages/bulkheads /tmp/packages/events /tmp/packages/runtime
 COPY packages /tmp/repository/packages
 COPY contracts /tmp/repository/contracts
-COPY infra/foundation/discover-contracts.py infra/foundation/package-contracts.py /tmp/repository/infra/foundation/
-RUN python /tmp/repository/infra/foundation/package-contracts.py /opt/domain-contracts
+COPY services/pricing/runtime/service_app/discovery.py /tmp/package_contracts.py
+RUN python /tmp/package_contracts.py /tmp/repository /opt/domain-contracts
 
 FROM python:3.11.14-slim AS base
 ENV PATH="/opt/venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/opt/domain-contracts

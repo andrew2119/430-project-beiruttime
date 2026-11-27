@@ -1,0 +1,45 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "notice_id": {
+      "format": "uuid",
+      "title": "Notice Id",
+      "type": "string"
+    },
+    "order_id": {
+      "format": "uuid",
+      "title": "Order Id",
+      "type": "string"
+    },
+    "buyer_id": {
+      "format": "uuid",
+      "title": "Buyer Id",
+      "type": "string"
+    },
+    "notified_at": {
+      "format": "date-time",
+      "title": "Notified At",
+      "type": "string"
+    },
+    "verified_delivery_recorded": {
+      "const": true,
+      "title": "Verified Delivery Recorded",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "event_id",
+    "notice_id",
+    "order_id",
+    "buyer_id",
+    "notified_at",
+    "verified_delivery_recorded"
+  ],
+  "title": "PaymentNoticeReceiptV3",
+  "type": "object"
+}

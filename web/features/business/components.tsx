@@ -1,10 +1,10 @@
 "use client";
-import { Building2, History, Mail, ShieldCheck, Users } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
-import { Button, ButtonLink, HeaderTabs, Input, Label, Skeleton, State } from "@beirut-time/ui";
-import { usePathname, useRouter } from "next/navigation";
-import { PageHeader, PageLayout } from "@/shell/page-header";
-import { FormSelect } from "./form-select";
+import { Button, ButtonLink, Input, RowSkeleton, State } from "@beirut-time/ui/foundation";
+import { usePathname } from "next/navigation";
+import { PageHeader, PageFrame, PageBody } from "@/shell/foundation/page";
+import { fieldLimits } from "./field-limits";
+import { CanonicalSelect as FormSelect } from "./canonical-select";
 import { useSession } from "@/features/identity/session";
 import { useLocale } from "@/shell/locale-context";
 import { ApiError } from "@/lib/api/client";
@@ -37,21 +37,19 @@ export function Workspace({
   const t = useCopy(),
     locale = useLocale();
   const pathname = usePathname().replace(/^\/(en|ar)(?=\/|$)/, "");
-  const router = useRouter();
   const session = useSession();
   const entries = [
-    { id: "/business", label: t.directory, icon: Building2, visible: true },
-    { id: "/business/contacts", label: t.contacts, icon: Mail, visible: !!session },
-    { id: "/business/review-history", label: t.myReviewHistory, icon: History, visible: !!session },
-    { id: "/business/membership", label: t.membership, icon: Users, visible: !!session },
-    { id: "/operations/verification", label: t.operations, icon: ShieldCheck, visible: session?.principal.roles.includes("operator") },
+    { id: "/business", label: t.directory, visible: true },
+    { id: "/business/contacts", label: t.contacts, visible: !!session },
+    { id: "/business/review-history", label: t.myReviewHistory, visible: !!session },
+    { id: "/business/membership", label: t.membership, visible: !!session },
+    { id: "/operations/verification", label: t.operations, visible: session?.principal.roles.includes("operator") || session?.principal.permissions.includes("identity.private-seller.review") },
   ].filter(item => item.visible).map(item => ({ ...item, href: `/${locale}${item.id}` }));
   return (
-    <PageLayout className="business-workspace">
-      <PageHeader title={title} count={intro} lead={<p className="business-eyebrow">{t.eyebrow}</p>}
-        nav={<HeaderTabs nav label={t.private} items={entries} value={pathname} onChange={id => router.push(`/${locale}${id}`)} />} />
-      <div className="business-content">{children}</div>
-    </PageLayout>
+    <PageFrame>
+      <PageHeader title={title} lead={intro} tabs={<nav className="business-tabs" aria-label={t.private}>{entries.map(entry => <ButtonLink key={entry.id} href={entry.href} variant={pathname === entry.id ? "default" : "outline"}><span aria-current={pathname === entry.id ? "page" : undefined}>{entry.label}</span></ButtonLink>)}</nav>} />
+      <PageBody><div className="business-content">{children}</div></PageBody>
+    </PageFrame>
   );
 }
 export function Field({
@@ -66,7 +64,7 @@ export function Field({
 }: {
   label: string;
   name: string;
-  type?: string;
+  type?: "text" | "email" | "tel" | "password" | "number";
   required?: boolean;
   minLength?: number;
   maxLength?: number;
@@ -75,20 +73,10 @@ export function Field({
 }) {
   const id = useId();
   return (
-    <Label className="business-field" htmlFor={id}>
-      <span>{label}</span>
-      <Input
-        id={id}
-        name={name}
-        type={type}
-        required={required}
-        minLength={minLength}
-        maxLength={maxLength}
-        defaultValue={defaultValue}
-        inputMode={inputMode}
-        autoComplete={type === "password" ? "off" : undefined}
-      />
-    </Label>
+    <Input className="business-field" id={id} label={label} name={name} type={type}
+      required={required} defaultValue={defaultValue} inputMode={inputMode}
+      autoComplete={type === "password" ? "off" : undefined}
+      ref={node => fieldLimits(node, minLength, maxLength)} />
   );
 }
 export function Select({
@@ -104,16 +92,9 @@ export function Select({
 }) {
   const id = useId();
   return (
-    <Label className="business-field" htmlFor={id}>
-      <span>{label}</span>
-      <FormSelect id={id} name={name} defaultValue={defaultValue}>
-        {options.map((item) => (
-          <option key={item.value} value={item.value}>
-            {item.label}
-          </option>
-        ))}
-      </FormSelect>
-    </Label>
+    <FormSelect id={id} name={name} label={label} defaultValue={defaultValue}>
+      {options.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
+    </FormSelect>
   );
 }
 export function Feedback({
@@ -128,6 +109,8 @@ export function Feedback({
   if (error) {
     const api = error instanceof ApiError ? error : null;
     const message =
+      api?.code === "private_evidence_required" ? t.photoRequired :
+      api?.status === 413 || api?.status === 415 ? t.photoRequired :
       api?.code === "invalid_credentials" ||
       api?.code === "reauthentication_required"
         ? t.passwordIncorrect
@@ -171,7 +154,7 @@ export function Feedback({
 }
 export function BusinessLoading() {
   const t = useCopy();
-  return <div role="status" aria-label={t.loading} aria-busy="true" className="business-loading"><span className="sr-only">{t.loading}</span>{[0, 1, 2].map(row => <Skeleton key={row} className="business-row-skeleton" />)}</div>;
+  return <div role="status" aria-label={t.loading} aria-busy="true" className="business-loading"><span className="sr-only">{t.loading}</span>{[0, 1, 2].map(row => <RowSkeleton key={row} />)}</div>;
 }
 export function BusinessEmpty({ text }: { text: string }) {
   return <State title={text} body="" />;
@@ -205,7 +188,7 @@ export function Submit({
 }) {
   const t = useCopy();
   return (
-    <Button chonk type="submit" disabled={pending} aria-busy={pending}>
+    <Button type="submit" disabled={pending} aria-busy={pending}>
       {pending ? t.loading : label}
     </Button>
   );

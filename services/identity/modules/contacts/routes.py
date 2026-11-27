@@ -283,8 +283,10 @@ async def verify(
     body: Proof,
     request: Request,
     actor: CurrentPrincipal = Depends(principal),
+    key: str = Header(alias="Idempotency-Key", min_length=8, max_length=100),
 ):
     subject, now = actor.actor.subject_id, datetime.now(timezone.utc)
+    fingerprint = hashlib.sha256(("verify:" + str(challenge_id) + ":" + body.code).encode()).hexdigest()
     failed = False
     async with unit_of_work(
         request.app.state.pool, lock_key="l02.contacts:" + str(subject)
@@ -294,6 +296,25 @@ async def verify(
             raise PublicError(
                 "verification_failed", "The code could not be verified.", status=400
             )
+        receipt = await tx.fetchrow(
+            "SELECT * FROM l02_contact_operations WHERE subject_id=$1 AND operation_key=$2",
+            subject, key,
+        )
+        if receipt:
+            if receipt["fingerprint"] != fingerprint:
+                raise PublicError(
+                    "idempotency_conflict",
+                    "Operation reference already used. / مرجع الإجراء مستخدم بالفعل.", status=409,
+                )
+            saved = receipt["result"]
+            saved = json.loads(saved) if isinstance(saved, str) else saved
+            if saved.get("verification_failed"):
+                raise PublicError(
+                    "verification_failed",
+                    "The code could not be verified. Request a new code if needed. / تعذر التحقق من الرمز. اطلب رمزًا جديدًا عند الحاجة.",
+                    status=400,
+                )
+            return saved
         row = await tx.fetchrow(
             "SELECT * FROM l02_contact_challenges WHERE id=$1 AND subject_id=$2 FOR UPDATE",
             challenge_id,
@@ -355,11 +376,20 @@ async def verify(
                 ),
                 ["communications", "auction"],
             )
+            await tx.execute(
+                "INSERT INTO l02_contact_operations VALUES($1,$2,$3,$4::jsonb)",
+                subject, key, fingerprint, json.dumps(contact(result)),
+            )
+        if failed:
+            await tx.execute(
+                "INSERT INTO l02_contact_operations VALUES($1,$2,$3,$4::jsonb)",
+                subject, key, fingerprint, json.dumps({"verification_failed": True}),
+            )
     # Wrong attempts must commit; an exception inside the UoW would undo the limit.
     if failed:
         raise PublicError(
             "verification_failed",
-            "The code could not be verified. Request a new code if needed.",
+            "The code could not be verified. Request a new code if needed. / تعذر التحقق من الرمز. اطلب رمزًا جديدًا عند الحاجة.",
             status=400,
         )
     return contact(result)

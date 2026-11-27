@@ -8,13 +8,14 @@ from uuid import UUID, uuid4
 import asyncpg
 from fastapi import APIRouter, Query, Request, Response
 from bt_contracts.catalog.options import Kind, OptionWrite, SelectionWrite
-from bt_contracts_core.errors import PublicError
+from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work as foundation_unit_of_work
 from bt_runtime.principal import require_scope
 from . import dependencies
 from .images import safe_png
+from .offerings import OfferingReceipt, active_definition, display_definition, display_receipt, form
 
 router = APIRouter(prefix="/v1/brand-options", tags=["brand-options-v1"])
 
@@ -23,8 +24,48 @@ def decode(value):
     return json.loads(value) if isinstance(value, str) else value
 
 
+ERROR_AR = {
+    "storage_unavailable": "الخيارات المحفوظة غير متاحة مؤقتاً. أعد محاولة العملية نفسها.",
+    "idempotency_required": "أدخل مرجع عملية من 8 إلى 100 حرف.",
+    "idempotency_conflict": "مرجع العملية مرتبط بطلب مختلف. تحقق من الطلب الأصلي.",
+    "not_found": "السجل غير موجود أو غير متاح لك. تحقق من اختيارك.",
+    "catalog_limit": "بلغ الدليل الحد المسموح. راجع عروض المنشأة.",
+    "option_kind_unavailable": "فئة الخيارات غير متاحة. أعد المحاولة لاحقاً.",
+    "invalid_option": "تحقق من تعريف الخيار والمكوّن ثم أعد الحفظ.",
+    "stale_option": "أعد التحميل واختر إصداراً حالياً تدعمه العلامة.",
+    "stale_configuration": "أعد تحميل خياراتك المحفوظة وراجعها قبل المتابعة.",
+    "offering_denied": "يلزم إذن حالي للمنشأة. اطلب صلاحية الوصول من مسؤول المنشأة.",
+    "forbidden": "يلزم حساب مشترٍ. سجل الدخول بالحساب المناسب.",
+    "configuration_binding": "ابدأ تكويناً منفصلاً لعلامة أو قاعدة أو عيار مختلف.",
+    "unsupported_option": "الخيار غير متاح للمكوّن والقاعدة والعيار المحددين. اختر خياراً آخر.",
+    "unsafe_reference": "تحقق من صور المرجع وصلاحية الوصول إليها قبل الحفظ.",
+    "reference_too_large": "يجب ألا يتجاوز حجم الصورة ميبيبايت واحداً. اختر صورة أصغر.",
+    "reference_limit": "يسمح التكوين بثلاث صور مرجعية خاصة كحد أقصى.",
+    "operation_unavailable": "لا يتوفر إيصال للعرض. أعد محاولة العملية بالمرجع نفسه.",
+}
+
+
 def error(code, message, status=409):
-    return PublicError(code, message, status=status)
+    return PublicError(code, message, status=status, details={"message_ar": ERROR_AR[code]})
+
+
+async def localized_dependency(call, *args, **kwargs):
+    try:
+        return await call(*args, **kwargs)
+    except PublicError as exc:
+        messages = {
+            "unauthorized": ("Sign in, then retry the same operation.",
+                             "سجل الدخول ثم أعد محاولة العملية نفسها."),
+            "brand_unavailable": ("Choose an active official brand offering customization.",
+                                  "اختر علامة رسمية نشطة تقدم التخصيص."),
+            "dependency_unavailable": ("Brand options are temporarily unavailable. Retry the same operation.",
+                                       "خيارات العلامة غير متاحة مؤقتاً. أعد محاولة العملية نفسها."),
+        }
+        en, ar = messages.get(exc.code, (
+            "The request could not be completed. Review access and retry the same operation.",
+            "تعذر إكمال الطلب. راجع صلاحية الوصول وأعد محاولة العملية نفسها.",
+        ))
+        raise PublicError(exc.code, en, status=exc.status, details={"message_ar": ar}) from None
 
 
 @asynccontextmanager
@@ -64,7 +105,7 @@ async def replay(tx, owner, key, fingerprint):
     if row:
         if row["digest"] != fingerprint:
             raise error("idempotency_conflict", "This operation key belongs to a different request.")
-        return decode(row["result"])
+        return display_receipt(decode(row["result"]))
     return None
 
 
@@ -127,8 +168,11 @@ async def snapshot(tx, config):
                 "option_id": str(r["option_id"]),
                 "option_revision": r["option_revision"],
                 "reference_ids": [str(i) for i in r["reference_ids"]],
-                "definition": decode(r["definition"]),
-                "current": r["option_revision"] == r["latest_revision"] and decode(r["definition"])["available"],
+                "definition": display_definition(r["kind"], decode(r["definition"])),
+                "restricted_legacy": not active_definition(r["kind"], decode(r["definition"])),
+                "current": r["option_revision"] == r["latest_revision"]
+                and decode(r["definition"])["available"]
+                and active_definition(r["kind"], decode(r["definition"])),
             }
             for r in rows
         ],
@@ -137,12 +181,12 @@ async def snapshot(tx, config):
 
 @router.get("/brands")
 async def list_brands(request: Request, after: UUID | None = None):
-    return await dependencies.brands(request, after)
+    return await localized_dependency(dependencies.brands, request, after)
 
 
 @router.get("/brands/{brand_id}")
 async def catalog(brand_id: UUID, request: Request):
-    brand = await dependencies.brand(request, brand_id)
+    brand = await localized_dependency(dependencies.brand, request, brand_id)
     async with request.app.state.pool.acquire() as tx:
         rows = await tx.fetch(
             """SELECT DISTINCT ON(kind,option_id) kind,option_id,revision,definition FROM l10_options
@@ -155,30 +199,38 @@ async def catalog(brand_id: UUID, request: Request):
         "brand": brand.model_dump(mode="json"),
         "items": [
             {"kind": r["kind"], "id": str(r["option_id"]), "revision": r["revision"], **decode(r["definition"])}
-            for r in rows
+            for r in rows if active_definition(r["kind"], decode(r["definition"]))
         ],
     }
 
 
+async def offering_principal(request, brand_id):
+    try:
+        principal = await localized_dependency(dependencies.principal, request, organization_id=brand_id)
+        require_scope(principal, "business.jobs.write", brand_id)
+    except AccessDenied:
+        raise error("offering_denied", "Current business permission is required. Ask your business administrator for access.", 403) from None
+    return principal
+
+
 @router.put("/brands/{brand_id}/{kind}/{option_id}")
 async def publish(brand_id: UUID, kind: Kind, option_id: UUID, body: OptionWrite, request: Request):
-    principal = await dependencies.principal(request, organization_id=brand_id)
-    require_scope(principal, "business.jobs.write", brand_id)
-    validator = request.app.state.hooks.get(f"catalog.options-{kind}.v1")
-    if validator is None:
-        raise error("option_kind_unavailable", "This option category is unavailable.", 503)
-    try:
-        details = validator(body.details, body.component)
-    except ValueError:
-        raise error("invalid_option", "Check the option definition and component.", 422) from None
+    principal = await offering_principal(request, brand_id)
     key, owner = operation_key(request), principal.actor.subject_id
-    definition = {**body.model_dump(mode="json", exclude={"expected_revision"}), "details": details}
     fingerprint = digest({"publish": str(brand_id), "kind": kind, "id": str(option_id), **body.model_dump(mode="json")})
     async with unit_of_work(request.app.state.pool, lock_key=f"l10-op:{owner}:{key}") as tx:
+        await localized_dependency(dependencies.brand, request, brand_id)
         old = await replay(tx, owner, key, fingerprint)
         if old is not None:
             return old
-        await dependencies.brand(request, brand_id)
+        validator = request.app.state.hooks.get(f"catalog.options-{kind}.v1")
+        if validator is None:
+            raise error("option_kind_unavailable", "This option category is unavailable.", 503)
+        try:
+            details = validator(body.details, body.component)
+        except ValueError:
+            raise error("invalid_option", "Check the option definition and component.", 422) from None
+        definition = {**body.model_dump(mode="json", exclude={"expected_revision"}), "details": details}
         # Serialize the bounded catalog as well as each option's revision admission.
         await tx.execute("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", f"l10-brand:{brand_id}")
         revision = (
@@ -207,7 +259,21 @@ async def publish(brand_id: UUID, kind: Kind, option_id: UUID, body: OptionWrite
             json.dumps(definition),
             owner,
         )
-        result = {"brand_id": str(brand_id), "kind": kind, "id": str(option_id), "revision": revision, **definition}
+        result = {
+            "schema_version": "catalog.offering-receipt.v1",
+            "operation_id": key,
+            "subject_id": str(option_id),
+            "watch_id": None,
+            "actor_id": str(owner),
+            "organization_id": str(brand_id),
+            "expected_revision": body.expected_revision,
+            "state": "saved",
+            "pending_reason": None,
+            "next_actor": None,
+            "next_review_at": None,
+            "brand_id": str(brand_id), "kind": kind, "id": str(option_id), "revision": revision, **definition,
+        }
+        result = OfferingReceipt.model_validate(result).model_dump(mode="json")
         return await record(
             tx, request, owner, key, fingerprint, result, "catalog.brand-option-published.v1", option_id
         )
@@ -215,7 +281,7 @@ async def publish(brand_id: UUID, kind: Kind, option_id: UUID, body: OptionWrite
 
 @router.get("/configurations")
 async def list_configurations(request: Request):
-    principal = await dependencies.principal(request)
+    principal = await localized_dependency(dependencies.principal, request)
     async with request.app.state.pool.acquire() as tx:
         rows = await tx.fetch(
             "SELECT * FROM l10_configurations WHERE owner_id=$1 ORDER BY updated_at DESC,id LIMIT 50",
@@ -240,7 +306,7 @@ async def list_configurations(request: Request):
 async def get_configuration(
     configuration_id: UUID, request: Request, expected_revision: int | None = Query(default=None, ge=1, le=2147483647)
 ):
-    principal = await dependencies.principal(request)
+    principal = await localized_dependency(dependencies.principal, request)
     async with unit_of_work(request.app.state.pool, lock_key=f"l10-config:{configuration_id}") as tx:
         config = await owned(tx, configuration_id, principal.actor.subject_id)
         if expected_revision is not None and config["revision"] != expected_revision:
@@ -250,16 +316,16 @@ async def get_configuration(
 
 @router.put("/configurations/{configuration_id}/{kind}")
 async def select(configuration_id: UUID, kind: Kind, body: SelectionWrite, request: Request):
-    principal = await dependencies.principal(request)
+    principal = await localized_dependency(dependencies.principal, request)
     if "buyer" not in principal.roles:
         raise error("forbidden", "A buyer account is required.", 403)
     key, owner = operation_key(request), principal.actor.subject_id
     fingerprint = digest({"select": str(configuration_id), "kind": kind, **body.model_dump(mode="json")})
     async with unit_of_work(request.app.state.pool, lock_key=f"l10-op:{owner}:{key}") as tx:
+        await localized_dependency(dependencies.brand, request, body.brand_id)
         old = await replay(tx, owner, key, fingerprint)
         if old is not None:
             return old
-        await dependencies.brand(request, body.brand_id)
         # Share catalog admission with publication: a revision cannot change between validation and commit.
         await tx.execute("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", f"l10-brand:{body.brand_id}")
         await tx.execute("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", f"l10-config:{configuration_id}")
@@ -288,7 +354,8 @@ async def select(configuration_id: UUID, kind: Kind, body: SelectionWrite, reque
             raise error("stale_option", "Choose a current, brand-supported option.")
         definition = decode(option["definition"])
         if (
-            not definition["available"]
+            not active_definition(kind, definition)
+            or not definition["available"]
             or definition["component"] != body.component
             or body.base_model not in definition["base_models"]
             or body.caliber not in definition["calibers"]
@@ -338,7 +405,7 @@ async def select(configuration_id: UUID, kind: Kind, body: SelectionWrite, reque
 
 @router.post("/configurations/{configuration_id}/references")
 async def upload_reference(configuration_id: UUID, request: Request):
-    principal = await dependencies.principal(request)
+    principal = await localized_dependency(dependencies.principal, request)
     if request.headers.get("content-type", "").split(";")[0] != "image/png":
         raise error("unsafe_reference", "Only PNG reference images are supported.", 422)
     content = bytearray()
@@ -381,7 +448,7 @@ async def upload_reference(configuration_id: UUID, request: Request):
 
 @router.get("/configurations/{configuration_id}/references/{reference_id}")
 async def read_reference(configuration_id: UUID, reference_id: UUID, request: Request):
-    principal = await dependencies.principal(request)
+    principal = await localized_dependency(dependencies.principal, request)
     async with request.app.state.pool.acquire() as tx:
         row = await tx.fetchrow(
             "SELECT content FROM l10_references WHERE id=$1 AND configuration_id=$2 AND owner_id=$3",
@@ -396,3 +463,30 @@ async def read_reference(configuration_id: UUID, reference_id: UUID, request: Re
         media_type="image/png",
         headers={"Content-Disposition": "inline", "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store"},
     )
+
+
+@router.get("/brands/{brand_id}/operations/{key}")
+async def offering_operation(brand_id: UUID, key: str, request: Request):
+    """Recover a publication receipt only under current business authority."""
+    principal = await offering_principal(request, brand_id)
+    await localized_dependency(dependencies.brand, request, brand_id)
+    if not re.fullmatch(r"[A-Za-z0-9_-]{8,100}", key):
+        raise error("idempotency_required", "Supply an 8–100 character operation key.", 422)
+    async with unit_of_work(request.app.state.pool) as tx:
+        row = await tx.fetchrow(
+            "SELECT result FROM l10_operations WHERE owner_id=$1 AND operation_key=$2",
+            principal.actor.subject_id, key,
+        )
+    result = decode(row["result"]) if row else None
+    if not result or result.get("brand_id") != str(brand_id) or "kind" not in result:
+        raise error("operation_unavailable", "No offering receipt is available. Retry the same operation.", 404)
+    return display_receipt(result)
+
+
+@router.get("/brands/{brand_id}/forms/{kind}")
+async def offering_form(brand_id: UUID, kind: Kind, request: Request):
+    await offering_principal(request, brand_id)
+    await localized_dependency(dependencies.brand, request, brand_id)
+    if request.app.state.hooks.get(f"catalog.options-{kind}.v1") is None:
+        raise error("option_kind_unavailable", "This option category is unavailable.", 503)
+    return form(kind)

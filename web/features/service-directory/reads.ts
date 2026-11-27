@@ -1,0 +1,12 @@
+import { definePageRead } from '@/lib/page-speed/definition';
+import { request } from '@/lib/api/client';
+import type { Business, Choice, Movement, MovementSelection, Purpose } from '@contracts/contracts-service/directory';
+import { directoryPath, movementPath, privateRequest } from './api';
+export type DirectoryPage = {items:Business[];total:number;next_after:string|null};
+export type MovementPage = {items:Movement[];total:number;next_after:string|null};
+export const directoryRead = definePageRead({key:(purpose:Purpose,after:string|null)=>['official-directory',purpose,after],warm:'safe',ask:(signal,purpose,after)=>request<DirectoryPage>(`${directoryPath}/businesses?purpose=${purpose}${after?`&after=${after}`:''}`,{signal})});
+export const businessRead = definePageRead({key:(id:string)=>['official-business',id],warm:'safe',ask:(signal,id)=>request<Business>(`${directoryPath}/businesses/${encodeURIComponent(id)}`,{signal})});
+export const choiceRead = definePageRead({key:(fingerprint:string)=>['directory-choice',fingerprint],warm:'open-only',fresh:0,ask:(signal,fingerprint)=>privateRequest<{choice:Choice|null}>(`${directoryPath}/choices/current`,{signal,accessFingerprint:fingerprint})});
+export const movementsRead = definePageRead({key:(brand:string,after:string|null)=>['movement-options',brand,after],warm:'safe',ask:(signal,brand,after)=>request<MovementPage>(`${movementPath}?brand_id=${brand}${after?`&after=${after}`:''}`,{signal})});
+export const movementRead = definePageRead({key:(id:string)=>['movement-option',id],warm:'safe',ask:(signal,id)=>request<{item:Movement}>(`${movementPath}/${id}`,{signal})});
+export const selectionRead = definePageRead({key:(fingerprint:string,brand:string)=>['movement-selection',fingerprint,brand],warm:'open-only',fresh:0,ask:(signal,fingerprint,brand)=>privateRequest<{selection:MovementSelection|null;archived:boolean;selection_revision:number}>(`${movementPath}/selections/current?brand_id=${brand}`,{signal,accessFingerprint:fingerprint})});
