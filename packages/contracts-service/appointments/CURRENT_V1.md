@@ -1,0 +1,14 @@
+# Private appointments v1
+
+Commands: `POST /v1/appointments/commands`, maximum 4096 bytes, no files or notes.
+Current record: `GET /v1/appointments/{appointment_id}`.
+Operation lookup: `GET /v1/appointments/operations/{operation_id}?appointment_id=...`.
+Every endpoint requires a fresh authenticated identity and current record, watch and selected business scope. The producer supplies current source, policy, retained quote and assignment revisions. A projection never supplies authority. Buyers act only for themselves; assigned business staff may confirm or cancel within their current business permission. Only the business explicitly confirms a visit.
+
+Request creates revision 1, awaiting business confirmation. Reschedule returns a future requested visit and clears confirmation. Cancellation is terminal. An explicitly reviewed cancellation binds current authority and the current appointment revision and exact visit details, even when source, policy or retained quote revisions have changed. The cancelled visit preserves its historical source, policy and quote bindings; the immutable command receipt retains the current cancellation bindings. Confirmation binds the exact stored purpose, civil time, instant, duration and revisions. A confirmed overlapping business slot rejects another confirmation. All time comparisons use authoritative UTC; start at or before now is rejected. Duration is 15–120 minutes and touching end/start boundaries do not overlap.
+
+The server resolves Asia/Beirut using its time-zone database. Missing civil times return `missing_time`; users must choose a new civil time explicitly. Repeated civil times return `repeated_time` with both UTC candidates and require explicit selection and confirmation. No automatic clock shift occurs.
+
+Each immutable operation binds the full command, actor, organization, watch, source, retained quote and policy. Identical retries return the original receipt after current authorization; conflicting retries return `duplicate_conflict`. A lost response uses lookup or the same command reference. Receipt, current record and minimal private outbox entry commit atomically. Unknown operations return 404, never success. Dependency timeout returns `unavailable`; no write is made. Stale revisions return `stale_revision` and require explicit review before a new operation. Current access is required even for historic receipts. No public event, log or preview contains private visit data.
+
+The module exposes an injected route factory and a durable local store for isolated contract exercises. Runtime registration, current producer composition and the service database adapter remain with their respective owners. Local fixtures do not prove connected acceptance. No payment, allocation, custody, work or release authority is created. Fit may be arranged while final fit is pending; physical release remains blocked.

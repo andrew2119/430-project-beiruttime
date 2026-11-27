@@ -1,0 +1,502 @@
+{
+  "schema_version": "appointments.v1",
+  "command": {
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "appointments.v1",
+        "default": "appointments.v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "operation_id": {
+        "format": "uuid",
+        "title": "Operation Id",
+        "type": "string"
+      },
+      "appointment_id": {
+        "format": "uuid",
+        "title": "Appointment Id",
+        "type": "string"
+      },
+      "subject_id": {
+        "format": "uuid",
+        "title": "Subject Id",
+        "type": "string"
+      },
+      "watch_id": {
+        "format": "uuid",
+        "title": "Watch Id",
+        "type": "string"
+      },
+      "actor_id": {
+        "format": "uuid",
+        "title": "Actor Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "format": "uuid",
+        "title": "Organization Id",
+        "type": "string"
+      },
+      "expected_revision": {
+        "minimum": 0,
+        "title": "Expected Revision",
+        "type": "integer"
+      },
+      "assignment_revision": {
+        "minimum": 1,
+        "title": "Assignment Revision",
+        "type": "integer"
+      },
+      "source_revision": {
+        "minimum": 1,
+        "title": "Source Revision",
+        "type": "integer"
+      },
+      "policy_revision": {
+        "minimum": 1,
+        "title": "Policy Revision",
+        "type": "integer"
+      },
+      "quote_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Quote Id"
+      },
+      "quote_revision": {
+        "anyOf": [
+          {
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Quote Revision"
+      },
+      "kind": {
+        "enum": [
+          "request",
+          "confirm",
+          "reschedule",
+          "cancel"
+        ],
+        "title": "Kind",
+        "type": "string"
+      },
+      "purpose": {
+        "enum": [
+          "intake",
+          "assessment",
+          "fit",
+          "collection"
+        ],
+        "title": "Purpose",
+        "type": "string"
+      },
+      "civil_time": {
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$",
+        "title": "Civil Time",
+        "type": "string"
+      },
+      "timezone": {
+        "const": "Asia/Beirut",
+        "default": "Asia/Beirut",
+        "title": "Timezone",
+        "type": "string"
+      },
+      "selected_instant": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Selected Instant"
+      },
+      "repeated_time_confirmed": {
+        "default": false,
+        "title": "Repeated Time Confirmed",
+        "type": "boolean"
+      },
+      "duration_minutes": {
+        "maximum": 120,
+        "minimum": 15,
+        "title": "Duration Minutes",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "operation_id",
+      "appointment_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "assignment_revision",
+      "source_revision",
+      "policy_revision",
+      "kind",
+      "purpose",
+      "civil_time",
+      "duration_minutes"
+    ],
+    "title": "Command",
+    "type": "object"
+  },
+  "authority": {
+    "additionalProperties": false,
+    "properties": {
+      "actor_id": {
+        "format": "uuid",
+        "title": "Actor Id",
+        "type": "string"
+      },
+      "subject_id": {
+        "format": "uuid",
+        "title": "Subject Id",
+        "type": "string"
+      },
+      "watch_id": {
+        "format": "uuid",
+        "title": "Watch Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "format": "uuid",
+        "title": "Organization Id",
+        "type": "string"
+      },
+      "source_revision": {
+        "minimum": 1,
+        "title": "Source Revision",
+        "type": "integer"
+      },
+      "policy_revision": {
+        "minimum": 1,
+        "title": "Policy Revision",
+        "type": "integer"
+      },
+      "quote_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Quote Id"
+      },
+      "quote_revision": {
+        "anyOf": [
+          {
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Quote Revision"
+      },
+      "role": {
+        "enum": [
+          "buyer",
+          "business"
+        ],
+        "title": "Role",
+        "type": "string"
+      },
+      "record_allowed": {
+        "title": "Record Allowed",
+        "type": "boolean"
+      },
+      "active": {
+        "title": "Active",
+        "type": "boolean"
+      },
+      "onboarded": {
+        "title": "Onboarded",
+        "type": "boolean"
+      },
+      "business_kind": {
+        "enum": [
+          "brand",
+          "dealer"
+        ],
+        "title": "Business Kind",
+        "type": "string"
+      },
+      "purposes": {
+        "items": {
+          "enum": [
+            "intake",
+            "assessment",
+            "fit",
+            "collection"
+          ],
+          "type": "string"
+        },
+        "title": "Purposes",
+        "type": "array"
+      },
+      "assignment_revision": {
+        "minimum": 1,
+        "title": "Assignment Revision",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "actor_id",
+      "subject_id",
+      "watch_id",
+      "organization_id",
+      "source_revision",
+      "policy_revision",
+      "role",
+      "record_allowed",
+      "active",
+      "onboarded",
+      "business_kind",
+      "purposes",
+      "assignment_revision"
+    ],
+    "title": "Authority",
+    "type": "object"
+  },
+  "visit": {
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "appointments.v1",
+        "default": "appointments.v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "appointment_id": {
+        "format": "uuid",
+        "title": "Appointment Id",
+        "type": "string"
+      },
+      "operation_id": {
+        "format": "uuid",
+        "title": "Operation Id",
+        "type": "string"
+      },
+      "subject_id": {
+        "format": "uuid",
+        "title": "Subject Id",
+        "type": "string"
+      },
+      "watch_id": {
+        "format": "uuid",
+        "title": "Watch Id",
+        "type": "string"
+      },
+      "actor_id": {
+        "format": "uuid",
+        "title": "Actor Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "format": "uuid",
+        "title": "Organization Id",
+        "type": "string"
+      },
+      "expected_revision": {
+        "title": "Expected Revision",
+        "type": "integer"
+      },
+      "source_revision": {
+        "title": "Source Revision",
+        "type": "integer"
+      },
+      "policy_revision": {
+        "title": "Policy Revision",
+        "type": "integer"
+      },
+      "quote_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Quote Id"
+      },
+      "quote_revision": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Quote Revision"
+      },
+      "purpose": {
+        "enum": [
+          "intake",
+          "assessment",
+          "fit",
+          "collection"
+        ],
+        "title": "Purpose",
+        "type": "string"
+      },
+      "civil_time": {
+        "title": "Civil Time",
+        "type": "string"
+      },
+      "timezone": {
+        "const": "Asia/Beirut",
+        "default": "Asia/Beirut",
+        "title": "Timezone",
+        "type": "string"
+      },
+      "instant": {
+        "format": "date-time",
+        "title": "Instant",
+        "type": "string"
+      },
+      "duration_minutes": {
+        "title": "Duration Minutes",
+        "type": "integer"
+      },
+      "repeated_time_confirmed": {
+        "title": "Repeated Time Confirmed",
+        "type": "boolean"
+      },
+      "state": {
+        "enum": [
+          "requested",
+          "confirmed",
+          "cancelled"
+        ],
+        "title": "State",
+        "type": "string"
+      },
+      "revision": {
+        "title": "Revision",
+        "type": "integer"
+      },
+      "confirmed_by": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Confirmed By"
+      },
+      "assignment_revision": {
+        "title": "Assignment Revision",
+        "type": "integer"
+      },
+      "pending_reason": {
+        "anyOf": [
+          {
+            "const": "business_confirmation",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Pending Reason"
+      },
+      "next_actor": {
+        "enum": [
+          "business",
+          "none"
+        ],
+        "title": "Next Actor",
+        "type": "string"
+      },
+      "next_review_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Next Review At"
+      },
+      "custody_received": {
+        "const": false,
+        "default": false,
+        "title": "Custody Received",
+        "type": "boolean"
+      },
+      "work_authorized": {
+        "const": false,
+        "default": false,
+        "title": "Work Authorized",
+        "type": "boolean"
+      },
+      "physical_release_allowed": {
+        "const": false,
+        "default": false,
+        "title": "Physical Release Allowed",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "appointment_id",
+      "operation_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "source_revision",
+      "policy_revision",
+      "quote_id",
+      "quote_revision",
+      "purpose",
+      "civil_time",
+      "instant",
+      "duration_minutes",
+      "repeated_time_confirmed",
+      "state",
+      "revision",
+      "confirmed_by",
+      "assignment_revision",
+      "pending_reason",
+      "next_actor",
+      "next_review_at"
+    ],
+    "title": "Visit",
+    "type": "object"
+  }
+}
