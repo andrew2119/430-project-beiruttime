@@ -292,13 +292,17 @@ fetch(url, { signal: AbortSignal.timeout(5000) })
   .catch((error) => { console.error(error.message); process.exit(1); });
 '
 
-# Reads the sign-in page the way a browser tokenizes it (the HTML standard tokenizer) and prints,
-# each after a space, the sign-in attributes it lacks. Only whole attributes of input start tags
-# count: names in any case, values exact, nothing inside a comment, a quoted value or an element
-# whose content a browser reads as text. The password input must carry its own autocomplete.
-# It does not use html.parser, whose rules for comments, tags and text differ between releases.
+# Reads the sign-in page the way a browser does (the tokenizer of the HTML standard, with the rules
+# of its tree builder that make inputs inert) and prints why the check fails, or nothing. The page
+# must be served as HTML, in bytes that read the same in every encoding a browser may use for it.
+# Only whole attributes of input start tags count: names in any case, values exactly as written,
+# with no character reference decoded. Nothing counts inside a comment, a quoted value, an element
+# whose content a browser reads as text, a template, svg or math, and no hidden input counts. Where
+# the rest of the page cannot be read for certain, the scan stops there. The password input must
+# carry its own autocomplete. This reads static markup only: it does not show that the fields are
+# visible or usable. It does not use html.parser, whose rules differ between releases.
 SIGN_IN_PY='
-import html
+import json
 import re
 import sys
 
@@ -306,10 +310,17 @@ SPACE = "\t\n\f "
 NAME_END = SPACE + "/>"
 ATTRIBUTE_END = SPACE + "/>="
 VALUE_END = SPACE + ">"
+HTTP_SPACE = "\t\n\r "
 CASE = re.ASCII | re.IGNORECASE
 LETTER = re.compile("[A-Za-z]")
 LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
 COMMENT_END = re.compile("--!?>")
+# The labels of UTF-8 in the Encoding standard.
+UTF8 = ("unicode-1-1-utf-8", "unicode11utf8", "unicode20utf8", "utf-8", "utf8", "x-unicode20utf8")
+# With no charset, only these bytes read the same in each encoding a browser may pick, and only if
+# no meta or xml declaration names another.
+PLAIN_BYTES = re.compile(b"[\t\n\f\r -~]*")
+DECLARATION = re.compile(b"<meta|<[?]xml", re.IGNORECASE)
 # Elements whose content is text up to their first end tag, in any case. Script text has its own
 # rules below, and plaintext runs to the end of the page.
 TEXT_END = {name: re.compile("</" + name + "[\t\n\f />]", CASE) for name in (
@@ -318,22 +329,81 @@ TEXT_END = {name: re.compile("</" + name + "[\t\n\f />]", CASE) for name in (
 SCRIPT_DATA = re.compile("<!--|</script[\t\n\f />]", CASE)
 SCRIPT_ESCAPED = re.compile("-->|</script[\t\n\f />]|<script[\t\n\f />]", CASE)
 SCRIPT_DOUBLE = re.compile("-->|</script[\t\n\f />]", CASE)
+# Start tags that stop the scan inside svg or math: the integration points, whose content a browser
+# reads as HTML again, the elements that end the svg or math early, and frameset.
+FOREIGN_STOP = frozenset((
+    "foreignobject", "desc", "title", "mi", "mo", "mn", "ms", "mtext", "annotation-xml",
+    "b", "big", "blockquote", "body", "br", "center", "code", "dd", "div", "dl", "dt", "em", "embed",
+    "font", "h1", "h2", "h3", "h4", "h5", "h6", "head", "hr", "i", "img", "li", "listing", "menu",
+    "meta", "nobr", "ol", "p", "pre", "ruby", "s", "small", "span", "strike", "strong", "sub", "sup",
+    "table", "tt", "u", "ul", "var", "frameset"))
+# Start tags that stop the scan inside select, where older browsers ignore them and so read their
+# content as markup, not as text.
+SELECT_STOP = frozenset((
+    "style", "xmp", "iframe", "noembed", "noframes", "noscript", "title", "svg", "math"))
+# Start tags that stop the scan inside noscript, whose content a browser with scripting off reads
+# as markup: each would change how what follows is read.
+NOSCRIPT_STOP = frozenset(TEXT_END) | frozenset((
+    "script", "plaintext", "template", "svg", "math", "select", "frameset"))
+
+
+def page_text(path, served):
+    """The page as text and no reason, or None and the reason it is not read. It must be served as
+    HTML, with one content type, in bytes that read the same in every encoding a browser may use."""
+    try:
+        types = json.loads(served).get("content-type", [])
+    except (ValueError, AttributeError):
+        types = []
+    if not types:
+        return None, "served with no content type, not as HTML"
+    if len(types) > 1 or "," in types[0]:
+        return None, "served with more than one content type, not certain to be HTML"
+    essence, _, parameters = types[0].strip(HTTP_SPACE).partition(";")
+    essence = essence.rstrip(HTTP_SPACE).translate(LOWER)
+    if essence != "text/html":
+        return None, "served as %s, not as HTML" % (re.sub("[^ -~]", "?", essence) or "an empty type")
+    labels = []
+    for parameter in parameters.split(";"):
+        key, equals, label = parameter.lstrip(HTTP_SPACE).partition("=")
+        if equals and key.translate(LOWER) == "charset":
+            labels.append(label.rstrip(HTTP_SPACE).translate(LOWER))
+    with open(path, "rb") as page:
+        body = page.read()
+    if body.startswith(b"\xef\xbb\xbf"):
+        body = body[3:]  # a UTF-8 byte order mark outranks any charset
+    elif body.startswith((b"\xfe\xff", b"\xff\xfe")) or "\"" in parameters:
+        body = None  # UTF-16, or a quoted parameter, read by rules this check does not keep
+    elif labels:
+        body = body if labels[0] in UTF8 else None  # the first charset is the one that counts
+    elif not PLAIN_BYTES.fullmatch(body) or DECLARATION.search(body):
+        body = None
+    try:
+        text = None if body is None else body.decode("utf-8")
+    except UnicodeDecodeError:
+        text = None
+    if text is None:
+        return None, "served as HTML, but not certain to read as UTF-8"
+    return text, ""
 
 
 def read_tag(page, i):
-    """The tag whose name starts at i: its name, its attributes and the index just after it, or
-    None if the page ends inside the tag. Names are lowered in ASCII only, as a browser does."""
+    """The tag whose name starts at i: its name, its attributes, whether a / right before its >
+    closes it, and the index just after it, or None if the page ends inside the tag. Names are
+    lowered in ASCII only, as a browser does. Values are kept as written, with no character
+    reference decoded, so a value that holds one never equals a word this check looks for."""
     n = len(page)
     j = i
     while j < n and page[j] not in NAME_END:
         j += 1
     name = page[i:j].translate(LOWER)
     attributes = {}
+    closing = False
     while j < n:
-        if page[j] in SPACE or page[j] == "/":
+        if page[j] == ">":
+            return name, attributes, closing, j + 1
+        closing = page[j] == "/"
+        if closing or page[j] in SPACE:
             j += 1
-        elif page[j] == ">":
-            return name, attributes, j + 1
         else:
             k = j + 1
             while k < n and page[k] not in ATTRIBUTE_END:
@@ -356,7 +426,7 @@ def read_tag(page, i):
                     while k < n and page[k] not in VALUE_END:
                         k += 1
                     value = page[start:k]
-            attributes.setdefault(key, html.unescape(value))  # a repeated name keeps its first value
+            attributes.setdefault(key, value)  # a repeated name keeps its first value
             j = k
     return None
 
@@ -369,6 +439,20 @@ def comment_end(page, k):
         return k + 2
     end = COMMENT_END.search(page, k)
     return end.end() if end else -1
+
+
+def markup(page, i, foreign):
+    """The index just after the comment, doctype, bogus comment or CDATA section at the < at i, or
+    -1 if it runs to the end. Only inside svg or math does <![CDATA[ start text, up to ]]>."""
+    if page.startswith("<!--", i):
+        return comment_end(page, i + 4)
+    if foreign and page.startswith("<![CDATA[", i):
+        end = page.find("]]>", i + 9)
+        return end + 3 if end >= 0 else -1
+    if page.startswith("</>", i):
+        return i + 3
+    end = page.find(">", i + 2)  # a doctype or a bogus comment, up to the next >
+    return end + 1 if end >= 0 else -1
 
 
 def script_end(page, i):
@@ -391,36 +475,106 @@ def script_end(page, i):
             return found.start()
 
 
+def foreign_end(page, i, root):
+    """The index just after the end tag that closes the svg or math element whose content starts
+    at i, or -1 if it runs to the end or the scan cannot be sure where it ends. Inside, a browser
+    reads every tag as a plain tag, with no text elements, and an end tag closes the nearest open
+    element of its name; one that matches none may close the svg or math, so the scan stops."""
+    names = [root]
+    i = page.find("<", i)
+    while i >= 0:
+        if LETTER.match(page, i + 1):
+            tag = read_tag(page, i + 1)
+            if tag is None or tag[0] in FOREIGN_STOP:
+                return -1
+            if not tag[2]:
+                names.append(tag[0])
+            i = tag[3]
+        elif page.startswith("</", i) and LETTER.match(page, i + 2):
+            tag = read_tag(page, i + 2)
+            if tag is None or tag[0] not in names:
+                return -1  # this also stops at </br> and </p>, which end the svg or math early
+            while names.pop() != tag[0]:
+                pass
+            if not names:
+                return tag[3]
+            i = tag[3]
+        elif page.startswith(("<!", "</", "<?"), i):
+            i = markup(page, i, True)
+        else:
+            i += 1  # a < that opens nothing is text
+        if i < 0:
+            return -1
+        i = page.find("<", i)
+    return -1
+
+
+def scripting_off_alike(page, i, end):
+    """Whether a browser with scripting off, which reads the noscript text from i to end as markup,
+    still reads what follows as the scan does: the text holds only whole tags that end before end,
+    no comment, doctype or bogus comment, and no start tag that changes how later markup is read."""
+    i = page.find("<", i, end)
+    while i >= 0:
+        start = LETTER.match(page, i + 1)
+        if start or page.startswith("</", i) and LETTER.match(page, i + 2):
+            tag = read_tag(page, i + (1 if start else 2))
+            if tag is None or tag[3] > end or start and tag[0] in NOSCRIPT_STOP:
+                return False
+            i = tag[3]
+        elif page.startswith(("<!", "</", "<?"), i):
+            return False
+        else:
+            i += 1  # a < that opens nothing is text
+        i = page.find("<", i, end)
+    return True
+
+
 def inputs(page):
-    """The attributes of every input start tag on the page, outside comments and text."""
+    """The attributes of every input start tag that a browser makes a field of: outside comments,
+    text, templates, svg and math, and not hidden. Where the rest of the page cannot be read for
+    certain, the scan stops, and nothing after counts."""
     page = page.replace("\r\n", "\n").replace("\r", "\n")
     controls = []
+    levels = [0]  # the select elements open in the page, then in each open template
     i = page.find("<")
     while i >= 0:
         if LETTER.match(page, i + 1):
             tag = read_tag(page, i + 1)
             if tag is None:
                 break
-            name, attributes, i = tag
-            if name == "input":
-                controls.append(attributes)
-            elif name == "plaintext":
+            name, attributes, closing, i = tag
+            if name in ("plaintext", "frameset") or any(levels) and name in SELECT_STOP:
                 break
+            if name == "input":
+                kind = attributes.get("type")
+                hidden = kind is not None and ("&" in kind or kind.translate(LOWER) == "hidden")
+                if len(levels) == 1 and not hidden:
+                    controls.append(attributes)
+            elif name == "template":
+                levels.append(0)
+            elif name == "select":
+                levels[-1] += 1
+            elif name in ("svg", "math"):
+                if not closing:
+                    i = foreign_end(page, i, name)
             elif name == "script":
                 i = script_end(page, i)
             elif name in TEXT_END:
                 end = TEXT_END[name].search(page, i)
-                i = end.start() if end else -1
+                if end is None or name == "noscript" and not scripting_off_alike(page, i, end.start()):
+                    break
+                i = end.start()
         elif page.startswith("</", i) and LETTER.match(page, i + 2):
             tag = read_tag(page, i + 2)
-            i = tag[2] if tag else -1
-        elif page.startswith("<!--", i):
-            i = comment_end(page, i + 4)
-        elif page.startswith("</>", i):
-            i += 3
+            if tag is None:
+                break
+            name, i = tag[0], tag[3]
+            if name == "template" and len(levels) > 1:
+                levels.pop()
+            elif name == "select" and levels[-1]:
+                levels[-1] -= 1
         elif page.startswith(("<!", "</", "<?"), i):
-            end = page.find(">", i + 2)  # a doctype or a bogus comment, up to the next >
-            i = end + 1 if end >= 0 else -1
+            i = markup(page, i, False)
         else:
             i += 1  # a < that opens nothing is text
         if i < 0:
@@ -429,19 +583,23 @@ def inputs(page):
     return controls
 
 
-with open(sys.argv[1], encoding="utf-8", errors="replace") as page:
-    controls = inputs(page.read())
-password = [c for c in controls if c.get("name") == "password"]
-checks = [
-    ("name", "email", any(c.get("name") == "email" for c in controls)),
-    ("name", "password", bool(password)),
-    ("autocomplete", "current-password", any(c.get("autocomplete") == "current-password" for c in password)),
-]
-print("".join(" %s=\"%s\"" % (name, value) for name, value, present in checks if not present), end="")
+text, problem = page_text(sys.argv[1], sys.argv[2])
+if text is not None:
+    controls = inputs(text)
+    password = [c for c in controls if c.get("name") == "password"]
+    checks = [
+        ("name", "email", any(c.get("name") == "email" for c in controls)),
+        ("name", "password", bool(password)),
+        ("autocomplete", "current-password",
+         any(c.get("autocomplete") == "current-password" for c in password)),
+    ]
+    missing = "".join(" %s=\"%s\"" % (name, value) for name, value, present in checks if not present)
+    problem = "missing:" + missing if missing else ""
+print(problem, end="")
 '
 
 step_smoke() {
-  local failures=() name endpoint want locale theme page="$WORK/page.html" redirect='' status missing
+  local failures=() name endpoint want locale theme page="$WORK/page.html" redirect='' status problem served
   # A temporary or permanent redirect to /en on a loopback address of this same site, nowhere else.
   local to_en='^30[78] http://(127\.0\.0\.1|localhost|\[::1\]):3000/en/?$'
   : >"$WORK/smoke.txt"
@@ -494,17 +652,19 @@ step_smoke() {
   # The sign-in form's controls, read as a browser reads them (SIGN_IN_PY): HTML attribute names
   # ignore case, and React writes them as the source spells them (autoComplete), but the values
   # must match exactly, because they are the form's keys, which the sign-in request sends unchanged.
-  # A failure names the HTTP status and every attribute that was missing.
-  missing=''
-  if status=$(fetch --output "$page" --write-out '%{http_code}' "$SITE/en/account"); then
-    missing=$(python3 -I -c "$SIGN_IN_PY" "$page")
+  # Only a page served as HTML counts, with its response headers (header_json) read for the type.
+  # A failure names the HTTP status and every attribute that was missing, or why the page was not read.
+  problem=''
+  if served=$(fetch --output "$page" --write-out '%{http_code} %{header_json}' "$SITE/en/account"); then
+    problem=$(python3 -I -c "$SIGN_IN_PY" "$page" "${served#* }")
   else
-    missing=' the page'
+    problem='missing: the page'
   fi
-  if [ -z "$missing" ]; then
+  status=${served%% *}
+  if [ -z "$problem" ]; then
     result ok "sign-in page /en/account shows the email and password form"
   else
-    result failed "sign-in page /en/account shows the email and password form (HTTP ${status:-none}, missing:$missing)"
+    result failed "sign-in page /en/account shows the email and password form (HTTP ${status:-none}, $problem)"
   fi
 
   # Exactly the Railway services, each once and each ready.
