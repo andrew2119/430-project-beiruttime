@@ -14,6 +14,8 @@ import { matchesAcknowledgedSelection } from './model';
 import { readPrivatePng } from './images';
 import { fencePrivateState } from './access-lease';
 import { previewPalette } from './preview';
+import MovementOption from '@/features/movement-option/view';
+import ConfigurationReview from './configuration-review';
 import en from './en.json';
 import ar from './ar.json';
 
@@ -186,6 +188,7 @@ function Configurator({fingerprint,identityPending,identityError,retryIdentity,i
         {!!savedQuery.data?.items.length&&<label className="bo-resume">{t.resume}<select dir="ltr" name="saved_configuration" value={configurationId} disabled={busy} onChange={e=>{setBrand(brand);setBase(base);setCaliber(caliber);setConfigurationId(e.target.value);setChosen('');setFailure(null);setOperation(null);updateUrl(e.target.value,'');}}><option value="">—</option>{savedQuery.data.items.map(c=><option key={c.id} value={c.id}>{c.base_model} · {c.id.slice(0,8)} · {c.revision}</option>)}</select></label>}
       </aside>
     </div>
+    {ack&&<div className="bo-five-review"><MovementOption key={`${fingerprint}:${ack.brand_id}`} brandId={ack.brand_id} sample={catalogQuery.data?.brand.sample??false}/><ConfigurationReview key={`${fingerprint}:${ack.id}:${ack.revision}`} id={ack.id} revision={ack.revision} brand={ack.brand_id} sourcesCurrent={ack.selections.every(selection=>selection.current)}/></div>}
   </PageLayout>;
 }
 

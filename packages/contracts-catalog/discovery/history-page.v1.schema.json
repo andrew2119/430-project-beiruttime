@@ -1,0 +1,89 @@
+{
+  "$defs": {
+    "HistoryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "summary_en": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Summary En",
+          "type": "string"
+        },
+        "summary_ar": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Summary Ar",
+          "type": "string"
+        },
+        "user_note": {
+          "anyOf": [
+            {
+              "maxLength": 1000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Note"
+        }
+      },
+      "required": [
+        "occurred_at",
+        "summary_en",
+        "summary_ar"
+      ],
+      "title": "HistoryEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "history": {
+      "items": {
+        "$ref": "#/$defs/HistoryEntry"
+      },
+      "maxItems": 100,
+      "title": "History",
+      "type": "array"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "maxLength": 1024,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Next Cursor"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "listing_revision": {
+      "minimum": 1,
+      "title": "Listing Revision",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "history",
+    "next_cursor",
+    "revision",
+    "listing_revision"
+  ],
+  "title": "HistoryPage",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

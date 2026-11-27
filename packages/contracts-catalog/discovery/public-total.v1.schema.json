@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "catalog-public-total.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "criteria": {
+      "pattern": "^[a-f0-9]{32}$",
+      "title": "Criteria",
+      "type": "string"
+    },
+    "total": {
+      "maximum": 9000000000000000,
+      "minimum": 0,
+      "title": "Total",
+      "type": "integer"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "as_of": {
+      "format": "date-time",
+      "title": "As Of",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "criteria",
+    "total",
+    "revision",
+    "as_of"
+  ],
+  "title": "SearchTotal",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
