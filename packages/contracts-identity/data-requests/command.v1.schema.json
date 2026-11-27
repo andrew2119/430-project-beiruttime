@@ -1,0 +1,30 @@
+{
+  "title": "Personal data command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "operation_id",
+    "kind",
+    "expected_revision"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "data-requests.v1"
+    },
+    "operation_id": {
+      "type": "string",
+      "maxLength": 96,
+      "pattern": "^[a-zA-Z0-9_-]{1,96}$"
+    },
+    "kind": {
+      "enum": [
+        "export",
+        "delete"
+      ]
+    },
+    "expected_revision": {
+      "const": 0
+    }
+  }
+}
