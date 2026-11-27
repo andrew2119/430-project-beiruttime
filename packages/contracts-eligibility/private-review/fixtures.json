@@ -1,0 +1,62 @@
+{
+  "label": "Synthetic development fixtures; no connected acceptance",
+  "source": {
+    "case_id": "00000000-0000-0000-0000-000000000008",
+    "binding": {
+      "subject_id": "00000000-0000-0000-0000-000000000001",
+      "watch_id": "00000000-0000-0000-0000-000000000003",
+      "organization_id": "00000000-0000-0000-0000-000000000004",
+      "request_id": "00000000-0000-0000-0000-000000000005",
+      "request_revision": 1,
+      "consent_revision": 1,
+      "quote_id": "00000000-0000-0000-0000-000000000006",
+      "quote_revision": 1,
+      "policy_revision": "identity-v1",
+      "source_revision": 1,
+      "commitment_id": "00000000-0000-0000-0000-000000000007",
+      "purpose": "brand-request-identity"
+    },
+    "active_identity": true,
+    "active_business": true,
+    "active_consent": true,
+    "accepted_quote": true,
+    "brand_approver_id": "00000000-0000-0000-0000-000000000002",
+    "eligible_reviewers": [
+      "00000000-0000-0000-0000-00000000000a",
+      "00000000-0000-0000-0000-00000000000c"
+    ],
+    "evidence": {
+      "synthetic": true,
+      "identity_match": "match",
+      "document_valid": true
+    },
+    "active_obligation": false
+  },
+  "cases": [
+    {
+      "name": "success",
+      "state": "eligible",
+      "execution_authorized": false
+    },
+    {
+      "name": "denied",
+      "actor_id": "00000000-0000-0000-0000-000000000001",
+      "status": 403
+    },
+    {
+      "name": "stale",
+      "source_revision": 2,
+      "status": 409
+    },
+    {
+      "name": "lost-response",
+      "operation_id": "00000000-0000-0000-0000-000000000066",
+      "recovery": "retry_same_operation"
+    },
+    {
+      "name": "timeout",
+      "status": 503,
+      "recovery": "retry_same_operation"
+    }
+  ]
+}
