@@ -40,9 +40,9 @@ const request:BrandRequest={
 };
 function render(){return renderToStaticMarkup(createElement(BrandDecisions));}
 function available():{data:DecisionReadiness}{return {data:{status:'available',execution_authority:false,bindings:{
-  request_id:request.id,request_revision:1,brand_id:brand,subject_id:request.buyer_id,approver_id:id(4),
+  watch_id:id(20),request_id:request.id,request_revision:1,brand_id:brand,subject_id:request.buyer_id,approver_id:id(4),
   assessment_id:id(5),assessment_revision:1,quote_id:id(6),quote_revision:1,grant_id:id(7),grant_revision:1,
-  amount_minor:515000,currency:'USD',purpose:'brand_approval',
+  amount_minor:515000,currency:'USD',purpose:'brand_approval',consent_revision:1,assignment_revision:1,
 }}};}
 describe('brand decision availability and private scope',()=>{
   beforeEach(()=>{

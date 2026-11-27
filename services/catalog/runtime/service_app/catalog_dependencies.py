@@ -126,12 +126,18 @@ def assert_owner(row, person):
         raise AccessDenied("Listing ownership differs")
 
 
+def error_prefix(dependency):
+    # Public error codes allow no hyphen, so "service-operations" becomes service_operations.
+    return dependency.replace("-", "_")
+
+
 async def service_request(request, dependency, method, path, **kwargs):
+    prefix = error_prefix(dependency)
     signing = os.getenv("BT_SERVICE_AUTH_PRIVATE_KEY")
     if not signing:
         observe_publication_upstream(request, dependency, failure="service_signing_unavailable")
         raise PublicError(
-            f"{dependency}_unavailable",
+            f"{prefix}_unavailable",
             "A required service is temporarily unavailable. Retry this operation.",
             status=503,
         )
@@ -162,7 +168,10 @@ async def service_request(request, dependency, method, path, **kwargs):
     )
 
 
-async def upstream(request, dependency, method, path, **kwargs):
+async def upstream(request, dependency, method, path, *, absent_route_unavailable=False, **kwargs):
+    # absent_route_unavailable is for provider routes whose contract never refuses
+    # with 404 or 405: there those statuses mean the route is not served yet.
+    prefix = error_prefix(dependency)
     # Pricing quotes belong to the acting human's personal context, even when
     # that human is preparing an authorized organization's listing.
     if dependency != "pricing" and request.query_params.get("organization_id"):
@@ -180,7 +189,7 @@ async def upstream(request, dependency, method, path, **kwargs):
     observe_publication_upstream(request, dependency, result)
     if isinstance(result, Unavailable):
         raise PublicError(
-            f"{dependency}_unavailable",
+            f"{prefix}_unavailable",
             "A required service is temporarily unavailable. Retry this operation.",
             status=503,
         )
@@ -190,13 +199,19 @@ async def upstream(request, dependency, method, path, **kwargs):
         raise AccessDenied("Upstream denied current scope")
     if result.status_code >= 500:
         observe_publication_upstream(request, dependency, failure="upstream")
-        raise PublicError(f"{dependency}_unavailable", "A required service is temporarily unavailable.", status=503)
+        raise PublicError(f"{prefix}_unavailable", "A required service is temporarily unavailable.", status=503)
+    if absent_route_unavailable and result.status_code in (404, 405):
+        raise PublicError(
+            f"{prefix}_unavailable",
+            "A required service is temporarily unavailable. Retry this operation.",
+            status=503,
+        )
     if result.status_code >= 400:
-        raise PublicError(f"{dependency}_denied", "A required prerequisite was not accepted.", status=409)
+        raise PublicError(f"{prefix}_denied", "A required prerequisite was not accepted.", status=409)
     try:
         return result.json()
     except ValueError:
         observe_publication_upstream(request, dependency, failure="invalid_response")
         raise PublicError(
-            f"{dependency}_unavailable", "A required service returned an invalid response.", status=503
+            f"{prefix}_unavailable", "A required service returned an invalid response.", status=503
         ) from None

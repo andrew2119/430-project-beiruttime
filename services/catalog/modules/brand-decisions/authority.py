@@ -45,10 +45,14 @@ def check_scope(value, row, *, kind):
 async def current(request, row, intent=None):
     """Read current accepted job economics; this read grants no execution authority.
 
+    Pricing uses quote validation v3; absent providers remain unavailable.
+
     Readiness discovers the exact quote through its scoped grant, never a raw-ID
     form or a stale dashboard flag. Commands additionally compare the retained IDs.
     """
     request_id = str(row["id"])
+    # Grant and assessment providers refuse in the reply body or with 403, never
+    # with 404/405, so an unserved route stays unavailable instead of denied.
     grant = check_scope(
         await service_request(
             request,
@@ -56,6 +60,7 @@ async def current(request, row, intent=None):
             "GET",
             f"/internal/v1/grants/requests/{request_id}",
             params={"purpose": "brand_approval"},
+            absent_route_unavailable=True,
         ),
         row,
         kind="grant",
@@ -130,6 +135,7 @@ async def current(request, row, intent=None):
         "service-operations",
         "GET",
         f"/internal/v1/brand-assessments/{assessment_id}/current",
+        absent_route_unavailable=True,
     )
     if not isinstance(raw_assessment, dict):
         unavailable()
@@ -141,7 +147,12 @@ async def current(request, row, intent=None):
     return {"assessment": assessment, "quote": quote, "grant": grant}
 
 
-def bind(values, row, intent, approver_id):
+def bind(values, row, intent, approver_id, *, now=None):
+    now = now or datetime.now(timezone.utc)
+    try:
+        watch_id = str(UUID(str(row["watch_id"])))
+    except (KeyError, ValueError, TypeError):
+        unavailable()
     assessment, quote, grant = (values[k] for k in ("assessment", "quote", "grant"))
     for kind, value in values.items():
         if (
@@ -176,7 +187,8 @@ def bind(values, row, intent, approver_id):
             status=409,
         )
     if (
-        grant.get("subject_id") != str(row["buyer_id"])
+        grant.get("watch_id") != watch_id
+        or grant.get("subject_id") != str(row["buyer_id"])
         or grant.get("purpose") != "brand_approval"
         or grant.get("quote_id") != quote["id"]
         or grant.get("quote_revision") != quote["revision"]
@@ -185,6 +197,10 @@ def bind(values, row, intent, approver_id):
         or grant.get("currency") != quote["currency"]
         or grant.get("status") != "valid"
         or grant.get("current") is not True
+        or grant.get("revoked_at") is not None
+        or grant.get("consent_status") != "active"
+        or type(grant.get("consent_revision")) is not int
+        or grant["consent_revision"] < 1
     ):
         raise PublicError(
             "grant_required", "Current quote-bound eligibility is required.", status=409
@@ -195,14 +211,26 @@ def bind(values, row, intent, approver_id):
         reviewer_id = str(UUID(grant.get("reviewer_id")))
     except (ValueError, TypeError):
         raise AccessDenied("An independent reviewer is required") from None
-    if reviewer_id in (str(approver_id), str(row["buyer_id"])):
+    try:
+        assessor_id = str(UUID(assessment.get("assessor_id")))
+    except (ValueError, TypeError, AttributeError):
+        raise AccessDenied("An independent assessor is required") from None
+    if (
+        assessor_id == str(approver_id)
+        or assessment.get("approver_id") != str(approver_id)
+        or assessment.get("approval_assignment_current") is not True
+        or type(assessment.get("assignment_revision")) is not int
+        or assessment["assignment_revision"] < 1
+    ):
+        raise AccessDenied("A current independent approval assignment is required")
+    if reviewer_id in (str(approver_id), str(row["buyer_id"]), assessor_id):
         raise AccessDenied("An independent reviewer is required")
     # Committed quote economics have no expiry; the grant still must be current.
     try:
         expires = datetime.fromisoformat(grant["expires_at"].replace("Z", "+00:00"))
         if expires.tzinfo is None:
             unavailable()
-        if expires <= datetime.now(timezone.utc):
+        if expires <= now:
             raise PublicError(
                 "scope_expired", "Current approval scope has expired.", status=409
             )
@@ -213,6 +241,7 @@ def bind(values, row, intent, approver_id):
         "request_revision": row["revision"],
         "brand_id": str(row["brand_id"]),
         "subject_id": str(row["buyer_id"]),
+        "watch_id": watch_id,
         "approver_id": str(approver_id),
         "assessment_id": assessment["id"],
         "assessment_revision": assessment["revision"],
@@ -223,7 +252,30 @@ def bind(values, row, intent, approver_id):
         "amount_minor": quote["total_minor"],
         "currency": quote["currency"],
         "purpose": "brand_approval",
+        "consent_revision": grant["consent_revision"],
+        "assignment_revision": assessment["assignment_revision"],
     }
+
+
+def validate_pending(bindings, row):
+    """Historical bindings remain readable but cannot authorize a new decision."""
+    if (
+        not isinstance(bindings, dict)
+        or bindings.get("currency") != "USD"
+        or any(type(bindings.get(key)) is not int or bindings[key] < 1
+               for key in ("consent_revision", "assignment_revision"))
+        or not row.get("watch_id")
+        or bindings.get("watch_id") != str(row["watch_id"])
+        or bindings.get("subject_id") != str(row["buyer_id"])
+        or bindings.get("brand_id") != str(row["brand_id"])
+        or bindings.get("request_id") != str(row["id"])
+        or bindings.get("request_revision") != row["revision"]
+    ):
+        raise PublicError(
+            "approval_unavailable",
+            "Current approval prerequisites cannot be confirmed.",
+            status=503,
+        )
 
 
 async def consume(request, operation_id, bindings):
@@ -235,6 +287,7 @@ async def consume(request, operation_id, bindings):
         "/internal/v1/grants/prepare",
         headers={"Idempotency-Key": str(operation_id)},
         json=command,
+        absent_route_unavailable=True,
     )
     if not isinstance(prepared, dict) or prepared.get("operation_id") != str(
         operation_id
@@ -246,6 +299,8 @@ async def consume(request, operation_id, bindings):
         )
     if prepared.get("status") not in ("prepared", "succeeded"):
         unavailable()
+    if any(prepared.get(key) != value for key, value in bindings.items()):
+        unavailable()
     result = await service_request(
         request,
         "eligibility",
@@ -253,6 +308,7 @@ async def consume(request, operation_id, bindings):
         "/internal/v1/grants/consume",
         headers={"Idempotency-Key": str(operation_id)},
         json=command,
+        absent_route_unavailable=True,
     )
     # Unknown responses/revocation cannot be promoted into optimistic approval.
     if (
