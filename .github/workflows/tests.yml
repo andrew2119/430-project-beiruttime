@@ -1,6 +1,6 @@
 # The full Beirut Time suite. See .github/ci/README.md.
 # Runs on every push to main, on demand, and on pull requests whose head branch starts with
-# bt/group- (group pull requests). Other pull requests get the light Checks workflow only.
+# bt/group- (group pull requests). Other pull requests get the Light checks workflow only.
 name: Tests
 
 on:

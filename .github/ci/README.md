@@ -3,9 +3,9 @@
 Two GitHub Actions workflows run on standard Ubuntu runners.
 They need no secrets, read the repository only, and pin every action by its full commit.
 
-## Checks (light, every pull request)
+## Light checks (every pull request)
 
-`.github/workflows/checks.yml` runs on every pull request to `main`.
+`.github/workflows/light-checks.yml` runs on every pull request to `main`.
 It is a fast signal for the piece being changed, not the full suite, and is never reported as one.
 
 1. `plan` maps the changed paths to the light suites they reach (`changed.py`).
