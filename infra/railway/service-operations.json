@@ -19,6 +19,6 @@
     "preDeployCommand": [
       "sh -c 'BT_DATABASE_URL=\"$BT_MIGRATION_DATABASE_URL\" python -m service_app.migrate'"
     ],
-    "startCommand": "sh -c 'unset BT_MIGRATION_DATABASE_URL; exec uvicorn bt_runtime.app.main:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log'"
+    "startCommand": "sh -c 'unset BT_MIGRATION_DATABASE_URL; exec uvicorn service_app.main:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log'"
   }
 }

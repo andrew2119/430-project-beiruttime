@@ -30,6 +30,7 @@ COPY ${SERVICE_PATH}/modules /app/modules
 COPY tests/foundation /foundation-tests
 COPY tests/lanes /lane-tests
 COPY contracts /contracts
+COPY web/registrations/L23.ts /web/registrations/L23.ts
 USER app
 CMD ["python", "/app/run_tests.py"]
 
@@ -40,4 +41,4 @@ COPY --chown=app:app ${SERVICE_PATH}/modules /app/modules
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=6 CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)"]
-CMD ["uvicorn", "bt_runtime.app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+CMD ["uvicorn", "service_app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
