@@ -292,33 +292,145 @@ fetch(url, { signal: AbortSignal.timeout(5000) })
   .catch((error) => { console.error(error.message); process.exit(1); });
 '
 
-# Reads the sign-in page the way a browser parses it and prints, each after a space, the sign-in
-# attributes it lacks. Only whole attributes of input elements count: names in any case, values
-# exact, nothing inside a comment, a script or a quoted value. The password input must carry its
-# own autocomplete.
+# Reads the sign-in page the way a browser tokenizes it (the HTML standard tokenizer) and prints,
+# each after a space, the sign-in attributes it lacks. Only whole attributes of input start tags
+# count: names in any case, values exact, nothing inside a comment, a quoted value or an element
+# whose content a browser reads as text. The password input must carry its own autocomplete.
+# It does not use html.parser, whose rules for comments, tags and text differ between releases.
 SIGN_IN_PY='
+import html
+import re
 import sys
-from html.parser import HTMLParser
 
-class Inputs(HTMLParser):
-    """Every input element on the page, as a dict of its attributes."""
+SPACE = "\t\n\f "
+NAME_END = SPACE + "/>"
+ATTRIBUTE_END = SPACE + "/>="
+VALUE_END = SPACE + ">"
+CASE = re.ASCII | re.IGNORECASE
+LETTER = re.compile("[A-Za-z]")
+LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
+COMMENT_END = re.compile("--!?>")
+# Elements whose content is text up to their first end tag, in any case. Script text has its own
+# rules below, and plaintext runs to the end of the page.
+TEXT_END = {name: re.compile("</" + name + "[\t\n\f />]", CASE) for name in (
+    "style", "textarea", "title", "xmp", "iframe", "noembed", "noframes", "noscript")}
+# Script text can hide a </script>: after <!-- and then <script>, the next </script> does not end it.
+SCRIPT_DATA = re.compile("<!--|</script[\t\n\f />]", CASE)
+SCRIPT_ESCAPED = re.compile("-->|</script[\t\n\f />]|<script[\t\n\f />]", CASE)
+SCRIPT_DOUBLE = re.compile("-->|</script[\t\n\f />]", CASE)
 
-    def __init__(self):
-        super().__init__()
-        self.controls = []
 
-    def handle_starttag(self, tag, attrs):
-        if tag == "input":
-            control = {}
-            for name, value in attrs:
-                control.setdefault(name, value)  # a repeated attribute keeps its first value
-            self.controls.append(control)
+def read_tag(page, i):
+    """The tag whose name starts at i: its name, its attributes and the index just after it, or
+    None if the page ends inside the tag. Names are lowered in ASCII only, as a browser does."""
+    n = len(page)
+    j = i
+    while j < n and page[j] not in NAME_END:
+        j += 1
+    name = page[i:j].translate(LOWER)
+    attributes = {}
+    while j < n:
+        if page[j] in SPACE or page[j] == "/":
+            j += 1
+        elif page[j] == ">":
+            return name, attributes, j + 1
+        else:
+            k = j + 1
+            while k < n and page[k] not in ATTRIBUTE_END:
+                k += 1
+            key = page[j:k].translate(LOWER)
+            while k < n and page[k] in SPACE:
+                k += 1
+            value = ""
+            if k < n and page[k] == "=":
+                k += 1
+                while k < n and page[k] in SPACE:
+                    k += 1
+                if k < n and page[k] in "\"\x27":
+                    close = page.find(page[k], k + 1)
+                    if close < 0:
+                        return None
+                    value, k = page[k + 1:close], close + 1
+                else:
+                    start = k
+                    while k < n and page[k] not in VALUE_END:
+                        k += 1
+                    value = page[start:k]
+            attributes.setdefault(key, html.unescape(value))  # a repeated name keeps its first value
+            j = k
+    return None
 
-parser = Inputs()
+
+def comment_end(page, k):
+    """The index just after a comment whose text starts at k, or -1 if it runs to the end."""
+    if page.startswith(">", k):
+        return k + 1
+    if page.startswith("->", k):
+        return k + 2
+    end = COMMENT_END.search(page, k)
+    return end.end() if end else -1
+
+
+def script_end(page, i):
+    """The index of the end tag of a script whose text starts at i, or -1 if it runs to the end."""
+    state = SCRIPT_DATA
+    while True:
+        found = state.search(page, i)
+        if not found:
+            return -1
+        token = found.group().lower()
+        if token == "<!--":
+            state, i = SCRIPT_ESCAPED, found.start() + 2  # the -- of <!-- can begin -->
+        elif token == "-->":
+            state, i = SCRIPT_DATA, found.end()
+        elif token.startswith("<script"):
+            state, i = SCRIPT_DOUBLE, found.end()
+        elif state is SCRIPT_DOUBLE:
+            state, i = SCRIPT_ESCAPED, found.end()
+        else:
+            return found.start()
+
+
+def inputs(page):
+    """The attributes of every input start tag on the page, outside comments and text."""
+    page = page.replace("\r\n", "\n").replace("\r", "\n")
+    controls = []
+    i = page.find("<")
+    while i >= 0:
+        if LETTER.match(page, i + 1):
+            tag = read_tag(page, i + 1)
+            if tag is None:
+                break
+            name, attributes, i = tag
+            if name == "input":
+                controls.append(attributes)
+            elif name == "plaintext":
+                break
+            elif name == "script":
+                i = script_end(page, i)
+            elif name in TEXT_END:
+                end = TEXT_END[name].search(page, i)
+                i = end.start() if end else -1
+        elif page.startswith("</", i) and LETTER.match(page, i + 2):
+            tag = read_tag(page, i + 2)
+            i = tag[2] if tag else -1
+        elif page.startswith("<!--", i):
+            i = comment_end(page, i + 4)
+        elif page.startswith("</>", i):
+            i += 3
+        elif page.startswith(("<!", "</", "<?"), i):
+            end = page.find(">", i + 2)  # a doctype or a bogus comment, up to the next >
+            i = end + 1 if end >= 0 else -1
+        else:
+            i += 1  # a < that opens nothing is text
+        if i < 0:
+            break
+        i = page.find("<", i)
+    return controls
+
+
 with open(sys.argv[1], encoding="utf-8", errors="replace") as page:
-    parser.feed(page.read())
-parser.close()
-controls = parser.controls
+    controls = inputs(page.read())
 password = [c for c in controls if c.get("name") == "password"]
 checks = [
     ("name", "email", any(c.get("name") == "email" for c in controls)),
