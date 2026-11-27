@@ -3,7 +3,7 @@ from uuid import UUID
 from pydantic import AwareDatetime, Field, StrictInt, model_validator
 from bt_contracts_core.models import Contract
 
-MAX_MINOR = 9_000_000_000_000_000
+MAX_MINOR = 9_000_000_000_000
 
 
 class Band(Contract):
@@ -12,7 +12,7 @@ class Band(Contract):
 
 
 class AuctionRules(Contract):
-    currency: Literal['USD', 'LBP']
+    currency: Literal['USD']
     opening_minor: StrictInt = Field(ge=1, le=MAX_MINOR)
     increment_bands: list[Band] = Field(min_length=1, max_length=20)
     reserve_minor: StrictInt | None = Field(default=None, ge=1, le=MAX_MINOR)
@@ -87,3 +87,9 @@ def next_minimum(auction, bands) -> int:
     if auction['accepted_sequence'] == 0:
         return auction['opening_minor']
     return auction['current_minor'] + step_at(bands, auction['current_minor'])
+
+
+class BidSourceReceipt(Contract):
+    event_id: UUID
+    auction_id: UUID
+    sequence: StrictInt = Field(ge=1)

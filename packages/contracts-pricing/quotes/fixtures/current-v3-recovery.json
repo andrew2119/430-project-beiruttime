@@ -1,0 +1,65 @@
+{
+  "schema_version": "pricing-current.v3",
+  "preview": {
+    "quote_id": "00000000-0000-0000-0000-000000000003",
+    "quote_revision": 1,
+    "buyer_id": "00000000-0000-0000-0000-000000000001",
+    "source_id": "00000000-0000-0000-0000-000000000004",
+    "source_revision": 1,
+    "kind": "purchase",
+    "currency": "USD",
+    "total_minor": 515000,
+    "expires_at": "2026-11-17T12:15:00Z",
+    "accepted_at": "2026-11-17T12:00:00Z",
+    "schedule_id": "usd-v2",
+    "policy_revision": 2,
+    "rounding": "half_up",
+    "status": "valid",
+    "economics": "preview",
+    "execution_authority": "not_granted"
+  },
+  "committed": {
+    "quote_id": "00000000-0000-0000-0000-000000000003",
+    "quote_revision": 1,
+    "buyer_id": "00000000-0000-0000-0000-000000000001",
+    "source_id": "00000000-0000-0000-0000-000000000004",
+    "source_revision": 1,
+    "kind": "purchase",
+    "currency": "USD",
+    "total_minor": 515000,
+    "expires_at": null,
+    "accepted_at": "2026-11-17T12:01:00Z",
+    "schedule_id": "usd-v2",
+    "policy_revision": 2,
+    "rounding": "half_up",
+    "status": "valid",
+    "economics": "committed",
+    "execution_authority": "not_granted"
+  },
+  "commit": {
+    "buyer_id": "00000000-0000-0000-0000-000000000001",
+    "order_id": "00000000-0000-0000-0000-000000000002",
+    "quote_revision": 1,
+    "total_minor": 515000,
+    "committed_at": "2026-11-17T12:01:00Z"
+  },
+  "denied": {
+    "code": "access_denied",
+    "next_action": "review_current_permissions"
+  },
+  "stale": {
+    "code": "quote_binding_mismatch",
+    "next_action": "review_current_quote"
+  },
+  "lost_response": {
+    "state": "pending",
+    "retry": {
+      "buyer_id": "00000000-0000-0000-0000-000000000001",
+      "order_id": "00000000-0000-0000-0000-000000000002",
+      "quote_revision": 1,
+      "total_minor": 515000,
+      "committed_at": "2026-11-17T12:01:00Z"
+    },
+    "next_action": "retry_same_commitment"
+  }
+}

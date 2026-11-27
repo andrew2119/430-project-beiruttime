@@ -1,1 +1,1 @@
-{"version":1,"id":"L05.bid-notices","dependencies":["fastapi","asyncpg","PyJWT","pydantic"],"routes":["routes.py:router"],"migrations":["migrations/L05_0001_notices.sql"],"workers":["workers.py:bridge"]}
+{"version":1,"id":"L05.bid-notices","dependencies":["fastapi","asyncpg","PyJWT","pydantic"],"routes":["routes.py:router"],"migrations":["migrations/L05_0001_notices.sql","migrations/L05_0002_source_revision.sql"],"workers":["workers.py:bridge"]}

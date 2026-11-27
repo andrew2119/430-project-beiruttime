@@ -1,0 +1,47 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "auction_id": {
+      "format": "uuid",
+      "title": "Auction Id",
+      "type": "string"
+    },
+    "recipient_id": {
+      "format": "uuid",
+      "title": "Recipient Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "sequence": {
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "reason": {
+      "enum": [
+        "displaced_holder",
+        "immediately_beaten_challenger"
+      ],
+      "title": "Reason",
+      "type": "string"
+    },
+    "sample": {
+      "default": false,
+      "title": "Sample",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "auction_id",
+    "recipient_id",
+    "revision",
+    "sequence",
+    "reason"
+  ],
+  "title": "OutbidV2",
+  "type": "object"
+}
