@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "scheduled_ends_at": "2026-11-16T12:00:00Z",
+  "legacy_ends_at": "2026-11-16T14:00:00Z",
+  "cases": [
+    {"server_time": "2026-11-16T11:59:59.999999Z", "mode": "bidding", "expected": "auction_not_ended"},
+    {"server_time": "2026-11-16T12:00:00Z", "mode": "bidding", "accepted_sequence": 0, "expected": "no_sale", "winner": null, "order": null},
+    {"server_time": "2026-11-16T12:00:00Z", "mode": "bidding", "accepted_sequence": 1, "current_minor": 500000, "reserve_minor": 600000, "expected": "no_sale"},
+    {"server_time": "2026-11-16T12:00:00Z", "mode": "bidding", "accepted_sequence": 1, "current_minor": 500000, "reserve_minor": null, "expected": "allocation_pending", "winner_count": 1},
+    {"server_time": "2026-11-16T12:00:00Z", "mode": "prebid_pending", "expected": "ended_legacy_review", "new_winner": null, "new_order": null, "financial_mode_unchanged": true},
+    {"server_time": "2026-11-16T12:00:00Z", "mode": "prebid_reserved", "expected": "ended_legacy_review", "new_winner": null, "new_order": null, "financial_mode_unchanged": true},
+    {"scheduled_ends_at": null, "expected": "kernel_upgrade_required"},
+    {"currency": "LBP", "expected": "ended_legacy_review", "active_public_amount": null, "convert": false}
+  ],
+  "replay": {"close_intents": 1, "new_runner_up": false, "automatic_relist": false, "automatic_resume": false}
+}
