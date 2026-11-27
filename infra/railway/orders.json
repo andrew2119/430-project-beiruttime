@@ -7,7 +7,6 @@
       "services/orders/**",
       "packages/**",
       "contracts/**",
-      "tests/lanes/L13/WIRE-L13/outcomes.v1.json",
       "infra/foundation/discover-contracts.py",
       "infra/foundation/package-contracts.py",
       ".dockerignore",

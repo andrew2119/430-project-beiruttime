@@ -12,7 +12,6 @@ COPY packages/runtime /tmp/packages/runtime
 RUN pip install --no-cache-dir /tmp/packages/contracts-core /tmp/packages/bulkheads /tmp/packages/events /tmp/packages/runtime
 COPY packages /tmp/repository/packages
 COPY contracts /tmp/repository/contracts
-COPY tests/lanes/L13/WIRE-L13/outcomes.v1.json /tmp/repository/tests/lanes/L13/WIRE-L13/outcomes.v1.json
 COPY ${SERVICE_PATH}/runtime/package_contracts.py /tmp/package_contracts.py
 RUN python /tmp/package_contracts.py /tmp/repository /opt/domain-contracts
 

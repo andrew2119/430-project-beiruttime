@@ -156,7 +156,7 @@ def test_actual_routes_are_registered_once(monkeypatch):
 
 def test_operation_lookup_and_deterministic_outcomes():
     manifest = json.loads((ROOT / "contracts/registrations/L13.json").read_text())
-    cases = json.loads((Path(__file__).parent / "outcomes.v1.json").read_text())
+    cases = json.loads((ROOT / "contracts/fixtures/orders-l13-outcomes.v1.json").read_text())
     assert {case["scenario"] for case in cases} == {"success", "denied", "stale", "lost_response"}
     for case in cases:
         assert case["sample"] is True
