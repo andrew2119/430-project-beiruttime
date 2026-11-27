@@ -12,6 +12,7 @@ const names: Record<string, keyof Copy> = {
   modified: "modifiedQuestion",
   modifications: "disclosure",
   photos: "photos",
+  no_documents: "noDocuments",
   component: "component",
   modifier: "modifier",
   warranty_issuer: "warranty",

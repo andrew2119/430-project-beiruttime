@@ -44,17 +44,21 @@ it("captures the form owner and selected organization in every mutation", async 
     expect.objectContaining({ accessFingerprint: "owner-fingerprint" }),
   );
 });
-it("requests the exact sample Pricing contract in personal context", async () => {
+it("requests the current Pricing quote in personal context", async () => {
   await listingApiFor("owner", "selected-org").quote(row, "quote-operation");
   const [path, options] = authenticatedRequest.mock.calls[0];
   expect(path).toBe("/api/web/v1/pricing/v1/quotes");
-  expect(options.accessFingerprint).toBe("owner");
+  expect(options).toMatchObject({
+    accessFingerprint: "owner",
+    method: "POST",
+    headers: { "Idempotency-Key": "quote-operation" },
+  });
   expect(JSON.parse(options.body)).toEqual({
     subject_id: "listing-id",
     subject_revision: 7,
-    purpose: "business_quote",
+    purpose: "purchase",
     source: "sample",
-    schedule_id: "sample-v1",
+    schedule_id: "usd-v2",
     price_minor: 18000,
     currency: "USD",
   });
@@ -62,12 +66,12 @@ it("requests the exact sample Pricing contract in personal context", async () =>
 it("maps the schedule identifier without inventing a quote-valid status", async () => {
   await listingApiFor("owner", null).publish(
     row,
-    { id: "quote-id", schedule_id: "sample-v1" } as FeeQuote,
+    { id: "quote-id", schedule_id: "usd-v2" } as FeeQuote,
     "publish-operation",
   );
   const [, options] = authenticatedRequest.mock.calls[0];
   expect(JSON.parse(options.body)).toEqual({
     fee_quote_id: "quote-id",
-    rules_version: "sample-v1",
+    rules_version: "usd-v2",
   });
 });

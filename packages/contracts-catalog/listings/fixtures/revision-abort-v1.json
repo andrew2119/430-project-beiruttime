@@ -1,0 +1,23 @@
+{
+  "request": {
+    "operation_id": "00000000-0000-4000-8000-000000000006",
+    "listing_id": "00000000-0000-4000-8000-000000000001",
+    "watch_id": "00000000-0000-4000-8000-000000000002",
+    "listing_revision": 1,
+    "next_revision": 2,
+    "reason": "publication_review_denied"
+  },
+  "success": {
+    "operation_id": "00000000-0000-4000-8000-000000000006",
+    "listing_id": "00000000-0000-4000-8000-000000000001",
+    "watch_id": "00000000-0000-4000-8000-000000000002",
+    "listing_revision": 1,
+    "next_revision": 2,
+    "status": "succeeded",
+    "phase": "aborted",
+    "code": "publication_review_denied"
+  },
+  "denied": {"status": "denied", "code": "binding_conflict"},
+  "stale": {"status": "denied", "code": "stale_revision"},
+  "lost_response": null
+}

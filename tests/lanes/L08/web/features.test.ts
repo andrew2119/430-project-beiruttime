@@ -22,7 +22,7 @@ for(const locale of ['en','ar'] as const){
   describe(locale,()=>{
     it('shows sign in, never fake checkout or draft authority',()=>{
       const client=new QueryClient({defaultOptions:{queries:{retry:false,retryOnMount:false}}});
-      for(const key of ['l08-orders','l08-drafts'])client.getQueryCache().build(client,{queryKey:[key,'restore']}).setState({status:'error',error:new ApiError(401,'unauthorized','proof'),fetchStatus:'idle'});
+      for(const queryKey of [['l08-orders','restore'],['l08-drafts','restore'],['l08-draft-boundary']])client.getQueryCache().build(client,{queryKey}).setState({status:'error',error:new ApiError(401,'unauthorized','proof'),fetchStatus:'idle'});
       const checkout=renderToStaticMarkup(React.createElement(QueryClientProvider,{client},React.createElement(LocaleContext.Provider,{value:locale},React.createElement(Checkout))));
       const draft=renderToStaticMarkup(React.createElement(QueryClientProvider,{client},React.createElement(LocaleContext.Provider,{value:locale},React.createElement(RequestDrafts))));
       expect(checkout).toContain(`/${locale}/account?next=%2Fcheckout`);

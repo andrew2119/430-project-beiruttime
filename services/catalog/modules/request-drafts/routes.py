@@ -3,7 +3,7 @@ import hashlib
 import json
 from typing import Literal
 from uuid import UUID, uuid4
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from bt_contracts.catalog.request_drafts import DraftInput, DraftUpdate
 from bt_contracts_core.errors import PublicError
 from bt_contracts_core.models import EventEnvelope
@@ -29,6 +29,7 @@ def view(row):
         "status": "draft",
         "approved": False,
         "payment_authority": False,
+        "submitted_request_id": str(row["submitted_request_id"]) if row["submitted_request_id"] else None,
     }
 
 
@@ -50,6 +51,16 @@ async def save(request, actor, key, body, draft_id=None):
             {"id": str(draft_id), "revision": revision, "content": content}, sort_keys=True, separators=(",", ":")
         ).encode()
     ).hexdigest()
+    # Source binding is intent only. Keep bounded HTTP outside the SQL unit of
+    # work, and preserve stable replay even while the source is unavailable.
+    prior = await request.app.state.pool.fetchrow(
+        "SELECT digest,result FROM l08_draft_operations WHERE owner_id=$1 AND operation_key=$2", owner_id, key
+    )
+    if prior:
+        if prior['digest'] != digest:
+            raise PublicError('idempotency_conflict', 'This operation key has different content.', status=409)
+        return json.loads(prior['result'])
+    content = await bind(request, content)
     async with unit_of_work(request.app.state.pool, lock_key="l08-draft-op:" + str(owner_id) + ":" + key) as tx:
         prior = await tx.fetchrow(
             "SELECT digest,result FROM l08_draft_operations WHERE owner_id=$1 AND operation_key=$2", owner_id, key
@@ -58,7 +69,6 @@ async def save(request, actor, key, body, draft_id=None):
             if prior["digest"] != digest:
                 raise PublicError("idempotency_conflict", "This operation key has different content.", status=409)
             return json.loads(prior["result"])
-        content = await bind(request, content)
         if draft_id is None:
             row = await tx.fetchrow(
                 "INSERT INTO l08_request_drafts(id,owner_id,content) VALUES($1,$2,$3::jsonb) RETURNING *",
@@ -73,6 +83,8 @@ async def save(request, actor, key, body, draft_id=None):
             )
             if not row:
                 raise HTTPException(404)
+            if row["submitted_request_id"]:
+                raise PublicError("already_submitted", "The submitted source draft is immutable. Start a new draft.", status=409)
             if row["revision"] != revision:
                 raise PublicError("stale_revision", "A newer draft exists. Reload before saving.", status=409)
             row = await tx.fetchrow(
@@ -154,12 +166,31 @@ async def catalogue(
 
 
 @router.get("/v1/request-drafts")
-async def drafts(request: Request, actor=Depends(principal)):
-    rows = await request.app.state.pool.fetch(
-        "SELECT * FROM l08_request_drafts WHERE owner_id=$1 ORDER BY updated_at DESC,id LIMIT 100",
-        actor.actor.subject_id,
-    )
-    return {"items": [view(row) for row in rows]}
+async def drafts(
+    request: Request,
+    actor=Depends(principal),
+    limit: int = Query(50, ge=1, le=100),
+    before: UUID | None = None,
+):
+    owner = actor.actor.subject_id
+    async with request.app.state.pool.acquire() as tx:
+        async with tx.transaction(isolation="repeatable_read", readonly=True):
+            if before is not None and not await tx.fetchval(
+                "SELECT 1 FROM l08_request_drafts WHERE id=$1 AND owner_id=$2", before, owner
+            ):
+                raise PublicError("invalid_cursor", "Reload the first drafts page.", status=422)
+            total = await tx.fetchval(
+                "SELECT count(*) FROM l08_request_drafts WHERE owner_id=$1", owner
+            )
+            rows = await tx.fetch(
+                "SELECT * FROM l08_request_drafts WHERE owner_id=$1 AND ($2::uuid IS NULL OR (updated_at,id)<(SELECT updated_at,id FROM l08_request_drafts WHERE id=$2)) ORDER BY updated_at DESC,id DESC LIMIT $3",
+                owner, before, limit + 1,
+            )
+    return {
+        "items": [view(row) for row in rows[:limit]],
+        "total": total,
+        "next_cursor": str(rows[limit - 1]["id"]) if len(rows) > limit else None,
+    }
 
 
 @router.get("/v1/request-drafts/{draft_id}")
