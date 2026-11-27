@@ -1,0 +1,120 @@
+# The site, the demo's one entry point: http://127.0.0.1:3000 through the kind port mapping in
+# kind.yaml. It runs the image's own command, as Railway does; health check is infra/railway/web.json,
+# environment and limits are Compose. infra/k8s/check.py fails the run when this file drifts.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/component: site
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 300
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: web
+      app.kubernetes.io/component: site
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: web
+        app.kubernetes.io/component: site
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          image: beirut-time/web:local
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: AUCTION_API_URL
+              value: "http://auction:8000"
+            - name: BT_PUBLIC_WEB_ORIGINS
+              value: "http://localhost:3000,http://127.0.0.1:3000"
+            - name: BT_TRUST_FORWARDED_ORIGIN
+              value: "false"
+            - name: CATALOG_API_URL
+              value: "http://catalog:8000"
+            - name: COMMUNICATIONS_API_URL
+              value: "http://communications:8000"
+            - name: ELIGIBILITY_API_URL
+              value: "http://eligibility:8000"
+            # Kubernetes sets HOSTNAME to the pod name; the server must still listen on every address.
+            - name: HOSTNAME
+              value: "0.0.0.0"
+            - name: IDENTITY_API_URL
+              value: "http://identity:8000"
+            - name: ORDERS_API_URL
+              value: "http://orders:8000"
+            - name: PRICING_API_URL
+              value: "http://pricing:8000"
+            - name: SERVICE_OPERATIONS_API_URL
+              value: "http://service-operations:8000"
+            - name: TRUST_API_URL
+              value: "http://trust:8000"
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  labels:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/component: site
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/component: site
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      nodePort: 30080

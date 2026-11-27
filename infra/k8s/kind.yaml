@@ -1,0 +1,11 @@
+# One-node kind cluster for the demo. The site's NodePort is published on 127.0.0.1:3000 only,
+# the same address the local Compose stack uses, so nothing is reachable from outside the machine.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 3000
+        listenAddress: 127.0.0.1
+        protocol: TCP

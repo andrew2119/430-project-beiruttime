@@ -1,0 +1,22 @@
+# The whole demo stack: render with `kubectl kustomize infra/k8s`.
+# demo.sh applies it in stages by component label (database, migration, service, site).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: beirut-time
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: beirut-time
+    includeSelectors: false
+resources:
+  - namespace.yaml
+  - postgres.yaml
+  - services/auction.yaml
+  - services/catalog.yaml
+  - services/communications.yaml
+  - services/eligibility.yaml
+  - services/identity.yaml
+  - services/orders.yaml
+  - services/pricing.yaml
+  - services/service-operations.yaml
+  - services/trust.yaml
+  - web.yaml

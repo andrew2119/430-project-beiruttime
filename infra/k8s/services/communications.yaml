@@ -1,0 +1,181 @@
+# communications: its one-time migration, the service and its in-cluster address http://communications:8000.
+# Commands and health check are infra/railway/communications.json; environment and limits are Compose.
+# Passwords and signing keys come from the Secrets demo.sh generates in each run.
+# infra/k8s/check.py fails the run when this file drifts from either source.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: communications-migrate
+  labels:
+    app.kubernetes.io/name: communications
+    app.kubernetes.io/component: migration
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: communications
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          image: beirut-time/communications:local
+          imagePullPolicy: Never
+          command:
+            - "sh"
+            - "-c"
+            - "BT_DATABASE_URL=\"$BT_MIGRATION_DATABASE_URL\" python -m service_app.migrate"
+          env:
+            - name: BT_SERVICE_NAME
+              value: "communications"
+            - name: OWNER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-passwords
+                  key: COMMUNICATIONS_OWNER_PASSWORD
+            - name: BT_MIGRATION_DATABASE_URL
+              value: "postgresql://bt_communications_owner:$(OWNER_PASSWORD)@postgres:5432/bt_communications"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: communications
+  labels:
+    app.kubernetes.io/name: communications
+    app.kubernetes.io/component: service
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 300
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: communications
+      app.kubernetes.io/component: service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: communications
+        app.kubernetes.io/component: service
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: communications
+          image: beirut-time/communications:local
+          imagePullPolicy: Never
+          command:
+            - "sh"
+            - "-c"
+            - "unset BT_MIGRATION_DATABASE_URL; exec uvicorn service_app.main:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log"
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-passwords
+                  key: COMMUNICATIONS_DB_PASSWORD
+            - name: BT_DATABASE_URL
+              value: "postgresql://bt_communications:$(DB_PASSWORD)@postgres:5432/bt_communications"
+            - name: BT_AUTH_AUDIENCE
+              value: "beirut-time"
+            - name: BT_AUTH_ISSUER
+              value: "beirut-time-identity"
+            - name: BT_IDENTITY_URL
+              value: "http://identity:8000"
+            - name: BT_SERVICE_AUTH_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: signing-keys
+                  key: service-public-key
+            - name: BT_SERVICE_NAME
+              value: "communications"
+            - name: BT_TRUST_URL
+              value: "http://trust:8000"
+            - name: IDENTITY_API_URL
+              value: "http://identity:8000"
+            - name: ORDERS_API_URL
+              value: "http://orders:8000"
+            - name: PRICING_API_URL
+              value: "http://pricing:8000"
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8000
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 192Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: communications
+  labels:
+    app.kubernetes.io/name: communications
+    app.kubernetes.io/component: service
+spec:
+  selector:
+    app.kubernetes.io/name: communications
+    app.kubernetes.io/component: service
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

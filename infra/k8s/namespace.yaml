@@ -1,0 +1,8 @@
+# Everything the demo creates lives in this namespace.
+# demo.sh applies it on its own first, so the Secrets and ConfigMap it generates have a home.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: beirut-time
+  labels:
+    app.kubernetes.io/part-of: beirut-time
