@@ -293,7 +293,7 @@ fetch(url, { signal: AbortSignal.timeout(5000) })
 '
 
 step_smoke() {
-  local failures=() name endpoint want locale theme page="$WORK/page.html" redirect='' status marker missing
+  local failures=() name endpoint want locale theme page="$WORK/page.html" redirect='' status marker missing found
   # A temporary or permanent redirect to /en on a loopback address of this same site, nowhere else.
   local to_en='^30[78] http://(127\.0\.0\.1|localhost|\[::1\]):3000/en/?$'
   : >"$WORK/smoke.txt"
@@ -344,12 +344,17 @@ step_smoke() {
   done
 
   # HTML attribute names ignore case, and React writes them as the source spells them
-  # (autoComplete), so the form's attributes are matched without case.
+  # (autoComplete), but the values must match exactly: they are the form's keys, which the
+  # sign-in request sends unchanged. So every attribute on the page is listed once per line
+  # with its name in lower case and its value as sent, and each marker must be a whole line.
   # A failure names the HTTP status and every attribute that was missing.
   missing=''
   if status=$(fetch --output "$page" --write-out '%{http_code}' "$SITE/en/account"); then
+    found=$(grep -oE '[A-Za-z][A-Za-z0-9_:.-]*="[^"]*"' "$page" \
+      | awk '{ name = $0; sub(/=.*/, "", name); print tolower(name) substr($0, length(name) + 1) }' \
+      || true)
     for marker in 'name="email"' 'name="password"' 'autocomplete="current-password"'; do
-      grep -qiF -- "$marker" "$page" || missing="$missing $marker"
+      grep -qxF -- "$marker" <<<"$found" || missing="$missing $marker"
     done
   else
     missing=' the page'
