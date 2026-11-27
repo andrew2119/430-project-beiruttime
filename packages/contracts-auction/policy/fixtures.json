@@ -1,5 +1,12 @@
 {
   "version": 2,
+  "reserve_basis": [
+    {"input": {"current_minor": 430000, "reserve_minor": 450000, "accepted_sequence": 2}, "result": false},
+    {"input": {"current_minor": 450000, "reserve_minor": 450000, "accepted_sequence": 2}, "result": true},
+    {"input": {"current_minor": 450000, "reserve_minor": 450000, "accepted_sequence": 0}, "result": false},
+    {"input": {"current_minor": 400000, "reserve_minor": null, "accepted_sequence": 1}, "result": true},
+    {"input": {"current_minor": 450000, "accepted_sequence": 1}, "error": "missing"}
+  ],
   "fixed_end": {"ends_at": "2026-11-16T18:00:00Z", "end_version": 7, "remaining_seconds": [120, 90, 0.001], "kinds": ["manual", "proxy", "ceiling_only"], "extended": false},
   "deadline_refusal": {"remaining_seconds": [0, -0.001], "code": "auction_ended"},
   "reserve": {"public_price_minor": 430000, "private_ceiling_minor": 450000, "reserve_minor": 450000, "reserve_met": false},
