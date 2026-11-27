@@ -1,6 +1,7 @@
 // Run the foundation browser matrix at desktop and phone sizes in headless Chrome, then take
-// and check the eight locale and theme screenshots.
-// Usage: node .github/ci/browser.mjs <report.json>
+// and check the four locale and theme screenshots of each size.
+// Usage: node .github/ci/browser.mjs <report.json> [desktop|phone]
+// With a size it runs only that size's five checks; without one it runs all ten.
 import {readFile, writeFile, mkdtemp} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
@@ -75,6 +76,8 @@ async function screenshot(size, locale, theme, folder) {
 }
 
 const report = process.argv[2];
+const chosen = process.argv[3] ? [process.argv[3]] : Object.keys(sizes);
+if (!chosen.every(size => size in sizes)) throw new Error(`unknown size ${process.argv[3]}`);
 const problems = [];
 const passed = [];
 async function step(name, action) {
@@ -87,13 +90,13 @@ async function step(name, action) {
     console.log(`FAIL ${name}: ${error.message}`);
   }
 }
-for (const size of Object.keys(sizes)) await step(`matrix ${size}`, () => matrix(size));
 const folder = await mkdtemp(join(process.env.RUNNER_TEMP || tmpdir(), 'bt-shots-'));
-for (const size of Object.keys(sizes)) {
+for (const size of chosen) {
+  await step(`matrix ${size}`, () => matrix(size));
   for (const locale of ['en', 'ar']) {
     for (const theme of ['light', 'dark']) await step(`screenshot ${size} ${locale} ${theme}`, () => screenshot(size, locale, theme, folder));
   }
 }
-const ok = problems.length === 0 && passed.length === 10;
+const ok = problems.length === 0 && passed.length === 5 * chosen.length;
 await writeFile(report, JSON.stringify({suite: 'browser', ok, problems, checks: passed}) + '\n');
 process.exit(ok ? 0 : 1);

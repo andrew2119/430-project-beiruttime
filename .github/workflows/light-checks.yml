@@ -1,17 +1,29 @@
 # The light Beirut Time check on every pull request to main. See .github/ci/README.md.
 # It runs lint, types and the tests the changed paths reach. It is not the full suite;
 # the Tests workflow is.
+# On demand it can check one pull request by number: its merge commit with main, planned from
+# the paths it changes, or its head commit with every light suite when GitHub has no merge
+# commit for it, always with this workflow's own CI files.
 name: Light checks
+run-name: ${{ inputs.pr && format('Light checks for pull request {0}', inputs.pr) || github.event.pull_request.title || 'Light checks' }}
 
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to check (empty checks every light suite on the chosen branch)
+        type: string
+        required: false
 
 permissions:
   contents: read
 
+# One group per pull request, and one per dispatched pull request number, so dispatches for
+# different pull requests run side by side; a newer run in the same group cancels the older one.
 concurrency:
-  group: light-checks-pr-${{ github.event.pull_request.number }}
+  group: ${{ github.event_name == 'pull_request' && format('light-checks-pr-{0}', github.event.pull_request.number) || format('light-checks-dispatch-{0}', inputs.pr || github.ref) }}
   cancel-in-progress: true
 
 jobs:
@@ -24,15 +36,66 @@ jobs:
       web: ${{ steps.plan.outputs.web }}
       lanes: ${{ steps.plan.outputs.lanes }}
       plan: ${{ steps.plan.outputs.plan }}
+      sha: ${{ steps.commit.outputs.sha }}
     steps:
+      - name: Check the pull request number
+        if: inputs.pr
+        env:
+          PR: ${{ inputs.pr }}
+        run: '[[ "$PR" =~ ^[1-9][0-9]{0,6}$ ]] || { echo "::error::Not a pull request number: $PR"; exit 1; }'
       # Depth 2 keeps the merge commit's first parent, the tip of main, for the diff.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out the pull request merged with main
+        id: merge
+        if: inputs.pr
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/pull/${{ inputs.pr }}/merge
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check out the pull request head (GitHub has no merge commit for it)
+        if: inputs.pr && steps.merge.outcome == 'failure'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/pull/${{ inputs.pr }}/head
+          persist-credentials: false
+      - if: ${{ !inputs.pr }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
           persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      - name: Record the checked commit
+        id: commit
+        if: inputs.pr
+        env:
+          PR: ${{ inputs.pr }}
+          SOURCE: ${{ steps.merge.outcome == 'success' && 'merged with main' || 'head, not merged' }}
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse HEAD)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Checking pull request $PR at \`$sha\` ($SOURCE), with the CI files of \`$GITHUB_SHA\`." >> "$GITHUB_STEP_SUMMARY"
+      # A pull request event, or a dispatch that found the merge commit, checks what the change
+      # reaches; any other dispatch checks every light suite.
       - name: Map the changed paths to the suites they reach
         id: plan
-        run: python3 .github/ci/changed.py
+        env:
+          EVERY: ${{ github.event_name == 'workflow_dispatch' && steps.merge.outcome != 'success' }}
+        run: |
+          if [ "$EVERY" = true ]; then python3 .github/ci/changed.py --all; else python3 .github/ci/changed.py; fi
 
   services:
     name: service (${{ matrix.service }})
@@ -54,7 +117,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.plan.outputs.sha }}
           persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
       - uses: ./.github/actions/python-env
       - name: Create the service databases
         run: bash .github/ci/db-init.sh
@@ -79,7 +156,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.plan.outputs.sha }}
           persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
       - uses: ./.github/actions/python-env
       - name: Run the integration lane tests
         run: mkdir -p "$RUNNER_TEMP/reports" && python .github/ci/lanes.py "$RUNNER_TEMP/reports/lanes.json"
@@ -102,7 +193,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.plan.outputs.sha }}
           persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
       - uses: ./.github/actions/node-env
       - name: Lint, type check and the money format test
         run: mkdir -p "$RUNNER_TEMP/reports" && bash .github/ci/web-checks.sh "$RUNNER_TEMP/reports/web.json"
@@ -117,7 +222,7 @@ jobs:
           if-no-files-found: ignore
 
   vitest:
-    name: web tests (${{ matrix.shard }}/3)
+    name: web tests (${{ matrix.shard }}/4)
     needs: plan
     if: needs.plan.outputs.web == 'true'
     runs-on: ubuntu-24.04
@@ -125,14 +230,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.plan.outputs.sha }}
           persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
       - uses: ./.github/actions/node-env
-      - name: Run this shard of every web test suite
-        run: mkdir -p "$RUNNER_TEMP/reports" && python3 .github/ci/vitest.py "${{ matrix.shard }}" 3 "$RUNNER_TEMP/reports/shard${{ matrix.shard }}.json"
+      - name: Run this shard's share of the web test suites
+        run: mkdir -p "$RUNNER_TEMP/reports" && python3 .github/ci/vitest.py "${{ matrix.shard }}" 4 "$RUNNER_TEMP/reports/shard${{ matrix.shard }}.json"
       - name: Publish the report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -152,7 +271,21 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ needs.plan.outputs.sha }}
           persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
       # verify.py judges missing reports, so a download with nothing to fetch must not stop it.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         continue-on-error: true

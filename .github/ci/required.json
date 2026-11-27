@@ -1,18 +1,47 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "services": ["identity", "catalog", "auction", "pricing", "orders", "eligibility", "trust", "communications", "service-operations"],
-  "vitest_shards": 3,
+  "vitest_shards": 4,
+  "web_skip_gaps": [
+    {
+      "config": "web/features/counteroffers/vitest.config.ts",
+      "file": "web/features/counteroffers/subject-switch.test.tsx",
+      "test": "clears the mounted form on subject switch and ignores the old completion",
+      "reason": "it needs the optional test package react-test-renderer, which is not installed"
+    },
+    {
+      "config": "web/features/proxy-bid/vitest.config.ts",
+      "file": "web/features/proxy-bid/pricing-connected.test.ts",
+      "test": "connected non-binding fee preview > persists the exact sample preview/review privately and grants no reservation authority",
+      "reason": "the opt-in connected pricing test, which runs only with BT_L06_CONNECTED_PRICING=1"
+    }
+  ],
+  "stages": {
+    "native": ["native"],
+    "smokes": ["smokes", "origin-proof", "proxy-proof"],
+    "browser": ["browser-desktop", "browser-phone"],
+    "scenarios": ["scenarios-e06", "scenarios-e04", "scenarios-e09"]
+  },
   "steps": {
     "web": ["lint", "types", "money format"],
     "images": ["image build", "container smoke"],
     "native": ["stack start", "readiness", "stack stop"],
-    "smokes": ["stack start", "http smokes", "connected walkthrough", "origin proof", "proxy proof", "stack stop"],
-    "browser": ["stack start", "browser matrix and screenshots", "browser report", "stack stop"],
-    "scenarios": ["stack start", "E06 contract tests", "E06 preparation manifest", "E04 synthetic restore", "E09 rehearsal contract tests", "stack stop"],
+    "smokes": ["stack start", "http smokes", "connected walkthrough", "stack stop"],
+    "origin-proof": ["stack start", "origin proof", "stack stop"],
+    "proxy-proof": ["stack start", "proxy proof", "stack stop"],
+    "browser-desktop": ["stack start", "browser desktop matrix and screenshots", "browser report", "stack stop"],
+    "browser-phone": ["stack start", "browser phone matrix and screenshots", "browser report", "stack stop"],
+    "scenarios-e06": ["stack start", "E06 contract tests", "E06 preparation manifest", "stack stop"],
+    "scenarios-e04": ["stack start", "E04 synthetic restore", "stack stop"],
+    "scenarios-e09": ["stack start", "E09 rehearsal contract tests", "stack stop"],
     "n01": ["lock holder", "root-owned admission", "disposable keys and capability", "start to ready", "smoke", "service identities", "supervisor shutdown", "stop", "stopped status", "ports free", "lock released"]
   },
+  "browser_checks": [
+    "matrix desktop", "screenshot desktop en light", "screenshot desktop en dark", "screenshot desktop ar light", "screenshot desktop ar dark",
+    "matrix phone", "screenshot phone en light", "screenshot phone en dark", "screenshot phone ar light", "screenshot phone ar dark"
+  ],
   "jobs": {
-    "full": ["services", "lanes", "web", "vitest", "build", "images", "stages", "n01"],
+    "full": ["target", "services", "lanes", "web", "vitest", "build", "images", "stages", "n01"],
     "light": ["plan", "services", "lanes", "web", "vitest"]
   }
 }
