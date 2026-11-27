@@ -11,12 +11,15 @@ from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
+from hashlib import sha256
+import selectors
 import subprocess
 import shutil
+import stat
 import sys
 import tempfile
 import threading
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx
 
@@ -24,6 +27,80 @@ ROOT = Path(__file__).resolve().parents[3]
 STATE = ROOT / 'artifacts/accept'
 PASSWORD = 'Course-demo-passphrase!'
 ACCOUNTS = ['operator', 'seller', 'dealer', 'brand', 'colleague', 'buyer-a', 'buyer-b']
+
+
+PUBLICATION_FAILURE_PREFIX = b'BT_PUBLICATION_FAILURE_V1 '
+PUBLICATION_CATEGORIES = frozenset({
+    'timeout', 'network', 'saturated', 'circuit_open', 'upstream',
+    'identity_unavailable', 'publication_review_pending', 'pricing_unavailable',
+    'orders_unavailable', 'registration_pending',
+})
+PUBLICATION_UPSTREAMS = frozenset({'identity', 'pricing', 'orders'})
+PUBLICATION_STDERR_LIMIT = 4096
+
+
+def publication_failure(stderr_tail):
+    for line in reversed(stderr_tail.splitlines()):
+        if not line.startswith(PUBLICATION_FAILURE_PREFIX) or len(line) > 256:
+            continue
+        try:
+            value = json.loads(line[len(PUBLICATION_FAILURE_PREFIX):])
+        except (ValueError, RecursionError):
+            continue
+        if not isinstance(value, dict) or set(value) != {'category', 'http_status', 'upstream'}:
+            continue
+        category, status, upstream = value['category'], value['http_status'], value['upstream']
+        if not isinstance(category, str) or category not in PUBLICATION_CATEGORIES:
+            continue
+        if upstream is not None and (not isinstance(upstream, str) or upstream not in PUBLICATION_UPSTREAMS):
+            continue
+        if status is not None and (type(status) is not int or not 100 <= status <= 599):
+            continue
+        return value
+    return None
+
+
+def run_publication_child(command, *, cwd, env, timeout=120):
+    # Keep only a bounded in-memory stderr tail for the structured failure line.
+    # Never print, persist or buffer stdout; send it directly to the null sink.
+    tail = bytearray()
+    deadline = time.monotonic() + timeout
+    with subprocess.Popen(command, cwd=cwd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE) as child:
+        try:
+            with selectors.DefaultSelector() as selector:
+                selector.register(child.stderr, selectors.EVENT_READ)
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0 or not selector.select(remaining):
+                        return None, bytes(tail)
+                    chunk = os.read(child.stderr.fileno(), PUBLICATION_STDERR_LIMIT)
+                    if not chunk:
+                        break
+                    tail.extend(chunk)
+                    del tail[:-PUBLICATION_STDERR_LIMIT]
+            return child.wait(timeout=max(0, deadline - time.monotonic())), bytes(tail)
+        except subprocess.TimeoutExpired:
+            return None, bytes(tail)
+        finally:
+            if child.poll() is None:
+                child.kill()
+
+
+PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
+# Base64 plus the command envelope must fit the gateway's 1 MiB JSON budget.
+POSSESSION_PHOTO_MAX = 750 * 1024
+
+
+def read_private_file(path, limit):
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(fd, 'rb') as stream:
+        facts = os.fstat(stream.fileno())
+        if not stat.S_ISREG(facts.st_mode) or facts.st_mode & 0o077 or facts.st_uid != os.geteuid():
+            raise ValueError('Use an owner-only regular evidence file')
+        content = stream.read(limit + 1)
+        if len(content) > limit:
+            raise ValueError('Private input exceeds its byte limit')
+        return content
 
 
 class Walkthrough:
@@ -92,6 +169,28 @@ class Walkthrough:
             'TMPDIR': str(self.run_dir),
         })
         return [sys.executable, '-m', *arguments], env
+
+    def execute_publication(self, command, env):
+        status, stderr_tail = run_publication_child(command, cwd=self.run_dir, env=env)
+        self.evidence.append({'transport': self.backend, 'status': 'timeout' if status is None else status})
+        if status == 0:
+            return
+        diagnostic = publication_failure(stderr_tail)
+        record = {
+            'exit_code': status,
+            'timed_out': status is None,
+            'exception_type': ('TimeoutExpired' if status is None else
+                               'PublicationUnavailable' if diagnostic else 'ChildProcessError'),
+            'failure_category': diagnostic['category'] if diagnostic else ('timeout' if status is None else None),
+            'http_status': diagnostic['http_status'] if diagnostic else None,
+            'upstream': diagnostic['upstream'] if diagnostic else None,
+        }
+        descriptor, _ = tempfile.mkstemp(prefix='publication-child-', suffix='.json', dir=self.run_dir)
+        with os.fdopen(descriptor, 'w', encoding='utf-8') as stream:
+            json.dump(record, stream)
+        if status is None:
+            raise RuntimeError('Local command timed out; connected proof incomplete') from None
+        raise RuntimeError('Local command failed; private diagnostic review required')
 
     def execute(self, command, env):
         try:
@@ -223,7 +322,9 @@ class Walkthrough:
             self.run_phase(phase)
         print('First-sprint walkthrough only; financial and work acceptance remain unverified.')
 
-    def call(self, service, method, route, actor=None, body=None, *, headers=None, expected=(200,201), content=None, operation=None, durable=True):
+    def call(self, service, method, route, actor=None, body=None, *, headers=None, expected=(200,201), content=None, operation=None, durable=True, raw=False):
+        if raw and method != 'GET':
+            raise ValueError('A binary response must be read-only')
         # Authentication always obtains current credentials and is not replayed.
         authentication = service == 'identity' and route in (
             '/v1/accounts/login', '/v1/accounts/refresh')
@@ -275,6 +376,8 @@ class Walkthrough:
             response = self.client.request(method, f'/api/web/v1/{service}'+route, json=body, content=content, headers=h)
             self.evidence.append({'service':service,'method':method,'route':route.split('?')[0],'status':response.status_code,'request_id':response.headers.get('x-request-id')})
         assert response.status_code in expected, (service,method,route.split('?')[0],response.status_code)
+        if raw:
+            return response
         result = response.json()
         if entry is not None:
             with self.journal_lock:
@@ -390,7 +493,7 @@ class Walkthrough:
         print('Real private open and scheduled auctions created with Orders sale fences.')
 
     def quote(self, name, subject, revision, amount, purpose='bid', source='sample'):
-        body={'subject_id':subject,'subject_revision':revision,'purpose':purpose,'source':source,'schedule_id':'sample-v1','currency':'USD','price_minor':amount}
+        body={'subject_id':subject,'subject_revision':revision,'purpose':purpose,'source':source,'schedule_id':'usd-v2','currency':'USD','price_minor':amount}
         quote=self.call('pricing','POST','/v1/quotes',name,body)
         reviewed=self.call('pricing','POST','/v1/quotes/'+quote['id']+'/review',name,{**body,'quote_revision':quote['revision'],'payable_minor':quote['payable_minor']})
         assert reviewed['reviewed_at']
@@ -534,12 +637,189 @@ class Walkthrough:
         result=self.state['request_draft']; print('DRAFT',json.dumps(result)[:1600])
 
 
+    def private_demo_references(self):
+        fixtures = json.loads((ROOT / 'demo/listings.json').read_text())
+        return {item['id'] for item in fixtures['listings'] if item['seller_type'] == 'private'}
+
+    def listing_reviewer(self, credentials):
+        if credentials is None:
+            operator = self.login('operator')
+            self.require_listing_permission(operator, 'identity.private-seller.review')
+            return operator
+        values = json.loads(read_private_file(credentials, 8192))
+        if (not isinstance(values, dict) or set(values) != {'email', 'password'} or
+                not all(isinstance(value, str) and value for value in values.values())):
+            raise ValueError('Reviewer credentials must contain email and password only')
+        self.client.cookies.clear()
+        try:
+            reviewer = self.call('identity', 'POST', '/v1/accounts/login', body=values, durable=False)
+        finally:
+            self.client.cookies.clear()
+        self.require_listing_permission(reviewer, 'identity.private-seller.review')
+        return reviewer
+
+    @staticmethod
+    def require_listing_permission(session, permission):
+        if permission not in session['principal']['permissions']:
+            raise RuntimeError('Current Identity permission required for listing review')
+
+    def write_review_file(self, path, content):
+        if path.parent.resolve() != self.run_dir:
+            raise ValueError('Write private review outputs directly in the private run directory')
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, 'wb') as stream:
+            stream.write(content)
+
+    def review_command(self, proof, action, route, body, session):
+        # Retain a request digest, not the photograph, credentials or verdict text.
+        digest = sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
+        commands = proof['commands']
+        command = commands.get(action)
+        binding = {'actor': session['account']['id'], 'digest': digest, 'revision': body['revision']}
+        if command is None:
+            command = commands[action] = {**binding, 'key': str(uuid4())}
+            self.save()
+        if any(command[key] != value for key, value in binding.items()):
+            raise RuntimeError('Retry listing review with the original request and actor')
+        if 'result' not in command:
+            response = self.call('identity', 'POST', route, body=body, durable=False, headers={
+                'Authorization': 'Bearer ' + session['access_token'], 'Idempotency-Key': command['key'],
+            })
+            fields = ('state', 'revision', 'assignment_revision')
+            if action == 'challenge':
+                fields += ('challenge_id', 'code')
+            command['result'] = {field: response[field] for field in fields}
+            self.save()
+        return command['result']
+
+    def listing_review(self, reference, action, file, credentials=None):
+        run = self.run_dir.stat()
+        if run.st_mode & 0o077 or run.st_uid != os.geteuid():
+            raise ValueError('Listing review requires an owner-only proof run directory')
+        if reference not in self.private_demo_references():
+            raise ValueError('Select an exact private demo listing reference')
+        seller = self.login('seller')
+        workspace = self.call('catalog', 'GET', '/v1/seller/listings?limit=50', 'seller')
+        matches = [row for row in workspace['items'] if row['is_demo'] is True and
+                   row['seller_type'] == 'private' and row['facts']['reference'] == reference]
+        if workspace.get('next_cursor') or len(matches) != 1 or matches[0]['status'] != 'draft':
+            raise RuntimeError('Start guarded publication and select exactly one current demo draft')
+        row = matches[0]
+        path = '/v1/listing-reviews/' + str(UUID(row['id']))
+        # Identity creates this record only after Catalog attempts the bound publish.
+        current = self.call('identity', 'GET', path, 'seller', expected=(200,))
+        binding = {'id': row['id'], 'watch_id': row['physical_watch_id'], 'revision': row['revision'],
+                   'seller': seller['account']['id']}
+        proofs = self.state.setdefault('listing_proofs', {})
+        proof = proofs.get(reference)
+        if proof is None:
+            if action != 'challenge' or current['state'] != 'required' or current['revision'] != 0:
+                raise RuntimeError('A fresh bound listing challenge is required; existing approvals cannot count')
+            proof = proofs[reference] = {'binding': binding, 'commands': {}}
+            self.save()
+        elif proof['binding'] != binding:
+            raise RuntimeError('The private review no longer binds the exact draft and watch')
+        commands = proof['commands']
+        challenge = commands.get('challenge', {}).get('result', {})
+        submission = commands.get('submit', {}).get('result', {})
+        assignment = commands.get('assign', {}).get('result', {})
+        if action == 'challenge':
+            if current['state'] not in ('required', 'issued') or (current['state'] == 'issued' and 'challenge' not in commands):
+                raise RuntimeError('This run cannot issue a challenge over another review')
+            revision = commands.get('challenge', {}).get('revision', current['revision'])
+            value = self.review_command(proof, action, path+'/challenges', {'revision': revision}, seller)
+            if value['state'] != 'issued' or value['revision'] != revision + 1:
+                raise RuntimeError('Identity did not confirm the expected challenge')
+            self.write_review_file(file, json.dumps({'listing_id': binding['id'], 'listing_revision': binding['revision'],
+                                                     'proof_revision': value['revision'], 'code': value['code']}).encode())
+        elif action == 'submit':
+            if 'code' not in challenge or (current['state'] != 'issued' and 'submit' not in commands):
+                raise RuntimeError('Use the current single-use challenge before proceeding')
+            photo = read_private_file(file, POSSESSION_PHOTO_MAX)
+            if not photo.startswith(PNG_SIGNATURE):
+                raise ValueError('Supply the actual private possession photograph as PNG')
+            body = {'revision': challenge['revision'], 'challenge_id': challenge['challenge_id'],
+                    'code': challenge['code'], 'photo_base64': base64.b64encode(photo).decode('ascii')}
+            value = self.review_command(proof, action, path+'/submissions', body, seller)
+            if value['state'] != 'pending' or value['revision'] != challenge['revision'] + 1:
+                raise RuntimeError('Identity did not confirm the expected submission')
+            proof['photo_digest'] = sha256(photo).hexdigest()
+            challenge.pop('code')
+            self.save()
+        else:
+            reviewer = self.listing_reviewer(credentials)
+            reviewer_id = reviewer['account']['id']
+            if reviewer_id == binding['seller']:
+                raise RuntimeError('Seller cannot review their own evidence')
+            if action == 'assign':
+                if not submission or 'photo_digest' not in proof or current['state'] != 'pending':
+                    raise RuntimeError('The actual seller submission must be pending')
+                operator = self.login('operator')
+                self.require_listing_permission(operator, 'identity.private-seller.assign')
+                value = self.review_command(proof, action, path+'/assignment',
+                                            {'revision': submission['revision'], 'reviewer_id': reviewer_id}, operator)
+                if value['state'] != 'pending' or value['revision'] != submission['revision'] + 1:
+                    raise RuntimeError('Identity did not confirm the independent assignment')
+                proof['reviewer'] = reviewer_id
+                self.save()
+            else:
+                expected = {field: assignment.get(field) for field in ('revision', 'assignment_revision')}
+                if not assignment or proof.get('reviewer') != reviewer_id:
+                    raise RuntimeError('Use the assigned independent reviewer')
+                if 'decide' not in commands and (current['state'] != 'pending' or
+                        any(current[field] != value for field, value in expected.items())):
+                    raise RuntimeError('The active assignment changed')
+                if action == 'inspect':
+                    if 'decide' in commands:
+                        raise RuntimeError('Do not use an earlier inspection after a verdict attempt')
+                    photo = self.call('identity', 'GET', path+'/photo', expected=(200,), raw=True, headers={
+                        'Authorization': 'Bearer ' + reviewer['access_token'],
+                    })
+                    data = photo.content
+                    if (photo.headers.get('content-type') != 'image/png' or len(data) > POSSESSION_PHOTO_MAX or
+                            sha256(data).hexdigest() != proof['photo_digest']):
+                        raise RuntimeError('Reviewer did not receive the exact submitted private photo')
+                    self.write_review_file(file, data)
+                    proof['inspection'] = {**expected, 'reviewer': reviewer_id}
+                    self.save()
+                elif action == 'decide':
+                    if proof.get('inspection') != {**expected, 'reviewer': reviewer_id}:
+                        raise RuntimeError('The assigned reviewer must read the exact private photo before a verdict')
+                    decision = json.loads(read_private_file(file, 8192))
+                    if (not isinstance(decision, dict) or set(decision) != {'verdict', 'reason'} or
+                            decision['verdict'] not in ('approved', 'correction', 'rejected') or
+                            not isinstance(decision['reason'], str) or not 5 <= len(decision['reason'].strip()) <= 500):
+                        raise ValueError('Supply an explicit reviewer verdict and a bounded audit reason')
+                    value = self.review_command(proof, action, path+'/decision', {**decision, **expected}, reviewer)
+                    if value['state'] != decision['verdict'] or value['revision'] != assignment['revision'] + 1:
+                        raise RuntimeError('Identity did not confirm the selected reviewer verdict')
+                    if value['state'] != 'approved':
+                        raise RuntimeError('Listing possession has not been approved; publication proof is incomplete')
+                else:
+                    raise ValueError('Unknown listing review action')
+        print('Listing review step acknowledged; private review materials remain in the proof directory.')
+
+    def verify_reviewed_publication(self, listings):
+        proofs = self.state.get('listing_proofs', {})
+        for reference in self.private_demo_references():
+            matches = [item for item in listings if item['facts']['reference'] == reference]
+            proof = proofs.get(reference)
+            if len(matches) != 1 or not proof:
+                raise RuntimeError('A private listing lacks a connected possession review')
+            row, binding = matches[0], proof['binding']
+            verdict = proof['commands'].get('decide', {}).get('result', {})
+            if (verdict.get('state') != 'approved' or row['id'] != binding['id'] or
+                    row['physical_watch_id'] != binding['watch_id'] or row['revision'] != binding['revision'] + 1 or
+                    row['seller_type'] != 'private'):
+                raise RuntimeError('Publication does not match the reviewed draft, watch and revision')
+
     def publication(self):
         for name in ['seller','dealer']:
             self.login(name)
         # The owning Catalog importer uses the actual create/upload/fee/publish APIs.
         private = {
             'BT_ENVIRONMENT': 'demo', 'BT_DEMO_IMPORT_ACK': 'illustrative-stock-only',
+            'BT_DEMO_PRIVATE_DIAGNOSTICS': '1',
             'BT_DEMO_PRIVATE_TOKEN': self.state['accounts']['seller']['access_token'],
             'BT_DEMO_DEALER_TOKEN': self.state['accounts']['dealer']['access_token'],
             'BT_DEMO_DEALER_ORGANIZATION_ID': self.state['businesses']['dealer']['id'],
@@ -559,13 +839,14 @@ class Walkthrough:
             command.extend(['catalog', 'python', '-m', 'bt_runtime.fixtures', 'L03.listings', 'demo'])
             env = {**os.environ, **private}
         if not self.reconciling:
-            self.execute(command, env)
+            self.execute_publication(command, env)
         listings=[]
         for name in ['seller','dealer']:
             org='?organization_id='+self.state['businesses']['dealer']['id'] if name=='dealer' else ''
             listings.extend(item for item in self.call('catalog','GET','/v1/seller/listings'+org,name)['items'] if item['is_demo'])
-        self.state['listings']=listings
         assert len(listings)==6 and all(item['status']=='published' for item in listings)
+        self.verify_reviewed_publication(listings)
+        self.state['listings']=listings
         discovery=self.call('catalog','GET','/v1/discovery/watches')
         assert discovery['items'] and all(item['demo'] for item in discovery['items'])
         self.save()
@@ -574,17 +855,32 @@ class Walkthrough:
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('phase', choices=['all','accounts','onboard','publication','contacts','auctions','bids','purchases','directory','request'])
+    parser.add_argument('phase', choices=['all','accounts','onboard','publication','listing-review','contacts','auctions','bids','purchases','directory','request'])
     parser.add_argument('--origin',default='http://127.0.0.1:3300')
     parser.add_argument('--backend', choices=['container', 'native'], default='container')
     parser.add_argument('--run-dir', type=Path)
+    parser.add_argument('--listing-reference')
+    parser.add_argument('--review-action', choices=['challenge', 'submit', 'assign', 'inspect', 'decide'])
+    parser.add_argument('--review-file', type=Path, help='Private code/photo or verdict file for this action')
+    parser.add_argument('--reviewer-credentials', type=Path, help='Optional mode-0600 credentials for an already qualified reviewer')
     args=parser.parse_args()
     if args.backend == 'native' and args.run_dir is None:
         parser.error('--backend native requires --run-dir')
+    if args.phase == 'listing-review':
+        if args.run_dir is None or not args.listing_reference or not args.review_action:
+            parser.error('listing-review requires --run-dir, --listing-reference and --review-action')
+        if (args.review_action != 'assign') != (args.review_file is not None):
+            parser.error('--review-file is required for challenge, submit, inspect and decide only')
+        if args.reviewer_credentials is not None and args.review_action in ('challenge', 'submit'):
+            parser.error('Seller actions do not use reviewer credentials')
+    elif any((args.listing_reference, args.review_action, args.review_file, args.reviewer_credentials)):
+        parser.error('Listing review options require the listing-review phase')
     walk=Walkthrough(args.origin, args.backend, args.run_dir)
     try:
         if args.phase == 'all':
             walk.all()
+        elif args.phase == 'listing-review':
+            walk.listing_review(args.listing_reference, args.review_action, args.review_file, args.reviewer_credentials)
         else:
             walk.run_phase(args.phase)
     finally:

@@ -22,10 +22,13 @@ export function validatedReservation(value:AllocationOperation,watchId:string,bu
   if(value.status==='pending'||value.status==='unavailable')throw new ApiError(503,value.status,reference);
   if(value.status==='denied'&&value.payment_authority===false&&!value.order)return value;
   const order=value.order;
+  const validClock=order?.state==='awaiting_notification'
+    ?order.deadline===null&&!order.notified_at
+    :order?.state==='awaiting_payment'&&typeof order.deadline==='string'
+      &&Number.isFinite(Date.parse(order.deadline))&&/(Z|[+-]\d{2}:\d{2})$/.test(order.deadline);
   if(value.status!=='succeeded'||!order||order.watch_id!==watchId||order.buyer_id!==buyerId||order.id!==value.resource_id
-    ||order.state!=='awaiting_payment'||order.payment_authority!==false||!Number.isSafeInteger(order.total_minor)||order.total_minor<0
-    ||!['USD','LBP'].includes(order.currency)||(order.is_demo!==undefined&&typeof order.is_demo!=='boolean')||!Number.isFinite(Date.parse(order.deadline))
-    ||!/(Z|[+-]\d{2}:\d{2})$/.test(order.deadline))throw new ApiError(503,'invalid_allocation_response',reference);
+    ||!validClock||order.payment_authority!==false||!Number.isSafeInteger(order.total_minor)||order.total_minor<=0
+    ||order.currency!=='USD'||(order.is_demo!==undefined&&typeof order.is_demo!=='boolean'))throw new ApiError(503,'invalid_allocation_response',reference);
   return value;
 }
 export function canonicalReference(value:string){return normalizeDigits(value).trim().toLowerCase();}

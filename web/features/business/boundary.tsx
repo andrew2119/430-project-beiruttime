@@ -1,7 +1,7 @@
 "use client";
 import { Fragment, type ReactNode } from "react";
 import { useAccessContext } from "@/shell/access-context";
-import { Button, ButtonLink, State } from "@beirut-time/ui";
+import { Button, ButtonLink, State } from "@beirut-time/ui/foundation";
 import { useLocale } from "@/shell/locale-context";
 import {
   refreshSession,

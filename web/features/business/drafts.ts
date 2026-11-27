@@ -40,15 +40,19 @@ export function usePublicBusinessDraft(owner: string | null) {
       form.current
         .querySelectorAll<HTMLInputElement>('input[name="capabilities"]')
         .forEach((input) => {
-          if (Array.isArray(draft.capabilities))
+          if (Array.isArray(draft.capabilities)) {
             input.checked = draft.capabilities.includes(input.value);
+            input.dispatchEvent(new Event("change"));
+          }
         });
       const sample = form.current.elements.namedItem("sample");
       if (
         sample instanceof HTMLInputElement &&
         typeof draft.sample === "boolean"
-      )
+      ) {
         sample.checked = draft.sample;
+        sample.dispatchEvent(new Event("change"));
+      }
     } catch {
       /* Storage is a convenience, never business authority. */
     }

@@ -1,0 +1,15 @@
+{
+  "currency": "USD",
+  "total_minor": 515000,
+  "entries": [
+    {
+      "account": "simulated_clearing",
+      "amount_minor": 515000
+    },
+    {
+      "account": "buyer_held",
+      "amount_minor": -515000
+    }
+  ],
+  "payout_authorized": false
+}
