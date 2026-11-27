@@ -1,0 +1,7 @@
+# Existing services retain their images, requirements and transaction ownership.
+services: {}
+x-l25-composition:
+  version: 1
+  activation-order: [migrate, subscribe, enable]
+  missing-fragments: omit
+  generated-indexes: transient

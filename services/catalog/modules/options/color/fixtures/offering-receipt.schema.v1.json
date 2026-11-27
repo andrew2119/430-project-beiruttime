@@ -1,0 +1,180 @@
+{
+  "$defs": {
+    "Localized": {
+      "additionalProperties": false,
+      "properties": {
+        "en": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "En",
+          "type": "string"
+        },
+        "ar": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Ar",
+          "type": "string"
+        }
+      },
+      "required": [
+        "en",
+        "ar"
+      ],
+      "title": "Localized",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "maximum": 2147483646,
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "component": {
+      "enum": [
+        "case",
+        "bezel",
+        "dial",
+        "hands",
+        "markers",
+        "strap",
+        "bracelet",
+        "package"
+      ],
+      "title": "Component",
+      "type": "string"
+    },
+    "label": {
+      "$ref": "#/$defs/Localized"
+    },
+    "base_models": {
+      "items": {
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+        "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "title": "Base Models",
+      "type": "array"
+    },
+    "calibers": {
+      "items": {
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+        "type": "string"
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "title": "Calibers",
+      "type": "array"
+    },
+    "available": {
+      "default": true,
+      "title": "Available",
+      "type": "boolean"
+    },
+    "details": {
+      "additionalProperties": true,
+      "maxProperties": 16,
+      "title": "Details",
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "catalog.offering-receipt.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "operation_id": {
+      "pattern": "^[A-Za-z0-9_-]{8,100}$",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "subject_id": {
+      "format": "uuid",
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "title": "Watch Id",
+      "type": "null"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "state": {
+      "const": "saved",
+      "title": "State",
+      "type": "string"
+    },
+    "revision": {
+      "maximum": 2147483647,
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "pending_reason": {
+      "title": "Pending Reason",
+      "type": "null"
+    },
+    "next_actor": {
+      "title": "Next Actor",
+      "type": "null"
+    },
+    "next_review_at": {
+      "title": "Next Review At",
+      "type": "null"
+    },
+    "brand_id": {
+      "format": "uuid",
+      "title": "Brand Id",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "color",
+        "material",
+        "dial",
+        "sophistication"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "component",
+    "label",
+    "base_models",
+    "calibers",
+    "details",
+    "schema_version",
+    "operation_id",
+    "subject_id",
+    "watch_id",
+    "actor_id",
+    "organization_id",
+    "state",
+    "revision",
+    "pending_reason",
+    "next_actor",
+    "next_review_at",
+    "brand_id",
+    "kind",
+    "id"
+  ],
+  "title": "OfferingReceipt",
+  "type": "object"
+}
