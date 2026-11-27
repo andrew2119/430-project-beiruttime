@@ -1,0 +1,1 @@
+{"version":1,"id":"L13.payments","dependencies":["fastapi","asyncpg"],"routes":["routes.py:router"],"migrations":["migrations/L13_0001_payments.sql"]}

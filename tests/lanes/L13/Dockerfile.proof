@@ -1,0 +1,18 @@
+# Reuse the already-built pinned domain test image; only source/contract layers change.
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+ARG SERVICE_PATH
+USER root
+# COPY cannot remove obsolete module registrations from the reused test image.
+# Replace only image-local source; the parent image and host remain unchanged.
+RUN rm -rf /app /opt/domain-contracts /lane-tests /contracts && mkdir -p /app
+COPY --chown=app:app ${SERVICE_PATH}/runtime /app
+COPY --chown=app:app ${SERVICE_PATH}/modules /app/modules
+COPY --chown=app:app tests/lanes /lane-tests
+COPY --chown=app:app tests/lanes/L13/.contracts /opt/domain-contracts
+COPY --chown=app:app contracts /contracts
+COPY packages/runtime/src/bt_runtime /opt/venv/lib/python3.11/site-packages/bt_runtime
+COPY packages/events/src/bt_events /opt/venv/lib/python3.11/site-packages/bt_events
+COPY packages/bulkheads/src/bt_bulkheads /opt/venv/lib/python3.11/site-packages/bt_bulkheads
+COPY packages/contracts-core/src/bt_contracts_core /opt/venv/lib/python3.11/site-packages/bt_contracts_core
+USER app

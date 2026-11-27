@@ -1,88 +1,90 @@
 'use client';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AnimatedList, BidiReference, Button, ButtonLink, Card, Input } from '@beirut-time/ui';
-import { ShoppingBag } from 'lucide-react';
-import { PageHeader, PageLayout } from '@/shell/page-header';
-import { CardHead, LoadingRows, Notice, SectionState } from '@beirut-time/ui';
-import { useLocale } from '@/shell/locale-context';
-import { useSession, signInHref } from '@/features/identity/session';
-import { ApiError } from '@/lib/api/client';
-import type { AllocationOperation } from '@contracts/contracts-orders/allocation';
-import { buyNowApi } from './api';
-import { copy, errorText, uuid, canonicalReference, validatedReservation } from './copy';
-import { recallReservation, rememberReservation, purgeReservation, reservationMemoryEpoch } from './memory';
+import {useEffect,useRef,useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import {AnimatedList,BidiReference,Button,ButtonLink,Card,CardHead,Checkbox,LoadingRows,Notice,SectionState} from '@beirut-time/ui';
+import {ShoppingBag} from 'lucide-react';
+import {PageHeader,PageLayout} from '@/shell/page-header';
+import {useLocale} from '@/shell/locale-context';
+import {authenticatedRequest,useSession,signInHref} from '@/features/identity/session';
+import {ApiError} from '@/lib/api/client';
+import {readNonSecretDraft,saveNonSecretDraft} from '@/shell/private-state';
+import type {AllocationOperation,Order} from '@contracts/contracts-orders/allocation';
+import type {ExactQuote} from '@contracts/contracts-orders/payments';
+import {buyNowApi} from './api';
+import {formatQuotedMoney} from './money';
+import {connectedCopy} from './connected-copy';
+import {readQuoteSelection,rememberQuoteSelection,clearQuoteSelection} from './quote-memory';
 
-export default function Checkout(){
-  const locale=useLocale();const t=copy(locale);const session=useSession();
-  useEffect(()=>{window.addEventListener('bt:access-change',purgeReservation);return()=>window.removeEventListener('bt:access-change',purgeReservation);},[]);
+type Context={listing:{id:string;revision:number;physical_watch_id:string;is_demo:boolean;facts:{brand:string;model:string;currency:'USD'|'LBP';price_minor:number}};watch:{watch_id:string;listing_id:string;revision:number;status:string;sale_mode:string}};
+type Intent={owner:string;listingId:string;watch:string;quote:string;body:{watch_id:string;quote_id:string;expected_revision:number};key:string};
+function stored(owner:string):Intent|null{try{const v=JSON.parse(readNonSecretDraft(owner,'checkout-operation')??'null');return v?.owner===owner?v:null;}catch{return null;}}
+function persistIntent(owner:string,intent:Intent|null){try{saveNonSecretDraft(owner,'checkout-operation',JSON.stringify(intent));}catch{/* Storage is optional; never change an acknowledgement. */}}
+const pricing='/api/web/v1/pricing/v1/quotes';
+function post(body:unknown,key:string):RequestInit{return {method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify(body)};}
+
+export default function Checkout({listingId='',watchId=''}:{listingId?:string;watchId?:string}){
+  const locale=useLocale(),t=connectedCopy[locale],session=useSession();
   const boundary=useQuery({queryKey:['l08-orders',session?.access_fingerprint??'restore'],queryFn:({signal})=>buyNowApi.orders(signal),retry:false});
-  if(!session){
-    const outage=boundary.error instanceof ApiError&&boundary.error.status>=500;
-    return <PageLayout className="checkout-page"><PageHeader title={t.title} count={t.intro} tag={<span className="hx-tag">{t.eyebrow}</span>}/><Card>{boundary.isPending?<LoadingRows label={t.loading}/>:<SectionState title={outage?t.unavailable:t.signIn} body={outage?undefined:t.signInBody} kind={outage?'error':'locked'}>{outage?<Button chonk size="sm" onClick={()=>void boundary.refetch()}>{t.reload}</Button>:<ButtonLink href={signInHref('/checkout',locale)}>{t.signIn}</ButtonLink>}</SectionState>}</Card></PageLayout>;
-  }
-  return <CheckoutBody key={session.access_fingerprint} fingerprint={session.access_fingerprint} buyerId={session.principal.actor.subject_id}/>;
+  const outage=boundary.error instanceof ApiError&&boundary.error.status>=500;
+  return <PageLayout className="checkout-page"><PageHeader title={t.title} count={t.intro}/>{!session?<Card>{boundary.isPending?<LoadingRows label={t.loading}/>:<SectionState title={outage?t.unavailable:t.signIn} kind={outage?'error':'locked'}><ButtonLink href={signInHref('/checkout'+(listingId?'?listing_id='+encodeURIComponent(listingId):''),locale)}>{t.signIn}</ButtonLink></SectionState>}</Card>:<Body key={session.access_fingerprint} owner={session.access_fingerprint} listingId={listingId} watchId={watchId}/>}</PageLayout>;
 }
-function CheckoutBody({fingerprint,buyerId}:{fingerprint:string;buyerId:string}){
-  const locale=useLocale();const t=copy(locale);const cache=useQueryClient();
-  const[generation]=useState(reservationMemoryEpoch);
-  const[initial]=useState(()=>recallReservation(fingerprint));
-  const[watch,setWatch]=useState(()=>initial?.pending?initial.watch:canonicalReference((typeof window!=='undefined'?new URLSearchParams(window.location.search).get('watch'):null)??initial?.watch??''));
-  const[quote,setQuote]=useState(()=>initial?.pending?initial.quote:canonicalReference((typeof window!=='undefined'?new URLSearchParams(window.location.search).get('quote'):null)??initial?.quote??''));const[checked,setChecked]=useState(initial?.checked??'');
-  const[busy,setBusy]=useState(false);const[error,setError]=useState<unknown>(null);const[uncertain,setUncertain]=useState(!!initial?.pending);
-  const[result,setResult]=useState<AllocationOperation|null>(null);
-  const operation=useRef(initial?.pending??null);
-  const alive=useRef(true);
-  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
-  useEffect(()=>{rememberReservation({owner:fingerprint,watch,quote,checked,pending:operation.current},generation);},[fingerprint,watch,quote,checked,uncertain,generation]);
-  const availability=useQuery({queryKey:['l08-availability',checked],queryFn:({signal})=>buyNowApi.availability(checked,signal),enabled:uuid.test(checked),retry:false});
-  const orders=useQuery({queryKey:['l08-orders',fingerprint],queryFn:({signal})=>buyNowApi.orders(signal),retry:false});
-  function check(event:FormEvent){event.preventDefault();if(reservationMemoryEpoch()!==generation)return;if(!uuid.test(watch)){setError(new ApiError(422,'invalid',''));return;}setError(null);setResult(null);if(checked===watch)void availability.refetch();else setChecked(watch);}
-  const reserve=useCallback(async():Promise<AllocationOperation|null>=>{
-    if(reservationMemoryEpoch()!==generation)return null;
-    if(!operation.current){if(!availability.data||availability.data.watch_id!==watch||!uuid.test(quote))return null;operation.current={body:{watch_id:watch,quote_id:quote,expected_revision:availability.data.revision},key:crypto.randomUUID()};}
-    rememberReservation({owner:fingerprint,watch,quote,checked,pending:operation.current},generation);
-    setBusy(true);setError(null);
+function Body({owner,listingId,watchId}:{owner:string;listingId:string;watchId:string}){
+  const locale=useLocale(),t=connectedCopy[locale];
+  const[initial]=useState(()=>stored(owner));
+  const[selection]=useState(()=>readQuoteSelection(owner));
+  const[ignoreSelection,setIgnoreSelection]=useState(false);
+  const selected=listingId||initial?.listingId||(!watchId?selection?.listingId:undefined);
+  const watch=useQuery({queryKey:['l13-checkout-watch',owner,watchId],queryFn:({signal})=>buyNowApi.availability(watchId,signal),enabled:!!watchId&&!selected,retry:false});
+  const id=selected||watch.data?.listing_id;
+  const context=useQuery({queryKey:['l13-context',owner,id],queryFn:({signal})=>authenticatedRequest<Context>('/api/web/v1/orders/v1/checkout-context?listing_id='+encodeURIComponent(id!),{signal,accessFingerprint:owner}),enabled:!!id,retry:false});
+  const orders=useQuery({queryKey:['l08-orders',owner],queryFn:({signal})=>buyNowApi.orders(signal),retry:false});
+  const retained=useQuery({queryKey:['l13-selected-quote',owner,selection?.quoteId],queryFn:({signal})=>authenticatedRequest<ExactQuote>(`${pricing}/${selection!.quoteId}`,{signal,accessFingerprint:owner}),enabled:!!context.data&&!context.isFetching&&!!selection&&!ignoreSelection&&selection.listingId===id,retry:false});
+  const[createdQuote,setQuote]=useState<ExactQuote|null>(null),[accepted,setAccepted]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState<unknown>(null),[pending,setPending]=useState<Intent|null>(initial),[result,setResult]=useState<Order|null>(null);
+  const candidate=createdQuote??(!ignoreSelection&&selection?.listingId===id?retained.data:null);
+  const quote=candidate?.currency==='USD'?candidate:null;
+  const createKey=useRef(crypto.randomUUID()),reviewKey=useRef(crypto.randomUUID()),alive=useRef(true),inflight=useRef(false);
+  useEffect(()=>{alive.current=true;const purge=()=>{alive.current=false;persistIntent(owner,null);clearQuoteSelection(owner);};window.addEventListener('bt:access-change',purge);return()=>{alive.current=false;window.removeEventListener('bt:access-change',purge);};},[owner]);
+  async function getQuote(){
+    if(!context.data||inflight.current)return;
+    inflight.current=true;setBusy(true);setError(null);
+    const listing=context.data.listing;
     try{
-      const value=validatedReservation(await buyNowApi.reserve(operation.current.body,operation.current.key),operation.current.body.watch_id,buyerId);
-      if(!alive.current||reservationMemoryEpoch()!==generation)return null;
-      setResult(value);setUncertain(false);operation.current=null;
-      rememberReservation({owner:fingerprint,watch,quote,checked,pending:null},generation);
-      void cache.invalidateQueries({queryKey:['l08-orders',fingerprint]});void cache.invalidateQueries({queryKey:['l08-availability']});void cache.invalidateQueries({queryKey:['l08-listing-availability']});return value;
-    }catch(reason){if(alive.current&&reservationMemoryEpoch()===generation){setError(reason);setUncertain(!(reason instanceof ApiError)||reason.status>=500);if(reason instanceof ApiError&&reason.status<500){operation.current=null;rememberReservation({owner:fingerprint,watch,quote,checked,pending:null},generation);}}return null;}
-    finally{if(alive.current&&reservationMemoryEpoch()===generation)setBusy(false);}
-  },[availability.data,watch,quote,checked,fingerprint,buyerId,generation,cache]);
-  useEffect(()=>{
-    const switchLocale=(event:MouseEvent)=>{
-      const anchor=event.target instanceof Element?event.target.closest<HTMLAnchorElement>('a.locale-control'):null;
-      if(reservationMemoryEpoch()!==generation||!anchor||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
-      const destination=new URL(anchor.href),language=/^\/(en|ar)(?:\/|$)/.exec(destination.pathname)?.[1];
-      if(destination.origin!==window.location.origin||!language)return;
-      event.preventDefault();event.stopPropagation();if(busy)return;
-      const move=(outcome:AllocationOperation|null)=>{
-        if(outcome?.order){destination.pathname=`/${language}/checkout/${outcome.order.id}`;destination.search='';}
-        else{if(uuid.test(watch))destination.searchParams.set('watch',watch);else destination.searchParams.delete('watch');if(uuid.test(quote))destination.searchParams.set('quote',quote);else destination.searchParams.delete('quote');}
-        window.dispatchEvent(new Event('bt:before-locale-change'));document.cookie=`bt-locale=${language}; Path=/; Max-Age=31536000; SameSite=Lax`;window.location.assign(destination.href);
-      };
-      // A full locale navigation must not abandon an uncertain reservation or its operation key.
-      if(uncertain)void reserve().then(outcome=>{if(outcome&&alive.current&&reservationMemoryEpoch()===generation)move(outcome);});else move(result);
-    };
-    document.addEventListener('click',switchLocale,true);return()=>document.removeEventListener('click',switchLocale,true);
-  },[busy,uncertain,watch,quote,result,reserve,generation]);
-  const state=availability.data;const allowed=state?.status==='available'&&state.sale_mode==='fixed'&&state.watch_id===watch&&uuid.test(quote);
-  return <PageLayout className="checkout-page"><PageHeader title={t.title} count={t.intro} tag={<span className="hx-tag">{t.eyebrow}</span>}/>
-    <div className="checkout-grid"><Card><CardHead title={t.reserve} icon={ShoppingBag}/><form className="checkout-form" method="post" autoComplete="off" onSubmit={check}>
-      <label>{t.watch}<Input name="watch_id" dir="ltr" value={watch} onChange={e=>{setWatch(canonicalReference(e.target.value));setResult(null);}} maxLength={36} required disabled={busy||uncertain} autoComplete="off"/></label>
-      <label>{t.quote}<Input name="quote_id" dir="ltr" value={quote} onChange={e=>{setQuote(canonicalReference(e.target.value));setResult(null);}} maxLength={36} disabled={busy||uncertain} autoComplete="off"/><small>{t.quoteHelp}</small></label>
-      <Button chonk size="sm" type="submit" variant="outline" disabled={busy||uncertain}>{t.load}</Button>
-    </form>
-    {availability.isFetching&&<LoadingRows label={t.loading}/>}
-    {state&&<div className="checkout-status"><strong>{t[state.status]}</strong>{state.is_demo&&<p>{t.sample}</p>}<p>{t.revision} <BidiReference>{state.revision}</BidiReference></p>{state.sale_mode!=='fixed'&&<p>{t.auction}</p>}</div>}
-    {(error||availability.error)&&<div className="checkout-error" role="alert"><p>{errorText(error??availability.error,t)}</p>{error instanceof ApiError&&error.requestId&&<small>{t.support}: <BidiReference>{error.requestId}</BidiReference></small>}</div>}
-    {uncertain&&<p role="status">{t.uncertain}</p>}
-    <div className="checkout-actions"><Button chonk size="sm" disabled={busy||(!allowed&&!uncertain)||result?.status==='succeeded'} onClick={()=>void reserve()}>{busy?t.loading:uncertain?t.retry:t.reserve}</Button><ButtonLink size="sm" variant="outline" href={`/${locale}/prices${state?'?listing_id='+encodeURIComponent(state.listing_id):''}`}>{t.quoteLink}</ButtonLink></div>
-    {result&&<div className="checkout-status" role="status"><h2>{result.status==='succeeded'?t.saved:t[result.code??'denied']??t.denied}</h2>{result.order&&<><p>{t[result.order.state]}</p><p>{t.deadline}: <time dateTime={result.order.deadline}>{new Date(result.order.deadline).toLocaleString(locale,{timeZone:'Asia/Beirut'})}</time></p><ButtonLink href={`/${locale}/checkout/${result.order.id}`}>{t.open}</ButtonLink></>}</div>}
-    </Card><aside><Card><CardHead title={t.yourOrders} icon={ShoppingBag}/>{orders.isPending&&<LoadingRows label={t.loading}/>} {orders.error&&<div role="alert"><p>{errorText(orders.error,t)}</p><Button chonk size="sm" variant="outline" onClick={()=>void orders.refetch()}>{t.reload}</Button></div>}
-    <AnimatedList className="checkout-orders" items={orders.data?.items??[]} getKey={order=>order.id} empty={orders.isSuccess?<SectionState title={t.empty} icon={ShoppingBag}/>:undefined}>{order=><article className="checkout-order-row"><ButtonLink className="checkout-order-link" size="sm" variant="ghost" href={`/${locale}/checkout/${order.id}`}><BidiReference>{order.id}</BidiReference></ButtonLink><p>{t[order.state]}</p>{order.is_demo&&<small>{t.sample}</small>}</article>}</AnimatedList></Card></aside></div>
-    <Notice>{t.paymentNotice}</Notice></PageLayout>;
+      const value=await authenticatedRequest<ExactQuote>(pricing,post({subject_id:listing.id,subject_revision:listing.revision,purpose:'purchase',source:'listing',currency:listing.facts.currency,price_minor:listing.facts.price_minor,schedule_id:'usd-v2'},createKey.current));
+      if(value.currency!=='USD'||value.subject_id!==listing.id||value.subject_revision!==listing.revision||value.source_verified!==true||!Number.isSafeInteger(value.payable_minor))throw new ApiError(503,'quote_binding_mismatch','');
+      if(alive.current){setQuote(value);setAccepted(false);rememberQuoteSelection({owner,listingId:listing.id,quoteId:value.id});}
+    }catch(reason){if(alive.current)setError(reason);}finally{inflight.current=false;if(alive.current)setBusy(false);}
+  }
+  async function reserve(){
+    if(inflight.current||!alive.current||(!pending&&(!quote||!context.data||!accepted)))return;
+    inflight.current=true;setBusy(true);setError(null);
+    try{
+      let intent=pending;
+      if(!intent){
+        const q=quote!,c=context.data!;
+        if(!q.reviewed_at)await authenticatedRequest<ExactQuote>(`${pricing}/${q.id}/review`,post({subject_id:q.subject_id,subject_revision:q.subject_revision,purpose:q.purpose,source:q.source,currency:q.currency,price_minor:q.price_minor,schedule_id:q.schedule_id,quote_revision:q.revision,payable_minor:q.payable_minor},reviewKey.current));
+        intent={owner,listingId:c.listing.id,watch:c.watch.watch_id,quote:q.id,body:{watch_id:c.watch.watch_id,quote_id:q.id,expected_revision:c.watch.revision},key:crypto.randomUUID()};
+        if(!alive.current)return;
+        setPending(intent);persistIntent(owner,intent);
+      }
+      const value=await authenticatedRequest<AllocationOperation>('/api/web/v1/orders/v1/exact-reservations',post(intent.body,intent.key));
+      if(value.status==='denied')throw new ApiError(409,value.code??'denied',value.request_id);
+      if(value.status!=='succeeded'||!value.order||value.order.watch_id!==intent.watch||value.order.quote_id!==intent.quote)throw new ApiError(503,'allocation_pending','');
+      if(!alive.current)return;
+      setResult(value.order);setPending(null);persistIntent(owner,null);void orders.refetch();
+    }catch(reason){if(alive.current){setError(reason);if(reason instanceof ApiError&&reason.status<500){setPending(null);persistIntent(owner,null);void context.refetch();}}}finally{inflight.current=false;if(alive.current)setBusy(false);}
+  }
+  const c=context.data,allowed=c?.watch.status==='available'&&c.watch.sale_mode==='fixed';
+  const quoteMatches=quote&&c&&quote.subject_id===c.listing.id&&quote.subject_revision===c.listing.revision&&quote.source==='listing'&&quote.source_verified===true&&quote.purpose==='purchase';
+  const failure=error??(candidate&&candidate.currency!=='USD'?new ApiError(409,'legacy_currency_reconciliation_required',''):!createdQuote?retained.error:null);
+  function resetQuote(){if(busy||pending)return;clearQuoteSelection(owner);setIgnoreSelection(true);setQuote(null);setAccepted(false);setError(null);createKey.current=crypto.randomUUID();reviewKey.current=crypto.randomUUID();}
+  return <><div className="checkout-grid"><Card className="checkout-slot"><CardHead title={t.selected} icon={ShoppingBag}/>
+    {!id&&!watchId&&<SectionState title={t.empty} icon={ShoppingBag}><ButtonLink href={`/${locale}/watches`}>{t.browse}</ButtonLink></SectionState>}
+    {(watch.isFetching||context.isFetching||retained.isFetching)&&<LoadingRows label={t.loading}/>}
+    {(watch.error||context.error)&&<SectionState title={(context.error instanceof ApiError&&context.error.status<500)?t.denied:t.unavailable} kind="error"><Button onClick={()=>void (id?context.refetch():watch.refetch())}>{t.reload}</Button></SectionState>}
+    {c&&<><h2>{c.listing.facts.brand} {c.listing.facts.model}</h2>{c.listing.is_demo&&<Notice>{t.sample}</Notice>}{!allowed&&!result&&!pending?<SectionState title={t.missing} kind="locked"/>:!quote&&!result&&!pending&&<Button disabled={busy||retained.isFetching} onClick={()=>void getQuote()}>{busy||retained.isFetching?t.loading:t.review}</Button>}</>}
+    {quote&&!result&&<><h3>{t.ready}</h3><Notice>{t.fees}</Notice><dl className="payment-fees">{(['price_minor','buyer_fee_minor','shipping_minor','tax_minor','payable_minor'] as const).map((field,i)=><div key={field}><dt>{[t.price,t.fee,t.shipping,t.tax,t.total][i]}</dt><dd><BidiReference>{formatQuotedMoney(quote[field],quote.currency,locale)}</BidiReference></dd></div>)}</dl><Checkbox checked={accepted} onChange={e=>setAccepted(e.target.checked)} disabled={busy||!!pending||!quoteMatches||!allowed}>{t.terms}</Checkbox><Button disabled={busy||!accepted||!!pending||!quoteMatches||!allowed} onClick={()=>void reserve()}>{busy?t.loading:t.accept}</Button><Button variant="outline" disabled={busy||!!pending} onClick={resetQuote}>{t.newQuote}</Button></>}
+    {pending&&<><p role="status">{t.pending}</p><Button disabled={busy} onClick={()=>void reserve()}>{busy?t.loading:t.retry}</Button></>}
+    {result&&<ButtonLink href={`/${locale}/checkout/${result.id}`}>{t.open}</ButtonLink>}
+    {!!failure&&<><p role="alert">{failure instanceof ApiError&&failure.status<500?t.denied:t.unavailable}</p><Button variant="outline" disabled={busy} onClick={()=>{setError(null);void context.refetch();if(selection&&!ignoreSelection)void retained.refetch();}}>{t.reload}</Button></>}
+    </Card><Card><CardHead title={t.orders} icon={ShoppingBag}/>{orders.isPending?<LoadingRows label={t.loading}/>:orders.error?<SectionState title={t.unavailable} kind="error"><Button onClick={()=>void orders.refetch()}>{t.reload}</Button></SectionState>:orders.data?.items.length?<AnimatedList className="checkout-orders" items={orders.data.items} getKey={order=>order.id}>{order=><article className="checkout-order-row"><ButtonLink variant="ghost" href={`/${locale}/checkout/${order.id}`}><BidiReference>{formatQuotedMoney(order.total_minor,order.currency,locale)}</BidiReference></ButtonLink><BidiReference>{order.id}</BidiReference></article>}</AnimatedList>:<SectionState title={t.noOrders} icon={ShoppingBag}/>}</Card></div></>;
 }
