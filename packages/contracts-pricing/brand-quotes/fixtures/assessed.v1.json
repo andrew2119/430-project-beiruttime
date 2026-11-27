@@ -18,7 +18,7 @@
       },
       {
         "id": "00000000-0000-4000-8000-000000000009",
-        "label": "Optional diagnosed rate test",
+        "label": "Assessed rate test",
         "kind": "labor",
         "mandatory": true,
         "amount_minor": 5000,
@@ -33,8 +33,8 @@
     "indicative_max_minor": 20000,
     "indicative_basis": "Current assessed parts and labor, not a valuation",
     "lead_time_days": 4,
-    "expires_at": "2026-11-05T11:00:00Z",
-    "schedule_id": "sample-v1"
+    "expires_at": "2026-11-05T10:15:00Z",
+    "schedule_id": "usd-job-v2"
   },
   "accept": {
     "quote_revision": 1,
@@ -42,8 +42,10 @@
       "00000000-0000-4000-8000-000000000008",
       "00000000-0000-4000-8000-000000000009"
     ],
-    "payable_minor": 16480,
-    "terms_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    "payable_minor": 16000,
+    "terms_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "accept_assessment_fee": true,
+    "accept_return_fee": false
   },
   "expected": {
     "buyer_id": "00000000-0000-4000-8000-000000000003",
@@ -73,7 +75,7 @@
       "status": 403
     },
     {
-      "clock": "2026-11-05T11:00:00Z",
+      "clock": "2026-11-05T10:15:00Z",
       "status": 409
     }
   ],
@@ -81,5 +83,6 @@
     "quote_revision": 1,
     "terms_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   },
-  "decline_expected_state": "declined_return_held"
+  "decline_expected_state": "declined_return_held",
+  "synthetic": true
 }

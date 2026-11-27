@@ -1,0 +1,183 @@
+{
+  "$defs": {
+    "AssessedLine": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "part",
+            "labor"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "mandatory": {
+          "title": "Mandatory",
+          "type": "boolean"
+        },
+        "part_reference": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Part Reference"
+        },
+        "amount_minor": {
+          "maximum": 9000000000000,
+          "minimum": 0,
+          "title": "Amount Minor",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "kind",
+        "mandatory",
+        "amount_minor"
+      ],
+      "title": "AssessedLine",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "source_id": {
+      "format": "uuid",
+      "title": "Source Id",
+      "type": "string"
+    },
+    "source_revision": {
+      "minimum": 1,
+      "title": "Source Revision",
+      "type": "integer"
+    },
+    "assessment_id": {
+      "format": "uuid",
+      "title": "Assessment Id",
+      "type": "string"
+    },
+    "assessment_revision": {
+      "minimum": 1,
+      "title": "Assessment Revision",
+      "type": "integer"
+    },
+    "currency": {
+      "const": "USD",
+      "title": "Currency",
+      "type": "string"
+    },
+    "lines": {
+      "items": {
+        "$ref": "#/$defs/AssessedLine"
+      },
+      "maxItems": 40,
+      "minItems": 1,
+      "title": "Lines",
+      "type": "array"
+    },
+    "assessment_fee_minor": {
+      "maximum": 9000000000000,
+      "minimum": 0,
+      "title": "Assessment Fee Minor",
+      "type": "integer"
+    },
+    "return_fee_minor": {
+      "maximum": 9000000000000,
+      "minimum": 0,
+      "title": "Return Fee Minor",
+      "type": "integer"
+    },
+    "warranty_terms": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Warranty Terms",
+      "type": "string"
+    },
+    "modification_terms": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Modification Terms",
+      "type": "string"
+    },
+    "indicative_min_minor": {
+      "maximum": 9000000000000,
+      "minimum": 0,
+      "title": "Indicative Min Minor",
+      "type": "integer"
+    },
+    "indicative_max_minor": {
+      "maximum": 9000000000000,
+      "minimum": 0,
+      "title": "Indicative Max Minor",
+      "type": "integer"
+    },
+    "indicative_basis": {
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Indicative Basis",
+      "type": "string"
+    },
+    "lead_time_days": {
+      "maximum": 730,
+      "minimum": 0,
+      "title": "Lead Time Days",
+      "type": "integer"
+    },
+    "expires_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expires At"
+    },
+    "schedule_id": {
+      "const": "usd-job-v2",
+      "title": "Schedule Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_id",
+    "source_revision",
+    "assessment_id",
+    "assessment_revision",
+    "currency",
+    "lines",
+    "assessment_fee_minor",
+    "return_fee_minor",
+    "warranty_terms",
+    "modification_terms",
+    "indicative_min_minor",
+    "indicative_max_minor",
+    "indicative_basis",
+    "lead_time_days",
+    "schedule_id"
+  ],
+  "title": "IssueQuote",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

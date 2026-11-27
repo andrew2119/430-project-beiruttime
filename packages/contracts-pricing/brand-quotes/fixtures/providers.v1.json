@@ -1,0 +1,70 @@
+{
+  "schema_version": "brand-quote-providers.v1",
+  "synthetic": true,
+  "providers": {
+    "catalog": {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "revision": 4,
+      "buyer_id": "00000000-0000-4000-8000-000000000003",
+      "brand_id": "00000000-0000-4000-8000-000000000005",
+      "watch_id": "00000000-0000-0000-0000-000000000046",
+      "consent_effective": true
+    },
+    "service-operations": {
+      "id": "00000000-0000-4000-8000-000000000007",
+      "revision": 2,
+      "request_id": "00000000-0000-4000-8000-000000000006",
+      "request_revision": 4,
+      "organization_id": "00000000-0000-4000-8000-000000000005",
+      "buyer_id": "00000000-0000-4000-8000-000000000003",
+      "current": true,
+      "status": "feasible",
+      "currency": "USD",
+      "lines": [
+        {
+          "id": "00000000-0000-4000-8000-000000000008",
+          "label": "Diagnosed seal",
+          "kind": "part",
+          "mandatory": true,
+          "part_reference": "SEAL-A"
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000009",
+          "label": "Assessed rate test",
+          "kind": "labor",
+          "mandatory": true,
+          "part_reference": null
+        }
+      ],
+      "line_ids": [
+        "00000000-0000-4000-8000-000000000008",
+        "00000000-0000-4000-8000-000000000009"
+      ],
+      "technical_summary": "Synthetic assessed configuration",
+      "watch_id": "00000000-0000-0000-0000-000000000046",
+      "assessor_id": "00000000-0000-0000-0000-000000000047",
+      "qualified": true,
+      "assignment_current": true,
+      "assignment_revision": 1,
+      "capability_revision": 1
+    },
+    "identity": {
+      "id": "00000000-0000-4000-8000-000000000005",
+      "state": "active",
+      "kind": "brand",
+      "authenticated_business": true,
+      "platform_onboarded": true,
+      "capabilities": [
+        "customization"
+      ]
+    },
+    "record_access": {
+      "actor_id": "00000000-0000-0000-0000-000000000063",
+      "organization_id": "00000000-0000-4000-8000-000000000005",
+      "request_id": "00000000-0000-4000-8000-000000000006",
+      "request_revision": 4,
+      "allowed": true,
+      "assignment_current": true
+    }
+  }
+}

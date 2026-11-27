@@ -1,1 +1,1 @@
-{"version": 1, "id": "L14.repair-quotes", "dependencies": ["fastapi", "asyncpg", "pydantic"], "routes": ["routes.py:router"]}
+{"version": 1, "id": "L14.repair-quotes", "dependencies": ["fastapi", "asyncpg", "pydantic"], "routes": ["routes.py:router"], "migrations": ["migrations/L14_0001_repair_recovery.sql"]}
