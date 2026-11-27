@@ -1,0 +1,296 @@
+name: Checks
+
+# Keep this change unmerged until the fresh-VM runner pools are registered.
+# CI_RUNNER selects bt-linux (4 cores, 8 GB) for web and services.
+# CI_RUNNER_BROWSER selects bt-browser (4 cores, 16 GB) for browser checks,
+# falling back to CI_RUNNER, then ubuntu-latest. Both variables contain JSON.
+# Runner registration and repository variables are managed externally.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  # Fixed loopback ports and local image tags are safe only in one fresh VM/job.
+  COMPOSE_PROJECT_NAME: bt-ci-${{ github.run_id }}-${{ github.run_attempt }}
+  COMPOSE_PARALLEL_LIMIT: "2"
+
+jobs:
+  web:
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          # Match web/Dockerfile, rather than the runner's system Node.
+          node-version: "22.21.1"
+      - name: Enable the repository's pinned pnpm
+        run: |
+          corepack enable
+          corepack prepare "$(node -p 'require("./package.json").packageManager')" --activate
+          pnpm --version
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm --filter beirut-time-web lint
+      - name: Typecheck
+        run: pnpm --filter beirut-time-web typecheck
+      - name: Foundation unit tests
+        run: pnpm --filter beirut-time-web test
+      - name: Feature and lane unit tests
+        run: |
+          for config in web/features/*/vitest.config.ts; do
+            pnpm --filter beirut-time-web exec vitest run --config "${config#web/}"
+          done
+          pnpm --filter beirut-time-web exec vitest run --config "$PWD/tests/lanes/L04/vitest.config.mts"
+          for config in tests/lanes/L07/vitest.config.ts tests/lanes/L08/web/vitest.config.ts; do
+            pnpm --filter beirut-time-web exec vitest run --config "$PWD/$config" --root "$PWD"
+          done
+          pnpm --filter beirut-time-web exec vitest run --config "$PWD/tests/lanes/L09/web/vitest.config.ts"
+          node --test tests/lanes/L11/format-money.test.mjs
+      - name: Production build
+        run: pnpm build
+
+  services:
+    name: Services (${{ matrix.lane }})
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      # Keep the lane-owned runners: some deliberately compose modules or add
+      # cross-runtime imports that a repository-wide pytest invocation loses.
+      matrix:
+        include:
+          - lane: L00
+            command: python3 scripts/test-services.py
+          - lane: L01
+            command: BT_TEST_LANE=L01 python3 scripts/test-services.py identity eligibility
+          - lane: L02
+            command: BT_TEST_LANE=L02 python3 scripts/test-services.py identity
+          - lane: L03
+            command: BT_TEST_LANE=L03 python3 scripts/test-services.py catalog communications
+          - lane: L04
+            command: BT_TEST_LANE=L04 python3 scripts/test-services.py catalog
+          - lane: L05
+            command: python3 tests/lanes/L05/verify.py --fresh
+          - lane: L06
+            command: BT_TEST_LANE=L06 python3 scripts/test-services.py auction communications
+          - lane: L07
+            command: BT_TEST_LANE=L07 python3 scripts/test-services.py pricing communications
+          - lane: L08
+            command: python3 tests/lanes/L08/test-modules.py
+          - lane: L09
+            command: python3 tests/lanes/L09/check.py
+          - lane: L10
+            command: ./tests/lanes/L10/verify.sh
+          - lane: L11
+            command: BT_TEST_LANE=L11 python3 scripts/test-services.py catalog service-operations
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # L10's existing verifier also runs its web checks.
+      - uses: actions/setup-node@v4
+        if: matrix.lane == 'L10'
+        with:
+          node-version: "22.21.1"
+      - name: Install L10 web dependencies
+        if: matrix.lane == 'L10'
+        run: |
+          corepack enable
+          corepack prepare "$(node -p 'require("./package.json").packageManager')" --activate
+          pnpm install --frozen-lockfile
+      - name: Start isolated PostgreSQL
+        run: |
+          mkdir -p artifacts/ci
+          ./infra/foundation/compose.sh config --quiet
+          ./infra/foundation/compose.sh up -d --wait --no-recreate postgres
+      - name: Run the lane's domain proofs
+        run: ${{ matrix.command }} 2>&1 | tee artifacts/ci/services.log
+      - name: Directory and intake integration
+        if: matrix.lane == 'L09'
+        run: BT_L09_INTEGRATION_ONLY=directory python3 tests/lanes/L09/check.py 2>&1 | tee artifacts/ci/directory-intake.log
+      - name: Collect PostgreSQL logs
+        if: always()
+        run: |
+          mkdir -p artifacts/ci
+          ./infra/foundation/compose.sh ps -a > artifacts/ci/compose-status.txt
+          ./infra/foundation/compose.sh logs --no-color --timestamps > artifacts/ci/compose.log 2>&1
+      - name: Tear down the job's stack
+        if: always()
+        run: ./infra/foundation/compose.sh down --volumes --remove-orphans
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: services-${{ matrix.lane }}-${{ github.run_attempt }}
+          path: artifacts/ci/
+          retention-days: 7
+          if-no-files-found: warn
+
+  browser:
+    needs: [web, services]
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_BROWSER || vars.CI_RUNNER || '"ubuntu-latest"') }}
+    timeout-minutes: 60
+    env:
+      CHROME_DEVTOOLS_AXI_SESSION: bt-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      CHROME_DEVTOOLS_AXI_HEADED: "0"
+      BT_LOCAL_HTTP: "1"
+      BT_CONTACT_SIMULATOR: "1"
+      BT_WEB_ORIGIN: http://localhost:3000
+      BT_ALLOWED_WEB_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.21.1"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install integration-runner dependencies
+        run: python3 -m pip install httpx==0.28.1
+      - name: Install pinned browser command tools
+        run: |
+          npm install --prefix "$RUNNER_TEMP/browser-tools" chrome-devtools-axi@0.1.31 chrome-devtools-mcp@1.12.0
+          echo "$RUNNER_TEMP/browser-tools/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "CHROME_DEVTOOLS_AXI_MCP_PATH=$RUNNER_TEMP/browser-tools/node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js" >> "$GITHUB_ENV"
+      - name: Verify headless browser prerequisites
+        run: |
+          google-chrome --version
+          chrome-devtools-axi --version
+          test -f "$CHROME_DEVTOOLS_AXI_MCP_PATH"
+      - name: Prepare disposable signing keys and Compose configuration
+        run: |
+          mkdir -p artifacts/ci artifacts/accept artifacts/screenshots
+          ./tests/lanes/L01/local-keys.sh
+          set -a
+          source tests/lanes/L01/local-config.key
+          set +a
+          export BT_SERVICE_AUTH_PRIVATE_KEY="$BT_EVENT_PRIVATE_KEY"
+          export BT_AUCTION_SERVICE_AUTH_PRIVATE_KEY="$BT_EVENT_PRIVATE_KEY"
+          export BT_PRICING_EVENT_PRIVATE_KEY="$BT_EVENT_PRIVATE_KEY"
+          export BT_TRUST_SERVICE_PRIVATE_KEY="$BT_EVENT_PRIVATE_KEY"
+          export BT_INTAKE_SERVICE_PRIVATE_KEY="$BT_EVENT_PRIVATE_KEY"
+          # Reuse the merged fragments, adding verification keys to every domain
+          # for the connected walkthrough. Neither this config nor sessions ship
+          # as artifacts: they contain disposable private signing material.
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+
+          config = json.loads(subprocess.check_output([
+              './infra/foundation/compose.sh', 'config', '--format', 'json']))
+          for name, service in config['services'].items():
+              if name not in {'postgres', 'web'} and not name.endswith('-migrate'):
+                  service['environment'].update({
+                      'BT_AUTH_PUBLIC_KEY': os.environ['BT_AUTH_PUBLIC_KEY'],
+                      'BT_SERVICE_AUTH_PUBLIC_KEY': os.environ['BT_SERVICE_AUTH_PUBLIC_KEY'],
+                  })
+              # The local-key helper shell-quotes PEMs using literal \\n.
+              # Domain JWT signers expect actual PEM newlines in their env.
+              for key, value in service.get('environment', {}).items():
+                  if key.endswith('_KEY') and isinstance(value, str):
+                      service['environment'][key] = value.replace('\\n', '\n')
+          path = Path('artifacts/accept/compose.local.json').resolve()
+          path.touch(mode=0o600)
+          path.chmod(0o600)
+          path.write_text(json.dumps(config))
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write(f'COMPOSE_FILE={path}\n')
+          PY
+      - name: Build, migrate and smoke the Compose stack
+        run: KEEP_RUNNING=1 make smoke 2>&1 | tee artifacts/ci/smoke.log
+      - name: Foundation browser matrix (EN/AR, light/dark, desktop/phone)
+        run: |
+          chrome-devtools-axi open http://localhost:3000/en
+          ./infra/foundation/browser-smoke.sh 2>&1 | tee artifacts/ci/browser.log
+      - name: Capture locale and theme screenshots
+        run: |
+          for size in desktop phone; do
+            if [ "$size" = desktop ]; then viewport=1440x900x1; else viewport=390x844x3,mobile,touch; fi
+            chrome-devtools-axi emulate --viewport "$viewport"
+            for locale in en ar; do
+              for theme in light dark; do
+                chrome-devtools-axi eval "document.cookie='bt-theme=$theme; Path=/; SameSite=Lax'"
+                chrome-devtools-axi open "http://localhost:3000/$locale"
+                path="$PWD/artifacts/screenshots/$size-$locale-$theme.png"
+                chrome-devtools-axi screenshot "$path" --full-page
+                test -s "$path"
+              done
+            done
+          done
+      - name: Integration evidence-runner unit tests
+        run: python3 -m unittest discover -s tests/integration/sprint-1 -p 'test_*.py' -v 2>&1 | tee artifacts/ci/integration-runner.log
+      - name: Connected registration and initial operator
+        run: |
+          python3 tests/integration/sprint-1/connected_walkthrough.py accounts --origin http://localhost:3000
+          ./infra/foundation/compose.sh exec -T identity python -m service_app.bootstrap_operator \
+            --email operator.s1@example.test --reason 'Authorize disposable integration demonstration operator'
+          # Bootstrap changes current grants; force a real new login, rather
+          # than reusing the pre-bootstrap principal saved by the walkthrough.
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('artifacts/accept/walkthrough.local.json')
+          state = json.loads(path.read_text())
+          state['accounts'].pop('operator')
+          path.write_text(json.dumps(state))
+          PY
+      - name: Connected marketplace integration checks
+        run: |
+          for phase in onboard contacts publication auctions bids purchases directory request; do
+            python3 tests/integration/sprint-1/connected_walkthrough.py "$phase" --origin http://localhost:3000 \
+              2>&1 | tee -a artifacts/ci/connected-walkthrough.log
+          done
+      - name: Production gateway origin integration
+        run: python3 infra/foundation/origin-smoke.py 2>&1 | tee artifacts/ci/gateway-origin.log
+      - name: Docker build-context isolation
+        run: python3 infra/foundation/context-smoke.py 2>&1 | tee artifacts/ci/build-context.log
+      - name: Collect stack logs
+        if: always()
+        run: |
+          mkdir -p artifacts/ci
+          ./infra/foundation/compose.sh ps -a > artifacts/ci/compose-status.txt
+          ./infra/foundation/compose.sh logs --no-color --timestamps > artifacts/ci/compose.log 2>&1
+      - name: Stop the browser
+        if: always()
+        run: chrome-devtools-axi stop
+      - name: Tear down the job's stack
+        if: always()
+        run: ./infra/foundation/compose.sh down --volumes --remove-orphans
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence-${{ github.run_attempt }}
+          # Deliberately allowlist evidence, never compose.local.json, keys,
+          # walkthrough.local.json, or browser profiles/cookies.
+          path: |
+            artifacts/ci/
+            artifacts/screenshots/
+            artifacts/browser-*.json
+            artifacts/origin-production.json
+            artifacts/accept/*-evidence.json
+          retention-days: 7
+          if-no-files-found: warn
