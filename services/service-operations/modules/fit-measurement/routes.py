@@ -14,7 +14,17 @@ def load(name, path):
     return module
 
 
-_contract = load('fit_measurement_contract', Path(__file__).resolve().parents[4] / 'packages/contracts-service/fit-measurement/v1.py')
+try:
+    import bt_contracts.service.fit_measurement.v1 as _contract
+except ModuleNotFoundError as error:
+    if error.name not in ('bt_contracts', 'bt_contracts.service', 'bt_contracts.service.fit_measurement',
+                          'bt_contracts.service.fit_measurement.v1'):
+        raise
+    _leaf = 'packages/contracts-service/fit-measurement/v1.py'
+    _source = next((parent / _leaf for parent in Path(__file__).resolve().parents if (parent / _leaf).is_file()), None)
+    if _source is None:
+        raise RuntimeError('Fit measurement contract unavailable') from error
+    _contract = load('fit_measurement_contract', _source)
 _model = load('fit_measurement_model', Path(__file__).with_name('model.py'))
 router = APIRouter(prefix='/v1/fit-measurement', tags=['fit measurement'])
 
