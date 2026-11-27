@@ -4,6 +4,8 @@ Usage: python3 .github/ci/verify.py <full|light> <needs.json> <reports-folder>
 
 needs.json is the workflow's toJSON(needs); the reports folder holds each suite's one-line
 report (<suite>.json) as the jobs uploaded them. The pinned lists live in required.json.
+It prints one line per suite, and per web suite, with its counts and the sha256 of its sorted test
+identities, so two runs of the same tree can be compared suite by suite.
 
 A job passes only when its own runner exited 0 (its result is success), its report exists and
 says ok, and the report shows every required test or step ran and passed, nothing skipped:
@@ -17,6 +19,7 @@ In light mode only the suites the plan reached are required; the others must be 
 import json
 from pathlib import Path
 import os
+import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -116,7 +119,8 @@ def main(mode, needs_file, folder):
             problems.append(f"{name}: not ok: {report.get('problems', [])[:3]}")
         if name in REQUIRED['services'] or name == 'lanes':
             problems += check_tests(name, report)
-            detail = f"{report.get('passed')} passed of {report.get('collected')}, {report.get('floor')} declared"
+            detail = (f"{report.get('passed')} passed of {report.get('collected')}, {report.get('floor')} declared, "
+                      f"ids {report.get('ids_sha256')}")
         elif name in REQUIRED['steps']:
             steps = report.get('steps', [])
             if steps != REQUIRED['steps'][name]:
@@ -130,6 +134,11 @@ def main(mode, needs_file, folder):
         problems += found
         listed = sum(e.get('listed', 0) for entries in merged.values() for e in entries)
         rows.append(('web suites', 'ok' if not found else 'failed', f'{len(merged)} suites, {listed} listed tests'))
+        for config, entries in merged.items():
+            for entry in (e for e in entries if 'listed' in e):
+                ran = sum(e.get('ran', 0) for e in entries)
+                rows.append((config, 'ok' if ran == entry['listed'] else 'failed',
+                             f"{entry['listed']} listed, {ran} ran, ids {entry.get('listed_sha256')}"))
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
     if summary:
         with open(summary, 'a') as out:
@@ -142,7 +151,8 @@ def main(mode, needs_file, folder):
         print(f'{result:8} {name}: {detail}')
     for problem in problems:
         print(f'::error::{problem}')
-    print(json.dumps(dict(mode=mode, ok=not problems, suites=len(rows), problems=len(problems))))
+    tree = subprocess.run(['git', '-C', str(HERE), 'rev-parse', 'HEAD^{tree}'], capture_output=True, text=True).stdout.strip()
+    print(json.dumps(dict(mode=mode, ok=not problems, tree=tree, suites=len(rows), problems=len(problems))))
     return 0 if not problems else 1
 
 
