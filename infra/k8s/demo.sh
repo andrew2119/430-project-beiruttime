@@ -292,8 +292,44 @@ fetch(url, { signal: AbortSignal.timeout(5000) })
   .catch((error) => { console.error(error.message); process.exit(1); });
 '
 
+# Reads the sign-in page the way a browser parses it and prints, each after a space, the sign-in
+# attributes it lacks. Only whole attributes of input elements count: names in any case, values
+# exact, nothing inside a comment, a script or a quoted value. The password input must carry its
+# own autocomplete.
+SIGN_IN_PY='
+import sys
+from html.parser import HTMLParser
+
+class Inputs(HTMLParser):
+    """Every input element on the page, as a dict of its attributes."""
+
+    def __init__(self):
+        super().__init__()
+        self.controls = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "input":
+            control = {}
+            for name, value in attrs:
+                control.setdefault(name, value)  # a repeated attribute keeps its first value
+            self.controls.append(control)
+
+parser = Inputs()
+with open(sys.argv[1], encoding="utf-8", errors="replace") as page:
+    parser.feed(page.read())
+parser.close()
+controls = parser.controls
+password = [c for c in controls if c.get("name") == "password"]
+checks = [
+    ("name", "email", any(c.get("name") == "email" for c in controls)),
+    ("name", "password", bool(password)),
+    ("autocomplete", "current-password", any(c.get("autocomplete") == "current-password" for c in password)),
+]
+print("".join(" %s=\"%s\"" % (name, value) for name, value, present in checks if not present), end="")
+'
+
 step_smoke() {
-  local failures=() name endpoint want locale theme page="$WORK/page.html" redirect='' status marker missing found
+  local failures=() name endpoint want locale theme page="$WORK/page.html" redirect='' status missing
   # A temporary or permanent redirect to /en on a loopback address of this same site, nowhere else.
   local to_en='^30[78] http://(127\.0\.0\.1|localhost|\[::1\]):3000/en/?$'
   : >"$WORK/smoke.txt"
@@ -343,19 +379,13 @@ step_smoke() {
     done
   done
 
-  # HTML attribute names ignore case, and React writes them as the source spells them
-  # (autoComplete), but the values must match exactly: they are the form's keys, which the
-  # sign-in request sends unchanged. So every attribute on the page is listed once per line
-  # with its name in lower case and its value as sent, and each marker must be a whole line.
+  # The sign-in form's controls, read as a browser reads them (SIGN_IN_PY): HTML attribute names
+  # ignore case, and React writes them as the source spells them (autoComplete), but the values
+  # must match exactly, because they are the form's keys, which the sign-in request sends unchanged.
   # A failure names the HTTP status and every attribute that was missing.
   missing=''
   if status=$(fetch --output "$page" --write-out '%{http_code}' "$SITE/en/account"); then
-    found=$(grep -oE '[A-Za-z][A-Za-z0-9_:.-]*="[^"]*"' "$page" \
-      | awk '{ name = $0; sub(/=.*/, "", name); print tolower(name) substr($0, length(name) + 1) }' \
-      || true)
-    for marker in 'name="email"' 'name="password"' 'autocomplete="current-password"'; do
-      grep -qxF -- "$marker" <<<"$found" || missing="$missing $marker"
-    done
+    missing=$(python3 -I -c "$SIGN_IN_PY" "$page")
   else
     missing=' the page'
   fi
