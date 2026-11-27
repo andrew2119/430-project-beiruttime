@@ -293,7 +293,7 @@ fetch(url, { signal: AbortSignal.timeout(5000) })
 '
 
 step_smoke() {
-  local failures=() name endpoint want locale theme page="$WORK/page.html" redirect=''
+  local failures=() name endpoint want locale theme page="$WORK/page.html" redirect='' status marker missing
   # A temporary or permanent redirect to /en on a loopback address of this same site, nowhere else.
   local to_en='^30[78] http://(127\.0\.0\.1|localhost|\[::1\]):3000/en/?$'
   : >"$WORK/smoke.txt"
@@ -343,11 +343,21 @@ step_smoke() {
     done
   done
 
-  if fetch --output "$page" "$SITE/en/account" \
-      && has 'name="email"' && has 'name="password"' && has 'autocomplete="current-password"'; then
+  # HTML attribute names ignore case, and React writes them as the source spells them
+  # (autoComplete), so the form's attributes are matched without case.
+  # A failure names the HTTP status and every attribute that was missing.
+  missing=''
+  if status=$(fetch --output "$page" --write-out '%{http_code}' "$SITE/en/account"); then
+    for marker in 'name="email"' 'name="password"' 'autocomplete="current-password"'; do
+      grep -qiF -- "$marker" "$page" || missing="$missing $marker"
+    done
+  else
+    missing=' the page'
+  fi
+  if [ -z "$missing" ]; then
     result ok "sign-in page /en/account shows the email and password form"
   else
-    result failed "sign-in page /en/account shows the email and password form"
+    result failed "sign-in page /en/account shows the email and password form (HTTP ${status:-none}, missing:$missing)"
   fi
 
   # Exactly the Railway services, each once and each ready.
