@@ -1,0 +1,13 @@
+{
+  "schema_version": 2,
+  "operation_lookup": "/internal/v2/operations/offer:00000000-0000-0000-0000-000000000025",
+  "cases": [
+    {"name": "success", "provider_state": "succeeded", "bindings_match": true, "state": "accepted"},
+    {"name": "denied", "provider_state": "denied", "state": "lost"},
+    {"name": "stale", "expected_revision": 1, "revision": 2, "code": "offer_not_current"},
+    {"name": "lost_response", "provider_state": "unknown", "state": "acceptance_pending", "retry_same_operation": true},
+    {"name": "mismatched_quote_revision", "provider_state": "succeeded", "retained_quote_revision": 1, "returned_quote_revision": 2, "state": "acceptance_pending"},
+    {"name": "malformed_order_identifier", "provider_state": "succeeded", "order": {"id": 123}, "state": "acceptance_pending"},
+    {"name": "mismatched_success", "provider_state": "succeeded", "bindings_match": false, "state": "acceptance_pending"}
+  ]
+}

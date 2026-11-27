@@ -18,15 +18,19 @@ class Dependencies:
             f'{name.upper()}_URL', f'http://{name}:8000'), timeout=1.2, concurrency=4)
             for name in ('identity', 'catalog', 'pricing', 'orders')}
 
-    async def json(self, name, method, path, request, **kwargs):
+    async def json(self, name, method, path, request, *, missing=False, **kwargs):
         result = await self.clients[name].request(method, path, headers={
             'Authorization': request.headers.get('authorization', ''),
             'X-Request-ID': request.state.request_id,
             **kwargs.pop('headers', {})}, **kwargs)
         if isinstance(result, Unavailable):
             raise PublicError('dependency_unavailable', 'A required service is unavailable.', status=503)
+        if result.status_code >= 500:
+            raise PublicError('dependency_unavailable', 'A required service is unavailable. Retry the same operation.', status=503)
         if result.status_code in (401, 403):
             raise AccessDenied('Upstream refused current access')
+        if result.status_code == 404 and missing:
+            return None
         if result.status_code == 404:
             raise PublicError('prerequisite_missing', 'A required record is not available.', status=409)
         if result.status_code >= 300:
@@ -73,15 +77,16 @@ class Dependencies:
             organization = publication['organization_id']
             if organization is not None:
                 organization = str(UUID(organization))
-            if (UUID(publication['id']) != listing_id
-                    or UUID(registration['watch_id']) != watch_id
+            if (UUID(publication['id']) != listing_id or type(publication['revision']) is not int
+                    or publication['revision'] < 1 or UUID(registration['watch_id']) != watch_id
                     or UUID(registration['listing_id']) != listing_id
                     or registration['sale_mode'] != 'auction'
-                    or publication['facts']['sale_mode'] != 'auction'):
+                    or publication['facts']['sale_mode'] != 'auction'
+                    or publication['facts']['currency'] != 'USD'):
                 raise ValueError()
             return {'id':str(listing_id), 'watch_id':str(watch_id),
                 'seller_id':str(seller_id), 'seller_organization_id':organization,
-                'status':publication['status']}
+                'status':publication['status'], 'revision': publication['revision']}
         except (KeyError, TypeError, ValueError):
             raise PublicError('catalog_unavailable', 'The listing cannot currently be verified.', status=503) from None
 
@@ -95,12 +100,29 @@ class Dependencies:
 
     async def fence_state(self, request, watch_id, listing_id, auction_id):
         result = await self.json('orders', 'GET',
-            f'/internal/v1/watches/{watch_id}/fence?source_id={auction_id}', request,
+            f'/internal/v2/watches/{watch_id}', request, missing=True,
             headers=self.service_headers(request, 'orders'))
+        if result is None:
+            # Rolling upgrade only: legacy fences are already committed, never
+            # downgraded to the new withdrawable/uncommitted auction-open state.
+            result = await self.json('orders', 'GET',
+                f'/internal/v1/watches/{watch_id}/fence?source_id={auction_id}', request,
+                headers=self.service_headers(request, 'orders'))
+            result['api_version'] = 1
+            result['source_id'] = str(auction_id) if result.get('source_matches') is True else None
+            result['auction_committed'] = result.get('status') == 'fenced'
+        else:
+            result['api_version'] = 2
+            result['source_matches'] = result.get('source_id') == str(auction_id)
         if (result.get('watch_id') != str(watch_id) or result.get('listing_id') != str(listing_id)
                 or type(result.get('revision')) is not int or result['revision'] < 1):
             raise PublicError('orders_unavailable', 'The sale commitment cannot be verified.', status=503)
-        if result.get('sale_mode') != 'auction':
+        if result['api_version'] == 2 and (type(result.get('listing_revision')) is not int
+                or result['listing_revision'] < 1 or type(result.get('auction_committed')) is not bool):
+            raise PublicError('orders_unavailable', 'The current commitment binding cannot be verified.', status=503)
+        # V2's required watch/source/revision binding is authoritative. Some
+        # compatible V2 reads omit V1's sale_mode; an explicit other mode denies.
+        if (result['api_version'] == 1 and result.get('sale_mode') != 'auction') or result.get('sale_mode') not in (None, 'auction'):
             raise PublicError('sale_mode_denied', 'The watch is not registered for auction.', status=409)
         return result
 
@@ -111,9 +133,17 @@ class Dependencies:
             return str(auction_id)
         if state.get('status') != 'available':
             raise PublicError('sale_mode_denied', 'The watch has another sale commitment.', status=409)
-        result = await self.json('orders', 'POST', f"/internal/v1/watches/{listing['watch_id']}/fences", request,
-            headers={**self.service_headers(request, 'orders'), 'Idempotency-Key': 'auction-create:' + str(auction_id)},
-            json={'source_id': str(auction_id), 'expected_revision': state['revision'], 'reason': 'Open ordinary auction'})
+        operation_key = 'auction-open:' + str(auction_id)
+        if state['api_version'] == 1:
+            result = await self.json('orders', 'POST', f"/internal/v1/watches/{listing['watch_id']}/fences", request,
+                headers={**self.service_headers(request, 'orders'), 'Idempotency-Key': 'auction-create:' + str(auction_id)},
+                json={'source_id': str(auction_id), 'expected_revision': state['revision'], 'reason': 'Open ordinary auction'})
+        else:
+            result = await self.json('orders', 'POST', '/internal/v2/commitments', request,
+                headers={**self.service_headers(request, 'orders'), 'Idempotency-Key': operation_key},
+                json={'operation_key': operation_key, 'watch_id': listing['watch_id'], 'listing_id': listing['id'],
+                      'listing_revision': listing['revision'], 'source_id': str(auction_id),
+                      'expected_revision': state['revision'], 'kind': 'auction_open', 'reason': 'Open ordinary auction'})
         if result.get('status') != 'succeeded':
             raise PublicError('sale_mode_pending', 'The sale commitment is not confirmed.', status=409)
         await self.check_fence(request, {'watch_id': listing['watch_id'], 'listing_id': listing['id'], 'id': auction_id})
@@ -121,7 +151,9 @@ class Dependencies:
 
     async def check_fence(self, request, lot):
         result = await self.fence_state(request, lot['watch_id'], lot['listing_id'], lot['id'])
-        if result.get('status') != 'fenced' or result.get('source_matches') is not True:
+        if (result.get('status') != 'fenced' or result.get('source_matches') is not True
+                or ('listing_revision' in lot and result['api_version'] == 2
+                    and result['listing_revision'] != lot['listing_revision'])):
             raise PublicError('sale_mode_denied', 'The watch is not committed to this auction.', status=409)
 
     async def fee(self, request, command, lot, principal, now):
