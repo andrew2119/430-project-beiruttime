@@ -203,7 +203,9 @@ async def test_offer_archive_cutover_preserves_rows_keys_and_fences(database_own
                     return None
                 assert method == 'POST' and path == '/internal/v2/allocations'
                 posted.append(kwargs['json'])
-                return {'status': 'succeeded', 'order': {**kwargs['json'], 'id': str(uuid4())}}
+                order_id = str(uuid4())
+                return {'id': str(uuid4()), 'request_id': 'orders-archive-test', 'status': 'succeeded',
+                        'resource_id': order_id, 'order': {**kwargs['json'], 'id': order_id}}
 
             async def current_listing(*_):
                 return {}

@@ -1,5 +1,6 @@
 """Q02: Pricing owns agreement; Orders alone owns the physical reservation."""
 import json
+import re
 from datetime import datetime, timezone, timedelta
 from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Request, HTTPException
@@ -183,6 +184,27 @@ async def reconcile(request, offer_id, p):
     return await reconcile_intent(request, offer_id)
 
 
+def matches_order_success(remote, command):
+    # Orders returns the same recorded envelope for allocation and operation lookup.
+    if remote.keys() != {'id', 'request_id', 'status', 'resource_id', 'order'}:
+        return False
+    if not isinstance(remote['id'], str) or not isinstance(remote['request_id'], str):
+        return False
+    if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', remote['request_id']):
+        return False
+    order = remote['order']
+    if not isinstance(order, dict) or not isinstance(order.get('id'), str) or remote['resource_id'] != order['id']:
+        return False
+    try:
+        UUID(remote['id'])
+        UUID(order['id'])
+        return (type(order.get('quote_revision')) is int and type(order.get('total_minor')) is int
+                and all(order.get(field) == command[field] for field in
+                        ('watch_id', 'listing_id', 'buyer_id', 'quote_id', 'quote_revision', 'currency', 'total_minor')))
+    except (KeyError, ValueError):
+        return False
+
+
 async def reconcile_intent(request, offer_id):
     # Only called after current-party authorization above, or by the leased
     # worker for an already authorized, immutable durable acceptance intent.
@@ -204,13 +226,10 @@ async def reconcile_intent(request, offer_id):
         # After intent, an HTTP error (including auth/configuration or a lost
         # conflict body) is NOT a durable denied operation. Keep it reconcilable.
         return {'status': 'pending', 'code': 'reservation_unknown', 'offer': project(row)}
-    if remote.get('status') not in ('succeeded', 'denied'):
+    if not isinstance(remote, dict) or remote.get('status') not in ('succeeded', 'denied'):
         return {'status': 'pending', 'code': 'reservation_unknown', 'offer': project(row)}
-    if remote['status'] == 'succeeded':
-        try:
-            UUID(remote['order']['id'])
-        except (KeyError, TypeError, ValueError):
-            return {'status': 'pending', 'code': 'reservation_unknown', 'offer': project(row)}
+    if remote['status'] == 'succeeded' and not matches_order_success(remote, command):
+        return {'status': 'pending', 'code': 'reservation_unknown', 'offer': project(row)}
     async with unit_of_work(request.app.state.pool, lock_key='offer-listing:' + str(row['listing_id'])) as tx:
         row = await load(tx, offer_id)
         current_terms(row)
@@ -220,14 +239,15 @@ async def reconcile_intent(request, offer_id):
                                      offer_id, state, json.dumps(remote))
             await notice(tx, request, row, state)
             if state == 'accepted':
-                others = await tx.fetch(f"UPDATE l14_offers SET state='closed',revision=revision+1 WHERE listing_id=$1 AND id<>$2 AND state='open' AND {CURRENT_TERMS} RETURNING *",
-                                         row['listing_id'], offer_id)
+                others = await tx.fetch(f"UPDATE l14_offers SET state='closed',revision=revision+1 WHERE watch_id=$1 AND id<>$2 AND state='open' AND {CURRENT_TERMS} RETURNING *",
+                                         row['watch_id'], offer_id)
                 for other in others:
                     await notice(tx, request, other, 'closed')
             result = {'status': remote['status'], 'offer': project(row)}
             await tx.execute("UPDATE l14_pricing_operations SET result=result || $2::jsonb WHERE id=$1",
                              row['acceptance_operation_id'], json.dumps(result))
-        return {'status': 'succeeded' if row['state'] == 'accepted' else 'denied', 'offer': project(row)}
+        return {'status': ('succeeded' if row['state'] == 'accepted' else
+                           'pending' if row['state'] == 'acceptance_pending' else 'denied'), 'offer': project(row)}
 
 
 @router.post('/{offer_id}/answer')
@@ -304,10 +324,10 @@ async def set_block(offer_id, request, p, key, *, remove):
     fingerprint = digest(['unblock' if remove else 'block', str(offer_id)])
     async with unit_of_work(request.app.state.pool) as tx:
         prior = await replay(tx, p, key, fingerprint)
-        if prior:
-            return prior
         row = await load(tx, offer_id)
         side = party(row, p)
+        if prior:
+            return prior
         await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'offer-listing:' + str(row['listing_id']))
         scope = str(p.actor.subject_id) if side == 'buyer' else seller_scope(row)
         if remove:

@@ -96,8 +96,15 @@ async def api(database_url, monkeypatch):
             succeeded = state['winner'] is None
             if succeeded:
                 state['winner'] = operation
-            state['remote_results'][operation] = {'id': str(uuid4()), 'status': 'succeeded' if succeeded else 'denied',
-                'order': {'id': str(uuid4())} if succeeded else None}
+                order_id = str(uuid4())
+                order = {field: body[field] for field in
+                         ('watch_id', 'listing_id', 'buyer_id', 'quote_id', 'quote_revision', 'currency', 'total_minor')}
+                state['remote_results'][operation] = {
+                    'id': str(uuid4()), 'request_id': 'orders-fence-test', 'status': 'succeeded',
+                    'resource_id': order_id, 'order': {'id': order_id, **order},
+                }
+            else:
+                state['remote_results'][operation] = {'id': str(uuid4()), 'status': 'denied', 'order': None}
         if state['lose_reply']:
             state['lose_reply'] = False
             return httpx.Response(503)
