@@ -1,6 +1,6 @@
-/* Shared settings choices and hairline-separated record rows. */
-.consent-choices{border:0;padding:0;display:grid;gap:var(--ds-space-2);min-inline-size:0}
-.identity-form .consent-choices .ui-check{display:inline-flex;align-items:center;gap:var(--ds-space-2);font-size:0.8125rem;color:var(--foreground);font-weight:400}
-.consent-records{display:grid;min-inline-size:0}
-.consent-record{display:grid;gap:var(--ds-space-2);border-block-start:0.0625rem solid var(--border);padding-block:var(--ds-space-4);font-size:0.8125rem;overflow-wrap:anywhere}
-.consent-record .ui-btn{justify-self:start}
+.consent-stack,.consent-fields{display:grid;gap:var(--bt-space-4);min-inline-size:0}
+.consent-fields{border:0;padding:0;margin:0}
+.consent-records{display:grid;min-inline-size:0;list-style:none;padding:0;margin:0}
+.consent-record{display:grid;gap:var(--bt-space-2);border-block-start:var(--bt-border-width) solid var(--bt-border);padding-block:var(--bt-space-4);overflow-wrap:anywhere}
+.consent-record .bt-button{justify-self:start}
+.consent-pagination{display:flex;flex-wrap:wrap;gap:var(--bt-space-2)}

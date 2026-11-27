@@ -7,3 +7,11 @@ Before recording, Eligibility consumes the published Catalog request-drafts.v1 o
 `POST /v1/consents/{id}/withdraw` takes expected_revision and Idempotency-Key. An active record becomes withdrawal_pending, increments revision and becomes locally ineffective immediately. Durable `eligibility.consent-withdrawal-requested.v1` envelopes go to Catalog and Orders with consent_id/buyer_id/brand_id/request_id/request_revision/revision/status, no evidence. Each consumer fences production and emits its own authenticated `catalog.consent-fenced.v1` or `orders.consent-fenced.v1` with consent_id and revision. After both current acknowledgements the state is withdrawn. Missing consumers keep the visible fence pending, never claim completed withdrawal. Refused/withdrawn/pending records cannot issue effective grants. Correction uses a new request revision and explicit fresh consent.
 
 Evidence retrieval is a non-public API. Only a currently assigned reviewer with `eligibility.identity.review`, not the buyer themselves, can read bytes. Denials are audited without byte logging. Service event ingestion requires RS256 type=service, exact producer and Eligibility audience; public buyer access tokens cannot acknowledge a fence.
+
+## Durable recovery and list bounds
+
+`GET /v1/consents/operations/{operation_id}` returns only the signed-in subject's durable receipt. A missing receipt is not proof of success. Retry a lost response with the original body and operation reference. A receipt is historical and always reports `effective_grant:false`.
+
+`GET /v1/consents?page=0` provides `consents`, server `total` and zero-based `page`, with 25 rows ordered by creation time and identifier. Page is bounded to 1,000,000; unpaged callers retain the existing 50-row compatibility response. Identity and access changes clear private retained answers. Language changes preserve the same mounted form, file bytes and action reference in memory.
+
+Private evidence retrieval additionally requires the current provider's independent reviewer and exact subject, organization, request and consent revisions. A missing provider denies retrieval as unavailable; assignment alone cannot establish same-case independence. The provider operation contract is defined in the decisions subtree.
