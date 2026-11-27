@@ -166,7 +166,8 @@ def git(*args, stdin=None):
 
 def tested_tree():
     """The tested commit, its tree, and its tree without .github, which commits differing only in CI files share."""
-    entries = git('ls-tree', 'HEAD').splitlines()
+    # git runs inside .github/ci; --full-tree lists the whole commit tree, not just this folder.
+    entries = git('ls-tree', '--full-tree', 'HEAD').splitlines()
     outside = git('mktree', stdin=''.join(e + '\n' for e in entries if e.split('\t', 1)[-1] != '.github'))
     return dict(head=git('rev-parse', 'HEAD'), tree=git('rev-parse', 'HEAD^{tree}'), tree_outside_ci=outside,
                 workflow_commit=os.environ.get('GITHUB_SHA', ''))
