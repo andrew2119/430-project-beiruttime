@@ -1,14 +1,22 @@
-"""Build every Compose image with cached layers, then run the container smoke.
+"""Build every Compose image for the container smoke, refresh the layer cache, run the smoke.
 
 Usage:
   python3 .github/ci/images.py build
+  python3 .github/ci/images.py cache <shard> <count>
   python3 .github/ci/images.py smoke <report.json>
 
 build reads the merged Compose configuration from infra/foundation/compose.sh, builds each
 distinct image once with Buildx, in parallel, and loads it under every name Compose expects.
-Layers are cached in the GitHub Actions cache, one scope per Dockerfile, so a warm run only
-rebuilds what changed. It needs the Actions cache settings in its environment, which is why
-the workflow starts it from a github-script step.
+It reads layers from the GitHub Actions cache, one scope per Dockerfile, but never writes
+them, so the smoke does not wait for the cache upload.
+
+cache builds one shard's share of the same images and writes their layers to that cache, so a
+later run only rebuilds what changed. Shard 1 builds the web image alone, the longest build;
+the other shards take the remaining images in turn, so every image is in exactly one shard.
+It loads nothing into Docker.
+
+Both need the Actions cache settings in their environment, which is why the workflow starts
+them from a github-script step.
 
 smoke runs the tracked container smoke (scripts/smoke.sh, the `make smoke` target) with
 SKIP_BUILD=1 so it reuses the images just built, and with disposable signing keys.
@@ -35,8 +43,11 @@ def compose_config():
     return json.loads(output)
 
 
-def targets(config):
-    """One bake target per distinct build, tagged with every image name that uses it."""
+def targets(config, write_cache=False):
+    """One bake target per distinct build, tagged with every image name that uses it.
+
+    Every target reads its cache scope. Only a cache build writes it, and it loads nothing into Docker.
+    """
     found = {}
     for name, service in sorted(config['services'].items()):
         build = service.get('build')
@@ -61,19 +72,46 @@ def targets(config):
         target = {k: entry[k] for k in ('context', 'dockerfile', 'args', 'tags')}
         if 'target' in entry:
             target['target'] = entry['target']
-        target.update({'cache-from': [f'type=gha,scope={scope}'], 'cache-to': [f'type=gha,mode=max,scope={scope}'],
-                       'output': ['type=docker']})
+        target['cache-from'] = [f'type=gha,scope={scope}']
+        if write_cache:
+            target.update({'cache-to': [f'type=gha,mode=max,scope={scope}'], 'output': ['type=cacheonly']})
+        else:
+            target['output'] = ['type=docker']
         bake[label] = target
     return bake
 
 
-def build():
+def bake_targets(bake, name):
     WORK.mkdir(parents=True, exist_ok=True)
-    bake = targets(compose_config())
-    plan = WORK / 'bake.json'
+    plan = WORK / name
     plan.write_text(json.dumps({'group': {'default': {'targets': sorted(bake)}}, 'target': bake}, indent=2))
+    return subprocess.run(['docker', 'buildx', 'bake', '--file', str(plan), '--progress', 'plain'], cwd=ROOT).returncode
+
+
+def share(labels, shard, count):
+    """This shard's targets: the web image alone in shard 1, the others in turn over shards 2 to count."""
+    web = sorted(label for label in labels if label.startswith('web-'))
+    rest = sorted(label for label in labels if label not in web)
+    return ([web] + [rest[i::count - 1] for i in range(count - 1)])[shard - 1]
+
+
+def cache(shard, count):
+    if not 1 <= shard <= count or count < 2:
+        raise SystemExit(f'cache shard {shard} of {count}: needs 1 <= shard <= count and count >= 2')
+    bake = targets(compose_config(), write_cache=True)
+    chosen = share(bake, shard, count)
+    if not chosen:
+        print(f'::error::Image cache shard {shard} of {count} has no images; the split no longer fits the images')
+        return 1
+    print(f'Image cache shard {shard} of {count}, {len(chosen)} of {len(bake)} images: ' + ', '.join(chosen),
+          flush=True)
+    return bake_targets({label: bake[label] for label in chosen}, f'cache-{shard}.json')
+
+
+def build():
+    bake = targets(compose_config())
     print(f'Building {len(bake)} images: ' + ', '.join(sorted(bake)), flush=True)
-    code = subprocess.run(['docker', 'buildx', 'bake', '--file', str(plan), '--progress', 'plain'], cwd=ROOT).returncode
+    code = bake_targets(bake, 'bake.json')
     tags = sorted(t for target in bake.values() for t in target['tags'])
     missing = [t for t in tags if subprocess.run(['docker', 'image', 'inspect', t], capture_output=True).returncode]
     (WORK / 'build.json').write_text(json.dumps({'exit': code, 'images': len(bake), 'tags': tags, 'missing': missing}))
@@ -125,6 +163,8 @@ def smoke(report):
 if __name__ == '__main__':
     if sys.argv[1:2] == ['build']:
         sys.exit(build())
+    if sys.argv[1:2] == ['cache'] and len(sys.argv) == 4 and all(a.isdigit() for a in sys.argv[2:]):
+        sys.exit(cache(int(sys.argv[2]), int(sys.argv[3])))
     if sys.argv[1:2] == ['smoke'] and len(sys.argv) == 3:
         sys.exit(smoke(sys.argv[2]))
     raise SystemExit(__doc__)

@@ -56,9 +56,10 @@ Every matrix sets `fail-fast: false`.
 | `tested commit` | the commit under test, written to its job summary |
 | `web tests (n/4)` x 4 | this shard's share of the web Vitest suites |
 | `web build` | the production web build, kept as the `web-build` artifact for three days |
-| `images and container smoke` | every Compose image, built with layers cached in the Actions cache, then `scripts/smoke.sh` |
+| `images and container smoke` | every Compose image, built from the layers in the Actions cache, then `scripts/smoke.sh`; it reads the cache and never writes it |
+| `image cache (n/4)` x 4 | this shard's share of the images, built only to write their layers to the Actions cache for later runs; shard 1 is the web image alone |
 | `stage (native)` | the nine services and the web from the build, readiness of each |
-| `stage (smokes)` | the HTTP smokes and the connected walkthrough |
+| `stage (smokes)` | the HTTP smokes and the connected walkthrough, with a scripted possession review that is not physical inspection (see below) |
 | `stage (origin-proof)` | the origin proof, with its own production web build |
 | `stage (proxy-proof)` | the proxy proof, with its own production web build |
 | `stage (browser-desktop)` | the desktop browser matrix and its four locale and theme screenshots in headless Chrome |
@@ -73,6 +74,8 @@ Each stage part starts its own stack from the build artifact on its own PostgreS
 `required.json` lists the parts of each stage and the steps of each part; no step runs in two parts.
 Nothing else passes between jobs, so rerunning only the failed jobs is always valid.
 Two jobs stay whole on purpose: the container smoke needs every image in the same Docker engine, and the native stack lifecycle is one start-to-stop run of the same stack.
+The container smoke stays short anyway: uploading the image layers is the slow part, and the four image cache jobs do it beside the smoke instead of before it.
+A Tests run has 33 jobs and a Light checks run at most 17, each within the account's 40 jobs at a time.
 Pushes to `main` queue one after another; a new push to a group pull request cancels its run in progress.
 
 ### The web shards
@@ -83,6 +86,28 @@ A larger suite is cut into parts with Vitest's own `--shard`, one part per shard
 The parts and whole suites are then packed onto the four shards so each gets about the same number of test files.
 Each suite is also listed once, with `vitest list`, in the shard that runs its first part.
 To see the plan locally: `python3 -c "import sys; sys.path.insert(0, '.github/ci'); import vitest; print(vitest.plan(4))"`.
+Before its suites, each shard makes the navigation index with `node scripts/generate-nav.mjs` in `web/`: the index is generated, kept out of git, and read by some suites.
+
+### The scripted possession review (not physical inspection)
+
+`stage (smokes)` runs the connected walkthrough through `walkthrough.py`, every phase, unchanged but for one thing.
+When publication stops because the private demo drafts wait for a possession review, the driver takes each draft through the walkthrough's own review steps (challenge, submit, assign, inspect, decide) and publishes again.
+The inputs are scripted test inputs: the frozen test icon `web/public/icons/bt-192.png` as the photo, a fixed approved verdict, and the operator as reviewer with no credentials file.
+This is not physical inspection.
+Nobody looks at a watch, so a pass shows that the review routes work, not that anyone holds the watch; a real person's review stays unproven.
+The step name, the driver and its log lines (`N05-SCRIPTED-REVIEW ...`, ending with a summary) all say so.
+
+The inputs come from `scripted-review/n05-scripted-actor.py`, over the file protocol in `scripted-review/listing_coordinator.py`.
+`walkthrough.py` pins the actor's sha256 and refuses a changed copy, so any change to it is reviewed again.
+The review is test only: it runs on the job's own disposable stack, in no product or deploy path, and uses no secrets.
+It is bounded to four publication attempts, fifteen review calls and 300 seconds.
+A tree whose publication passes without a review runs unchanged, with nothing scripted, and any other publication failure fails as before.
+
+### When a stage part fails
+
+- The smokes part prints the walkthrough's publication child records, their six known fields only; any other field is named without its value.
+- A browser part gives the browser its own temporary folder; when its step fails, it prints the names left in that folder and the Chrome processes still running.
+- When a browser check fails and closing its browser session fails too, `browser.mjs` reports both errors.
 
 ## Testing one pull request on demand
 
@@ -113,6 +138,8 @@ The last job of each workflow reads those reports and `required.json` and fails 
 - a stage part did not report exactly its pinned steps, a step ran in two parts, or the two browser parts did not run every pinned browser check exactly once;
 - `required.json` names different services from `scripts/native-services.json`.
 
+The image cache jobs are outside the pass rule: they test nothing, the check job does not wait for them, and a failed one shows red on its own.
+
 ### Known gaps
 
 Two web tests always skip on a runner, and `required.json` pins each by suite, file and full title:
@@ -142,5 +169,6 @@ Each helper's usage is at the top of its file.
 | `web-checks.sh <report>` and `vitest.py <shard> <total> <report>` | the `node-env` action |
 | `stage.py <part> <report>` | both environments, the database and a production build in `web/.next` |
 | `n01.py <report>` | both environments, the build, PostgreSQL 17 in `/usr/lib/postgresql/17/bin`, port 54329 free and `sudo` |
-| `images.py build` then `images.py smoke <report>` | Docker with Buildx |
+| `images.py build` then `images.py smoke <report>`, and `images.py cache <shard> <count>` | Docker with Buildx; `build` and `cache` also need the Actions cache settings, so the workflow starts them from `actions/github-script` |
+| `walkthrough.py <run-dir> <origin>` | the stack `stage.py smokes` starts, with its run folder |
 | `verify.py <full or light> <needs.json> <reports>` | the reports and the workflow's `needs` |

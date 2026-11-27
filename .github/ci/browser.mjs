@@ -19,6 +19,25 @@ const sizes = {
 const pause = ms => new Promise(done => setTimeout(done, ms));
 const AsyncFunction = (async () => {}).constructor;
 
+// Close the session after the work. When the work and the close both fail, report both: the
+// close error alone would hide why the check failed.
+async function withSession(session, work) {
+  let failure = null;
+  try {
+    return await work();
+  } catch (error) {
+    failure = error;
+    throw error;
+  } finally {
+    try {
+      await session.close();
+    } catch (error) {
+      if (failure === null) throw error;
+      throw new Error(`${failure?.message ?? failure}; closing the session also failed: ${error?.message ?? error}`);
+    }
+  }
+}
+
 // The matrix script drives a small page interface; this maps it onto the prepared session.
 function matrixPage(session) {
   const evaluate = what => session.page.evaluate(typeof what === 'string' ? `() => (${what})` : what);
@@ -43,11 +62,7 @@ async function matrix(size) {
   const session = await browser({browserPath, origin, cell: {...sizes[size], locale: 'en', theme: 'light'}});
   const lines = [];
   const output = {log: line => lines.push(String(line))};
-  try {
-    await new AsyncFunction('page', 'console', source)(matrixPage(session), output);
-  } finally {
-    await session.close();
-  }
+  await withSession(session, () => new AsyncFunction('page', 'console', source)(matrixPage(session), output));
   for (const line of lines.slice(0, -1)) console.log(line);
   const checks = JSON.parse(lines.at(-1));
   if (!Array.isArray(checks) || checks.length !== 12) throw new Error(`${size}: expected 12 checks, got ${checks?.length}`);
@@ -57,7 +72,7 @@ async function matrix(size) {
 async function screenshot(size, locale, theme, folder) {
   const cell = {...sizes[size], locale, theme};
   const session = await browser({browserPath, origin, cell});
-  try {
+  await withSession(session, async () => {
     await session.page.goto(`/${locale}`);
     await session.page.waitFor('#main-content .bt-page h1', {timeout: 30000});
     const state = await session.page.evaluate(() => ({
@@ -70,9 +85,7 @@ async function screenshot(size, locale, theme, folder) {
     const path = join(folder, `${size}-${locale}-${theme}.png`);
     await session.screenshot(path);
     await validateScreenshot(path, cell);
-  } finally {
-    await session.close();
-  }
+  });
 }
 
 const report = process.argv[2];

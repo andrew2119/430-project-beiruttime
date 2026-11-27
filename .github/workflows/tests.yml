@@ -219,6 +219,10 @@ jobs:
           if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
           mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
       - uses: ./.github/actions/node-env
+      # The navigation index is generated and kept out of git; the web scripts make it before use.
+      - name: Generate the navigation index
+        working-directory: web
+        run: node scripts/generate-nav.mjs
       - name: Run this shard's share of the web test suites
         run: mkdir -p "$RUNNER_TEMP/reports" && python3 .github/ci/vitest.py "${{ matrix.shard }}" 4 "$RUNNER_TEMP/reports/shard${{ matrix.shard }}.json"
       - name: Publish the report
@@ -268,6 +272,7 @@ jobs:
           if-no-files-found: error
 
   # One job on purpose: the container smoke needs every image in the same Docker engine.
+  # It reads the layer cache but never writes it, so it does not wait for the cache upload.
   images:
     name: images and container smoke
     needs: target
@@ -293,7 +298,7 @@ jobs:
           mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       # Started from a script step so only the build sees the Actions cache settings.
-      - name: Build every image with cached layers
+      - name: Build every image from the cached layers
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: await exec.exec('python3', ['.github/ci/images.py', 'build'])
@@ -309,6 +314,45 @@ jobs:
           retention-days: 3
           overwrite: true
           if-no-files-found: ignore
+
+  # Writes the layer cache for later runs, split so no machine uploads every image's layers.
+  # The container smoke above builds on its own and never waits for these jobs, and the check
+  # job does not need them: they test nothing, and a failed one shows red on its own.
+  image-cache:
+    name: image cache (${{ matrix.shard }}/4)
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      # Started from a script step so only the build sees the Actions cache settings.
+      - name: Build this shard's images and write their layers to the cache
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          SHARD: ${{ matrix.shard }}
+        with:
+          script: await exec.exec('python3', ['.github/ci/images.py', 'cache', process.env.SHARD, '4'])
 
   # Each part runs its own share of a stage's steps on its own stack; required.json lists the parts.
   stages:
@@ -367,7 +411,7 @@ jobs:
       - name: Let headless Chrome use its sandbox
         if: startsWith(matrix.stage, 'browser-')
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-      - name: Run the stage part
+      - name: ${{ matrix.stage == 'smokes' && 'Run the stage part, with a scripted possession review (not physical inspection)' || 'Run the stage part' }}
         run: mkdir -p "$RUNNER_TEMP/reports" && python .github/ci/stage.py "${{ matrix.stage }}" "$RUNNER_TEMP/reports/${{ matrix.stage }}.json"
       - name: Publish the report
         if: always()
