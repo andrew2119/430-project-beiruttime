@@ -656,14 +656,42 @@ def run(out, sha):
 
 
 def verify(out, sha):
-    report = json.loads((out/'receipt.json').read_text())
-    assert report['sha'] == sha and report['complete'] is True
-    assert report['rows'] == dict.fromkeys(ROW_PHASES, 'pass') and not report['cleanup_incomplete']
-    assert report['late_guard'] == 'deadline-specific'
-    assert set(report['images']) == set(APPS) and all(ID.fullmatch(image) for image in report['images'].values())
-    assert report['matrix'] == expected_matrix(FIXTURES.read_text()) and browser_files(out) == report['browser']
-    facts = json.loads((out/'scenarios.json').read_text())
-    assert {'published_private', 'lost_response_recovered', 'race', 'closed_below_reserve'} <= set().union(*facts)
+    check = 'read receipt.json'
+    try:
+        report = json.loads((out/'receipt.json').read_text())
+        check = 'receipt SHA matches the checked-out SHA'
+        assert report['sha'] == sha
+        check = 'receipt marks the diagnostic complete'
+        assert report['complete'] is True
+        check = 'receipt marks every required row PASS'
+        assert report['rows'] == dict.fromkeys(ROW_PHASES, 'pass')
+        check = 'receipt confirms teardown completed'
+        assert not report['cleanup_incomplete']
+        check = 'receipt has deadline-specific live admission evidence'
+        assert report['late_guard'] == 'deadline-specific'
+        check = 'receipt binds exactly the six required image IDs'
+        assert set(report['images']) == set(APPS) and all(ID.fullmatch(image) for image in report['images'].values())
+        check = 'packaged boundary matrix matches the pinned cases'
+        assert report['matrix'] == expected_matrix(FIXTURES.read_text())
+        check = 'browser evidence files validate and match the receipt'
+        assert browser_files(out) == report['browser']
+        check = 'read scenarios.json'
+        facts = json.loads((out/'scenarios.json').read_text())
+        check = 'scenario evidence includes publication, recovery, race and reserve close'
+        assert {'published_private', 'lost_response_recovered', 'race', 'closed_below_reserve'} <= set().union(*facts)
+    # Report fixed check names and failure categories, never raw exceptions or evidence values.
+    except AssertionError:
+        raise ProofError(f'verify: {check}: requirement not met') from None
+    except FileNotFoundError:
+        raise ProofError(f'verify: {check}: required file missing') from None
+    except OSError:
+        raise ProofError(f'verify: {check}: required file unreadable') from None
+    except ValueError:
+        raise ProofError(f'verify: {check}: invalid JSON or file contents') from None
+    except (KeyError, TypeError, AttributeError):
+        raise ProofError(f'verify: {check}: invalid evidence structure') from None
+    except Exception:
+        raise ProofError(f'verify: {check}: evidence check could not be evaluated') from None
     print(f'L12 connected image proof passed for {sha}: {len(ROW_PHASES)} required rows.')
 
 

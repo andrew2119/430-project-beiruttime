@@ -1,5 +1,6 @@
 """Render the run's executed rows without publishing private proof material."""
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -79,4 +80,8 @@ def render(value, sha):
 
 if __name__ == '__main__':
     path, commit = sys.argv[1:]
-    print(render(receipt(Path(path), commit), commit))
+    summary = render(receipt(Path(path), commit), commit)
+    print(summary)
+    # The workflow redirects stdout to the step summary; keep the same sanitized table in the log.
+    if os.environ.get('GITHUB_STEP_SUMMARY'):
+        print(summary, file=sys.stderr)
