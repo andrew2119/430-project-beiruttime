@@ -53,6 +53,9 @@ const listingEditResumeMs = 10 * catalogCallMs + 2 * (pooledReadMs + dbCommandMs
 // outbox row. The denial branch uses at most three commands in place of finalization.
 const brandDecisionResumeMs = pooledReadMs + 2 * dbCommandMs + 9 * catalogCallMs
   + transactionMs(2) + transactionMs(6) + localWorkMs;
+const pricingReadMs = standardCallMs + pooledReadMs + localWorkMs;
+const brandSourceMs = 4000;
+const brandDecisionMs = standardCallMs + 2 * brandSourceMs + transactionMs(3) + transactionMs(11) + localWorkMs;
 const id = '[A-Za-z0-9_-]{1,200}';
 export const publicationPath = new RegExp(`^/v1/seller/listings/${id}/publish$`);
 
@@ -508,6 +511,42 @@ export const routeBudgets: readonly RouteBudget[] = [
   // advisory lock, reads the quote, prior review and operation key, inserts
   // the review, updates the quote and inserts one outbox row.
   ['pricing', 'POST', '/v1/quotes/:id/review', 2 * standardCallMs + pooledReadMs + transactionMs(7) + localWorkMs],
+
+  // Offers reads load one scoped result; make checks the listing and physical watch,
+  // then stores the offer, receipt and notice. Block rechecks party even on replay.
+  ['pricing', 'GET', '/v1/offers', pricingReadMs],
+  ['pricing', 'GET', '/v1/offers/:id', pricingReadMs],
+  ['pricing', 'POST', '/v1/offers', 3 * standardCallMs + transactionMs(2) + transactionMs(11) + localWorkMs],
+  ['pricing', 'POST', '/v1/offers/:id/block', standardCallMs + transactionMs(6) + localWorkMs],
+  // A confirmed acceptance writes one notice per competing offer, with no row cap.
+  // Use the transport ceiling; the operation can be read separately after timeout.
+  ['pricing', 'POST', '/v1/offers/:id/answer', maxRouteBudgetMs],
+  ['pricing', 'POST', '/v1/offers/:id/reconcile', maxRouteBudgetMs],
+  ['pricing', 'GET', '/v1/pricing-operations/:key', pricingReadMs + dbCommandMs],
+
+  // Brand source and record-access checks each have a four-second envelope.
+  // The list uses one five-second envelope across the whole page of checks.
+  ['pricing', 'GET', '/v1/brand-quotes/context', standardCallMs + 2 * brandSourceMs + localWorkMs],
+  ['pricing', 'GET', '/v1/brand-quotes', pricingReadMs + 2 * dbCommandMs + 5000],
+  ['pricing', 'GET', '/v1/brand-quotes/:id', pricingReadMs + dbCommandMs + 2 * brandSourceMs],
+  ['pricing', 'POST', '/v1/brand-quotes', standardCallMs + 4 * brandSourceMs + transactionMs(2) + transactionMs(11) + localWorkMs],
+  ['pricing', 'POST', '/v1/brand-quotes/:id/accept', brandDecisionMs],
+  ['pricing', 'POST', '/v1/brand-quotes/:id/decline', brandDecisionMs],
+
+  // Repair context reads diagnosis and business; list and detail each read two
+  // results on one connection. Decision budgets include the bounded SQL path,
+  // not a timing assumption for an unavailable source-authorization provider.
+  ['pricing', 'GET', '/v1/repair-quotes/context', 3 * standardCallMs + localWorkMs],
+  ['pricing', 'GET', '/v1/repair-quotes', pricingReadMs + dbCommandMs],
+  ['pricing', 'GET', '/v1/repair-quotes/:id', pricingReadMs + dbCommandMs],
+  ['pricing', 'POST', '/v1/repair-quotes', 3 * standardCallMs + transactionMs(2) + transactionMs(11) + localWorkMs],
+  ['pricing', 'POST', '/v1/repair-quotes/:id/accept', 3 * standardCallMs + transactionMs(3) + transactionMs(11) + localWorkMs],
+  ['pricing', 'POST', '/v1/repair-quotes/:id/decline', standardCallMs + transactionMs(3) + transactionMs(13) + localWorkMs],
+
+  // Auction quote reads and reviewed receipts are separate from the standard
+  // fixed-price preview refusal covered by POST /v1/auction-quotes.
+  ['pricing', 'GET', '/v1/auction-quotes/:id', pricingReadMs],
+  ['pricing', 'POST', '/v1/auction-quotes/:id/review', standardCallMs + transactionMs(6) + localWorkMs],
 
   // directory/routes businesses queries the page and count on one connection,
   // then caps aggregate verification at 950 ms.
