@@ -1,0 +1,71 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "brand_id": {
+      "format": "uuid",
+      "title": "Brand Id",
+      "type": "string"
+    },
+    "intervention": {
+      "enum": [
+        "limited_maintenance",
+        "overhaul_assessment"
+      ],
+      "title": "Intervention",
+      "type": "string"
+    },
+    "request_revision": {
+      "minimum": 1,
+      "title": "Request Revision",
+      "type": "integer"
+    },
+    "assignment_revision": {
+      "minimum": 1,
+      "title": "Assignment Revision",
+      "type": "integer"
+    },
+    "capability_revision": {
+      "minimum": 1,
+      "title": "Capability Revision",
+      "type": "integer"
+    },
+    "allowed": {
+      "title": "Allowed",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "request_id",
+    "actor_id",
+    "organization_id",
+    "watch_id",
+    "brand_id",
+    "intervention",
+    "request_revision",
+    "assignment_revision",
+    "capability_revision",
+    "allowed"
+  ],
+  "title": "AssessmentAccess",
+  "type": "object"
+}

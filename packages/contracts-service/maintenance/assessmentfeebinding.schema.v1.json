@@ -1,0 +1,87 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "order_id": {
+      "format": "uuid",
+      "title": "Order Id",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "request_revision": {
+      "minimum": 1,
+      "title": "Request Revision",
+      "type": "integer"
+    },
+    "buyer_id": {
+      "format": "uuid",
+      "title": "Buyer Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "receipt_id": {
+      "format": "uuid",
+      "title": "Receipt Id",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "offer_id": {
+      "format": "uuid",
+      "title": "Offer Id",
+      "type": "string"
+    },
+    "offer_revision": {
+      "minimum": 1,
+      "title": "Offer Revision",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "amount_minor": {
+      "minimum": 0,
+      "title": "Amount Minor",
+      "type": "integer"
+    },
+    "currency": {
+      "const": "USD",
+      "title": "Currency",
+      "type": "string"
+    }
+  },
+  "required": [
+    "order_id",
+    "request_id",
+    "request_revision",
+    "buyer_id",
+    "organization_id",
+    "watch_id",
+    "receipt_id",
+    "operation_id",
+    "offer_id",
+    "offer_revision",
+    "policy_revision",
+    "amount_minor",
+    "currency"
+  ],
+  "title": "AssessmentFeeBinding",
+  "type": "object"
+}

@@ -1,0 +1,111 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+    },
+    "order_id": {
+      "format": "uuid",
+      "title": "Order Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "received_at": {
+      "format": "date-time",
+      "title": "Received At",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "valid": {
+      "const": true,
+      "title": "Valid",
+      "type": "boolean"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "watch_revision": {
+      "minimum": 1,
+      "title": "Watch Revision",
+      "type": "integer"
+    },
+    "incident_revision": {
+      "minimum": 0,
+      "title": "Incident Revision",
+      "type": "integer"
+    },
+    "current_watch_id": {
+      "format": "uuid",
+      "title": "Current Watch Id",
+      "type": "string"
+    },
+    "current_watch_revision": {
+      "minimum": 1,
+      "title": "Current Watch Revision",
+      "type": "integer"
+    },
+    "current_incident_revision": {
+      "minimum": 0,
+      "title": "Current Incident Revision",
+      "type": "integer"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "title_holder_id": {
+      "format": "uuid",
+      "title": "Title Holder Id",
+      "type": "string"
+    },
+    "brand_id": {
+      "format": "uuid",
+      "title": "Brand Id",
+      "type": "string"
+    },
+    "precharge": {
+      "const": true,
+      "title": "Precharge",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "order_id",
+    "organization_id",
+    "received_at",
+    "revision",
+    "valid",
+    "actor_id",
+    "watch_id",
+    "watch_revision",
+    "incident_revision",
+    "current_watch_id",
+    "current_watch_revision",
+    "current_incident_revision",
+    "request_id",
+    "title_holder_id",
+    "brand_id",
+    "precharge"
+  ],
+  "title": "PrechargeCustody",
+  "type": "object"
+}

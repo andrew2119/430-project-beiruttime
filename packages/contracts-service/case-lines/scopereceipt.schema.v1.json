@@ -1,5 +1,15 @@
 {
   "additionalProperties": false,
+  "if": {
+    "properties": {
+      "state": {
+        "const": "accepted"
+      }
+    },
+    "required": [
+      "state"
+    ]
+  },
   "properties": {
     "schema_version": {
       "const": "service.case-lines.v1",
@@ -62,6 +72,32 @@
       "title": "Policy Revision",
       "type": "integer"
     },
+    "accepted_terms_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Accepted Terms Revision"
+    },
+    "terms_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Terms Digest"
+    },
     "state": {
       "enum": [
         "accepted",
@@ -73,6 +109,7 @@
       "type": "string"
     },
     "revision": {
+      "description": "An accepted result has exactly the expected revision plus one.",
       "minimum": 0,
       "title": "Revision",
       "type": "integer"
@@ -167,6 +204,22 @@
     "revision",
     "next_actor"
   ],
+  "then": {
+    "properties": {
+      "accepted_terms_revision": {
+        "minimum": 1,
+        "type": "integer"
+      },
+      "terms_digest": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      }
+    },
+    "required": [
+      "accepted_terms_revision",
+      "terms_digest"
+    ]
+  },
   "title": "ScopeReceipt",
   "type": "object"
 }

@@ -8,11 +8,34 @@
   ],
   "routes": [
     "routes.py:router",
-    "diagnosis.py:router"
+    "diagnosis.py:router",
+    "staff.py:router",
+    "opening.py:router",
+    "destination.py:router"
   ],
   "migrations": [
     "migrations/L17_0001_requests.sql",
     "migrations/L17_0002_diagnosis.sql",
-    "migrations/L17_0003_received_case_binding.sql"
+    "migrations/L17_0002_private_photos.sql",
+    "migrations/L17_0003_assessment_inbox.sql",
+    "migrations/L17_0003_received_case_binding.sql",
+    "migrations/L17_0004_delivery_recovery.sql",
+    "migrations/L17_0005_photo_scope.sql",
+    "migrations/L17_0006_delivery_escalation.sql",
+    "migrations/L17_0007_delivery_responses.sql",
+    "migrations/L17_0008_delivery_deadline.sql",
+    "migrations/L17_0009_escalation_review.sql",
+    "migrations/L17_0010_escalation_review_reference.sql",
+    "migrations/L17_0011_delivery_retry_receipts.sql",
+    "migrations/L17_0012_repair_authority_guard.sql",
+    "migrations/L17_0013_maintenance_assignment.sql",
+    "migrations/L17_0014_opening_preferences.sql",
+    "migrations/L17_0015_scoped_operation_closures.sql",
+    "migrations/L17_0016_maintenance_mutation_fence.sql",
+    "migrations/L17_0017_predecision_and_destination.sql"
+  ],
+  "workers": [
+    "photos.py:run_expiry",
+    "delivery.py:run_delivery"
   ]
 }

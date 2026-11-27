@@ -16,7 +16,7 @@ async def seed(settings):
             'reference':'SAMPLE — not verified','movement':'SAMPLE — not assessed',
             'received_condition':'SAMPLE CONTENT — preparatory record; watch not received.',
             'accessories':'Not received','reported_issue':'SAMPLE — requested assessment',
-            'assessed_issue':'No assessment performed','diagnostic_opening_permission':False,
+            'assessed_issue':'','diagnostic_opening_permission':False,
             'no_polish_acknowledged':False,'fee_acknowledged':False,'fee_minor':0,'currency':'USD'})
         if isinstance(response,Unavailable) or response.status_code not in (200,201):
             raise RuntimeError('Sample preparatory intake was not confirmed by Service Operations')

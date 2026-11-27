@@ -1,0 +1,166 @@
+{
+  "additionalProperties": false,
+  "else": {
+    "properties": {
+      "revision": {
+        "const": 0
+      }
+    }
+  },
+  "if": {
+    "properties": {
+      "state": {
+        "const": "submitted"
+      }
+    },
+    "required": [
+      "state"
+    ]
+  },
+  "properties": {
+    "schema_version": {
+      "const": "service.maintenance.v1",
+      "default": "service.maintenance.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "subject_id": {
+      "format": "uuid",
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "watch_revision": {
+      "minimum": 1,
+      "title": "Watch Revision",
+      "type": "integer"
+    },
+    "capability_revision": {
+      "minimum": 1,
+      "title": "Capability Revision",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "brand_id": {
+      "format": "uuid",
+      "title": "Brand Id",
+      "type": "string"
+    },
+    "intervention": {
+      "enum": [
+        "limited_maintenance",
+        "overhaul_assessment"
+      ],
+      "title": "Intervention",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "submitted",
+        "denied",
+        "stale",
+        "pending"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 0,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "pending_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pending Reason"
+    },
+    "next_actor": {
+      "enum": [
+        "customer",
+        "business",
+        "support"
+      ],
+      "title": "Next Actor",
+      "type": "string"
+    },
+    "next_review_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Next Review At"
+    }
+  },
+  "required": [
+    "operation_id",
+    "subject_id",
+    "watch_id",
+    "actor_id",
+    "organization_id",
+    "expected_revision",
+    "request_id",
+    "watch_revision",
+    "capability_revision",
+    "policy_revision",
+    "brand_id",
+    "intervention",
+    "state",
+    "revision",
+    "next_actor"
+  ],
+  "then": {
+    "properties": {
+      "revision": {
+        "const": 1
+      }
+    }
+  },
+  "title": "Result",
+  "type": "object"
+}

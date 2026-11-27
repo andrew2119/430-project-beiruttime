@@ -1,0 +1,66 @@
+{
+  "assignment": {
+    "success": {
+      "operation_id": "00000000-0000-0000-0000-000000000002",
+      "request_id": "00000000-0000-0000-0000-000000000003",
+      "organization_id": "00000000-0000-0000-0000-000000000004",
+      "actor_id": "00000000-0000-0000-0000-000000000005",
+      "request_revision": 1,
+      "assessor_id": "00000000-0000-0000-0000-000000000006",
+      "revision": 2
+    },
+    "lost_response": {
+      "operation_id": "00000000-0000-0000-0000-000000000002",
+      "request_id": "00000000-0000-0000-0000-000000000003",
+      "organization_id": "00000000-0000-0000-0000-000000000004",
+      "actor_id": "00000000-0000-0000-0000-000000000005",
+      "request_revision": 1,
+      "assessor_id": "00000000-0000-0000-0000-000000000006",
+      "revision": 2
+    },
+    "denied": {
+      "status": 404
+    },
+    "stale": {
+      "status": 409
+    }
+  },
+  "confirmation": {
+    "success": {
+      "operation_id": "00000000-0000-0000-0000-000000000007",
+      "request_id": "00000000-0000-0000-0000-000000000003",
+      "organization_id": "00000000-0000-0000-0000-000000000004",
+      "actor_id": "00000000-0000-0000-0000-000000000006",
+      "request_revision": 1,
+      "order_id": "00000000-0000-0000-0000-000000000008",
+      "assignment_revision": 2,
+      "watch_id": "00000000-0000-0000-0000-000000000009",
+      "watch_revision": 4,
+      "custody_receipt_id": "00000000-0000-0000-0000-00000000000a",
+      "custody_receipt_revision": 3,
+      "incident_revision": 0,
+      "state": "confirmed"
+    },
+    "lost_response": {
+      "operation_id": "00000000-0000-0000-0000-000000000007",
+      "request_id": "00000000-0000-0000-0000-000000000003",
+      "organization_id": "00000000-0000-0000-0000-000000000004",
+      "actor_id": "00000000-0000-0000-0000-000000000006",
+      "request_revision": 1,
+      "order_id": "00000000-0000-0000-0000-000000000008",
+      "assignment_revision": 2,
+      "watch_id": "00000000-0000-0000-0000-000000000009",
+      "watch_revision": 4,
+      "custody_receipt_id": "00000000-0000-0000-0000-00000000000a",
+      "custody_receipt_revision": 3,
+      "incident_revision": 0,
+      "state": "confirmed"
+    },
+    "denied": {
+      "status": 404
+    },
+    "stale": {
+      "status": 409
+    }
+  }
+}

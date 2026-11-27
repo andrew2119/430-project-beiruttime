@@ -1,0 +1,51 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "assessor_id": {
+      "format": "uuid",
+      "title": "Assessor Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "request_revision": {
+      "minimum": 1,
+      "title": "Request Revision",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "operation_id",
+    "request_id",
+    "organization_id",
+    "actor_id",
+    "assessor_id",
+    "revision",
+    "request_revision"
+  ],
+  "title": "AssignmentReceipt",
+  "type": "object"
+}

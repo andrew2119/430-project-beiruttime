@@ -13,6 +13,8 @@ from bt_runtime.app.db import unit_of_work
 from bt_runtime.files import ScopedFiles
 from .dependencies import principal
 from .routes import organization, operation
+from .access import record_access
+from .photo import strip_metadata
 
 router=APIRouter(prefix='/v1/intake',tags=['private intake evidence'])
 MAX_BYTES=262144
@@ -31,6 +33,8 @@ def bounded_content(body):
     }
     if not 1<=len(content)<=MAX_BYTES or not signatures[body.media_type] or (body.kind=='condition_photo' and body.media_type=='application/pdf'):
         raise PublicError('invalid_evidence','Supply a supported private file.',status=422)
+    if body.media_type.startswith('image/'):
+        return strip_metadata(content, body.media_type, body.safe_photo_declared)
     return content
 
 
@@ -38,8 +42,10 @@ def bounded_content(body):
 async def list_evidence(record_id:UUID,request:Request,p=Depends(principal)):
     org=await organization(p,request,'intake.read')
     async with request.app.state.pool.acquire() as tx:
-        if not await tx.fetchval('SELECT id FROM technical_intakes WHERE id=$1 AND organization_id=$2',record_id,org):
+        order_id=await tx.fetchval('SELECT order_id FROM technical_intakes WHERE id=$1 AND organization_id=$2',record_id,org)
+        if order_id is None:
             raise HTTPException(404)
+        await record_access(p,request,org,order_id,'read')
         rows=await tx.fetch('''SELECT id,kind,media_type,octet_length(content) AS size,created_at
             FROM technical_intake_evidence WHERE record_id=$1 AND organization_id=$2 ORDER BY created_at,id LIMIT 10''',record_id,org)
     return {'items':[dict(row) for row in rows]}
@@ -60,12 +66,19 @@ async def upload(record_id:UUID,body:EvidenceUpload,request:Request,p=Depends(pr
     async with unit_of_work(request.app.state.pool,lock_key=f'intake:{actor}:{org}:{key}') as tx:
         prior=await tx.fetchrow('SELECT * FROM technical_intake_operations WHERE actor_id=$1 AND organization_id=$2 AND key=$3',actor,org,key)
         if prior:
+            order_id=await tx.fetchval('SELECT order_id FROM technical_intakes WHERE id=$1 AND organization_id=$2',record_id,org)
+            if order_id is None:
+                raise HTTPException(404)
+            await record_access(p,request,org,order_id,'write')
             if prior['request_hash']!=digest:
                 raise PublicError('idempotency_conflict','This request key has another payload.',status=409)
             return json.loads(prior['result'])
         record=await tx.fetchrow('SELECT * FROM technical_intakes WHERE id=$1 AND organization_id=$2 FOR UPDATE',record_id,org)
         if record is None:
             raise HTTPException(404)
+        await record_access(p,request,org,record['order_id'],'write')
+        if json.loads(record['private_record']).get('currency')!='USD':
+            raise PublicError('currency_reissue_required','This legacy record is read-only pending explicit reissue.',status=409)
         if record['revision']!=expected:
             raise PublicError('stale_revision','The intake changed. Reload before retrying.',status=409)
         if await tx.fetchval('SELECT count(*) FROM technical_intake_evidence WHERE record_id=$1',record_id)>=10:
@@ -92,10 +105,11 @@ async def download(evidence_id:UUID,request:Request,p=Depends(principal)):
     org=await organization(p,request,'intake.read')
     async def authorize(principal,resource_id):
         async with request.app.state.pool.acquire() as tx:
-            row=await tx.fetchrow('''SELECT e.id,e.kind,e.media_type FROM technical_intake_evidence e
+            row=await tx.fetchrow('''SELECT e.id,e.kind,e.media_type,r.order_id FROM technical_intake_evidence e
                 JOIN technical_intakes r ON r.id=e.record_id WHERE e.id=$1 AND e.organization_id=$2 AND r.organization_id=$2''',resource_id,org)
         if row is None:
             raise HTTPException(404)
+        await record_access(p,request,org,row['order_id'],'read')
         return row['id']
     class Store:
         async def read(self,blob_id,*,max_bytes):

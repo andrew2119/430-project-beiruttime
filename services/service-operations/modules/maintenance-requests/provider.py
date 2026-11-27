@@ -1,20 +1,44 @@
 """Request-scoped ownership, destination and private-reference authority."""
-from uuid import UUID, uuid4
-from io import BytesIO
-from PIL import Image
-from bt_contracts.service.maintenance.v1 import AdmissionAuthority, Context
+from datetime import datetime
+from uuid import UUID
+
+from pydantic import AwareDatetime, TypeAdapter
+
 from fastapi import HTTPException
 from bt_bulkheads import Unavailable
-from bt_runtime.principal import current_principal
-from bt_runtime.app.db import unit_of_work
-from service_app.sources import client, bearer, official_business, prerequisite
-from .commands import AdmissionSnapshot
+from bt_contracts.service.maintenance.v1 import AdmissionAuthority, Context, RequestAuthority
+from bt_runtime.principal import CurrentPrincipal, current_principal
+from service_app.sources import bearer, client, prerequisite
+from .photos import photo_scope
 
 
-async def identity(request):
-    value = await current_principal(client(request, 'identity'), bearer(request), request.state.request_id)
-    if isinstance(value, Unavailable):
-        raise HTTPException(503)
+async def identity(request, organization=None):
+    upstream = client(request, 'identity')
+    token = bearer(request)
+    try:
+        if organization is None:
+            value = await current_principal(upstream, token, request.state.request_id)
+            if isinstance(value, Unavailable):
+                raise HTTPException(503)
+            return value
+        response = await upstream.request('GET', f'/internal/v1/principal?organization_id={organization}',
+            headers={'Authorization': 'Bearer ' + token, 'X-Request-ID': request.state.request_id})
+        if isinstance(response, Unavailable):
+            raise HTTPException(503)
+        if response.status_code in (401, 403):
+            raise HTTPException(response.status_code)
+        if response.status_code != 200:
+            raise HTTPException(503)
+        value = CurrentPrincipal.model_validate(response.json())
+    except (ValueError, OSError):
+        raise HTTPException(503) from None
+    if value.actor.organization_id != organization or organization not in value.organizations:
+        raise HTTPException(403)
+    return value
+
+
+async def buyer_identity(request):
+    value = await identity(request)
     if value.actor.organization_id is not None or 'buyer' not in value.roles:
         raise HTTPException(403)
     return value.actor.subject_id
@@ -24,71 +48,67 @@ class Provider:
     def __init__(self, request):
         self.request = request
 
-    async def context(self, actor, watch):
-        try:
-            facts = Context.model_validate(await prerequisite(self.request, 'maintenance_context', actor, watch))
-        except ValueError:
-            raise ConnectionError('maintenance_context_unavailable') from None
+    async def context(self, actor, watch, brand=None):
+        facts = Context.model_validate(await prerequisite(self.request, 'maintenance_context', actor, watch, brand))
         if (facts.actor_id, facts.subject_id, facts.watch_id) != (actor, actor, watch):
             raise HTTPException(403)
-        return facts.model_dump(mode='json')
+        return facts
 
-    async def admission(self, actor, watch, organization, operation, intervention):
-        try:
-            return AdmissionAuthority.model_validate(await prerequisite(
-                self.request, 'maintenance_admission', actor, watch, organization, operation, intervention))
-        except ValueError:
-            raise ConnectionError('maintenance_authority_unavailable') from None
+    async def admission(self, actor, watch, organization, operation, intervention, brand):
+        return AdmissionAuthority.model_validate(await prerequisite(
+            self.request, 'maintenance_admission', actor, watch, organization, operation, intervention, brand))
 
-    async def current(self, body):
+    async def current_with_photos(self, body, tx):
         facts = await self.admission(body.actor_id, body.watch_id, body.organization_id,
-                                     body.operation_id, body.intervention)
-        live_revision = None
-        if facts.business_active:
-            business = await official_business(self.request, body.organization_id, 'servicing')
-            live_revision = business.get('revision')
-            if type(live_revision) is not int or live_revision < 1:
-                raise ConnectionError('maintenance_capability_unavailable')
-        async with self.request.app.state.pool.acquire() as tx:
-            rows = await tx.fetch('''SELECT id FROM maintenance_photos WHERE actor_id=$1 AND watch_id=$2
-                AND organization_id=$3 AND request_operation_id=$4''', body.actor_id, body.watch_id, body.organization_id, body.operation_id)
-        return AdmissionSnapshot(**facts.model_dump(), live_capability_revision=live_revision,
-            private_refs_current=set(body.photo_refs) <= {row['id'] for row in rows}).model_dump(mode='json')
+                                     body.operation_id, body.intervention, body.brand_id)
+        refs = set(body.photo_refs)
+        if refs:
+            rows = await tx.fetch('''SELECT photo_ref FROM maintenance_request_photos
+                WHERE actor_id=$1 AND watch_id=$2 AND organization_id=$3 AND request_operation_id=$4
+                  AND photo_ref=ANY($5::uuid[]) AND content IS NOT NULL
+                  AND (request_id IS NOT NULL OR expires_at > statement_timestamp())
+                  AND (brand_id, intervention, watch_revision, capability_revision, policy_revision)
+                    = ($6,$7,$8,$9,$10)''', body.actor_id, body.watch_id, body.organization_id,
+                body.operation_id, body.photo_refs, *photo_scope(body))
+            refs.difference_update(row['photo_ref'] for row in rows)
+        return RequestAuthority(**facts.model_dump(), private_refs_current=not refs)
 
-    async def operation_access(self, actor, organization, operation, watch, intervention):
-        facts = await self.admission(actor, watch, organization, operation, intervention)
-        return (facts.identity_current and facts.watch_owned
-                and (facts.actor_id, facts.subject_id, facts.watch_id, facts.organization_id,
-                     facts.operation_id, facts.intervention)
-                == (actor, actor, watch, organization, operation, intervention))
+    async def operation_access(self, actor, organization, operation, watch=None, intervention=None, brand=None):
+        if watch is None:
+            # Closing a missing receipt creates a tombstone only for this buyer and organization.
+            return True
+        from bt_contracts.service.maintenance.staff import HistoricalOwner
+        facts = HistoricalOwner.model_validate(await prerequisite(self.request, 'maintenance_historical_owner', actor, watch))
+        return (facts.actor_id, facts.watch_id, facts.title_holder_id, facts.owned) == (actor, watch, actor, True)
 
-    async def store_photo(self, actor, body, content):
-        context = await self.context(actor, body.watch_id)
-        if UUID(context['actor_id']) != actor or not any(UUID(row['organization_id']) == body.organization_id for row in context['destinations']):
-            raise HTTPException(403)
+    async def staff_authority(self, name, *binding):
         try:
-            with Image.open(BytesIO(content)) as image:
-                if image.width * image.height > 16000000 or getattr(image, 'n_frames', 1) != 1:
-                    raise ValueError('invalid_image')
-                image.load()
-                mode = 'RGB' if body.media_type == 'image/jpeg' else 'RGBA'
-                converted = image.convert(mode)
-                clean = Image.frombytes(mode, converted.size, converted.tobytes())
-                output = BytesIO()
-                clean.save(output, format={'image/jpeg':'JPEG','image/png':'PNG','image/webp':'WEBP'}[body.media_type])
-                encoded = output.getvalue()
-                if len(encoded) > 262144:
-                    raise ValueError('invalid_image')
-        except (OSError, Image.DecompressionBombError):
-            raise ValueError('invalid_image') from None
-        async with unit_of_work(self.request.app.state.pool, lock_key=f'maintenance-photo:{actor}:{body.request_operation_id}') as tx:
-            prior = await tx.fetchrow('SELECT * FROM maintenance_photos WHERE operation_id=$1', body.operation_id)
-            if prior:
-                if (prior['actor_id'],prior['watch_id'],prior['organization_id'],prior['request_operation_id'],prior['content']) != (actor,body.watch_id,body.organization_id,body.request_operation_id,encoded):
-                    raise ValueError('operation_conflict')
-                return prior['id']
-            if await tx.fetchval('SELECT count(*) FROM maintenance_photos WHERE actor_id=$1 AND request_operation_id=$2', actor, body.request_operation_id) >= 10:
-                raise ValueError('photo_limit')
-            reference = uuid4()
-            await tx.execute('INSERT INTO maintenance_photos VALUES($1,$2,$3,$4,$5,$6,$7)', reference, body.operation_id, actor, body.watch_id, body.organization_id, body.request_operation_id, encoded)
-            return reference
+            return await prerequisite(self.request, name, *binding)
+        except KeyError:
+            raise ConnectionError('maintenance_assignment_unavailable') from None
+
+    async def assessment_queue_access(self, actor, organization):
+        from .staff import queue_access
+        return await queue_access(self.request, actor, organization)
+
+    async def assessment_access(self, actor, organization, request_id, tx):
+        from .staff import assignment_access
+        return await assignment_access(self.request, actor, organization, request_id, tx)
+
+    async def delivery_recovery_access(self, actor):
+        data = await self.staff_authority('maintenance_delivery_recovery_access', actor)
+        try:
+            return UUID(data['actor_id']) == actor and data['allowed'] is True
+        except (ValueError, TypeError, KeyError):
+            raise ConnectionError('maintenance_recovery_unavailable') from None
+
+    async def delivery_authority_until(self, actor) -> datetime | None:
+        data = await self.staff_authority('maintenance_delivery_recovery_access', actor)
+        try:
+            if UUID(data['actor_id']) != actor or type(data['allowed']) is not bool:
+                raise ValueError('recovery_scope')
+            if data['allowed'] is False:
+                return None
+            return TypeAdapter(AwareDatetime).validate_python(data['held_until'])
+        except (ValueError, TypeError, KeyError):
+            raise ConnectionError('maintenance_recovery_unavailable') from None

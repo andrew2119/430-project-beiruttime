@@ -1,0 +1,89 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "assessor_id": {
+      "format": "uuid",
+      "title": "Assessor Id",
+      "type": "string"
+    },
+    "assignment_revision": {
+      "minimum": 1,
+      "title": "Assignment Revision",
+      "type": "integer"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "brand_id": {
+      "format": "uuid",
+      "title": "Brand Id",
+      "type": "string"
+    },
+    "intervention": {
+      "enum": [
+        "limited_maintenance",
+        "overhaul_assessment"
+      ],
+      "title": "Intervention",
+      "type": "string"
+    },
+    "reported_symptoms": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Reported Symptoms",
+      "type": "string"
+    },
+    "known_modifications": {
+      "maxLength": 2000,
+      "title": "Known Modifications",
+      "type": "string"
+    },
+    "limited_assessment_permission": {
+      "const": true,
+      "title": "Limited Assessment Permission",
+      "type": "boolean"
+    },
+    "photo_refs": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 10,
+      "title": "Photo Refs",
+      "type": "array"
+    },
+    "submitted_at": {
+      "format": "date-time",
+      "title": "Submitted At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_id",
+    "revision",
+    "assessor_id",
+    "assignment_revision",
+    "watch_id",
+    "brand_id",
+    "intervention",
+    "reported_symptoms",
+    "known_modifications",
+    "limited_assessment_permission",
+    "photo_refs",
+    "submitted_at"
+  ],
+  "title": "AssessmentRequest",
+  "type": "object"
+}

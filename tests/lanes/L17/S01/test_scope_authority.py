@@ -305,12 +305,14 @@ async def test_missing_maintenance_operation_is_scoped_and_requires_current_owne
     'missing_submission_receipt', 'different_submission_receipt', 'missing_case_link',
 ])
 async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch, database_url, change):
+    import hashlib
     import json
     import sys
     from datetime import datetime, timedelta, timezone
 
-    from bt_contracts.service.maintenance.diagnosis import Diagnose
-    from bt_contracts.service.intake.v1 import Intake
+    from bt_contracts.orders.allocation.v3 import CurrentCommitment
+    from bt_contracts.service.maintenance.diagnosis import Diagnose, DiagnosisRecoveryFence, DiagnosisWriteFence
+    from bt_contracts.service.intake.intake_command import Intake
     from service_app import received_case
     from bt_runtime.app.db import create_pool, unit_of_work
     from test_maintenance import Provider, request as maintenance_request
@@ -328,20 +330,55 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
                    incident_revision=0, current=True, assigned=True, permission=True,
                    customer_opening_permission=True, accepted_assessment_fee=True,
                    customer_no_polish_acknowledged=True, accepted_fee_minor=500, currency='USD')
+    advance_incident_before_fence=False
+    native_incident=0
 
     async def prerequisite(_, name, *scope):
+        nonlocal native_incident
+        if name=='diagnosis_write_fence':
+            raw,=scope
+            fence=DiagnosisWriteFence.model_validate_json(raw)
+            assert fence.binding.assignment_revision==1 and fence.binding.session_id=='assessor-session'
+            assert fence.binding.opening.order_id==order and fence.binding.commitment.order_revision==3
+            assert fence.binding.reviewed_intake.receipt_id==receipt
+            if advance_incident_before_fence:
+                native_incident+=1
+            if fence.binding.opening.incident_revision!=native_incident:
+                return False
+            return {'binding_hash':hashlib.sha256(raw).hexdigest(),'held_until':fence.hold_until}
+        if name=='diagnosis_recovery_fence':
+            raw,=scope
+            fence=DiagnosisRecoveryFence.model_validate_json(raw)
+            assert fence.binding.session_id=='assessor-session' and fence.binding.mode=='lookup'
+            return {'binding_hash':hashlib.sha256(raw).hexdigest(),'held_until':fence.hold_until}
         if name == 'intake_opening_authority':
             assert scope == (person, org, order)
             return opening
         if name == 'intake_record_access':
-            assert scope == (person, org, order, 'write')
+            assert scope == (person, org, order, 'assess')
             return dict(actor_id=person, organization_id=org, order_id=order,
-                        permission='write', allowed=True, assignment_revision=1)
+                        permission='assess', allowed=True, assignment_revision=1)
+        if name == 'intake_current_custody':
+            assert scope == (person,org,order,receipt)
+            return dict(id=receipt, order_id=order, actor_id=person, organization_id=org, watch_id=watch,
+                revision=1,valid=True,received_at=received_at,watch_revision=2,incident_revision=0,
+                current_watch_id=watch,current_watch_revision=2,current_incident_revision=0)
+        if name=='repair_custody_transition':
+            assessor,organization,assessment_order,repair_order,subject,original_receipt=scope
+            assert (assessor,organization,assessment_order,subject,original_receipt)==(person,org,order,watch,receipt)
+            if not (opening['assigned'] and opening['permission'] and opening['receipt_id']==receipt
+                    and opening['receipt_revision']==1):
+                return False
+            return dict(actor_id=person,organization_id=org,assessment_order_id=order,repair_order_id=repair_order,
+                watch_id=watch,assessment_receipt_id=receipt,assessment_receipt_revision=1,assessment_watch_revision=2,
+                assessment_incident_revision=0,repair_watch_revision=3,current_incident_revision=0,current=True,work_hold=False)
         pytest.fail(f'Unexpected dependency {name}')
 
     async def commitment(_, order_id):
-        assert order_id == order
-        return SimpleNamespace(**opening, buyer_id=buyer)
+        assert order_id==order
+        return CurrentCommitment(order_id=order_id,watch_id=watch,organization_id=org,buyer_id=buyer,
+            quote_id=quote,quote_revision=1,order_revision=3,watch_revision=opening['watch_revision'],
+            current=opening['current'],state='paid_held',notified_at=None,deadline=None)
 
     servicing_enabled = True
 
@@ -352,10 +389,11 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
 
     monkeypatch.setattr(routes, 'official_business', servicing)
     monkeypatch.setattr(routes, 'prerequisite', prerequisite)
+    monkeypatch.setattr(routes, 'current_commitment', commitment)
     monkeypatch.setattr(received_case, 'current_commitment', commitment)
     pool = await create_pool(database_url)
     request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(pool=pool)))
-    actor = SimpleNamespace(actor=SimpleNamespace(subject_id=person, organization_id=org))
+    actor = SimpleNamespace(actor=SimpleNamespace(subject_id=person,organization_id=org,session_id='assessor-session'))
     try:
         submit = module.load('commands.py:submit')
         admission = maintenance_request(operation_id=submission, actor_id=buyer, subject_id=buyer,
@@ -363,7 +401,28 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
         submitted_receipt = await submit(admission, actor_id=buyer, provider=Provider(watch_revision=1),
                                         transaction=lambda key: unit_of_work(pool, lock_key=str(key)))
         submitted = UUID(submitted_receipt['request_id'])
-        save = next(item for item in discover(MODULES) if item.id == 'L09.intake').load('routes.py:save')
+        from bt_contracts.service.maintenance.opening import OpeningAcknowledgement, PreferenceReceipt
+        preference=PreferenceReceipt(operation_id=UUID(int=51),request_id=submitted,request_revision=1,
+            buyer_id=buyer,organization_id=org,watch_id=watch,revision=1,expected_revision=0,
+            opening_permitted=True,no_polish=True,recorded_at=received_at)
+        acknowledged=OpeningAcknowledgement(operation_id=UUID(int=52),request_id=submitted,request_revision=1,
+            consent_revision=1,assignment_revision=1,order_id=order,receipt_id=receipt,receipt_revision=1,
+            fee_acceptance_operation_id=UUID(int=53),offer_id=quote,offer_revision=1,actor_id=person,buyer_id=buyer,
+            organization_id=org,watch_id=watch,watch_revision=2,incident_revision=0,customer_opening_permission=True,
+            customer_no_polish_acknowledged=True,no_polish=True,accepted_assessment_fee=True,
+            accepted_fee_minor=500,policy_revision=1,received_at=received_at)
+        async with pool.acquire() as tx:
+            await tx.execute('''INSERT INTO maintenance_assessment_assignments
+                (request_id,organization_id,assessor_id,revision,request_revision) VALUES($1,$2,$3,1,1)''',submitted,org,person)
+            await tx.execute('''INSERT INTO maintenance_assessment_decisions
+                (request_id,actor_id,organization_id,watch_id,assignment_revision,request_revision,custody_receipt_id,
+                 custody_receipt_revision,order_id,watch_revision,incident_revision,state)
+                VALUES($1,$2,$3,$4,1,1,$5,1,$6,2,0,'confirmed')''',submitted,person,org,watch,receipt,order)
+            await tx.execute('INSERT INTO maintenance_opening_preferences VALUES($1,$2,1,$3::jsonb)',
+                preference.operation_id,submitted,preference.model_dump_json())
+            await tx.execute('INSERT INTO maintenance_opening_acknowledgements VALUES($1,$2,1,$3::jsonb)',
+                acknowledged.operation_id,submitted,acknowledged.model_dump_json())
+        save = next(item for item in discover(MODULES) if item.id == 'L09.intake').load('current_routes.py:save')
         intake_routes = sys.modules[save.__module__]
 
         async def organization(*args):
@@ -376,25 +435,20 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
                 raise HTTPException(403)
 
         async def current_opening(*args):
-            return opening
+            return opening if write_allowed else opening|{'permission':False}
 
         audit_status = 409
         custody_reads = []
 
-        class Orders:
-            async def request(self, method, path, *, headers):
-                from httpx import Response
-                assert (method, path) == ('GET', f'/v1/custody/receipts/{receipt}')
-                assert headers['Authorization'] == 'Bearer test-intake'
-                custody_reads.append(receipt)
-                return Response(audit_status, json=dict(
-                    id=str(receipt), order_id=str(order), organization_id=str(org),
-                    received_at=received_at.isoformat(), revision=1, valid=True))
+        async def current_custody(*args):
+            assert args==(person,org,order,receipt)
+            custody_reads.append(receipt)
+            return False if audit_status==409 else await prerequisite(request,'intake_current_custody',*args)
 
         monkeypatch.setattr(intake_routes, 'organization', organization)
         monkeypatch.setattr(intake_routes, 'record_access', assigned)
-        request.app.state.intake_current_authority = SimpleNamespace(current=current_opening)
-        monkeypatch.setattr(intake_routes, 'clients', lambda app: {'orders': Orders()})
+        monkeypatch.setattr(intake_routes, 'require_private_assignment', assigned)
+        request.app.state.intake_current_authority=SimpleNamespace(current=current_opening,current_custody=current_custody)
         request.headers = {'Idempotency-Key': 'test-intake', 'Authorization': 'Bearer test-intake'}
         request.url = SimpleNamespace(path='/v1/intake/records')
         request.state = SimpleNamespace(request_id='test-intake')
@@ -402,7 +456,8 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
             reference='test-reference', movement='Automatic', received_condition='Received',
             accessories='', reported_issue='Winding issue', assessed_issue='',
             diagnostic_opening_permission=True, fee_acknowledged=True,
-            no_polish_acknowledged=True, currency='USD', fee_minor=500)
+            no_polish_acknowledged=True, currency='USD', fee_minor=500,
+            opening_acceptance=dict(quote_id=quote,quote_revision=1,consent_revision=1,accepted_terms_revision=1))
         opening['maintenance_request_id'] = submitted
         with pytest.raises(intake_routes.PublicError) as error:
             await save(intake, request, actor)
@@ -410,7 +465,9 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
         audit_status = 200
         if change in ('opening_not_current', 'opening_not_assigned'):
             opening[change.removeprefix('opening_not_')] = False
-            received = await save(intake, request, actor)
+            physical_only=intake.model_copy(update=dict(diagnostic_opening_permission=False,fee_acknowledged=False,
+                no_polish_acknowledged=False,fee_minor=0,opening_acceptance=None))
+            received=await save(physical_only,request,actor)
             assert received['state'] == 'received'
             assert received['diagnosis_allowed'] is False
             assert 'maintenance_request_id' not in received
@@ -431,15 +488,15 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
             await tx.execute("""UPDATE maintenance_request_operations
                 SET result = result || '{"watch_revision":1}'::jsonb WHERE operation_id=$1""", submission)
         opening['watch_revision'] = 3
-        with pytest.raises(HTTPException) as error:
+        with pytest.raises(intake_routes.PublicError) as error:
             await save(intake, request, actor)
-        assert error.value.status_code == 409
+        assert error.value.code=='opening_acceptance_unconfirmed'
         async with pool.acquire() as tx:
             assert await tx.fetchval('SELECT count(*) FROM maintenance_received_cases') == 0
         opening['watch_revision'] = 2
         received = await save(intake, request, actor)
         assert received['maintenance_request_id'] == str(submitted)
-        assert await save(intake, request, actor) == received
+        assert await save(intake,request,actor)=={**received,'diagnosis_allowed':False}
         assert custody_reads == [receipt] * 4
         case = UUID(received['id'])
         assert case != submitted
@@ -459,9 +516,9 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
             assert (await intake_routes.detail(case, request, actor))['diagnosis_allowed'] is False
             request.headers.update({'Idempotency-Key': 'test-intake-update', 'If-Match': '1'})
             request.url.path += f'/{case}'
-            with pytest.raises(HTTPException) as error:
-                await save(intake, request, actor, case)
-            assert error.value.status_code == 409
+            with pytest.raises(intake_routes.PublicError) as error:
+                await save(intake,request,actor,case)
+            assert error.value.code=='stale_case_binding'
             async with pool.acquire() as tx:
                 assert await tx.fetchval('SELECT revision FROM technical_intakes WHERE id=$1', case) == 1
                 assert await tx.fetchval('SELECT count(*) FROM technical_intake_operations') == 1
@@ -472,7 +529,7 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
             request.url.path += f'/{case}'
             with pytest.raises(intake_routes.PublicError) as error:
                 await save(intake.model_copy(update={'reported_issue': 'Updated issue'}), request, actor, case)
-            assert error.value.code == 'custody_unconfirmed'
+            assert error.value.code=='stale_case_binding'
             async with pool.acquire() as tx:
                 assert await tx.fetchval('SELECT revision FROM technical_intakes WHERE id=$1', case) == 1
                 assert await tx.fetchval('SELECT count(*) FROM technical_intake_operations') == 1
@@ -480,7 +537,9 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
         body = Diagnose(operation_id=operation, case_id=case, request_id=submitted,
                         watch_id=watch, actor_id=person, organization_id=org,
                         expected_revision=0, assignment_revision=1, diagnosis='Worn winding components',
-                        lines=[dict(id=line, label='Inspect winding assembly', kind='labor', mandatory=True)])
+                        reviewed_intake=dict(intake_revision=1,receipt_id=receipt,receipt_revision=1,watch_revision=2,incident_revision=0),
+                        lines=[dict(id=line, label='Inspect winding assembly', kind='labor', mandatory=True)],
+                        required_tests={line:['winding_efficiency']},finish_requirements={line:[]})
         opening['received_at'] = received_at - timedelta(seconds=1)
         with pytest.raises(HTTPException) as error:
             await diagnose(case, body, request, actor)
@@ -496,7 +555,16 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
             assert error.value.status_code == 503
             async with pool.acquire() as tx:
                 assert not await tx.fetchval('SELECT count(*) FROM service_diagnosis_operations')
-            servicing_enabled = True
+            servicing_enabled=True
+            advance_incident_before_fence=True
+            with pytest.raises(HTTPException) as stale_preflight:
+                await diagnose(case,body,request,actor)
+            assert stale_preflight.value.status_code==409
+            async with pool.acquire() as tx:
+                for table in ('service_diagnoses','service_diagnosis_operations','service_diagnosis_outbox'):
+                    assert not await tx.fetchval(f'SELECT count(*) FROM {table}')
+            advance_incident_before_fence=False
+            native_incident=0
         result = await diagnose(case, body, request, actor)
         assert result['state'] == 'assessed'
         assert 'current' not in result and 'diagnosis_allowed' not in result
@@ -583,17 +651,19 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
                 actor_id=buyer, organization_id=org, watch_id=watch, expected_revision=0,
                 assessment_id=result['assessment_id'], assessment_revision=1,
                 quote_id=repair_quote, quote_revision=1, policy_revision=2)
-            decision = dict(selected_line_ids=[str(line)],
+            terms_digest='a'*64
+            decision = dict(selected_line_ids=[str(line)],terms_digest=terms_digest,
                 amounts=dict(assessment_fee_minor=500, payable_minor=1000),
                 accepted_fee_lines=dict(assessment=True))
 
             async def quote_current(request, quote_id, bindings, **kwargs):
                 assert UUID(str(quote_id)) == repair_quote
-                return dict(policy={'revision': 2}, source_revision=1, diagnosis=body.diagnosis,
+                return dict(revision=1,terms_digest=terms_digest,policy={'revision': 2}, source_revision=1, diagnosis=body.diagnosis,
                             lines=[{**result['lines'][0], 'amount_minor': 500}],
                             assessment_fee_minor=500, decision=decision), decision
 
             monkeypatch.setattr(scope_routes, 'current_quote', quote_current)
+            monkeypatch.setattr(scope_routes, 'current_commitment', commitment)
             monkeypatch.setattr(scope_routes, 'prerequisite', prerequisite)
             buyer_actor = SimpleNamespace(actor=SimpleNamespace(subject_id=buyer, organization_id=None))
             async with pool.acquire() as tx:
@@ -694,9 +764,9 @@ async def test_current_diagnosis_requires_matching_acknowledgements(monkeypatch,
                 if order_id == order:
                     return SimpleNamespace(**{**opening, 'current': False}, buyer_id=buyer)
                 assert order_id == paid.order_id
-                return SimpleNamespace(order_id=order_id, watch_id=watch, buyer_id=buyer,
-                    organization_id=org, quote_id=repair_quote, quote_revision=1,
-                    order_revision=2, current=True, state='paid_held')
+                return SimpleNamespace(order_id=order_id,watch_id=watch,buyer_id=buyer,
+                    organization_id=org,quote_id=repair_quote,quote_revision=1,watch_revision=3,
+                    order_revision=2,current=True,state='paid_held')
 
             async def paid_fact(_, order_id):
                 assert order_id == paid.order_id

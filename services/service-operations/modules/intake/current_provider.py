@@ -12,5 +12,11 @@ class CurrentAuthority:
     async def record_access(self, actor, organization, order, permission):
         return await prerequisite(self.request, 'intake_record_access', actor, organization, order, permission)
 
+    async def current_custody(self, actor, organization, order, receipt):
+        try:
+            return await prerequisite(self.request, 'intake_current_custody', actor, organization, order, receipt)
+        except KeyError:
+            raise ConnectionError('intake_custody_unavailable') from None
+
     async def readable_orders(self, actor, organization):
         return await prerequisite(self.request, 'intake_readable_orders', actor, organization)

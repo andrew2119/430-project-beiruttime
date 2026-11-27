@@ -1,0 +1,101 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "held_at": {
+      "format": "date-time",
+      "title": "Held At",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "operator_id": {
+      "format": "uuid",
+      "title": "Operator Id",
+      "type": "string"
+    },
+    "next_review_at": {
+      "format": "date-time",
+      "title": "Next Review At",
+      "type": "string"
+    },
+    "escalate_at": {
+      "format": "date-time",
+      "title": "Escalate At",
+      "type": "string"
+    },
+    "escalated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Escalated At"
+    },
+    "retry_in_progress": {
+      "default": false,
+      "title": "Retry In Progress",
+      "type": "boolean"
+    },
+    "escalation_reviewed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Escalation Reviewed At"
+    },
+    "first_response_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "First Response At"
+    },
+    "first_response_overdue": {
+      "default": false,
+      "title": "First Response Overdue",
+      "type": "boolean"
+    },
+    "next_action": {
+      "default": "review_and_retry_delivery",
+      "enum": [
+        "review_and_retry_delivery",
+        "respond_to_overdue_delivery",
+        "resolve_escalated_delivery",
+        "review_active_escalation",
+        "review_delivered_escalation",
+        "monitor_escalated_retry"
+      ],
+      "title": "Next Action",
+      "type": "string"
+    }
+  },
+  "required": [
+    "held_at",
+    "operation_id",
+    "operator_id",
+    "next_review_at",
+    "escalate_at"
+  ],
+  "title": "DeliveryHold",
+  "type": "object"
+}

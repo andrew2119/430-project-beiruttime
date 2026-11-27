@@ -1,0 +1,80 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "buyer_id": {
+      "format": "uuid",
+      "title": "Buyer Id",
+      "type": "string"
+    },
+    "order_id": {
+      "format": "uuid",
+      "title": "Order Id",
+      "type": "string"
+    },
+    "order_kind": {
+      "const": "job",
+      "title": "Order Kind",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "quote_id": {
+      "format": "uuid",
+      "title": "Quote Id",
+      "type": "string"
+    },
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "currency": {
+      "const": "USD",
+      "title": "Currency",
+      "type": "string"
+    },
+    "total_minor": {
+      "maximum": 999999999999,
+      "minimum": 0,
+      "title": "Total Minor",
+      "type": "integer"
+    },
+    "payment_operation_id": {
+      "format": "uuid",
+      "title": "Payment Operation Id",
+      "type": "string"
+    },
+    "payment_revision": {
+      "minimum": 1,
+      "title": "Payment Revision",
+      "type": "integer"
+    },
+    "state": {
+      "enum": [
+        "paid_held",
+        "pending",
+        "unpaid"
+      ],
+      "title": "State",
+      "type": "string"
+    }
+  },
+  "required": [
+    "buyer_id",
+    "order_id",
+    "order_kind",
+    "watch_id",
+    "quote_id",
+    "quote_revision",
+    "currency",
+    "total_minor",
+    "payment_operation_id",
+    "payment_revision",
+    "state"
+  ],
+  "title": "PaidReadiness",
+  "type": "object"
+}

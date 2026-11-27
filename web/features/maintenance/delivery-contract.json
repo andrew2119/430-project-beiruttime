@@ -1,0 +1,22 @@
+[
+  {
+    "route": "/business-intake",
+    "file": "web/app/(intake)/business-intake/page.tsx",
+    "view": "web/features/maintenance/intake/index.tsx",
+    "kind": "reads",
+    "reason": "Assigned staff read private intake records and evidence. Current custody and scoped permission govern diagnostic opening.",
+    "content": ".bt-page-body",
+    "read": "maintenance-intake",
+    "proof": "owed"
+  },
+  {
+    "route": "/care/maintenance",
+    "file": "web/app/(maintenance)/care/maintenance/page.tsx",
+    "view": "web/features/maintenance/request.tsx",
+    "kind": "reads",
+    "reason": "Private current-authority reads; destination selection grants no booking or work permission.",
+    "content": ".bt-page-body",
+    "read": "maintenance-context",
+    "proof": "owed"
+  }
+]

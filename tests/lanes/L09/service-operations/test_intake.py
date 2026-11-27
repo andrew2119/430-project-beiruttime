@@ -18,6 +18,9 @@ OTHER_ORG=UUID('30000000-0000-4000-8000-000000000002')
 ACTOR=UUID('30000000-0000-4000-8000-000000000003')
 ORDER=UUID('30000000-0000-4000-8000-000000000004')
 RECEIPT=UUID('30000000-0000-4000-8000-000000000005')
+WATCH=UUID('30000000-0000-4000-8000-000000000006')
+QUOTE=UUID('30000000-0000-4000-8000-000000000007')
+OPENING={'quote_id':str(QUOTE),'quote_revision':1,'accepted_terms_revision':1,'consent_revision':1}
 
 
 @pytest_asyncio.fixture
@@ -47,6 +50,38 @@ async def api(database_url,database_owner_url):
             return httpx.Response(200,json={'id':str(RECEIPT),'order_id':str(ORDER),'organization_id':str(control['receipt_org']),
                 'received_at':control['receipt_time'].isoformat(),'revision':1,'valid':True})
         return httpx.Response(404)
+    async def assignment(actor, organization, order, permission):
+        return {'actor_id':actor,'organization_id':organization,'order_id':order,'permission':permission,
+            'assignment_revision':1,'allowed':actor==ACTOR and organization==ORG and order==ORDER}
+
+    async def queue(actor, organization):
+        return {'actor_id':actor,'organization_id':organization,'assignment_revision':1,
+                'order_ids':[ORDER] if actor==ACTOR and organization==ORG else []}
+
+    async def custody(actor, organization, order, receipt):
+        from fastapi import HTTPException
+        if control.get('receipt_status'):
+            raise HTTPException(control['receipt_status'])
+        if control['orders_down']:
+            raise ConnectionError('Orders unavailable')
+        if control['receipt_fenced']:
+            return False
+        return {'actor_id':actor,'organization_id':control['receipt_org'],'order_id':order,'id':receipt,
+                'received_at':control['receipt_time'],'revision':1,'valid':True,
+                'watch_id':WATCH,'watch_revision':1,'incident_revision':0,
+                'current_watch_id':WATCH,'current_watch_revision':1,'current_incident_revision':0}
+
+    async def opening(actor, organization, order):
+        return {**OPENING,'actor_id':actor,'organization_id':organization,'order_id':order,'receipt_id':RECEIPT,
+                'receipt_revision':1,'received_at':control['receipt_time'],'watch_id':WATCH,'watch_revision':1,
+                'incident_revision':0,'current':True,'assigned':True,'permission':True,'currency':'USD',
+                'customer_opening_permission':True,'accepted_assessment_fee':True,
+                'customer_no_polish_acknowledged':True,'accepted_fee_minor':2500}
+
+    app.state.intake_record_access=assignment
+    app.state.intake_readable_orders=queue
+    app.state.intake_opening_authority=opening
+    app.state.intake_current_custody=custody
     app.state.intake_clients={name:DependencyClient(name,'http://fixture',transport=httpx.MockTransport(fixture)) for name in ('identity','orders','service-operations','communications')}
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://intake') as client:
         yield client,app,control
@@ -64,8 +99,8 @@ def headers(token='staff',key='intake-key-01',revision=None):
 
 def body(receipt=None):
     return {'order_id':str(ORDER),'custody_receipt_id':str(receipt) if receipt else None,'serial':'PRIVATE-SERIAL','reference':'REFERENCE','movement':'Automatic',
-        'received_condition':'Visible scratch on bezel','accessories':'Box only','reported_issue':'Losing time','assessed_issue':'Assessment not started',
-        'diagnostic_opening_permission':False,'no_polish_acknowledged':True,'fee_acknowledged':True,'fee_minor':2500,'currency':'USD'}
+        'received_condition':'Visible scratch on bezel','accessories':'Box only','reported_issue':'Losing time','assessed_issue':'',
+        'diagnostic_opening_permission':False,'no_polish_acknowledged':False,'fee_acknowledged':False,'fee_minor':0,'currency':'USD'}
 
 
 @pytest.mark.asyncio
@@ -85,7 +120,8 @@ async def test_awaiting_then_actual_custody_permission_restart_and_privacy(api):
     queue=(await client.get('/v1/intake/records',headers=headers())).json()
     assert 'serial' not in str(queue)
     received=body(RECEIPT)
-    received['diagnostic_opening_permission']=True
+    received.update(diagnostic_opening_permission=True,no_polish_acknowledged=True,fee_acknowledged=True,
+                    fee_minor=2500,opening_acceptance=OPENING)
     updated=await client.put('/v1/intake/records/'+record,headers=headers(key='receive-key-01',revision=1),json=received)
     assert updated.status_code==200,updated.text
     assert updated.json()['state']=='received' and updated.json()['diagnosis_allowed'] is True
@@ -119,7 +155,7 @@ async def test_awaiting_then_actual_custody_permission_restart_and_privacy(api):
 async def test_failed_outbox_intake_rolls_back_private_record_audit_and_request_key(api,monkeypatch):
     client,app,_=api
     module=next(module for module in app.state.modules if module.id=='L09.intake')
-    command=module.load('routes.py:save')
+    command=module.load('current_routes.py:save')
     async def failed_enqueue(*args,**kwargs):
         raise RuntimeError('Proof outbox unavailable')
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app,raise_app_exceptions=False),base_url='http://intake') as guarded:
@@ -183,7 +219,7 @@ async def test_private_photos_and_prior_owner_files_are_scoped_bounded_and_durab
     created=await client.post('/v1/intake/records',headers=headers(),json=body())
     record=created.json()['id']
     png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aN3cAAAAASUVORK5CYII='
-    upload={'kind':'condition_photo','media_type':'image/png','content_base64':png}
+    upload={'safe_photo_declared':True,'kind':'condition_photo','media_type':'image/png','content_base64':png}
     path=f'/v1/intake/records/{record}/evidence'
     result=await client.post(path,headers=headers(key='private-photo-key',revision=1),json=upload)
     assert result.status_code==201,result.text
@@ -193,7 +229,12 @@ async def test_private_photos_and_prior_owner_files_are_scoped_bounded_and_durab
     assert (await client.get(private_path,headers=headers('other-business'))).status_code==404
     assert (await client.get(private_path,headers=headers('wrong-permission'))).status_code==403
     downloaded=await client.get(private_path,headers=headers())
-    assert downloaded.json()['content_base64']==png
+    from PIL import Image
+    from io import BytesIO
+    decoded=base64.b64decode(downloaded.json()['content_base64'])
+    assert decoded.startswith(b'\x89PNG\r\n\x1a\n')
+    with Image.open(BytesIO(decoded)) as photo:
+        assert photo.size==(1,1) and photo.info=={}
     listed=(await client.get(path,headers=headers())).json()['items']
     assert len(listed)==1 and 'content_base64' not in listed[0]
     assert (await client.get(path,headers=headers('other-business'))).status_code==404
@@ -217,7 +258,7 @@ async def test_private_photos_and_prior_owner_files_are_scoped_bounded_and_durab
 async def test_receipt_before_equal_after_authoritative_time_boundary(api):
     _,app,_=api
     module=next(module for module in app.state.modules if module.id=='L09.intake')
-    matches=module.load('routes.py:receipt_matches')
+    matches=module.load('current_routes.py:receipt_matches')
     now=datetime(2026,11,4,8,0,tzinfo=timezone.utc)
     command=Intake.model_validate(body(RECEIPT))
     for delta,expected in ((-1,True),(0,True),(1,False)):

@@ -1,0 +1,60 @@
+{
+  "$defs": {
+    "AssessmentQueueItem": {
+      "additionalProperties": false,
+      "properties": {
+        "request_id": {
+          "format": "uuid",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "delivered_at": {
+          "format": "date-time",
+          "title": "Delivered At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_id",
+        "delivered_at"
+      ],
+      "title": "AssessmentQueueItem",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "#/$defs/AssessmentQueueItem"
+      },
+      "maxItems": 50,
+      "title": "Items",
+      "type": "array"
+    },
+    "total": {
+      "minimum": 0,
+      "title": "Total",
+      "type": "integer"
+    },
+    "next_offset": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Next Offset"
+    }
+  },
+  "required": [
+    "items",
+    "total",
+    "next_offset"
+  ],
+  "title": "AssessmentQueue",
+  "type": "object"
+}

@@ -1,0 +1,241 @@
+{
+  "$defs": {
+    "CaseLine": {
+      "additionalProperties": false,
+      "properties": {
+        "line_id": {
+          "format": "uuid",
+          "title": "Line Id",
+          "type": "string"
+        },
+        "kind": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_.-]*$",
+          "title": "Kind",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "amount_minor": {
+          "maximum": 9000000000000,
+          "minimum": 0,
+          "title": "Amount Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "const": "USD",
+          "default": "USD",
+          "title": "Currency",
+          "type": "string"
+        },
+        "assessment_id": {
+          "format": "uuid",
+          "title": "Assessment Id",
+          "type": "string"
+        },
+        "assessment_revision": {
+          "minimum": 1,
+          "title": "Assessment Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line_id",
+        "kind",
+        "description",
+        "required",
+        "amount_minor",
+        "assessment_id",
+        "assessment_revision"
+      ],
+      "title": "CaseLine",
+      "type": "object"
+    },
+    "LocalizedTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "en": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "En",
+          "type": "string"
+        },
+        "ar": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Ar",
+          "type": "string"
+        }
+      },
+      "required": [
+        "en",
+        "ar"
+      ],
+      "title": "LocalizedTerm",
+      "type": "object"
+    },
+    "RetainedTerms": {
+      "additionalProperties": false,
+      "properties": {
+        "lead_time": {
+          "$ref": "#/$defs/LocalizedTerm"
+        },
+        "fees": {
+          "$ref": "#/$defs/LocalizedTerm"
+        },
+        "return_terms": {
+          "$ref": "#/$defs/LocalizedTerm"
+        },
+        "assurance": {
+          "$ref": "#/$defs/LocalizedTerm"
+        },
+        "conditions": {
+          "$ref": "#/$defs/LocalizedTerm"
+        }
+      },
+      "required": [
+        "lead_time",
+        "fees",
+        "return_terms",
+        "assurance",
+        "conditions"
+      ],
+      "title": "RetainedTerms",
+      "type": "object"
+    },
+    "Scope": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "service.case-lines.v1",
+          "default": "service.case-lines.v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "request_id": {
+          "format": "uuid",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "request_revision": {
+          "minimum": 1,
+          "title": "Request Revision",
+          "type": "integer"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "lines": {
+          "items": {
+            "$ref": "#/$defs/CaseLine"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Lines",
+          "type": "array"
+        },
+        "accepted_line_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Accepted Line Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "request_id",
+        "request_revision",
+        "revision",
+        "lines",
+        "accepted_line_ids"
+      ],
+      "title": "Scope",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "subject_id": {
+      "format": "uuid",
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "quote_id": {
+      "format": "uuid",
+      "title": "Quote Id",
+      "type": "string"
+    },
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "terms_revision": {
+      "minimum": 1,
+      "title": "Terms Revision",
+      "type": "integer"
+    },
+    "terms": {
+      "$ref": "#/$defs/RetainedTerms"
+    },
+    "total_minor": {
+      "maximum": 999999999999,
+      "minimum": 0,
+      "title": "Total Minor",
+      "type": "integer"
+    },
+    "scope": {
+      "$ref": "#/$defs/Scope"
+    }
+  },
+  "required": [
+    "actor_id",
+    "subject_id",
+    "organization_id",
+    "watch_id",
+    "quote_id",
+    "quote_revision",
+    "policy_revision",
+    "terms_revision",
+    "terms",
+    "total_minor",
+    "scope"
+  ],
+  "title": "CurrentScope",
+  "type": "object"
+}

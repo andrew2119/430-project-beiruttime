@@ -1,0 +1,25 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "held_at": {
+      "format": "date-time",
+      "title": "Held At",
+      "type": "string"
+    },
+    "action": {
+      "default": "retry",
+      "enum": [
+        "acknowledge",
+        "retry",
+        "review_escalation"
+      ],
+      "title": "Action",
+      "type": "string"
+    }
+  },
+  "required": [
+    "held_at"
+  ],
+  "title": "DeliveryRecoveryCommand",
+  "type": "object"
+}

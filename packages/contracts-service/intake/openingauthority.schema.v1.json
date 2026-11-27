@@ -1,6 +1,26 @@
 {
   "additionalProperties": false,
   "properties": {
+    "quote_id": {
+      "format": "uuid",
+      "title": "Quote Id",
+      "type": "string"
+    },
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "accepted_terms_revision": {
+      "minimum": 1,
+      "title": "Accepted Terms Revision",
+      "type": "integer"
+    },
+    "consent_revision": {
+      "minimum": 1,
+      "title": "Consent Revision",
+      "type": "integer"
+    },
     "actor_id": {
       "format": "uuid",
       "title": "Actor Id",
@@ -41,6 +61,45 @@
       "title": "Incident Revision",
       "type": "integer"
     },
+    "current_watch_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Current Watch Id"
+    },
+    "current_watch_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Current Watch Revision"
+    },
+    "current_incident_revision": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Current Incident Revision"
+    },
     "received_at": {
       "format": "date-time",
       "title": "Received At",
@@ -70,26 +129,6 @@
       "title": "Customer No Polish Acknowledged",
       "type": "boolean"
     },
-    "consent_revision": {
-      "minimum": 1,
-      "title": "Consent Revision",
-      "type": "integer"
-    },
-    "accepted_terms_revision": {
-      "minimum": 1,
-      "title": "Accepted Terms Revision",
-      "type": "integer"
-    },
-    "quote_id": {
-      "format": "uuid",
-      "title": "Quote Id",
-      "type": "string"
-    },
-    "quote_revision": {
-      "minimum": 1,
-      "title": "Quote Revision",
-      "type": "integer"
-    },
     "accepted_fee_minor": {
       "maximum": 999999999999,
       "minimum": 0,
@@ -100,14 +139,6 @@
       "const": "USD",
       "title": "Currency",
       "type": "string"
-    },
-    "reservation_input_watch_revision": {
-      "anyOf": [
-        {"type": "integer", "minimum": 1},
-        {"type": "null"}
-      ],
-      "default": null,
-      "title": "Reservation Input Watch Revision"
     },
     "maintenance_request_id": {
       "anyOf": [
@@ -121,9 +152,26 @@
       ],
       "default": null,
       "title": "Maintenance Request Id"
+    },
+    "reservation_input_watch_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reservation Input Watch Revision"
     }
   },
   "required": [
+    "quote_id",
+    "quote_revision",
+    "accepted_terms_revision",
+    "consent_revision",
     "actor_id",
     "organization_id",
     "order_id",
@@ -139,10 +187,6 @@
     "customer_opening_permission",
     "accepted_assessment_fee",
     "customer_no_polish_acknowledged",
-    "consent_revision",
-    "accepted_terms_revision",
-    "quote_id",
-    "quote_revision",
     "accepted_fee_minor",
     "currency"
   ],

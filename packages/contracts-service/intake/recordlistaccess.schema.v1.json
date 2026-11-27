@@ -1,0 +1,37 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "assignment_revision": {
+      "minimum": 1,
+      "title": "Assignment Revision",
+      "type": "integer"
+    },
+    "order_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 10000,
+      "title": "Order Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "actor_id",
+    "organization_id",
+    "assignment_revision",
+    "order_ids"
+  ],
+  "title": "RecordListAccess",
+  "type": "object"
+}

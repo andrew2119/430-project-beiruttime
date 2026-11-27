@@ -1,0 +1,48 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "order_id": {
+      "format": "uuid",
+      "title": "Order Id",
+      "type": "string"
+    },
+    "permission": {
+      "enum": [
+        "read",
+        "write",
+        "assess"
+      ],
+      "title": "Permission",
+      "type": "string"
+    },
+    "assignment_revision": {
+      "minimum": 1,
+      "title": "Assignment Revision",
+      "type": "integer"
+    },
+    "allowed": {
+      "title": "Allowed",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "actor_id",
+    "organization_id",
+    "order_id",
+    "permission",
+    "assignment_revision",
+    "allowed"
+  ],
+  "title": "RecordAccess",
+  "type": "object"
+}

@@ -1,0 +1,37 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "request_revision": {
+      "minimum": 1,
+      "title": "Request Revision",
+      "type": "integer"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "opening_permitted": {
+      "title": "Opening Permitted",
+      "type": "boolean"
+    },
+    "no_polish": {
+      "title": "No Polish",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "operation_id",
+    "request_revision",
+    "expected_revision",
+    "opening_permitted",
+    "no_polish"
+  ],
+  "title": "Preference",
+  "type": "object"
+}

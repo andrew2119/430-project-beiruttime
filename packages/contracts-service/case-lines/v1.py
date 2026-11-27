@@ -1,7 +1,7 @@
 """Versioned, extensible assessed scope. Reported symptoms are never line evidence."""
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
-from pydantic import AwareDatetime, Field, StrictInt, StrictBool, model_validator
+from pydantic import AwareDatetime, ConfigDict, Field, StrictInt, StrictBool, StringConstraints, model_validator
 from bt_contracts_core.models import Contract
 
 class CaseLine(Contract):
@@ -52,7 +52,7 @@ def accepted_payable(quote, line_subtotal: int) -> int:
     return payable
 
 
-class ScopeReceipt(Contract):
+class ScopeBinding(Contract):
     schema_version: Literal['service.case-lines.v1'] = 'service.case-lines.v1'
     operation_id: UUID
     actor_id: UUID
@@ -65,8 +65,49 @@ class ScopeReceipt(Contract):
     quote_id: UUID
     quote_revision: StrictInt = Field(ge=1)
     policy_revision: StrictInt = Field(ge=1)
+
+TermsText = Annotated[str, StringConstraints(min_length=1, max_length=4000, pattern=r"\S")]
+
+
+class LocalizedTerm(Contract):
+    en: TermsText
+    ar: TermsText
+
+
+class RetainedTerms(Contract):
+    lead_time: LocalizedTerm
+    fees: LocalizedTerm
+    return_terms: LocalizedTerm
+    assurance: LocalizedTerm
+    conditions: LocalizedTerm
+
+
+class ScopeAcceptance(ScopeBinding):
+    schema_version: Literal['service.case-lines.v1']
+    accepted_line_ids: list[UUID] = Field(min_length=1, max_length=100, json_schema_extra={'uniqueItems': True})
+    total_minor: StrictInt = Field(ge=0, le=999999999999)
+    accepted_terms_revision: StrictInt = Field(ge=1)
+    reviewed_terms: RetainedTerms
+
+    @model_validator(mode='after')
+    def unique_selection(self):
+        if len(self.accepted_line_ids) != len(set(self.accepted_line_ids)):
+            raise ValueError('Duplicate accepted line')
+        return self
+
+
+class ScopeReceipt(ScopeBinding):
+    model_config = ConfigDict(json_schema_extra={
+        'if': {'properties': {'state': {'const': 'accepted'}}, 'required': ['state']},
+        'then': {'required': ['accepted_terms_revision', 'terms_digest'], 'properties': {
+            'accepted_terms_revision': {'type': 'integer', 'minimum': 1},
+            'terms_digest': {'type': 'string', 'pattern': '^[0-9a-f]{64}$'},
+        }},
+    })
+    accepted_terms_revision: StrictInt | None = Field(default=None, ge=1)
+    terms_digest: str | None = Field(default=None, pattern=r'^[0-9a-f]{64}$')
     state: Literal['accepted','denied','stale','pending']
-    revision: StrictInt = Field(ge=0)
+    revision: StrictInt = Field(ge=0, description='An accepted result has exactly the expected revision plus one.')
     pending_reason: str | None = None
     next_actor: Literal['customer','business','support']
     next_review_at: AwareDatetime | None = None
@@ -74,8 +115,54 @@ class ScopeReceipt(Contract):
     assessment_id: UUID | None = None
     assessment_revision: StrictInt | None = Field(default=None, ge=1)
 
+    @model_validator(mode='after')
+    def validate_accepted_receipt(self):
+        if self.state == 'accepted' and (
+                self.revision != self.expected_revision + 1
+                or self.accepted_terms_revision != self.quote_revision or self.terms_digest is None):
+            raise ValueError('Accepted scope requires the next revision and the exact retained quote terms')
+        return self
+
+
 OPERATIONS = {
     'current': ('GET', '/v1/case-lines/{request_id}'),
     'accept': ('POST', '/v1/case-lines/{request_id}/acceptance'),
+    'retained_terms': ('GET', '/v1/case-lines/{request_id}/terms'),
     'lookup': ('GET', '/v1/case-lines/operations/{operation_id}'),
 }
+
+
+class CurrentScope(Contract):
+    actor_id: UUID
+    subject_id: UUID
+    organization_id: UUID
+    watch_id: UUID
+    quote_id: UUID
+    quote_revision: StrictInt = Field(ge=1)
+    policy_revision: StrictInt = Field(ge=1)
+    terms_revision: StrictInt = Field(ge=1)
+    terms: RetainedTerms
+    total_minor: StrictInt = Field(ge=0, le=999999999999)
+    scope: Scope
+
+
+class CurrentScopeResult(Contract):
+    current: CurrentScope
+    acceptance: ScopeReceipt | None = None
+
+
+class RetainedRepairTerms(Contract):
+    request_id: UUID
+    case_id: UUID
+    quote_id: UUID
+    policy_revision: StrictInt = Field(ge=1)
+    accepted_terms_revision: StrictInt = Field(ge=1)
+    terms_digest: str = Field(pattern=r'^[0-9a-f]{64}$')
+    currency: Literal['USD']
+    lead_time_days: StrictInt = Field(ge=0, le=730)
+    assessment_fee_minor: StrictInt = Field(ge=0, le=9_000_000_000_000)
+    return_fee_minor: StrictInt = Field(ge=0, le=9_000_000_000_000)
+    accepted_assessment_fee: StrictBool
+    accepted_return_fee: StrictBool
+    warranty_terms: str = Field(min_length=1, max_length=2000)
+    modification_terms: str = Field(min_length=1, max_length=2000)

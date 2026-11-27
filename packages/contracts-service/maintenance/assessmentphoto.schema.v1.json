@@ -1,0 +1,32 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "photo_ref": {
+      "format": "uuid",
+      "title": "Photo Ref",
+      "type": "string"
+    },
+    "media_type": {
+      "enum": [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+      ],
+      "title": "Media Type",
+      "type": "string"
+    },
+    "content_base64": {
+      "maxLength": 349528,
+      "minLength": 4,
+      "title": "Content Base64",
+      "type": "string"
+    }
+  },
+  "required": [
+    "photo_ref",
+    "media_type",
+    "content_base64"
+  ],
+  "title": "AssessmentPhoto",
+  "type": "object"
+}

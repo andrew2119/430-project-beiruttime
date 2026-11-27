@@ -1,0 +1,90 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "order_id": {
+      "format": "uuid",
+      "title": "Order Id",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "assignment_revision": {
+      "minimum": 1,
+      "title": "Assignment Revision",
+      "type": "integer"
+    },
+    "request_revision": {
+      "minimum": 1,
+      "title": "Request Revision",
+      "type": "integer"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "watch_revision": {
+      "minimum": 1,
+      "title": "Watch Revision",
+      "type": "integer"
+    },
+    "custody_receipt_id": {
+      "format": "uuid",
+      "title": "Custody Receipt Id",
+      "type": "string"
+    },
+    "custody_receipt_revision": {
+      "minimum": 1,
+      "title": "Custody Receipt Revision",
+      "type": "integer"
+    },
+    "incident_revision": {
+      "minimum": 0,
+      "title": "Incident Revision",
+      "type": "integer"
+    },
+    "state": {
+      "enum": [
+        "confirmed",
+        "rejected"
+      ],
+      "title": "State",
+      "type": "string"
+    }
+  },
+  "required": [
+    "operation_id",
+    "order_id",
+    "request_id",
+    "organization_id",
+    "actor_id",
+    "assignment_revision",
+    "request_revision",
+    "watch_id",
+    "watch_revision",
+    "custody_receipt_id",
+    "custody_receipt_revision",
+    "incident_revision",
+    "state"
+  ],
+  "title": "ConfirmationReceipt",
+  "type": "object"
+}
