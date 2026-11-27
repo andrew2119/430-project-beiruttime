@@ -1,0 +1,10 @@
+{
+  "route": "/seller/payout-recipient",
+  "file": "web/app/(payout-recipients)/seller/payout-recipient/page.tsx",
+  "view": "web/features/payout-recipients/page.tsx",
+  "kind": "reads",
+  "reason": "Private recipient maintenance with current authority and stable operation recovery.",
+  "content": "Protected synthetic recipient form and bilingual recovery states.",
+  "read": "web/features/payout-recipients/read.ts",
+  "proof": "owed"
+}

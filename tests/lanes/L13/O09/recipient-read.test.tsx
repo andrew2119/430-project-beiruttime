@@ -1,0 +1,41 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+import {QueryClient} from '@tanstack/react-query';
+const request=vi.hoisted(()=>vi.fn());
+vi.mock('@/features/identity/session',()=>({authenticatedRequest:request}));
+import {recipientRead,warmRecipient} from '../../../../web/features/payout-recipients/read';
+const scope={owner:'access-one',subject:'subject',organization:null};
+const answer={schema_version:1,state:'succeeded',revision:1,subject_id:'subject',organization_id:null};
+beforeEach(()=>{request.mockReset();request.mockResolvedValue(answer);});
+it('shares intent and entry reads and retains an answer between visits',async()=>{
+ const client=new QueryClient();
+ await warmRecipient(client,scope);
+ expect(await client.fetchQuery(recipientRead(scope))).toEqual(answer);
+ expect(request).toHaveBeenCalledTimes(1);
+ expect(client.getQueryData(recipientRead(scope).queryKey)).toEqual(answer);
+ client.clear();
+});
+it('retains content during refresh and replaces it with denial',async()=>{
+ const client=new QueryClient();
+ await warmRecipient(client,scope);
+ let finish!:(value:unknown)=>void;
+ request.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
+ const refresh=client.fetchQuery({...recipientRead(scope),staleTime:0});
+ expect(client.getQueryData(recipientRead(scope).queryKey)).toEqual(answer);
+ const denial={...answer,state:'denied',code:'access_denied'};
+ finish(denial);await refresh;
+ expect(client.getQueryData(recipientRead(scope).queryKey)).toEqual(denial);
+ client.clear();
+});
+it('separates scopes, rejects wrong subjects and clears canceled private reads',async()=>{
+ const client=new QueryClient();
+ await warmRecipient(client,scope);
+ expect(client.getQueryData(recipientRead({...scope,owner:'access-two'}).queryKey)).toBeUndefined();
+ expect(client.getQueryData(recipientRead({...scope,organization:'business'}).queryKey)).toBeUndefined();
+ request.mockResolvedValueOnce({...answer,subject_id:'other'});
+ await expect(client.fetchQuery({...recipientRead(scope),staleTime:0})).rejects.toThrow('invalid_recipient_response');
+ let finish!:(value:unknown)=>void;
+ request.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
+ const warming=warmRecipient(client,scope);
+ await client.cancelQueries();client.clear();finish(answer);await warming;
+ expect(client.getQueryData(recipientRead(scope).queryKey)).toBeUndefined();
+});
