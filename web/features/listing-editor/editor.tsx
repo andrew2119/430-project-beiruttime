@@ -7,6 +7,7 @@ import { useSession } from "@/features/identity/session";
 import {
   Button,
   ButtonLink,
+  Card,
   Input,
   Skeleton,
   BidiReference,
@@ -66,7 +67,7 @@ function DraftLoader({
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   });
-  if (query.isPending) return <Skeleton label={t.loading} />;
+  if (query.isPending) return <PageLayout className="le-page"><PageHeader title={t.newListing}/><Skeleton label={t.loading}/></PageLayout>;
   if (!query.data)
     return (
       <PageLayout className="le-page">
@@ -128,9 +129,13 @@ function DraftEditor({
         ? ""
         : String(initial.facts.price_minor / 100),
     ),
-    [quote, setQuote] = useState<FeeQuote | null>(
-      initial.fee_snapshot as FeeQuote | null,
-    );
+    [quote, setQuote] = useState<FeeQuote | null>(()=>{
+      const retained=initial.fee_snapshot as FeeQuote|null;
+      return retained?.price_minor===initial.facts.price_minor?retained:null;
+    });
+  const [editReason,setEditReason]=useState('');
+  const [editUncertain,setEditUncertain]=useState(false);
+  const editHistory=useQuery({queryKey:['listing-revisions',fingerprint,organization,id,row.revision],queryFn:()=>listingApi.history(id),enabled:row.status==='published',retry:false});
   const publicationKey = useRef(crypto.randomUUID());
   const pendingSave = useRef<{ signature: string; key: string } | null>(null);
   const pendingUpload = useRef<{ signature: string; key: string } | null>(null);
@@ -141,7 +146,8 @@ function DraftEditor({
   });
   const current = row,
     form = facts,
-    editable = current.status === "draft";
+    editable = current.status === "draft",
+    factsEditable = (editable || current.status === 'published') && !editUncertain && !editHistory.data?.pending_operation_id;
   function field<K extends keyof WatchFacts>(name: K, value: WatchFacts[K]) {
     setFacts({ ...form, [name]: value });
     setDirty(true);
@@ -161,16 +167,31 @@ function DraftEditor({
     }
   }
   async function persist() {
-    const signature = JSON.stringify([current.revision, form]);
+    const signature = JSON.stringify([current.revision, form, current.status==='published'?editReason:null]);
     if (pendingSave.current?.signature !== signature)
       pendingSave.current = { signature, key: crypto.randomUUID() };
-    const saved = await listingApi.save(current, form, pendingSave.current.key);
+    let saved: Listing;
+    if(current.status==='published'){
+      try {
+        const result=await listingApi.revise(current,form,editReason,pendingSave.current.key);
+        if(result.status!=='succeeded'){
+          if(result.status==='pending')setEditUncertain(true);
+          if(result.status==='denied'){pendingSave.current=null;setEditUncertain(false);}
+          throw new ApiError(result.status==='pending'?503:409,result.status==='pending'?'edit_pending':'listing_frozen','');
+        }
+        saved=result.listing;setEditUncertain(false);void editHistory.refetch();
+      } catch(cause) {
+        if(!(cause instanceof ApiError)||cause.status>=500)setEditUncertain(true);
+        void editHistory.refetch();throw cause;
+      }
+    } else saved = await listingApi.save(current, form, pendingSave.current.key);
     pendingSave.current = null;
     setRow(saved);
     setFacts(saved.facts);
+    setPrice(saved.facts.price_minor===null?'':String(saved.facts.price_minor/100));
     setDirty(false);
     setQuote(null);
-    setNotice(t.saved);
+    setNotice(current.status==='published'?t.revisionSaved:t.saved);
     return saved;
   }
   async function save() {
@@ -253,10 +274,11 @@ function DraftEditor({
     <PageLayout className="le-page">
       <PageHeader
         title={`${form.brand || t.newListing} ${form.model}`}
+        media={<span className="hx-cover" aria-hidden="true"><Watch /></span>}
         lead={<ButtonLink variant="outline" size="sm" href={scopedHref(`/${locale}/seller/listings`, organization)}><ArrowLeft className="le-directional" aria-hidden="true" />{t.listings}</ButtonLink>}
         count={<span className="le-inline"><Status row={current} t={t} /><span>{t.revision} <BidiReference>{current.revision}</BidiReference></span>{current.is_demo && <span>{t.demo}</span>}</span>}
-        actions={[{id:"save",label:busy ? t.working : t.save,icon:Save,primary:true,busy,disabled:!editable || !dirty,onSelect:() => void run(save)}]}
-        status={<span role="status">{dirty ? t.unsaved : notice || t.saved}</span>}
+        actions={[{id:"save",label:busy ? t.working : current.status==='published'?t.saveRevision:t.save,phoneLabel:locale==='ar'?'حفظ':'Save',icon:Save,primary:true,busy,disabled:!dirty || (!factsEditable&&!editUncertain) || (current.status==='published'&&editReason.trim().length<3),onSelect:() => void run(save)}]}
+        status={<span role="status">{dirty ? t.unsaved : notice || (current.status==='published'?t.published:t.saved)}</span>}
         nav={<HeaderTabs value={String(step)} onChange={value => setStep(Number(value))} items={labels.map((label, i) => ({id:String(i),label,icon:[ClipboardList,ShieldCheck,Images,Send][i]}))} label={t.newListing} />}
       />
       {!organization &&
@@ -292,12 +314,13 @@ function DraftEditor({
           </ButtonLink>
         </div>
       )}
+      {current.status==='published'&&<section className="le-panel"><label>{locale==='ar'?'سبب التعديل':'Revision reason'}<Input value={editReason} maxLength={200} disabled={busy||editUncertain||!!editHistory.data?.pending_operation_id} onChange={event=>setEditReason(event.target.value)}/></label><p>{locale==='ar'?'يجب تأكيد حواجز المزاد والطلب قبل تعديل الإعلان. لا تغيّر نافذة معلقة.':'Auction and order commitments must allow the revision. Pending edits retain their fence.'}</p>{editHistory.data?.pending_operation_id&&<Button disabled={busy} onClick={()=>void run(async()=>{const result=await listingApi.resumeEdit(editHistory.data!.pending_operation_id!);if(result.status==='succeeded'){setRow(result.listing);setFacts(result.listing.facts);setPrice(result.listing.facts.price_minor===null?'':String(result.listing.facts.price_minor/100));setDirty(false);setEditUncertain(false);setNotice(t.revisionSaved);}else if(result.status==='denied'){pendingSave.current=null;setEditUncertain(false);setError(new ApiError(409,'listing_frozen',''));}await editHistory.refetch();})}>{locale==='ar'?'تسوية التعديل المعلق':'Reconcile pending revision'}</Button>}{editUncertain&&<p role="status">{locale==='ar'?'التعديل قيد التسوية؛ لا يُعدّ نجاحاً حتى التأكيد.':'Revision outcome is pending, not confirmed success.'}</p>}</section>}
       <div className="le-editor-layout">
         <div key={step} className="le-editor-main pg-detail-arrive">
           {step === 0 && (
             <section className="le-panel">
               <h2>{t.facts}</h2>
-              <fieldset disabled={!editable || busy}>
+              <fieldset disabled={!factsEditable || busy}>
                 <div className="le-form-grid">
                   {(["brand", "model", "reference", "location"] as const).map(
                     (name) => (
@@ -409,7 +432,7 @@ function DraftEditor({
             <section className="le-panel">
               <h2>{t.disclosure}</h2>
               <p>{t.disclosureHint}</p>
-              <fieldset disabled={!editable || busy}>
+              <fieldset disabled={!factsEditable || busy}>
                 <label>
                   {t.modifiedQuestion}
                   <Select
@@ -813,6 +836,7 @@ function DraftEditor({
           <p className="le-aside-note">{t.emptyBody}</p>
         </aside>
       </div>
+      {current.status==='published'&&<Card className="le-history"><h2>{t.revisionHistory}</h2><p>{t.historyBody}</p>{editHistory.isPending&&<Skeleton label={t.loading}/>} {editHistory.error&&<Failure error={editHistory.error} t={t} locale={locale} retry={()=>void editHistory.refetch()}/>} {editHistory.data?.items.length===0&&<p>{t.noRevisions}</p>}<ul>{editHistory.data?.items.map(entry=><li key={entry.revision}><strong>{t.revision} <BidiReference>{entry.revision}</BidiReference></strong><p>{entry.reason}</p><p>{t.actor} <BidiReference>{entry.actor_id}</BidiReference> · <time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString(locale,{timeZone:'Asia/Beirut'})}</time></p><p>{t.price}: <BidiReference>{entry.before_facts.price_minor===null?'—':money(entry.before_facts.price_minor)} → {entry.after_facts.price_minor===null?'—':money(entry.after_facts.price_minor)}</BidiReference></p></li>)}</ul></Card>}
       <footer className="le-editor-footer">
         <Button
           variant="outline"
@@ -826,10 +850,10 @@ function DraftEditor({
           {labels[(step + 1) % 4]} →
         </Button>
         <Button
-          disabled={busy || !dirty || !editable}
+          disabled={busy || !dirty || (!factsEditable&&!editUncertain) || (current.status==='published'&&editReason.trim().length<3)}
           onClick={() => void run(save)}
         >
-          {busy ? t.working : t.save}
+          {busy ? t.working : current.status==='published'?t.saveRevision:t.save}
         </Button>
       </footer>
     </PageLayout>

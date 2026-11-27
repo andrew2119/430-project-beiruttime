@@ -1,0 +1,42 @@
+{
+  "synthetic": true,
+  "request": {
+    "operation_id": "00000000-0000-4000-8000-000000000001",
+    "subject_id": "00000000-0000-4000-8000-000000000001",
+    "watch_id": "00000000-0000-4000-8000-000000000001",
+    "actor_id": "00000000-0000-4000-8000-000000000001",
+    "organization_id": null,
+    "expected_revision": 1,
+    "kind": "renew",
+    "proof_id": "synthetic-reviewed-reference",
+    "quote_id": "synthetic-quote-reference",
+    "quote_revision": 1,
+    "policy_revision": "synthetic-policy-reference",
+    "schema_version": "listing-lifecycle.v1"
+  },
+  "response": {
+    "operation_id": "00000000-0000-4000-8000-000000000001",
+    "subject_id": "00000000-0000-4000-8000-000000000001",
+    "watch_id": "00000000-0000-4000-8000-000000000001",
+    "actor_id": "00000000-0000-4000-8000-000000000001",
+    "organization_id": null,
+    "expected_revision": 1,
+    "kind": "renew",
+    "proof_id": "synthetic-reviewed-reference",
+    "quote_id": "synthetic-quote-reference",
+    "quote_revision": 1,
+    "policy_revision": "synthetic-policy-reference",
+    "schema_version": "listing-lifecycle.v1",
+    "state": "pending",
+    "revision": 1,
+    "pending_reason": "confirmation_required",
+    "next_actor": "support",
+    "next_review_at": "2026-11-18T12:00:00+00:00",
+    "listing_id": null,
+    "auction_id": null,
+    "previous_auction_id": null,
+    "responsible_operator_id": "00000000-0000-4000-8000-000000000004",
+    "next_action": "resolve_confirmation",
+    "escalate_at": "2026-11-19T12:00:00+00:00"
+  }
+}
