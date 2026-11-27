@@ -294,7 +294,9 @@ fetch(url, { signal: AbortSignal.timeout(5000) })
 
 # Reads the sign-in page the way a browser does (the tokenizer of the HTML standard, with the rules
 # of its tree builder that make inputs inert) and prints why the check fails, or nothing. The page
-# must be served as HTML, in bytes that read the same in every encoding a browser may use for it.
+# must be served as HTML, in bytes that read the same in every encoding a browser may use for it,
+# with no Content-Disposition or Content-Encoding header and no Transfer-Encoding but chunked, and
+# must not start like a feed.
 # Only whole attributes of input start tags count: names in any case, values exactly as written,
 # with no character reference decoded. Nothing counts inside a comment, a quoted value, an element
 # whose content a browser reads as text, a template, svg or math, and no hidden input counts. Where
@@ -321,6 +323,10 @@ UTF8 = ("unicode-1-1-utf-8", "unicode11utf8", "unicode20utf8", "utf-8", "utf8", 
 # no meta or xml declaration names another.
 PLAIN_BYTES = re.compile(b"[\t\n\f\r -~]*")
 DECLARATION = re.compile(b"<meta|<[?]xml", re.IGNORECASE)
+# The whitespace bytes of the MIME Sniffing standard, and the start of a tag that its rules for
+# telling a feed from HTML read as a feed, here in any case and without the rdf:RDF namespace test.
+SNIFF_SPACE = "\t\n\f\r "
+FEED = re.compile("<(?:rss|feed|rdf:rdf)", CASE)
 # Elements whose content is text up to their first end tag, in any case. Script text has its own
 # rules below, and plaintext runs to the end of the page.
 TEXT_END = {name: re.compile("</" + name + "[\t\n\f />]", CASE) for name in (
@@ -347,13 +353,44 @@ NOSCRIPT_STOP = frozenset(TEXT_END) | frozenset((
     "script", "plaintext", "template", "svg", "math", "select", "frameset"))
 
 
+def sniff_end(text):
+    """Where the rules of the MIME Sniffing standard for telling a feed from HTML stop reading
+    text, which starts after any UTF-8 byte order mark. They skip whitespace, then after each <
+    skip a comment to the next -->, a <! to the next > or a <? to the next ?>, and decide at the
+    first other byte or tag; an unended block is read to the end. Any rss, feed or rdf:RDF tag
+    that starts before this index fails the check, so a sniffer that ends a block sooner is
+    covered too."""
+    s, n = 0, len(text)
+    while True:
+        while s < n and text[s] in SNIFF_SPACE:
+            s += 1
+        if not text.startswith("<", s):
+            return s  # text, or the end of the page
+        for opening, closing in (("<!--", "-->"), ("<!", ">"), ("<?", "?>")):
+            if text.startswith(opening, s):
+                end = text.find(closing, s + len(opening))
+                if end < 0:
+                    return n
+                s = end + len(closing)
+                break
+        else:
+            return s + 1  # the first tag that is not skipped
+
+
 def page_text(path, served):
     """The page as text and no reason, or None and the reason it is not read. It must be served as
-    HTML, with one content type, in bytes that read the same in every encoding a browser may use."""
+    HTML, with one content type, no Content-Disposition, no content coding and no transfer coding
+    but chunked, in bytes that read the same in every encoding a browser may use, and must not
+    start like a feed."""
+    headers = {}
     try:
-        types = json.loads(served).get("content-type", [])
+        for name, values in json.loads(served).items():
+            if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
+                raise ValueError(name)
+            headers.setdefault(name.translate(LOWER), []).extend(values)  # names in any case
     except (ValueError, AttributeError):
-        types = []
+        headers = {}
+    types = headers.get("content-type", [])
     if not types:
         return None, "served with no content type, not as HTML"
     if len(types) > 1 or "," in types[0]:
@@ -362,6 +399,15 @@ def page_text(path, served):
     essence = essence.rstrip(HTTP_SPACE).translate(LOWER)
     if essence != "text/html":
         return None, "served as %s, not as HTML" % (re.sub("[^ -~]", "?", essence) or "an empty type")
+    if "content-disposition" in headers:
+        return None, "served with a Content-Disposition header, so a browser may save it instead"
+    # curl asks for no compression and saves the bytes as sent, while a browser decodes them first.
+    if "content-encoding" in headers:
+        return None, "served with a Content-Encoding header, so a browser may decode it first"
+    codings = [coding.strip(HTTP_SPACE).translate(LOWER)
+               for value in headers.get("transfer-encoding", []) for coding in value.split(",")]
+    if any(coding != "chunked" for coding in codings):
+        return None, "served with a transfer coding other than chunked, so a browser may decode it"
     labels = []
     for parameter in parameters.split(";"):
         key, equals, label = parameter.lstrip(HTTP_SPACE).partition("=")
@@ -383,6 +429,9 @@ def page_text(path, served):
         text = None
     if text is None:
         return None, "served as HTML, but not certain to read as UTF-8"
+    feed = FEED.search(text)
+    if feed and feed.start() < sniff_end(text):
+        return None, "served as HTML, but it starts like a feed, which a browser may show instead"
     return text, ""
 
 
@@ -652,13 +701,16 @@ step_smoke() {
   # The sign-in form's controls, read as a browser reads them (SIGN_IN_PY): HTML attribute names
   # ignore case, and React writes them as the source spells them (autoComplete), but the values
   # must match exactly, because they are the form's keys, which the sign-in request sends unchanged.
-  # Only a page served as HTML counts, with its response headers (header_json) read for the type.
+  # Only a 200 response served as HTML counts, with its response headers (header_json) read for the
+  # type, codings and disposition. Redirects are not followed, so a redirect fails here even if its
+  # own body holds the form.
   # A failure names the HTTP status and every attribute that was missing, or why the page was not read.
-  problem=''
-  if served=$(fetch --output "$page" --write-out '%{http_code} %{header_json}' "$SITE/en/account"); then
-    problem=$(python3 -I -c "$SIGN_IN_PY" "$page" "${served#* }")
-  else
+  if ! served=$(fetch --output "$page" --write-out '%{http_code} %{header_json}' "$SITE/en/account"); then
     problem='missing: the page'
+  elif [ "${served%% *}" != 200 ]; then
+    problem='not the page itself'
+  else
+    problem=$(python3 -I -c "$SIGN_IN_PY" "$page" "${served#* }")
   fi
   status=${served%% *}
   if [ -z "$problem" ]; then
