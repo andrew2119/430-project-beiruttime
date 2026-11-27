@@ -1,0 +1,13 @@
+{
+  "extends": "../../../web/tsconfig.json",
+  "compilerOptions": {"incremental": false, "plugins": []},
+  "include": [
+    "../../../web/next-env.d.ts",
+    "../../../web/features/pricing/**/*.ts",
+    "../../../web/features/pricing/**/*.tsx",
+    "../../../web/features/offers/**/*.ts",
+    "../../../web/features/offers/**/*.tsx",
+    "../../../packages/contracts-pricing/**/*.ts"
+  ],
+  "exclude": ["../../../web/node_modules", ".local"]
+}
