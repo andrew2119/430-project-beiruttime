@@ -1,4 +1,5 @@
 import asyncio
+from . import bootstrap  # noqa: F401
 from bt_runtime.app.db import migrate
 from bt_runtime.app.settings import Settings
 
