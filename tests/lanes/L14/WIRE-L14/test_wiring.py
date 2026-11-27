@@ -30,21 +30,51 @@ def test_full_inventory_registers_each_operation_once(runtime):
         assert ('POST', '/v1/auctions') in operations
 
 
+# Named private stores: a module here keeps its own database and applies its migrations folder itself,
+# so it has no module.json and the shared migration runner must never apply those files.
+# Every other migrations folder must belong to a module.json that registers each of its files.
+PRIVATE_STORES = {
+    # Its own SQLite store, whose schema services/pricing/modules/minimum-offers/service.py:35 reads itself.
+    ('pricing', 'minimum-offers'),
+}
+
+
+def migration_mismatch(service, root):
+    """Migration files the registrations miss or add, other than a named private store's own files."""
+    root = root.resolve()
+    files = {p.resolve() for p in root.rglob('migrations/*.sql')}
+    registered = {p for module in discover(root) for p in module.migrations}
+    private = {p for p in files - registered if not (p.parent.parent / 'module.json').exists()
+               and (service, p.parent.parent.relative_to(root).as_posix()) in PRIVATE_STORES}
+    return (files - private) ^ registered
+
+
 def test_additive_migration_plan_is_stable_and_complete(runtime):
     service, _ = runtime
     root = ROOT / 'services' / service / 'modules'
     steps = migration_steps(root)
     names = [name for name, _, _ in steps]
     assert len(names) == len(set(names))
-    files = {p.resolve() for p in root.rglob('migrations/*.sql')}
-    registered = {p for module in discover(root) for p in module.migrations}
-    assert files == registered
+    assert migration_mismatch(service, root) == set()
     assert all(len(checksum) == 64 for _, checksum, _ in steps)
     if service == 'pricing':
         assert names.index('L07.quotes/L07_0001_quotes.sql') < names.index('L14.a-current/L14_0001_current.sql')
         assert names.index('L14.a-current/L14_0001_current.sql') < names.index('L14.offers/L14_0001_offers.sql')
     else:
         assert names.index('L05.a-rules/L05_0001_rules.sql') < names.index('L14.a-kernel/L14_0001_kernel.sql')
+
+
+def test_unlisted_migrations_folder_without_module_json_fails(tmp_path):
+    root = tmp_path / 'modules'
+    for name in ('registered', 'minimum-offers', 'forgotten'):
+        (root / name / 'migrations').mkdir(parents=True)
+        (root / name / 'migrations' / 'L18_0001_store.sql').write_text('SELECT 1;\n')
+    (root / 'registered' / 'module.json').write_text(json.dumps(
+        {'version': 1, 'id': 'L18.registered', 'migrations': ['migrations/L18_0001_store.sql']}))
+    forgotten = (root / 'forgotten' / 'migrations' / 'L18_0001_store.sql').resolve()
+    assert migration_mismatch('pricing', root) == {forgotten}
+    private = (root / 'minimum-offers' / 'migrations' / 'L18_0001_store.sql').resolve()
+    assert migration_mismatch('auction', root) == {forgotten, private}
 
 
 def test_lane_range_absence_concurrency_and_duplicate_rejection(runtime, tmp_path):
