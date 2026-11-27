@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "services": ["identity", "catalog", "auction", "pricing", "orders", "eligibility", "trust", "communications", "service-operations"],
+  "vitest_shards": 3,
+  "steps": {
+    "web": ["lint", "types", "money format"],
+    "images": ["image build", "container smoke"],
+    "native": ["stack start", "readiness", "stack stop"],
+    "smokes": ["stack start", "http smokes", "connected walkthrough", "origin proof", "proxy proof", "stack stop"],
+    "browser": ["stack start", "browser matrix and screenshots", "browser report", "stack stop"],
+    "scenarios": ["stack start", "E06 contract tests", "E06 preparation manifest", "E04 synthetic restore", "E09 rehearsal contract tests", "stack stop"],
+    "n01": ["lock holder", "root-owned admission", "disposable keys and capability", "start to ready", "smoke", "service identities", "supervisor shutdown", "stop", "stopped status", "ports free", "lock released"]
+  },
+  "jobs": {
+    "full": ["services", "lanes", "web", "vitest", "build", "images", "stages", "n01"],
+    "light": ["plan", "services", "lanes", "web", "vitest"]
+  }
+}

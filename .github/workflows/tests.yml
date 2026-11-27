@@ -1,0 +1,279 @@
+# The full Beirut Time suite. See .github/ci/README.md.
+# Runs on every push to main, on demand, and on pull requests whose head branch starts with
+# bt/group- (group pull requests). Other pull requests get the light Checks workflow only.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  services:
+    name: service (${{ matrix.service }})
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'bt/group-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [identity, catalog, auction, pricing, orders, eligibility, trust, communications, service-operations]
+    services:
+      postgres:
+        image: postgres:17.6-alpine@sha256:747d5ed1fdeeb124b880fbe3d7c6557d2c4064ae41d6b6297d417882effce4be
+        env:
+          POSTGRES_PASSWORD: local-bootstrap-only
+        ports: ["54329:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 5s --health-retries 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/python-env
+      - name: Create the service databases
+        run: bash .github/ci/db-init.sh
+      - name: Run the service tests
+        run: mkdir -p "$RUNNER_TEMP/reports" && python .github/ci/services.py "${{ matrix.service }}" "$RUNNER_TEMP/reports/${{ matrix.service }}.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-${{ matrix.service }}
+          path: ${{ runner.temp }}/reports/${{ matrix.service }}.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  lanes:
+    name: integration lanes
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'bt/group-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/python-env
+      - name: Run the integration lane tests
+        run: mkdir -p "$RUNNER_TEMP/reports" && python .github/ci/lanes.py "$RUNNER_TEMP/reports/lanes.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-lanes
+          path: ${{ runner.temp }}/reports/lanes.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  web:
+    name: web lint and types
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'bt/group-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/node-env
+      - name: Lint, type check and the money format test
+        run: mkdir -p "$RUNNER_TEMP/reports" && bash .github/ci/web-checks.sh "$RUNNER_TEMP/reports/web.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-web
+          path: ${{ runner.temp }}/reports/web.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  vitest:
+    name: web tests (${{ matrix.shard }}/3)
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'bt/group-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/node-env
+      - name: Run this shard of every web test suite
+        run: mkdir -p "$RUNNER_TEMP/reports" && python3 .github/ci/vitest.py "${{ matrix.shard }}" 3 "$RUNNER_TEMP/reports/shard${{ matrix.shard }}.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-shard${{ matrix.shard }}
+          path: ${{ runner.temp }}/reports/shard${{ matrix.shard }}.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  build:
+    name: web build
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'bt/group-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/node-env
+      - name: Production web build
+        run: pnpm --filter beirut-time-web build
+      - name: Pack the build
+        run: tar -C web --exclude=.next/cache -cf "$RUNNER_TEMP/web-build.tar" .next
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: web-build
+          path: ${{ runner.temp }}/web-build.tar
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: error
+
+  images:
+    name: images and container smoke
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'bt/group-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      # Started from a script step so only the build sees the Actions cache settings.
+      - name: Build every image with cached layers
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: await exec.exec('python3', ['.github/ci/images.py', 'build'])
+      - name: Container smoke
+        if: success() || failure()
+        run: mkdir -p "$RUNNER_TEMP/reports" && python3 .github/ci/images.py smoke "$RUNNER_TEMP/reports/images.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-images
+          path: ${{ runner.temp }}/reports/images.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  stages:
+    name: stage (${{ matrix.stage }})
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ matrix.stage == 'smokes' && 35 || 25 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        stage: [native, smokes, browser, scenarios]
+    services:
+      postgres:
+        image: postgres:17.6-alpine@sha256:747d5ed1fdeeb124b880fbe3d7c6557d2c4064ae41d6b6297d417882effce4be
+        env:
+          POSTGRES_PASSWORD: local-bootstrap-only
+        ports: ["54329:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 5s --health-retries 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/python-env
+      - uses: ./.github/actions/node-env
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: web-build
+          path: ${{ runner.temp }}
+      - name: Unpack the build
+        run: tar -C web -xf "$RUNNER_TEMP/web-build.tar"
+      - name: Create the service databases
+        run: bash .github/ci/db-init.sh
+      - name: Let headless Chrome use its sandbox
+        if: matrix.stage == 'browser'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Run the stage
+        run: mkdir -p "$RUNNER_TEMP/reports" && python .github/ci/stage.py "${{ matrix.stage }}" "$RUNNER_TEMP/reports/${{ matrix.stage }}.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-${{ matrix.stage }}
+          path: ${{ runner.temp }}/reports/${{ matrix.stage }}.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  n01:
+    name: native stack lifecycle
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/python-env
+      - uses: ./.github/actions/node-env
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: web-build
+          path: ${{ runner.temp }}
+      - name: Unpack the build
+        run: tar -C web -xf "$RUNNER_TEMP/web-build.tar"
+      - name: Install the PostgreSQL 17 server, without a default cluster
+        run: |
+          set -euo pipefail
+          echo 'create_main_cluster = false' | sudo tee -a /etc/postgresql-common/createcluster.conf
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends postgresql-17
+          /usr/lib/postgresql/17/bin/postgres --version
+      - name: Run the native stack lifecycle
+        run: mkdir -p "$RUNNER_TEMP/reports" && python .github/ci/n01.py "$RUNNER_TEMP/reports/n01.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-n01
+          path: ${{ runner.temp }}/reports/n01.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  verify:
+    name: every required test ran
+    needs: [services, lanes, web, vitest, build, images, stages, n01]
+    if: always() && (github.event_name != 'pull_request' || startsWith(github.head_ref, 'bt/group-'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # verify.py judges missing reports, so a download with nothing to fetch must not stop it.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        continue-on-error: true
+        with:
+          pattern: report-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/reports
+      - name: Check every job's report against the pinned lists
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          printf '%s' "$NEEDS" > "$RUNNER_TEMP/needs.json"
+          python3 .github/ci/verify.py full "$RUNNER_TEMP/needs.json" "$RUNNER_TEMP/reports"
