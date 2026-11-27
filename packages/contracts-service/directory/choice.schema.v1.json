@@ -1,0 +1,49 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "capability": {
+      "enum": [
+        "maintenance",
+        "cleaning",
+        "polishing",
+        "repair",
+        "bracelet_fit",
+        "customization"
+      ],
+      "title": "Capability",
+      "type": "string"
+    },
+    "purpose": {
+      "default": "servicing",
+      "enum": [
+        "servicing",
+        "customization"
+      ],
+      "title": "Purpose",
+      "type": "string"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "profile_revision": {
+      "minimum": 1,
+      "title": "Profile Revision",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "organization_id",
+    "capability",
+    "expected_revision",
+    "profile_revision"
+  ],
+  "title": "Choice",
+  "type": "object"
+}
