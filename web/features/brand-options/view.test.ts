@@ -15,6 +15,8 @@ vi.mock('@/features/identity/session',()=>({
 }));
 vi.mock('@/shell/locale-context',()=>({useLocale:()=> 'en'}));
 vi.mock('@/registry-loader',()=>({hasRoute:()=>false}));
+vi.mock('@/features/movement-option/view',()=>({default:({brandId}:{brandId:string})=>createElement('section',{'data-movement-brand':brandId})}));
+vi.mock('./configuration-review',()=>({default:({id,revision}:{id:string;revision:number})=>createElement('section',{'data-configuration':id,'data-configuration-revision':revision})}));
 vi.mock('@tanstack/react-query',()=>({
   useQueryClient:()=>({setQueryData:vi.fn(),invalidateQueries:vi.fn()}),
   useInfiniteQuery:()=>({data:{pages:[{items:[]}]},isSuccess:true,hasNextPage:false}),
@@ -71,6 +73,9 @@ describe('canonical option view state without effect mirrors',()=>{
     expect(html).toContain(en.savedRevision);expect(html).toContain('Sample midnight');
     expect(html).not.toContain(en.summaryEmpty);
     expect(html).toContain('atelier-38');expect(html).toContain('manual-01');
+    expect(html).toContain(`data-movement-brand="${saved.brand_id}"`);
+    expect(html).toContain(`data-configuration="${saved.id}"`);
+    expect(html).toContain('data-configuration-revision="5"');
   });
   it('uses canonical brand bindings rather than stale URL conveniences for catalog reads',()=>{
     signIn();state.data.configuration=saved;

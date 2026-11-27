@@ -14,9 +14,9 @@ def clients(app):
     if not hasattr(app.state, "catalog_clients"):
         app.state.catalog_clients = {
             name: DependencyClient(
-                name, os.getenv(f"{name.upper()}_URL", f"http://{name}:8000"), timeout=2.5, concurrency=4
+                name, os.getenv(f"BT_{name.upper().replace('-', '_')}_URL", os.getenv(f"{name.upper().replace('-', '_')}_URL", f"http://{name}:8000")), timeout=2.5, concurrency=4
             )
-            for name in ("identity", "pricing", "orders", "auction", "communications", "trust")
+            for name in ("identity", "pricing", "orders", "auction", "communications", "trust", "service-operations", "eligibility")
         }
     return app.state.catalog_clients
 
@@ -144,6 +144,8 @@ async def upstream(request, dependency, method, path, **kwargs):
         raise PublicError("unauthorized", "Sign in to continue.", status=401)
     if result.status_code == 403:
         raise AccessDenied("Upstream denied current scope")
+    if result.status_code >= 500:
+        raise PublicError(f"{dependency}_unavailable", "A required service is temporarily unavailable.", status=503)
     if result.status_code >= 400:
         raise PublicError(f"{dependency}_denied", "A required prerequisite was not accepted.", status=409)
     try:
