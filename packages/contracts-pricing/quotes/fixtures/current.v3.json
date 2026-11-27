@@ -1,0 +1,29 @@
+{
+  "quote_id": "00000000-0000-0000-0000-000000000015",
+  "quote_revision": 1,
+  "buyer_id": "00000000-0000-0000-0000-000000000010",
+  "source_id": "00000000-0000-0000-0000-000000000012",
+  "source_revision": 1,
+  "kind": "brand",
+  "assessment_id": "00000000-0000-0000-0000-000000000013",
+  "assessment_revision": 1,
+  "organization_id": "00000000-0000-0000-0000-000000000011",
+  "currency": "USD",
+  "total_minor": 500000,
+  "expires_at": null,
+  "accepted_at": "2026-11-16T17:00:00Z",
+  "schedule_id": "usd-job-v2",
+  "policy_revision": 2,
+  "rounding": "half_up",
+  "status": "valid",
+  "economics": "committed",
+  "execution_authority": "not_granted",
+  "selected_line_ids": [
+    "00000000-0000-0000-0000-000000000014"
+  ],
+  "terms_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "accepted_fee_lines": {
+    "assessment": false,
+    "return_transport": false
+  }
+}

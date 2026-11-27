@@ -2,13 +2,14 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from uuid import UUID
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Query
 from bt_contracts.pricing.quotes.models import QuoteRequest, QuoteReview
 from bt_contracts_core.errors import PublicError
 from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from service_app.security import actor, idempotency
+from service_app.current import require_usd
 from .calculation import calculate
 from .catalog import current_listing
 
@@ -22,6 +23,7 @@ def digest(body):
 
 def project(row):
     snapshot = json.loads(row['snapshot']) if isinstance(row['snapshot'], str) else row['snapshot']
+    require_usd(snapshot)
     return {'source': 'sample', 'source_verified': False, **snapshot, 'reviewed_at': row['reviewed_at'].isoformat() if row['reviewed_at'] else None}
 
 async def owned(tx, quote_id, owner):
@@ -59,10 +61,24 @@ async def create(body: QuoteRequest, request: Request, owner=Depends(actor), key
         return snapshot
 
 @router.get('')
-async def list_quotes(request: Request, owner=Depends(actor)):
+async def list_quotes(request: Request, owner=Depends(actor),
+                      page: int = Query(default=1, ge=1, le=1_000_000),
+                      page_size: int = Query(default=30, ge=1, le=100)):
     async with request.app.state.pool.acquire() as tx:
-        rows = await tx.fetch('SELECT * FROM l07_quotes WHERE owner_id=$1 ORDER BY created_at DESC,id DESC LIMIT 30', owner)
-        return {'items': [project(row) for row in rows]}
+        # One statement keeps the total and page on the same read snapshot.
+        result = await tx.fetchrow("""WITH visible AS MATERIALIZED (
+            SELECT * FROM l07_quotes WHERE owner_id=$1 AND snapshot->>'currency'='USD'
+        ), selected AS (
+            SELECT * FROM visible ORDER BY created_at DESC,id DESC LIMIT $2 OFFSET $3
+        ) SELECT (SELECT count(*) FROM visible) AS total,
+            coalesce((SELECT jsonb_agg(to_jsonb(selected) ORDER BY created_at DESC,id DESC)
+                      FROM selected), '[]'::jsonb) AS items""", owner, page_size, (page - 1) * page_size)
+        records = json.loads(result['items']) if isinstance(result['items'], str) else result['items']
+        for row in records:
+            if row['reviewed_at']:
+                row['reviewed_at'] = datetime.fromisoformat(row['reviewed_at'])
+        return {'items': [project(row) for row in records], 'total': result['total'],
+                'page': page, 'page_size': page_size}
 
 @router.get('/{quote_id}')
 async def read(quote_id: UUID, request: Request, owner=Depends(actor)):
