@@ -13,6 +13,9 @@ PASSWORD='Sample-only-L12-passphrase!'
 
 
 class Scenarios:
+    account_suffix = '.l12@example.test'
+    account_password = PASSWORD
+
     def __init__(self,origin,out,project):
         self.origin,self.out,self.project=origin,out,project
         self.client=httpx.Client(base_url=origin,headers={'Origin':origin},timeout=30)
@@ -82,8 +85,8 @@ class Scenarios:
         self.auctions[reference]=id
         return id
 
-    def policy_cases(self):
-        id=self.create('DEMO-WATCH-01')
+    def policy_cases(self, auction=None):
+        id=auction if auction is not None else self.create('DEMO-WATCH-01')
         path=f'/v2/auctions/{id}/policy'
         policy=self.call('auction','GET',path)
         seller_path=f'/v2/seller/auctions/{id}/policy'
@@ -102,10 +105,9 @@ class Scenarios:
         assert (after['revision'],after['end_version'],after['current_ends_at'])==(policy['revision'],policy['end_version'],policy['current_ends_at'])
         print('Real seller/public policy permissions, reserve privacy and fixed-end denial passed.',flush=True)
 
-    def browser(self):
+    def drive_browser(self, context):
         env={**os.environ,'CHROME_DEVTOOLS_AXI_SESSION':'bt-s2-l12'}
         script=Path(__file__).with_name('connected-browser.js').read_text()
-        context={'origin':self.origin,'password':PASSWORD,'listing':self.listings['DEMO-WATCH-01']['id']}
         def cli(*args,stdin=None):
             result=subprocess.run(['chrome-devtools-axi',*args],input=stdin,capture_output=True,text=True,env=env)
             assert result.returncode==0,result.stdout+result.stderr
@@ -117,19 +119,35 @@ class Scenarios:
                 result=cli('run',stdin='const CONTEXT='+json.dumps({**context,'width':width})+';\n'+script)
                 (self.out/f'browser-{width}.json').write_text(result)
         finally:cli('stop')
+
+    def capture_screenshots(self, listing, refresh):
+        import asyncio
+        from connected_shots import screenshots
+        asyncio.run(screenshots(self.origin,self.out,listing,refresh))
+
+    def browser_matrix(self):
+        listing=self.listings['DEMO-WATCH-01']['id']
+        self.drive_browser({'origin':self.origin,'password':self.account_password,'listing':listing,
+                            'accountSuffix':self.account_suffix})
         id=self.auctions['DEMO-WATCH-01']
         history=self.call('auction','GET',f'/v1/auctions/{id}/history')['items']
         assert len(history)==1 and history[0]['sequence']==1 and history[0]['amount_minor']==400000,history
         for actor in ('buyer-a','buyer-b'):
             assert self.call('auction','GET',f'/v2/auctions/{id}/my-prebid',actor)['operation'] is None
-        # Separate real login lineage for headless screenshots; never reuse a rotated refresh cookie.
-        response=self.client.post('/api/web/v1/identity/v1/accounts/login',json={'email':'buyer-a.l12@example.test','password':PASSWORD})
-        assert response.status_code==200
-        import asyncio
-        from connected_shots import screenshots
-        asyncio.run(screenshots(self.origin,self.out,self.listings['DEMO-WATCH-01']['id'],response.cookies.get('bt_refresh')))
         self.evidence.append({'browser_bid_minor':history[0]['amount_minor'],'accepted_bid_count':len(history),'lost_response_recovered':True})
         print('Authenticated browser policy, exact bid review and lost-response recovery passed.',flush=True)
+
+    def browser_screens(self):
+        listing=self.listings['DEMO-WATCH-01']['id']
+        # Separate real login lineage for headless screenshots; never reuse a rotated refresh cookie.
+        response=self.client.post('/api/web/v1/identity/v1/accounts/login',
+            json={'email':'buyer-a'+self.account_suffix,'password':self.account_password})
+        assert response.status_code==200
+        self.capture_screenshots(listing,response.cookies.get('bt_refresh'))
+
+    def browser(self):
+        self.browser_matrix()
+        self.browser_screens()
 
     def quote(self,actor,id,amount):
         lot=self.call('auction','GET','/v1/auctions/'+id)

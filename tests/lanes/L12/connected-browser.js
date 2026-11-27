@@ -13,7 +13,7 @@ async function login(name) {
     await page.eval(()=>[...document.querySelectorAll('.identity-page button')].find(b=>b.textContent==='Sign out')?.click());
   }
   await page.wait('input[name=email]');
-  await page.fill('input[name=email]',name+'.l12@example.test');
+  await page.fill('input[name=email]',name+(CONTEXT.accountSuffix??'.l12@example.test'));
   await page.fill('input[name=password]',CONTEXT.password);
   await page.click('.identity-form button');
   await until(()=>!document.querySelector('input[name=email]'),'Authenticated account view');

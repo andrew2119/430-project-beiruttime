@@ -31,20 +31,24 @@ export async function navigate(page, path, {origin, cell}, call) {
   throw new Error('Navigation timed out');
 }
 
-async function localBrowser({browserPath, origin, cell, signal}) {
+export async function localBrowser({browserPath, origin, cell, signal, profileRoot, loopbackOnly = false}) {
   if (!browserPath || !isAbsolute(browserPath) || signal?.aborted) throw new Error('Installed browser required');
   await access(browserPath,constants.X_OK);
   if(!(await stat(browserPath)).isFile())throw new Error('Installed browser required');
-  const profile = await mkdtemp(join(tmpdir(), 'bt-browser-'));
+  const profile = await mkdtemp(join(profileRoot ?? tmpdir(), 'bt-browser-'));
+  const network = loopbackOnly ? ['--disable-background-networking', '--disable-component-update',
+    '--disable-quic', '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--proxy-server=http://127.0.0.1:1'] : [];
   const child = spawn(browserPath, ['--headless=new', '--no-first-run', '--no-default-browser-check',
-    '--remote-debugging-pipe', `--user-data-dir=${profile}`, 'about:blank'],
+    ...network, '--remote-debugging-pipe', `--user-data-dir=${profile}`, 'about:blank'],
   {stdio:['ignore','ignore','ignore','pipe','pipe']});
   const pending = new Map(); let sequence = 0, buffer = '', sessionId, closed = false, closing;
   const rejectPending = () => { for (const item of pending.values()) item.reject(new Error('Browser closed')); pending.clear(); };
   const exited = new Promise(done => {child.once('exit', done); child.once('error', done);});
   child.once('error', rejectPending); child.once('exit', rejectPending);
+  child.stdio[4].setEncoding('utf8');
   child.stdio[4].on('data', chunk => {
-    buffer += chunk.toString(); let end;
+    buffer += chunk; let end;
     while ((end = buffer.indexOf('\0')) >= 0) {
       const message = JSON.parse(buffer.slice(0,end)); buffer = buffer.slice(end+1);
       const item = pending.get(message.id);
@@ -66,7 +70,9 @@ async function localBrowser({browserPath, origin, cell, signal}) {
     closing=(async()=>{
       child.kill('SIGTERM');
       const timer = setTimeout(()=>child.kill('SIGKILL'),1000);
-      await exited; clearTimeout(timer); await rm(profile,{recursive:true,force:true});
+      await exited; clearTimeout(timer);
+      // An ephemeral runner may retain its private profile until machine teardown.
+      if (profileRoot === undefined) await rm(profile,{recursive:true,force:true});
       signal?.removeEventListener('abort', abort);
     })();
     return closing;

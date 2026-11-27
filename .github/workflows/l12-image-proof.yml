@@ -1,0 +1,51 @@
+name: L12 image proof
+
+# A dedicated proof branch keeps this independent of the default test matrix.
+on:
+  push:
+    branches: [bt/proof-l12-image]
+
+permissions:
+  contents: read
+
+jobs:
+  l12-image-proof:
+    name: L12 image proof
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      NEXT_TELEMETRY_DISABLED: '1'
+      DOCKER_HOST: unix:///var/run/docker.sock
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Use the runner's Docker and Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker version --format '{{.Server.Version}}'
+          chrome=$(command -v google-chrome)
+          [[ "$chrome" = /* ]]
+          "$chrome" --version
+          printf 'BT_L12_CHROME=%s\n' "$chrome" >> "$GITHUB_ENV"
+          python3 -m venv "$RUNNER_TEMP/l12-client"
+          "$RUNNER_TEMP/l12-client/bin/pip" --disable-pip-version-check --no-cache-dir install \
+            --index-url https://pypi.org/simple 'httpx==0.28.1'
+      - name: Build the six images and run connected L12
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/l12-client/bin/python" -B tests/lanes/L12/image-proof.py \
+            run "$RUNNER_TEMP/l12-evidence" "$GITHUB_SHA"
+      - name: Summarize observed rows and require exact-SHA evidence
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B tests/lanes/L12/image-summary.py \
+            "$RUNNER_TEMP/l12-evidence/receipt.json" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+          "$RUNNER_TEMP/l12-client/bin/python" -B tests/lanes/L12/image-proof.py \
+            verify "$RUNNER_TEMP/l12-evidence" "$GITHUB_SHA"
