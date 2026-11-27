@@ -1,0 +1,92 @@
+# The one in-cluster Postgres, as in Compose: same image, same init script, same health check.
+# Data lives in an emptyDir: a new cluster starts with empty databases, and nothing outlives the cluster.
+# Passwords come from the database-passwords Secret and the init script from the postgres-init
+# ConfigMap (infra/foundation/postgres-init.sh); demo.sh creates both in each run.
+# The official image starts as root and drops to the postgres user itself, so it keeps the
+# default security context.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+      app.kubernetes.io/component: database
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/component: database
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      containers:
+        - name: postgres
+          image: postgres:17.6-alpine
+          imagePullPolicy: Never
+          env:
+            - name: POSTGRES_USER
+              value: "postgres"
+          envFrom:
+            - secretRef:
+                name: database-passwords
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command:
+                - "pg_isready"
+                - "-h"
+                - "127.0.0.1"
+                - "-U"
+                - "postgres"
+            periodSeconds: 3
+            timeoutSeconds: 3
+            failureThreshold: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: init
+          configMap:
+            name: postgres-init
+            # 365 is 0555: the entrypoint runs the script rather than sourcing it, as in Compose.
+            defaultMode: 365
+            items:
+              - key: 01-databases.sh
+                path: 01-databases.sh
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+spec:
+  selector:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432

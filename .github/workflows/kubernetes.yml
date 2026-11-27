@@ -1,0 +1,80 @@
+# Deploys the whole site to a throwaway Kubernetes cluster (kind) on the runner and smoke checks it.
+# Images are built here and loaded straight into the cluster, every password and key is generated in
+# the run for demo use only, and the cluster is gone when the runner is. The token can only read:
+# the run's logs and job summary go to its run page, and nothing is written to the repository.
+# No secrets, no repository variables, no registry, no cloud account.
+# Run it by hand from the Actions tab (Run workflow) for a demo; infra/k8s/README.md runs it locally.
+name: Kubernetes demo
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - infra/k8s/**
+      - .github/workflows/kubernetes.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Two fixed groups, so at most two runs (one job each) are ever running, whatever triggers them.
+# Main pushes and manual runs share one group, and a running one is never cancelled; only the newest
+# run waiting behind it is kept (GitHub cancels an older waiting run when a newer one queues).
+# All pull requests share the other: a newer pull request run cancels the one in progress.
+concurrency:
+  group: kubernetes-demo-${{ github.event_name == 'pull_request' && 'pull-requests' || 'main-and-manual' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  demo:
+    name: Deploy to a throwaway cluster
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BT_K8S_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the manifests against Railway and Compose
+        run: infra/k8s/demo.sh check
+
+      - name: Show tools and free disk
+        run: infra/k8s/demo.sh tools
+
+      - name: Build images
+        timeout-minutes: 30
+        run: infra/k8s/demo.sh images
+
+      - name: Free the build cache
+        run: docker builder prune --all --force
+
+      - name: Start the cluster and load images
+        id: cluster
+        run: infra/k8s/demo.sh cluster
+
+      - name: Create demo-only secrets
+        id: secrets
+        run: infra/k8s/demo.sh secrets
+
+      - name: Run migrations
+        run: infra/k8s/demo.sh migrate
+
+      # Deploy and smoke still run after a failed migration, so the run shows everything that works.
+      - name: Deploy
+        if: ${{ !cancelled() && steps.secrets.outcome == 'success' }}
+        run: infra/k8s/demo.sh deploy
+
+      - name: Smoke check
+        if: ${{ !cancelled() && steps.secrets.outcome == 'success' }}
+        run: infra/k8s/demo.sh smoke
+
+      - name: Summary
+        if: ${{ !cancelled() }}
+        run: infra/k8s/demo.sh summary >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Diagnostics
+        if: ${{ failure() && steps.cluster.outcome == 'success' }}
+        run: infra/k8s/demo.sh diagnose
