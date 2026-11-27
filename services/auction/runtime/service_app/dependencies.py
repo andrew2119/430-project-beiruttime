@@ -15,7 +15,7 @@ class Dependencies:
     def __init__(self, clients=None, service_key=None):
         self.service_key = service_key if service_key is not None else os.environ.get('BT_SERVICE_AUTH_PRIVATE_KEY', '')
         self.clients = clients or {name: DependencyClient(name, os.environ.get(
-            f'{name.upper()}_URL', f'http://{name}:8000'), timeout=1.2, concurrency=4)
+            f'{name.upper()}_API_URL', os.environ.get(f'{name.upper()}_URL', f'http://{name}:8000')), timeout=1.2, concurrency=4)
             for name in ('identity', 'catalog', 'pricing', 'orders')}
 
     async def json(self, name, method, path, request, *, missing=False, **kwargs):

@@ -1,6 +1,6 @@
 """Auction kernel v2: service-local callers borrow a transaction, never commit it.
 
-Lock order: operation -> listing (creation only) -> auction. All modes, bid
+Lock order: operation -> listing (publication checks) -> auction. All modes, bid
 admission and close decisions use this exact auction lock.
 """
 import json
