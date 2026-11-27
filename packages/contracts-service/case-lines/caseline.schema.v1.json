@@ -1,0 +1,60 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "line_id": {
+      "format": "uuid",
+      "title": "Line Id",
+      "type": "string"
+    },
+    "kind": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_.-]*$",
+      "title": "Kind",
+      "type": "string"
+    },
+    "description": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "required": {
+      "title": "Required",
+      "type": "boolean"
+    },
+    "amount_minor": {
+      "maximum": 9000000000000,
+      "minimum": 0,
+      "title": "Amount Minor",
+      "type": "integer"
+    },
+    "currency": {
+      "const": "USD",
+      "default": "USD",
+      "title": "Currency",
+      "type": "string"
+    },
+    "assessment_id": {
+      "format": "uuid",
+      "title": "Assessment Id",
+      "type": "string"
+    },
+    "assessment_revision": {
+      "minimum": 1,
+      "title": "Assessment Revision",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "line_id",
+    "kind",
+    "description",
+    "required",
+    "amount_minor",
+    "assessment_id",
+    "assessment_revision"
+  ],
+  "title": "CaseLine",
+  "type": "object"
+}

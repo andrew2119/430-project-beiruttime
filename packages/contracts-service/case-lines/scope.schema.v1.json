@@ -1,0 +1,115 @@
+{
+  "$defs": {
+    "CaseLine": {
+      "additionalProperties": false,
+      "properties": {
+        "line_id": {
+          "format": "uuid",
+          "title": "Line Id",
+          "type": "string"
+        },
+        "kind": {
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_.-]*$",
+          "title": "Kind",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "amount_minor": {
+          "maximum": 9000000000000,
+          "minimum": 0,
+          "title": "Amount Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "const": "USD",
+          "default": "USD",
+          "title": "Currency",
+          "type": "string"
+        },
+        "assessment_id": {
+          "format": "uuid",
+          "title": "Assessment Id",
+          "type": "string"
+        },
+        "assessment_revision": {
+          "minimum": 1,
+          "title": "Assessment Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line_id",
+        "kind",
+        "description",
+        "required",
+        "amount_minor",
+        "assessment_id",
+        "assessment_revision"
+      ],
+      "title": "CaseLine",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "service.case-lines.v1",
+      "default": "service.case-lines.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "request_revision": {
+      "minimum": 1,
+      "title": "Request Revision",
+      "type": "integer"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "lines": {
+      "items": {
+        "$ref": "#/$defs/CaseLine"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Lines",
+      "type": "array"
+    },
+    "accepted_line_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Accepted Line Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "request_id",
+    "request_revision",
+    "revision",
+    "lines",
+    "accepted_line_ids"
+  ],
+  "title": "Scope",
+  "type": "object"
+}

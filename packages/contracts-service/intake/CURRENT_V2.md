@@ -1,0 +1,13 @@
+# Current intake authority
+
+A recorded v1 receipt preserves history but lacks current watch, incident and assigned-record bindings. It cannot authorize diagnostic opening. The v1 response therefore reports `diagnosis_allowed: false` unless the injected current-authority provider returns the exact receipt, order, actor, business and assignment bindings. Missing provider facts withhold opening.
+
+The current diagnostic predicate requires matching watch identity and revision, selected organization, current incident revision, an actual receipt at or before authoritative UTC now, current assigned-record permission, specific opening permission, accepted assessment fee and no-polish acknowledgement. Reported symptoms remain separate from assessed findings. Receipt equality is valid; a future receipt is not. Execution separately requires exact accepted scope, current custody and Orders-confirmed held payment bound to buyer, order, watch, quote revision, USD and total cents.
+
+Current private list, detail, save and evidence operations also require the injected assigned-record provider. Absent current facts return unavailable, never organization-wide evidence access. The additive predicate is not a connected authorization claim. Current receipt/assignment integration and controlled unrepaired return remain owed. New writes accept USD only; legacy currency records require explicit reissue and cannot silently enter active totals.
+
+The local paid-readiness seam requires `order_kind: "job"`; missing kinds and watch-sale funds withhold execution. The current input has no versioned Orders paid-readiness operation. Its exact producer contract and connected positive/negative checks remain deferred; this local seam cannot authorize execution independently.
+
+Execution requires both accepted and current scope revisions to be positive integers. Missing, boolean, fractional or nonpositive revisions withhold execution even when other prerequisites match.
+
+For a maintenance assessment order, the signed opening authority can include `maintenance_request_id` from the order's assessment scope. For linked maintenance intake, the same authority supplies `reservation_input_watch_revision` from the retained reservation input. Service Operations checks the submission against that input and checks the post-reservation watch revision against the current commitment. The received intake verifies that request's acknowledged submission and the current assessment-fee commitment before storing the link. The private acknowledgement and assigned detail read return the linked maintenance request ID alongside the intake ID. Diagnosis uses the intake ID as its case ID.

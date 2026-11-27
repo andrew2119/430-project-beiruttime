@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "id": "L17.maintenance-requests",
+  "dependencies": [
+    "fastapi",
+    "asyncpg",
+    "Pillow"
+  ],
+  "routes": [
+    "routes.py:router",
+    "diagnosis.py:router"
+  ],
+  "migrations": [
+    "migrations/L17_0001_requests.sql",
+    "migrations/L17_0002_diagnosis.sql",
+    "migrations/L17_0003_received_case_binding.sql"
+  ]
+}

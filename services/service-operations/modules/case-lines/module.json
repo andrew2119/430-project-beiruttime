@@ -1,0 +1,1 @@
+{"version":1,"id":"L17.case-lines","dependencies":["fastapi","asyncpg"],"routes":["routes.py:router"],"migrations":["migrations/L17_0001_scope.sql"]}

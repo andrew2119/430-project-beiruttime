@@ -1,0 +1,151 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "order_id": {
+      "format": "uuid",
+      "title": "Order Id",
+      "type": "string"
+    },
+    "receipt_id": {
+      "format": "uuid",
+      "title": "Receipt Id",
+      "type": "string"
+    },
+    "receipt_revision": {
+      "minimum": 1,
+      "title": "Receipt Revision",
+      "type": "integer"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "watch_revision": {
+      "minimum": 1,
+      "title": "Watch Revision",
+      "type": "integer"
+    },
+    "incident_revision": {
+      "minimum": 0,
+      "title": "Incident Revision",
+      "type": "integer"
+    },
+    "received_at": {
+      "format": "date-time",
+      "title": "Received At",
+      "type": "string"
+    },
+    "current": {
+      "title": "Current",
+      "type": "boolean"
+    },
+    "assigned": {
+      "title": "Assigned",
+      "type": "boolean"
+    },
+    "permission": {
+      "title": "Permission",
+      "type": "boolean"
+    },
+    "customer_opening_permission": {
+      "title": "Customer Opening Permission",
+      "type": "boolean"
+    },
+    "accepted_assessment_fee": {
+      "title": "Accepted Assessment Fee",
+      "type": "boolean"
+    },
+    "customer_no_polish_acknowledged": {
+      "title": "Customer No Polish Acknowledged",
+      "type": "boolean"
+    },
+    "consent_revision": {
+      "minimum": 1,
+      "title": "Consent Revision",
+      "type": "integer"
+    },
+    "accepted_terms_revision": {
+      "minimum": 1,
+      "title": "Accepted Terms Revision",
+      "type": "integer"
+    },
+    "quote_id": {
+      "format": "uuid",
+      "title": "Quote Id",
+      "type": "string"
+    },
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "accepted_fee_minor": {
+      "maximum": 999999999999,
+      "minimum": 0,
+      "title": "Accepted Fee Minor",
+      "type": "integer"
+    },
+    "currency": {
+      "const": "USD",
+      "title": "Currency",
+      "type": "string"
+    },
+    "reservation_input_watch_revision": {
+      "anyOf": [
+        {"type": "integer", "minimum": 1},
+        {"type": "null"}
+      ],
+      "default": null,
+      "title": "Reservation Input Watch Revision"
+    },
+    "maintenance_request_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Maintenance Request Id"
+    }
+  },
+  "required": [
+    "actor_id",
+    "organization_id",
+    "order_id",
+    "receipt_id",
+    "receipt_revision",
+    "watch_id",
+    "watch_revision",
+    "incident_revision",
+    "received_at",
+    "current",
+    "assigned",
+    "permission",
+    "customer_opening_permission",
+    "accepted_assessment_fee",
+    "customer_no_polish_acknowledged",
+    "consent_revision",
+    "accepted_terms_revision",
+    "quote_id",
+    "quote_revision",
+    "accepted_fee_minor",
+    "currency"
+  ],
+  "title": "OpeningAuthority",
+  "type": "object"
+}
