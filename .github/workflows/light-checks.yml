@@ -250,6 +250,10 @@ jobs:
           if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
           mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
       - uses: ./.github/actions/node-env
+      # The navigation index is generated and kept out of git; the web scripts make it before use.
+      - name: Generate the navigation index
+        working-directory: web
+        run: node scripts/generate-nav.mjs
       - name: Run this shard's share of the web test suites
         run: mkdir -p "$RUNNER_TEMP/reports" && python3 .github/ci/vitest.py "${{ matrix.shard }}" 4 "$RUNNER_TEMP/reports/shard${{ matrix.shard }}.json"
       - name: Publish the report

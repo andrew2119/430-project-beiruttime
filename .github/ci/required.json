@@ -26,7 +26,7 @@
     "web": ["lint", "types", "money format"],
     "images": ["image build", "container smoke"],
     "native": ["stack start", "readiness", "stack stop"],
-    "smokes": ["stack start", "http smokes", "connected walkthrough", "stack stop"],
+    "smokes": ["stack start", "http smokes", "connected walkthrough, scripted possession review (not physical inspection)", "stack stop"],
     "origin-proof": ["stack start", "origin proof", "stack stop"],
     "proxy-proof": ["stack start", "proxy proof", "stack stop"],
     "browser-desktop": ["stack start", "browser desktop matrix and screenshots", "browser report", "stack stop"],
