@@ -1,49 +1,18 @@
 """One verifier, one transaction and one balanced journal for simulated money."""
 
 import hashlib
-import hmac
 import json
-import os
 from uuid import UUID, uuid4
 from bt_contracts.orders.payments import PaymentCallback
+from bt_contracts.orders.payments.signatures import secret as secret, sign as sign, verify_payload
 from bt_contracts_core.errors import PublicError
 from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from service_app.orders_kernel import lock_order, audit, decoded
 
 
-def secret():
-    key = os.environ.get("BT_SIMULATED_PAYMENT_SECRET", "")
-    if len(key.encode()) < 32:
-        raise PublicError(
-            "simulator_unavailable",
-            "Simulated payment signing is unavailable.",
-            status=503,
-        )
-    return key.encode()
-
-
-def sign(raw):
-    return hmac.new(secret(), raw, hashlib.sha256).hexdigest()
-
-
 def verify(raw, signature):
-    if len(raw) > 8192:
-        raise PublicError(
-            "callback_too_large", "The callback exceeds its bound.", status=413
-        )
-    if not isinstance(signature, str) or not hmac.compare_digest(sign(raw), signature):
-        raise PublicError(
-            "signature_invalid",
-            "The simulated payment signature is invalid.",
-            status=401,
-        )
-    try:
-        return PaymentCallback.model_validate_json(raw)
-    except ValueError:
-        raise PublicError(
-            "callback_invalid", "The simulated callback has invalid fields.", status=422
-        ) from None
+    return verify_payload(raw, signature, PaymentCallback)
 
 
 def project(row):
@@ -65,7 +34,17 @@ def project(row):
     } | {"simulated": True}
 
 
-async def process(tx, body, request_id):
+async def recovery_operator(tx, order):
+    operator = await tx.fetchval(
+        'SELECT operator_id FROM l13_payment_recovery_assignments WHERE order_id=$1 FOR UPDATE',
+        order['id'])
+    if operator is None or operator == order['buyer_id']:
+        raise PublicError('recovery_assignment_unavailable',
+            'Payment recovery assignment is unavailable. تعيين مسؤول معالجة الدفع غير متاح.', status=503)
+    return operator
+
+
+async def process_receipt(tx, body, request_id):
     digest = hashlib.sha256(body.model_dump_json().encode()).hexdigest()
     await tx.execute(
         "SELECT pg_advisory_xact_lock(hashtextextended($1,0))",
@@ -123,25 +102,38 @@ async def process(tx, body, request_id):
         attempt["created_at"],
         attempt["id"],
     )
-    if attempt["state"] == "confirmed" or body.sequence <= attempt["sequence"]:
+    review = await tx.fetchval(
+        'SELECT 1 FROM l13_money_reconciliations WHERE order_id=$1', order['id'])
+    conflicting = body.outcome != 'declined' and (
+        attempt['state'] == 'declined' or newer or order['state'] == 'expired_released')
+    if conflicting and not review:
+        operator = await recovery_operator(tx, order)
+        await tx.execute(
+            """INSERT INTO l13_money_reconciliations(event_id,attempt_id,order_id,buyer_contact_id,next_actor,next_action)
+            VALUES($1,$2,$3,$4,$5,'reconcile_original_payment')""", body.event_id, attempt['id'], order['id'], order['buyer_id'], operator)
+        # A held original attempt keeps the existing expiry policy from releasing stock.
+        attempt = await tx.fetchrow(
+            "UPDATE l13_payment_attempts SET state='held',sequence=GREATEST(sequence,$2),updated_at=clock_timestamp() WHERE id=$1 RETURNING *",
+            attempt['id'], body.sequence)
+        await tx.execute('UPDATE l08_orders SET financial_revision=financial_revision+1 WHERE id=$1', order['id'])
+        await enqueue(tx, EventEnvelope(type='orders.payment-reconciliation.v3', source='orders',
+            subject=str(order['id']), request_id=request_id,
+            data={'order_id': str(order['id']), 'attempt_id': str(attempt['id']), 'simulated': True}),
+            ['communications-order-timeline'])
+        review = True
+    if review:
+        result = {'status': 'pending', 'code': 'reconciliation_required',
+                  'attempt': project(attempt), 'paid': False}
+    elif attempt["state"] == "confirmed" or body.sequence <= attempt["sequence"]:
         result = {
             "status": "succeeded",
             "code": "already_reconciled",
             "attempt": project(attempt),
             "paid": order["state"] == "paid_held",
         }
-    elif (
-        newer
-        or order["state"] in {"expired_released", "paid_held"}
-        or (attempt["state"] == "declined" and body.outcome != "declined")
-    ):
-        # Late conflicting/expired money is an explicit financial hold, never a second post or release.
-        result = {
-            "status": "denied",
-            "code": "reconciliation_required",
-            "attempt": project(attempt),
-            "paid": order["state"] == "paid_held",
-        }
+    elif newer or order['state'] in {'expired_released', 'paid_held'} or attempt['state'] == 'declined':
+        result = {'status': 'pending', 'code': 'reconciliation_required',
+                  'attempt': project(attempt), 'paid': False}
     else:
         state = body.outcome
         now = await tx.fetchval("SELECT clock_timestamp()")
@@ -237,3 +229,19 @@ async def process(tx, body, request_id):
         json.dumps(result),
     )
     return result
+
+
+async def current_payment_result(tx, order_id, value):
+    order = await lock_order(tx, order_id)
+    changed = await tx.fetchval(
+        """SELECT EXISTS(SELECT 1 FROM l13_money_operations WHERE order_id=$1
+        AND kind IN ('refund','release') AND state<>'declined') OR EXISTS(
+        SELECT 1 FROM l13_money_reconciliations WHERE order_id=$1)""", order_id)
+    review = await tx.fetchval('SELECT 1 FROM l13_money_reconciliations WHERE order_id=$1', order_id)
+    return value | ({'status': 'pending', 'code': 'reconciliation_required'} if review else {}) | {'paid': bool(value.get('paid')) and order['state'] == 'paid_held' and not changed,
+                    'payment_revision': order['revision'] + order.get('financial_revision', 0)}
+
+
+async def process(tx, body, request_id):
+    receipt = await process_receipt(tx, body, request_id)
+    return await current_payment_result(tx, body.order_id, receipt)

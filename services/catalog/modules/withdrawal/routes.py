@@ -1,7 +1,13 @@
 import json
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from bt_contracts.catalog.withdrawal import Withdraw
+from bt_contracts.catalog.withdrawal.cancellation import (
+    Cancellation,
+    CancellationResult,
+    matches_result,
+)
 from bt_contracts_core.errors import PublicError
 from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
@@ -34,7 +40,12 @@ def view(row):
     } | {
         "status": row["state"],
         "outcome": unpack(row["outcome"]) if row["outcome"] else None,
-        "next_action": "retry_same_operation"
+        "recovery": unpack(row["outcome"]).get("recovery") if row["outcome"] else None,
+        "next_action": unpack(row["outcome"]).get(
+            "next_action", unpack(row["outcome"])["receipt"]["next_action"]
+        )
+        if row["outcome"] and "receipt" in unpack(row["outcome"])
+        else "retry_same_operation"
         if row["state"] == "pending"
         else "exception_route"
         if row["state"] == "denied"
@@ -88,24 +99,61 @@ async def owned(request, listing_id):
 
 
 @router.get("/v1/me/withdrawals")
-async def mine(request: Request):
+async def mine(
+    request: Request,
+    page: int = Query(default=1, ge=1, le=1000000),
+    page_size: int = Query(default=25, ge=1, le=100),
+):
     person = await principal(request)
     seller_scope(person, "identity.listings.publish")
-    rows = await request.app.state.pool.fetch(
-        """SELECT w.* FROM l13_listing_withdrawals w JOIN catalog_listings l ON l.id=w.listing_id
-        WHERE ($2::uuid IS NULL AND l.organization_id IS NULL AND l.owner_subject_id=$1) OR l.organization_id=$2
-        ORDER BY w.created_at DESC,w.id LIMIT 100""",
+    # One statement gives the count and page the same database snapshot.
+    result = await request.app.state.pool.fetchrow(
+        """WITH scoped AS (
+            SELECT w.* FROM l13_listing_withdrawals w
+            JOIN catalog_listings l ON l.id=w.listing_id
+            WHERE w.actor_id=$1 AND w.organization_id IS NOT DISTINCT FROM $2::uuid
+            AND (($2::uuid IS NULL AND l.organization_id IS NULL AND l.owner_subject_id=$1)
+                 OR l.organization_id=$2)
+        ), paged AS (
+            SELECT * FROM scoped ORDER BY created_at DESC,id DESC LIMIT $3 OFFSET $4
+        ) SELECT (SELECT count(*) FROM scoped) AS total,
+          COALESCE((SELECT jsonb_agg(p ORDER BY p.created_at DESC,p.id DESC)
+                    FROM paged p),'[]'::jsonb) AS items""",
         person.actor.subject_id,
         person.actor.organization_id,
+        page_size,
+        (page - 1) * page_size,
     )
-    return {"items": [view(row) for row in rows]}
+    return {
+        "items": [view(row) for row in unpack(result["items"])],
+        "total": result["total"],
+        "page": page,
+        "page_size": page_size,
+    }
+
+
+@router.get("/v1/me/withdrawals/{operation_id}")
+async def lookup(operation_id: UUID, request: Request):
+    person = await principal(request)
+    seller_scope(person, "identity.listings.publish")
+    intent = await request.app.state.pool.fetchrow(
+        "SELECT * FROM l13_listing_withdrawals WHERE id=$1", operation_id
+    )
+    if (
+        intent is None
+        or intent["actor_id"] != person.actor.subject_id
+        or intent["organization_id"] != person.actor.organization_id
+    ):
+        raise PublicError("not_found", "Withdrawal not found.", status=404)
+    await owned(request, intent["listing_id"])
+    return view(intent)
 
 
 @router.get("/v1/listings/{listing_id}/withdrawals/current")
 async def current(listing_id: UUID, request: Request):
     await owned(request, listing_id)
     intent = await request.app.state.pool.fetchrow(
-        "SELECT * FROM l13_listing_withdrawals WHERE listing_id=$1", listing_id
+        "SELECT * FROM l13_listing_withdrawals WHERE listing_id=$1 ORDER BY created_at DESC,id DESC LIMIT 1", listing_id
     )
     return view(intent) if intent else {"status": "none", "listing_id": str(listing_id)}
 
@@ -135,8 +183,39 @@ async def withdraw(listing_id: UUID, body: Withdraw, request: Request):
                 status=409,
             )
         intent = await tx.fetchrow(
-            "SELECT * FROM l13_listing_withdrawals WHERE listing_id=$1", listing_id
+            "SELECT * FROM l13_listing_withdrawals WHERE listing_id=$1 ORDER BY created_at DESC,id DESC LIMIT 1", listing_id
         )
+        # Historical references remain replayable after a reconciled fresh attempt.
+        prior = await tx.fetchrow(
+            "SELECT * FROM l13_listing_withdrawals WHERE actor_id=$1 AND operation_key=$2",
+            person.actor.subject_id,
+            key,
+        )
+        if prior:
+            intent = prior
+        elif intent and intent["state"] == "denied":
+            outcome = unpack(intent["outcome"])
+            receipt = outcome.get("receipt", {}) if outcome else {}
+            if (
+                (receipt.get("code") == "stale_revision"
+                 or receipt.get("revision", 0) > intent["base_revision"])
+                and row["status"] == "published"
+                and row["revision"] == expected
+                and expected >= receipt["revision"]
+                and expected > intent["base_revision"]
+            ):
+                intent = None
+        # Configure one currently responsible operator before accepting a new hold.
+        recovery = unpack(intent["outcome"]).get("recovery") if intent and intent["outcome"] else None
+        if (intent is None or intent["state"] == "pending") and recovery is None:
+            try:
+                operator_id = UUID(str(request.app.state.withdrawal_operator_id))
+            except (AttributeError, ValueError, TypeError):
+                raise PublicError(
+                    "recovery_unavailable",
+                    "Withdrawal review is unavailable. Try again later.",
+                    status=503,
+                ) from None
         if intent:
             if (
                 intent["actor_id"] != person.actor.subject_id
@@ -189,38 +268,69 @@ async def withdraw(listing_id: UUID, body: Withdraw, request: Request):
                 body.reason,
                 expected,
             )
+        if recovery is None:
+            # The original creation instant anchors both deadlines, including retries.
+            started = intent["created_at"]
+            if isinstance(started, str):
+                started = datetime.fromisoformat(started.replace("Z", "+00:00"))
+            recovery = {
+                "operator_id": str(operator_id),
+                "next_action": "reconcile_same_operation",
+                "first_response_due_at": (started + timedelta(hours=24)).astimezone(timezone.utc).isoformat(),
+                "escalate_at": (started + timedelta(hours=48)).astimezone(timezone.utc).isoformat(),
+                "escalation_action": "escalate_to_supervisor",
+            }
+            outcome = (unpack(intent["outcome"]) if intent["outcome"] else {}) | {"recovery": recovery}
+            intent = await tx.fetchrow(
+                "UPDATE l13_listing_withdrawals SET outcome=$2::jsonb WHERE id=$1 RETURNING *",
+                intent["id"], json.dumps(outcome),
+            )
     # The locally unavailable projection precedes ALL remote work. No SQL lock spans HTTP.
     remote_key = "withdraw:" + str(intent["id"])
     payload = unpack(intent["remote_payload"]) if intent["remote_payload"] else None
+    receipt = None
     try:
         if payload is None:
-            watch = await service_request(
-                request,
-                "orders",
-                "GET",
-                f"/internal/v2/watches/{row['physical_watch_id']}",
-            )
-            if (
-                watch.get("watch_id") != str(row["physical_watch_id"])
-                or watch.get("listing_id") != str(listing_id)
-                or watch.get("listing_revision") != expected
-                or type(watch.get("revision")) is not int
-            ):
-                raise PublicError(
-                    "orders_unavailable",
-                    "The current commitment cannot be verified.",
-                    status=503,
+            if unpack(row["facts"]).get("sale_mode") == "auction":
+                proposed = Cancellation(
+                    operation_id=intent["id"],
+                    subject_id=listing_id,
+                    watch_id=row["physical_watch_id"],
+                    actor_id=intent["actor_id"],
+                    organization_id=intent["organization_id"],
+                    expected_revision=expected,
+                    reason=intent["reason"],
+                ).model_dump(mode="json")
+            else:
+                watch = await service_request(
+                    request,
+                    "orders",
+                    "GET",
+                    f"/internal/v2/watches/{row['physical_watch_id']}",
                 )
-            proposed = {
-                "operation_key": remote_key,
-                "watch_id": str(row["physical_watch_id"]),
-                "listing_id": str(listing_id),
-                "listing_revision": expected,
-                "expected_revision": watch["revision"],
-                "source_id": str(intent["id"]),
-                "kind": "withdraw",
-                "reason": body.reason,
-            }
+                if (
+                    not isinstance(watch, dict)
+                    or watch.get("watch_id") != str(row["physical_watch_id"])
+                    or watch.get("listing_id") != str(listing_id)
+                    or watch.get("listing_revision") != expected
+                    or type(watch.get("revision")) is not int
+                    or watch["revision"] < 1
+                ):
+                    raise PublicError(
+                        "orders_unavailable",
+                        "The current commitment cannot be verified.",
+                        status=503,
+                    )
+                proposed = {
+                    "operation_key": remote_key,
+                    "watch_id": str(row["physical_watch_id"]),
+                    "listing_id": str(listing_id),
+                    "listing_revision": expected,
+                    "expected_revision": watch["revision"],
+                    "source_id": str(intent["id"]),
+                    "kind": "withdraw",
+                    "reason": body.reason,
+                }
             async with unit_of_work(
                 request.app.state.pool, lock_key=f"listing:{listing_id}"
             ) as tx:
@@ -237,21 +347,69 @@ async def withdraw(listing_id: UUID, body: Withdraw, request: Request):
                         json.dumps(proposed),
                     )
                     payload = proposed
+        auction = payload.get("schema_version") == "listing-cancellation.v1"
+        if unpack(row["facts"]).get("sale_mode") == "auction" and not auction:
+            return view(intent) | {
+                "status": "pending",
+                "code": "commitment_unavailable",
+            }
         answer = await service_request(
             request,
-            "orders",
+            "auction" if auction else "orders",
             "POST",
-            "/internal/v2/commitments",
+            "/internal/v1/listing-cancellations"
+            if auction
+            else "/internal/v2/commitments",
             headers={"Idempotency-Key": remote_key},
             json=payload,
         )
+        if auction:
+            if not matches_result(answer, payload):
+                return view(intent) | {
+                    "status": "pending",
+                    "code": "commitment_unavailable",
+                }
+            receipt = CancellationResult.model_validate(answer).model_dump(mode="json")
+            answer = {
+                "status": receipt["state"],
+                "code": receipt["code"],
+                "watch": {
+                    "watch_id": payload["watch_id"],
+                    "listing_id": str(listing_id),
+                    "status": "withdrawn"
+                    if answer["state"] == "succeeded"
+                    else "fenced",
+                    "source_id": str(intent["id"]),
+                },
+            }
     except PublicError:
         # HTTP failure is not a durable command denial. Freeze and replay original payload.
         return view(intent) | {"status": "pending", "code": "commitment_unavailable"}
+    if not isinstance(answer, dict):
+        return view(intent) | {"status": "pending", "code": "commitment_unavailable"}
     status = answer.get("status")
-    if status not in {"succeeded", "denied"}:
+    if not isinstance(status, str) or status not in (
+        {"pending", "succeeded", "denied"} if auction else {"succeeded", "denied"}
+    ):
         return view(intent) | {"status": "pending", "code": "commitment_unavailable"}
     proof = answer.get("watch", {})
+    if (
+        not isinstance(proof, dict)
+        or proof.get("watch_id") != payload["watch_id"]
+        or proof.get("listing_id") != str(listing_id)
+        or (not auction and proof.get("listing_revision") != expected)
+    ):
+        return view(intent) | {"status": "pending", "code": "commitment_unavailable"}
+    if not auction and status == "denied":
+        binding = payload | {
+            "actor_id": str(intent["actor_id"]),
+            "organization_id": str(intent["organization_id"])
+            if intent["organization_id"] else None,
+        }
+        # A watch's current source may belong to a different commitment.
+        # Only an exact retained command receipt can settle this denial.
+        if json.dumps(answer.get("binding"), sort_keys=True) != json.dumps(binding, sort_keys=True):
+            return view(intent) | {"status": "pending", "code": "commitment_unavailable"}
     if status == "succeeded" and (
         proof.get("watch_id") != payload["watch_id"]
         or proof.get("listing_id") != str(listing_id)
@@ -267,38 +425,57 @@ async def withdraw(listing_id: UUID, body: Withdraw, request: Request):
         row = await source_locked(tx, listing_id)
         assert_owner(row, person)
         intent = await tx.fetchrow(
-            "SELECT * FROM l13_listing_withdrawals WHERE listing_id=$1 FOR UPDATE",
-            listing_id,
+            "SELECT * FROM l13_listing_withdrawals WHERE id=$1 FOR UPDATE",
+            intent["id"],
         )
         if intent["state"] != "pending":
             return view(intent)
-        if row["revision"] != expected or row["status"] != "withdrawal_pending":
+        stale = receipt is not None and receipt["state"] == "denied" and (
+            receipt["code"] == "stale_revision" or receipt["revision"] > expected
+        )
+        if not stale and (
+            row["revision"] != expected or row["status"] != "withdrawal_pending"
+        ):
             raise PublicError(
                 "withdrawal_held",
                 "Listing changed; the physical commitment remains held.",
                 status=409,
             )
-        state = "withdrawn" if status == "succeeded" else "published"
-        revision = expected + int(status == "succeeded")
-        await tx.execute(
-            "UPDATE catalog_listings SET status=$2,revision=$3,updated_at=clock_timestamp() WHERE id=$1",
-            listing_id,
-            state,
-            revision,
+        state = (
+            "withdrawn"
+            if status == "succeeded"
+            else "withdrawal_pending"
+            if status == "pending" or stale
+            else "published"
         )
+        revision = expected + int(status == "succeeded")
+        if stale:
+            # The receipt denies this request; it is not current availability authority.
+            state, revision = row["status"], row["revision"]
+        else:
+            await tx.execute(
+                "UPDATE catalog_listings SET status=$2,revision=$3,updated_at=clock_timestamp() WHERE id=$1",
+                listing_id,
+                state,
+                revision,
+            )
         intent = await tx.fetchrow(
-            "UPDATE l13_listing_withdrawals SET state=$2,outcome=$3::jsonb,updated_at=clock_timestamp() WHERE listing_id=$1 RETURNING *",
-            listing_id,
+            "UPDATE l13_listing_withdrawals SET state=$2,outcome=$3::jsonb,updated_at=clock_timestamp() WHERE id=$1 RETURNING *",
+            intent["id"],
             status,
             json.dumps(
                 {
+                    "recovery": recovery,
+                    **({"receipt": receipt} if receipt is not None else {}),
+                    **({"commitment_receipt": answer} if not auction else {}),
+                    **({"next_action": "reload"} if stale else {}),
                     "code": answer.get("code"),
                     "exception_route": (
                         "/seller/auctions"
                         if proof.get("status") == "fenced"
                         else "/checkout"
                     )
-                    if status == "denied"
+                    if status == "denied" and not stale
                     else None,
                 }
             ),

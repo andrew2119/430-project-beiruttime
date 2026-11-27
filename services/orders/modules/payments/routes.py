@@ -5,7 +5,15 @@ from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_runtime.app.db import unit_of_work
 from service_app.orders_dependencies import principal
 from service_app.orders_kernel import command, lock_order, order_fact, decoded, audit
-from .processor import project, verify, sign, secret, process
+from .processor import project, verify, sign, secret, process, current_payment_result, recovery_operator
+from bt_contracts.orders.payments.signatures import callback_bytes
+from pathlib import Path
+from bt_runtime.modules import Module
+
+financial_readiness = Module(
+    id='L13.journal', root=Path(__file__).resolve().parents[1] / 'journal',
+    routes=(), migrations=(), authorization=None, fixtures={}, hooks={}, workers=(),
+).load('movements.py:financial_readiness')
 from service_app.payment_clock import can_initiate, initiated_until, deadline_for
 
 router = APIRouter(tags=["simulated-payments-v1"])
@@ -22,8 +30,8 @@ def owner(actor, order):
 
 @router.get("/v1/orders/{order_id}/checkout")
 async def checkout(order_id: UUID, request: Request, actor=Depends(principal)):
-    async with request.app.state.pool.acquire() as tx:
-        order = await tx.fetchrow("SELECT * FROM l08_orders WHERE id=$1", order_id)
+    async with unit_of_work(request.app.state.pool) as tx:
+        order = await lock_order(tx, order_id)
         if order is None:
             raise PublicError("order_unknown", "Order not found.", status=404)
         owner(actor, order)
@@ -38,7 +46,9 @@ async def checkout(order_id: UUID, request: Request, actor=Depends(principal)):
         )
         now = await tx.fetchval("SELECT clock_timestamp()")
         pricing_state = await tx.fetchval("SELECT state FROM l13_quote_commitments WHERE order_id=$1", order_id)
+        readiness = await financial_readiness(tx, order_id)
         return {
+            "financial_readiness": readiness,
             "order": order_fact(order),
             "quote": decoded(quote["snapshot"]) if quote else None,
             "attempts": [project(a) for a in attempts],
@@ -48,7 +58,7 @@ async def checkout(order_id: UUID, request: Request, actor=Depends(principal)):
                 route: deadline_for(order.get("notified_at"), route, order.get("initiation_extended_until"))
                 for route in ("card", "whish", "omt")
             },
-            "payable": quote is not None
+            "payable": readiness["movement_status"] == "none" and quote is not None
             and pricing_state != "reconciliation"
             and (
                 order["state"] == "awaiting_payment"
@@ -78,6 +88,8 @@ async def select_method(
     async def apply(tx):
         order = await lock_order(tx, order_id)
         owner(actor, order)
+        if await tx.fetchval("SELECT 1 FROM l13_money_reconciliations WHERE order_id=$1", order_id):
+            return {"status": "pending", "code": "reconciliation_required"}
         if order["revision"] != body.expected_revision:
             return {"status": "denied", "code": "stale_revision"}
         if await tx.fetchval("SELECT state FROM l13_quote_commitments WHERE order_id=$1", order_id) == "reconciliation":
@@ -118,6 +130,8 @@ async def start(
     async def apply(tx):
         order = await lock_order(tx, order_id)
         owner(actor, order)
+        if await tx.fetchval("SELECT 1 FROM l13_money_reconciliations WHERE order_id=$1", order_id):
+            return {"status": "pending", "code": "reconciliation_required"}
         existing = await tx.fetchrow(
             "SELECT * FROM l13_payment_attempts WHERE order_id=$1 AND state IN ('pending','confirmed','held')",
             order_id,
@@ -164,6 +178,7 @@ async def start(
         if not can_initiate(order, body.route, now):
             return {"status": "denied", "code": "deadline_elapsed"}
         extension = initiated_until(order, body.route, now)
+        await recovery_operator(tx, order)
         attempt_id = uuid4()
         attempt = await tx.fetchrow(
             """INSERT INTO l13_payment_attempts(id,order_id,buyer_id,quote_id,quote_revision,currency,total_minor,route,reference)
@@ -193,7 +208,7 @@ async def start(
         )
         return {"status": "succeeded", "attempt": project(attempt), "paid": False}
 
-    return await command(
+    value = await command(
         request.app.state.pool,
         "user:" + str(actor.actor.subject_id),
         idempotency_key,
@@ -203,10 +218,15 @@ async def start(
         request_id=request.state.request_id,
     )
 
+    async with unit_of_work(request.app.state.pool) as tx:
+        order = await lock_order(tx, order_id)
+        owner(actor, order)
+        return await current_payment_result(tx, order_id, value)
+
 
 @router.post("/callbacks/v1/simulated")
 async def callback(request: Request, x_bt_signature: str = Header(default="")):
-    raw = await request.body()
+    raw = await callback_bytes(request)
     body = verify(raw, x_bt_signature)
     async with unit_of_work(request.app.state.pool) as tx:
         return await process(tx, body, request.state.request_id)
@@ -258,7 +278,7 @@ async def simulate(
         verified = verify(raw, sign(raw))
         return await process(tx, verified, request.state.request_id)
 
-    return await command(
+    value = await command(
         request.app.state.pool,
         "user:" + str(actor.actor.subject_id),
         idempotency_key,
@@ -267,3 +287,8 @@ async def simulate(
         apply,
         request_id=request.state.request_id,
     )
+
+    async with unit_of_work(request.app.state.pool) as tx:
+        order = await lock_order(tx, current['id'])
+        owner(actor, order)
+        return await current_payment_result(tx, current['id'], value)

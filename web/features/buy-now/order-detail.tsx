@@ -14,6 +14,9 @@ import type {AllocationOperation} from '@contracts/contracts-orders/allocation';
 import HoldControl from './hold-control';
 import {formatQuotedMoney} from './money';
 import {connectedCopy} from './connected-copy';
+import type {CheckoutContext} from '@contracts/contracts-orders/payments';
+import paymentEn from '../payments/en.json';
+import paymentAr from '../payments/ar.json';
 import CheckoutPayment from '@/features/payments/checkout-payment';
 
 export default function OrderDetail({id}:{id:string}) {
@@ -35,6 +38,14 @@ function Detail({id,fingerprint}:{id:string;fingerprint:string}) {
   const op=useRef<{body:string;key:string}|null>(null), alive=useRef(true);
   useEffect(()=>{alive.current=true;const revoke=()=>{alive.current=false;};window.addEventListener('bt:access-change',revoke);return()=>{alive.current=false;window.removeEventListener('bt:access-change',revoke);};},[]);
   const record=detail.data?.order, principal=session?.principal;
+  const funds=useQuery({queryKey:['l13-checkout',fingerprint,id],
+    queryFn:({signal})=>authenticatedRequest<CheckoutContext>(`/api/web/v1/orders/v1/orders/${encodeURIComponent(id)}/checkout`,{signal}),
+    enabled:!!record&&principal?.actor.subject_id===record.buyer_id,retry:false});
+  const financial=funds.error?undefined:funds.data?.financial_readiness;
+  const paymentText=locale==='ar'?paymentAr:paymentEn;
+  const financialTitle=!financial?paymentText.financialUnavailable:financial.movement_status!=='none'
+    ?paymentText[financial.movement_status]:financial.state==='paid_held'?paymentText.paid:paymentText.pending;
+
   const canIntake=record?.organization_id
     ?principal?.organization_grants?.some(g=>g.organization_id===record.organization_id&&g.permissions.includes('orders.intake'))
     :principal?.permissions.includes('orders.intake');
@@ -80,7 +91,7 @@ function Detail({id,fingerprint}:{id:string;fingerprint:string}) {
     {detail.isPending&&uuid.test(id)&&<Card><LoadingRows label={t.loading}/></Card>}
     {detail.error&&<Card><SectionState title={errorText(detail.error,t)} kind="error"><Button chonk size="sm" onClick={()=>void detail.refetch()}>{t.reload}</Button></SectionState></Card>}
     {record&&<div className="checkout-grid">
-      <Card className="checkout-result"><CardHead title={t[record.state]} icon={ShoppingBag}/>{record.is_demo&&<p>{t.sample}</p>}
+      <Card className="checkout-result"><CardHead title={record.state==='paid_held'?financialTitle:t[record.state]} icon={ShoppingBag}/>{record.is_demo&&<p>{t.sample}</p>}
         <dl><dt>{t.watch}</dt><dd><BidiReference>{record.watch_id}</BidiReference></dd>
           <dt>{t.total}</dt><dd><BidiReference>{formatQuotedMoney(record.total_minor,record.currency,locale)}</BidiReference></dd>
           <dt>{t.deadline}</dt><dd>{record.deadline?<time dateTime={record.deadline}>{new Date(record.deadline).toLocaleString(locale,{timeZone:'Asia/Beirut'})}</time>:t.notificationPending}</dd>

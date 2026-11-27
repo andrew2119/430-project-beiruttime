@@ -2,7 +2,7 @@
 
 import hashlib
 import json
-from uuid import uuid4
+from uuid import UUID, uuid4
 from bt_contracts_core.errors import PublicError
 from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
@@ -31,13 +31,66 @@ def public(row, currency=None, *, version=1):
     }
 
 
+def recovery(row, currency):
+    value = public(row, currency, version=2)
+    state = row["state"]
+    legacy = state == "ended_legacy_review"
+    pending = state == "allocation_pending"
+    return value | {
+        "schema_version": 3,
+        "operation_id": str(row["id"]),
+        "assignment_required": (legacy or pending or state == "allocation_denied") and not row.get("responsible_operator_id"),
+        "revision": row["result_revision"],
+        "allocation_operation": "close:" + str(row["auction_id"]) if row["winner_id"] else None,
+        "pending_reason": "legacy_reconciliation" if legacy else "allocation_reconciliation" if pending else None,
+        "next_actor": "operator" if legacy or state == "allocation_denied" else "auction" if pending else None,
+        "next_review_at": row.get("response_due_at") if legacy or pending or state == "allocation_denied" else None,
+        **{key: row.get(key) for key in ("responsible_operator_id", "next_action", "response_due_at", "escalation_due_at", "escalated_at")},
+    }
+
+
+async def bind_follow_up(tx, app, row):
+    if row["state"] not in {"allocation_pending", "allocation_denied", "ended_legacy_review"}:
+        return row
+    if row.get("responsible_operator_id"):
+        return row
+    try:
+        operator = UUID(str(getattr(app.state, "closing_operator_id", "")))
+        if operator.int == 0:
+            raise ValueError()
+    except ValueError:
+        operator = None
+    action = {"allocation_pending": "reconcile_allocation", "allocation_denied": "review_allocation_denial",
+              "ended_legacy_review": "reconcile_legacy_purchase"}[row["state"]]
+    return await tx.fetchrow(
+        """UPDATE l13_auction_closes SET responsible_operator_id=$2,next_action=$3,
+        response_due_at=COALESCE(response_due_at,created_at+interval '24 hours'),
+        escalation_due_at=COALESCE(escalation_due_at,created_at+interval '48 hours')
+        WHERE auction_id=$1 AND responsible_operator_id IS NULL RETURNING *""",
+        row["auction_id"], operator, action,
+    ) or row
+
+
+async def recover_assignments(app):
+    async with unit_of_work(app.state.pool) as tx:
+        rows = await tx.fetch(
+            """SELECT * FROM l13_auction_closes
+            WHERE responsible_operator_id IS NULL
+            AND state IN ('allocation_pending','allocation_denied','ended_legacy_review')
+            ORDER BY created_at,auction_id LIMIT 10 FOR UPDATE SKIP LOCKED"""
+        )
+        for row in rows:
+            await bind_follow_up(tx, app, row)
+
+
 async def close(app, auction_id, expected_end_version, request_id):
     async with unit_of_work(app.state.pool) as tx:
         lot = await lock_lot(tx, auction_id)
         prior = await tx.fetchrow(
-            "SELECT * FROM l13_auction_closes WHERE auction_id=$1", auction_id
+            "SELECT * FROM l13_auction_closes WHERE auction_id=$1 FOR UPDATE", auction_id
         )
         if prior:
+            prior = await bind_follow_up(tx, app, prior)
             return public(prior, lot["currency"], version=2)
         if lot["end_version"] != expected_end_version:
             raise PublicError(
@@ -64,6 +117,7 @@ async def close(app, auction_id, expected_end_version, request_id):
                 auction_id, uuid4(), lot["end_version"], lot["close_version"], lot["current_minor"],
                 "legacy_currency" if lot["currency"] != "USD" else "legacy_purchase_outcome_under_review", scheduled_end,
             )
+            row = await bind_follow_up(tx, app, row)
             await enqueue(tx, EventEnvelope(
                 type="auction.ended-legacy-review.v2", source="auction", subject=str(auction_id), request_id=request_id,
                 data={"auction_id": str(auction_id), "listing_id": str(lot["listing_id"]),
@@ -131,6 +185,7 @@ async def close(app, auction_id, expected_end_version, request_id):
             json.dumps(quote_request),
             scheduled_end,
         )
+        row = await bind_follow_up(tx, app, row)
         await enqueue(
             tx,
             EventEnvelope(
