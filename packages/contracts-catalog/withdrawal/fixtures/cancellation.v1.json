@@ -1,0 +1,96 @@
+{
+  "request": {
+    "schema_version": "listing-cancellation.v1",
+    "operation_id": "00000000-0000-4000-8000-000000000001",
+    "subject_id": "00000000-0000-4000-8000-000000000002",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "actor_id": "00000000-0000-4000-8000-000000000004",
+    "organization_id": null,
+    "expected_revision": 2,
+    "reason": "Synthetic unavailable stock"
+  },
+  "success": {
+    "schema_version": "listing-cancellation.v1",
+    "operation_id": "00000000-0000-4000-8000-000000000001",
+    "subject_id": "00000000-0000-4000-8000-000000000002",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "actor_id": "00000000-0000-4000-8000-000000000004",
+    "organization_id": null,
+    "expected_revision": 2,
+    "reason": "Synthetic unavailable stock",
+    "state": "succeeded",
+    "revision": 3,
+    "pending_reason": null,
+    "next_actor": "seller",
+    "next_review_at": null,
+    "code": "withdrawn",
+    "explanation": {
+      "en": "Withdrawal confirmed.",
+      "ar": "تم تأكيد السحب."
+    },
+    "next_action": "none"
+  },
+  "denied": {
+    "schema_version": "listing-cancellation.v1",
+    "operation_id": "00000000-0000-4000-8000-000000000001",
+    "subject_id": "00000000-0000-4000-8000-000000000002",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "actor_id": "00000000-0000-4000-8000-000000000004",
+    "organization_id": null,
+    "expected_revision": 2,
+    "reason": "Synthetic unavailable stock",
+    "state": "denied",
+    "revision": 2,
+    "pending_reason": null,
+    "next_actor": "seller",
+    "next_review_at": null,
+    "code": "bid_exists",
+    "explanation": {
+      "en": "A bid exists. Use the auction exception route.",
+      "ar": "توجد مزايدة. استخدم مسار استثناء المزاد."
+    },
+    "next_action": "exception_route"
+  },
+  "stale": {
+    "schema_version": "listing-cancellation.v1",
+    "operation_id": "00000000-0000-4000-8000-000000000001",
+    "subject_id": "00000000-0000-4000-8000-000000000002",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "actor_id": "00000000-0000-4000-8000-000000000004",
+    "organization_id": null,
+    "expected_revision": 1,
+    "reason": "Synthetic unavailable stock",
+    "state": "denied",
+    "revision": 2,
+    "pending_reason": null,
+    "next_actor": "seller",
+    "next_review_at": null,
+    "code": "stale_revision",
+    "explanation": {
+      "en": "Reload the listing.",
+      "ar": "أعد تحميل الإعلان."
+    },
+    "next_action": "reload"
+  },
+  "lost_response": {
+    "schema_version": "listing-cancellation.v1",
+    "operation_id": "00000000-0000-4000-8000-000000000001",
+    "subject_id": "00000000-0000-4000-8000-000000000002",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "actor_id": "00000000-0000-4000-8000-000000000004",
+    "organization_id": null,
+    "expected_revision": 2,
+    "reason": "Synthetic unavailable stock",
+    "state": "pending",
+    "revision": 2,
+    "pending_reason": "reconciliation_required",
+    "next_actor": "operator",
+    "next_review_at": "2026-11-17T00:00:00Z",
+    "code": "reconciliation_required",
+    "explanation": {
+      "en": "Retry the same operation; review is assigned.",
+      "ar": "أعد المحاولة بنفس المرجع؛ تمت إحالة المراجعة."
+    },
+    "next_action": "retry_same_operation"
+  }
+}

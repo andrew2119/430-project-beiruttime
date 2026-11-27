@@ -1,0 +1,24 @@
+{
+  "currency": "USD",
+  "total_minor": 515000,
+  "routes": [
+    "card",
+    "whish",
+    "omt"
+  ],
+  "simulated": true,
+  "signed_confirmations": 1,
+  "balanced_groups": 1,
+  "invalid": [
+    "signature",
+    "buyer_id",
+    "order_id",
+    "quote_id",
+    "quote_revision",
+    "reference",
+    "amount",
+    "currency",
+    "route"
+  ],
+  "reordered": "no_regression"
+}
