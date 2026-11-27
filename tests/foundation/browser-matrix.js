@@ -118,10 +118,18 @@ async function checkNavigation(locale, theme, phone) {
     await page.click(menuTrigger);
     await waitForMenuFocus();
   }
+  // A marker on the window survives an in-app move but not a whole new page load.
+  await page.eval(() => { window.btMatrixSameDocument = true; return true; });
   await page.click(`${phone ? openMenu : '.bt-shell-rail'} .bt-shell-navigation a[href="/${locale}/about"]`);
-  await waitFor(() => ({
-    path: location.pathname, focus: document.activeElement?.id, closed: !document.querySelector('.bt-navigation-sheet'),
-  }), state => state.path === `/${locale}/about` && state.focus === 'main-content' && state.closed, 'Route focus was not handed to main');
+  const arrived = await waitFor(() => ({
+    path: location.pathname, closed: !document.querySelector('.bt-navigation-sheet'), sameDocument: window.btMatrixSameDocument === true,
+  }), state => state.path === `/${locale}/about` && state.closed, 'Navigation did not reach the about page');
+  if (!arrived.sameDocument) throw new Error('Navigation link loaded a whole new page: ' + JSON.stringify(arrived));
+  await waitFor(() => {
+    const active = document.activeElement;
+    const classes = typeof active?.className === 'string' ? active.className.trim().split(/\s+/).filter(Boolean) : [];
+    return { focus: active?.id, active: active ? [active.tagName.toLowerCase(), ...classes].join('.') : null };
+  }, state => state.focus === 'main-content', 'Route focus was not handed to main');
 
   const other = locale === 'en' ? 'ar' : 'en';
   await page.click(`${phone ? '.bt-shell-topbar' : '.bt-shell-rail'} .bt-locale-control`);
