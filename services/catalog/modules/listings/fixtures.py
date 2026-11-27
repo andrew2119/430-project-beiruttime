@@ -14,6 +14,18 @@ def quote_operation(demo_key, revision, now=None):
     return f"{demo_key}-quote-r{revision}-w{int(time.time() if now is None else now) // 600}"
 
 
+def publication_quote_request(row):
+    return {
+        "subject_id": row["id"],
+        "subject_revision": row["revision"],
+        "purpose": "purchase",
+        "source": "sample",
+        "schedule_id": "usd-v2",
+        "price_minor": row["facts"]["price_minor"],
+        "currency": "USD",
+    }
+
+
 async def seed(settings):
     if os.getenv("BT_ENVIRONMENT") != "demo" or os.getenv("BT_DEMO_IMPORT_ACK") != "illustrative-stock-only":
         raise RuntimeError("Demonstration import requires its explicit demo-only guard")
@@ -128,15 +140,7 @@ async def seed(settings):
                     "POST",
                     "/v1/quotes",
                     headers={**headers, "Idempotency-Key": quote_operation(item["id"], row["revision"])},
-                    json={
-                        "subject_id": row["id"],
-                        "subject_revision": row["revision"],
-                        "purpose": "business_quote",
-                        "source": "sample",
-                        "schedule_id": "sample-v1",
-                        "price_minor": row["facts"]["price_minor"],
-                        "currency": "USD",
-                    },
+                    json=publication_quote_request(row),
                 )
                 if isinstance(response, Unavailable):
                     raise RuntimeError("Pricing is temporarily unavailable; retry the guarded import")
