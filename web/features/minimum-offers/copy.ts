@@ -1,0 +1,26 @@
+export const copy = {
+  en: {
+    title: 'Private offer minimum', intro: 'Decline offers below your private minimum. This never accepts an offer or changes an accepted agreement.',
+    amount: 'Minimum offer (USD)', save: 'Save private minimum', remove: 'Remove minimum', retry: 'Retry the same action',
+    loading: 'Loading private rule', loadingBody: 'Checking your current access and listing.',
+    empty: 'No private minimum', emptyBody: 'Every eligible offer will require review.',
+    denied: 'Access denied', deniedBody: 'Refresh your access before opening this private listing again.',
+    unavailable: 'Private rule unavailable', unavailableBody: 'The current listing could not be verified. Try again when service is available.',
+    pending: 'Change pending', pendingBody: 'The result is uncertain. Retry the same action reference before making another change.',
+    stale: 'Listing changed', staleBody: 'Reload the current listing and review its terms before trying a new action.',
+    saved: 'Private minimum saved', savedBody: 'Only you and currently authorized business colleagues can read this rule.',
+    invalid: 'Enter a positive dollar amount with at most two decimal places.', reload: 'Reload current rule',
+  },
+  ar: {
+    title: 'الحد الأدنى الخاص للعروض', intro: 'ارفض العروض الأقل من حدك الأدنى الخاص. لا يؤدي ذلك إلى قبول أي عرض أو تغيير اتفاق مقبول.',
+    amount: 'الحد الأدنى للعرض (دولار أمريكي)', save: 'حفظ الحد الأدنى الخاص', remove: 'إزالة الحد الأدنى', retry: 'إعادة محاولة الإجراء نفسه',
+    loading: 'جارٍ تحميل القاعدة الخاصة', loadingBody: 'نتحقق من صلاحيتك الحالية والإعلان.',
+    empty: 'لا يوجد حد أدنى خاص', emptyBody: 'سيتطلب كل عرض مؤهل مراجعة.',
+    denied: 'الوصول مرفوض', deniedBody: 'حدّث صلاحيتك قبل فتح هذا الإعلان الخاص مجدداً.',
+    unavailable: 'القاعدة الخاصة غير متاحة', unavailableBody: 'تعذر التحقق من الإعلان الحالي. حاول مجدداً عند توفر الخدمة.',
+    pending: 'التغيير قيد الانتظار', pendingBody: 'النتيجة غير مؤكدة. أعد محاولة مرجع الإجراء نفسه قبل إجراء تغيير آخر.',
+    stale: 'تغيّر الإعلان', staleBody: 'أعد تحميل الإعلان الحالي وراجع شروطه قبل بدء إجراء جديد.',
+    saved: 'تم حفظ الحد الأدنى الخاص', savedBody: 'يمكنك أنت وزملاء العمل المخولون حالياً فقط قراءة هذه القاعدة.',
+    invalid: 'أدخل مبلغاً موجباً بالدولار بمنزلتين عشريتين كحد أقصى.', reload: 'إعادة تحميل القاعدة الحالية',
+  },
+} as const;

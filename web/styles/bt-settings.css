@@ -1,0 +1,30 @@
+@layer components {
+  :where(.bt-settings-page) { container-type: inline-size; }
+  :where(.bt-settings-layout) { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: var(--bt-space-4); }
+  :where(.bt-settings-tabs) { min-inline-size: 0; }
+  :where(.bt-settings-index) { display: none; }
+  :where(.bt-settings-index nav) { display: grid; gap: var(--bt-space-1); }
+  :where(.bt-settings-index .bt-button) { justify-content: start; }
+  :where(.bt-settings-index [aria-current="location"], .bt-settings-tabs [aria-current="location"]) { background: var(--bt-accent); color: var(--bt-accent-foreground); }
+  :where(.bt-settings-layout section) { min-inline-size: 0; scroll-margin-block-start: var(--bt-space-4); }
+  :where(.bt-settings-themes .bt-segment-item) { flex-basis: 0; padding: 0; overflow: hidden; text-align: start; }
+  :where(.bt-settings-theme-label) { display: block; padding: var(--bt-space-3) var(--bt-space-4); }
+  :where(.bt-settings-shot) { display: flex; aspect-ratio: 16 / 9; gap: calc(var(--bt-space-3) / 2); padding: var(--bt-space-2); background: var(--bt-canvas); color: var(--bt-foreground); }
+  :where(.bt-settings-shot-rail) { display: flex; inline-size: 26%; flex-direction: column; gap: calc(var(--bt-space-5) / 4); padding: calc(var(--bt-space-4) / 2); border-radius: var(--bt-radius-md); background: var(--bt-card); box-shadow: var(--bt-shadow-low); }
+  :where(.bt-settings-shot i, .bt-settings-shot b, .bt-settings-shot em) { display: block; border-radius: var(--bt-radius-sm); }
+  :where(.bt-settings-shot-rail i) { block-size: calc(var(--bt-space-5) / 4); background: var(--bt-muted); }
+  :where(.bt-settings-shot-rail i[data-on]) { inline-size: 75%; background: var(--bt-primary); }
+  :where(.bt-settings-shot-tray) { display: flex; min-inline-size: 0; flex: 1 1 0%; flex-direction: column; gap: calc(var(--bt-space-3) / 2); padding: calc(var(--bt-space-4) / 2); border-radius: var(--bt-radius-lg); background: var(--bt-background); box-shadow: var(--bt-shadow-low); }
+  :where(.bt-settings-shot-card) { display: flex; flex: 1 1 0%; flex-direction: column; gap: var(--bt-space-1); padding: calc(var(--bt-space-3) / 2); border-radius: var(--bt-radius-md); background: var(--bt-card); box-shadow: var(--bt-shadow-low); }
+  :where(.bt-settings-shot-card b) { inline-size: 45%; block-size: calc(var(--bt-space-3) / 2); background: var(--bt-foreground); }
+  :where(.bt-settings-shot-card i) { block-size: var(--bt-space-1); background: var(--bt-muted); }
+  :where(.bt-settings-shot-card i[data-short]) { inline-size: 60%; }
+  :where(.bt-settings-shot-bar) { display: flex; gap: var(--bt-space-1); }
+  :where(.bt-settings-shot-bar em) { inline-size: 32%; block-size: var(--bt-space-2); background: var(--bt-primary); }
+  :where(.bt-settings-shot-bar i) { flex: 1 1 0%; block-size: var(--bt-space-2); background: var(--bt-accent); }
+  @container (min-width: 56rem) {
+    :where(.bt-settings-layout) { grid-template-columns: 13.5rem minmax(0, 1fr); gap: var(--bt-space-5); }
+    :where(.bt-settings-index) { display: block; position: sticky; inset-block-start: var(--bt-space-4); }
+    :where(.bt-settings-tabs) { display: none; }
+  }
+}

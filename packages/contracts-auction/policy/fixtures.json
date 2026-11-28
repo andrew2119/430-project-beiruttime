@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "fixed_end": {"ends_at": "2026-11-16T18:00:00Z", "end_version": 7, "remaining_seconds": [120, 90, 0.001], "kinds": ["manual", "proxy", "ceiling_only"], "extended": false},
+  "deadline_refusal": {"remaining_seconds": [0, -0.001], "code": "auction_ended"},
+  "reserve": {"public_price_minor": 430000, "private_ceiling_minor": 450000, "reserve_minor": 450000, "reserve_met": false},
+  "no_bids_close": {"accepted_sequence": 0, "at_scheduled_end": true, "result": "no_sale", "winner_id": null, "order_id": null},
+  "new_auction_purchase": {"status": "denied", "code": "auction_purchase_removed", "orders_calls": 0},
+  "fixed_price_purchase": {"changed": false},
+  "cancellation_race": [
+    {"first_admitted": "cancel", "cancel": "cancelled", "bid": "denied"},
+    {"first_admitted": "bid", "cancel": "denied", "bid": "accepted"}
+  ],
+  "legacy_review": [
+    {"remote": "missing", "at_scheduled_end": true, "schedule_state": "ended_legacy_review", "financial_state": "held", "new_allocation": false},
+    {"remote": "unknown_money", "at_scheduled_end": true, "schedule_state": "ended_legacy_review", "financial_state": "held"},
+    {"remote": "denied_without_attempt_proof", "code": "legacy_release_pending", "financial_state": "held"},
+    {"remote": "orders_confirmed_no_attempt_release", "closing_authority": "L13", "mode_authority": "L14", "result": "no_sale"}
+  ]
+}

@@ -4,6 +4,7 @@ import copy
 import importlib
 import inspect
 import json
+import runpy
 from contextlib import asynccontextmanager
 from datetime import datetime,timedelta,timezone
 from pathlib import Path
@@ -23,14 +24,21 @@ from bt_runtime.modules import discover
 from fixture_data import listing_id,source_row,reference,change_mode
 from fixture_reads import State
 
-module=next(m for m in discover(Path('/app/modules'))if m.id=='L04.discovery')
+_paths = runpy.run_path(str(Path(__file__).with_name('browser_fixture.py')))
+
+
+def discovery_modules():
+    return _paths['discovery_modules'](__file__)
+
+
+module=next(m for m in discover(discovery_modules())if m.id=='L04.discovery')
 def loaded(file,name):return importlib.import_module(module.load(file+':'+name).__module__)
 repository=loaded('search.py','candidates')
 service=loaded('service.py','find')
 models=loaded('models.py','WatchDetail')
 dependencies=loaded('dependencies.py','Reads')
 upstream=loaded('upstream.py','read_auction')
-FIXTURES=Path('/opt/domain-contracts/bt_contracts/catalog/discovery/fixtures')
+FIXTURES=_paths['contract_fixtures'](__file__)
 WATCH=json.loads((FIXTURES/'watch.v1.json').read_text())
 AUCTION=json.loads((FIXTURES/'auction.v1.json').read_text())
 PROVIDER_AUCTION=json.loads((FIXTURES/'provider-auction.v1.json').read_text())
@@ -39,7 +47,7 @@ PROVIDER_HISTORY=json.loads((FIXTURES/'provider-history.v1.json').read_text())
 @pytest_asyncio.fixture
 async def database_access(monkeypatch,request,tmp_path):
     # Module-scoped override: an external conftest would also shadow common proofs.
-    monkeypatch.setenv('BT_MODULES_PATH','/app/modules/discovery')
+    monkeypatch.setenv('BT_MODULES_PATH',str(discovery_modules()))
     wrapped=runtime_testing.database_access.__wrapped__
     # Reused proof images may predate the foundation's explicit inventory fixture.
     generator=wrapped(request,tmp_path)if inspect.signature(wrapped).parameters else wrapped()

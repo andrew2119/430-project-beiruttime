@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Help accepted terms v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "operation_id",
+    "subject_id",
+    "watch_id",
+    "actor_id",
+    "organization_id",
+    "expected_revision",
+    "revision",
+    "pending_reason",
+    "next_actor",
+    "next_review_at",
+    "artifact",
+    "state",
+    "record_id"
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    },
+    "watch_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    },
+    "actor_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    },
+    "record_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    },
+    "schema_version": {
+      "const": "help-policies.v1"
+    },
+    "organization_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    },
+    "expected_revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "revision": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "state": {
+      "enum": [
+        "ready",
+        "denied",
+        "stale",
+        "pending",
+        "unavailable"
+      ]
+    },
+    "pending_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "next_actor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "next_review_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "artifact": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "issuer",
+            "policy_revision",
+            "accepted_at",
+            "en",
+            "ar"
+          ],
+          "properties": {
+            "issuer": {
+              "const": "E03"
+            },
+            "policy_revision": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "accepted_at": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "(Z|\\+00:00)$"
+            },
+            "en": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100000
+            },
+            "ar": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100000
+            }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "ready"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "artifact": {
+            "type": "object"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "pending_reason": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "artifact": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+}

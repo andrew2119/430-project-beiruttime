@@ -1,0 +1,10 @@
+{
+  "route": "/operations/audit",
+  "file": "web/app/(audit-references)/operations/audit/page.tsx",
+  "view": "web/features/audit-references/screen.tsx",
+  "kind": "reads",
+  "reason": "Private owner references require current operator, organization and record permission on every read.",
+  "content": "[data-page-answer]",
+  "read": "audit-references.v1",
+  "proof": "owed"
+}

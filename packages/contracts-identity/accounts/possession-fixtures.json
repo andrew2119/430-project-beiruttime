@@ -1,0 +1,63 @@
+{
+  "issued": {
+    "schema_version": "identity.listing-possession.v1",
+    "operation_id": "issue-0001",
+    "subject_id": "seller-1",
+    "watch_id": "watch-1",
+    "actor_id": "seller-1",
+    "organization_id": null,
+    "expected_revision": 0,
+    "state": "issued",
+    "revision": 1,
+    "pending_reason": null,
+    "next_actor": "seller",
+    "next_review_at": null,
+    "listing_id": "listing-1",
+    "watch_revision": 1,
+    "listing_revision": 1,
+    "challenge_id": "challenge-1",
+    "code": "123456",
+    "issued_at": "2026-11-17T10:00:00+00:00",
+    "expires_at": "2026-11-18T10:00:00+00:00",
+    "submitted_at": null
+  },
+  "pending": {
+    "schema_version": "identity.listing-possession.v1",
+    "operation_id": "submit-0001",
+    "subject_id": "seller-1",
+    "watch_id": "watch-1",
+    "actor_id": "seller-1",
+    "organization_id": null,
+    "expected_revision": 1,
+    "state": "pending",
+    "revision": 2,
+    "pending_reason": "assigned_review_required",
+    "next_actor": "assigned_reviewer",
+    "next_review_at": "2026-11-18T11:00:00+00:00",
+    "listing_id": "listing-1",
+    "watch_revision": 1,
+    "listing_revision": 1,
+    "challenge_id": "challenge-1",
+    "code": "123456",
+    "issued_at": "2026-11-17T10:00:00+00:00",
+    "expires_at": "2026-11-18T10:00:00+00:00",
+    "submitted_at": "2026-11-17T11:00:00+00:00"
+  },
+  "denied": {
+    "status": 403,
+    "code": "forbidden"
+  },
+  "stale": {
+    "status": 409,
+    "code": "stale_proof"
+  },
+  "lost_response": {
+    "retry_operation_id": "issue-0001",
+    "returns": "issued",
+    "new_challenge": false
+  },
+  "unavailable": {
+    "status": 503,
+    "code": "unavailable"
+  }
+}

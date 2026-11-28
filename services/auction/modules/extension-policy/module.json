@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "id": "L12.extension-policy",
+  "dependencies": ["pydantic", "fastapi", "asyncpg"],
+  "hooks": {"auction.policy.accepted-bid.v2": "policy.py:accepted_bid", "auction.policy.accepted-bid.v1": "policy.py:accepted_bid", "auction.extension.v1": "policy.py:extension", "auction.policy.reserve-met.v1": "policy.py:reserve_met"},
+  "routes": ["routes.py:router"],
+  "migrations": ["migrations/L12_0001_policy.sql", "migrations/L12_0002_canonical_price.sql", "migrations/L12_0003_fixed_end.sql"]
+}

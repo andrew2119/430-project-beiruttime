@@ -1,0 +1,15 @@
+{
+  "synthetic": true,
+  "exception": {
+    "id": "00000000-0024-4000-8000-000000000009",
+    "accepted_by": "00000000-0024-4000-8000-000000000001",
+    "accepted_at": "2026-11-16T23:00:00Z",
+    "source_revision": 1,
+    "quote_revision": 1,
+    "recipient_id": "00000000-0024-4000-8000-000000000001",
+    "link_ids": [
+      "00000000-0024-4000-8000-000000000006"
+    ],
+    "basis": "supplier_exchange"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "id": "L19.account-access",
+  "dependencies": [],
+  "migration_dependencies": ["L01.accounts", "L01.private-seller"],
+  "routes": [],
+  "migrations": [
+    "migrations/L19_0001_recovery_receipts.sql",
+    "migrations/L19_0002_password_receipts.sql",
+    "migrations/L19_0003_listing_possession.sql"
+  ],
+  "workers": []
+}

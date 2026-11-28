@@ -4,6 +4,7 @@ import hmac
 import os
 import secrets
 from uuid import UUID, uuid4
+from typing import Literal
 import asyncpg
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -13,6 +14,8 @@ from bt_runtime.app.db import unit_of_work
 from bt_runtime.app.auth import require_principal
 from .security import (audit, check_password, cookie, digest, event, hash_password, limit, live_actor,
     DUMMY_PASSWORD_HASH, new_session, password_matches, password_work, private_key, projection, require_origin, session_response)
+
+from .recovery import recovery_payload, recovery_details
 
 router = APIRouter()
 
@@ -45,6 +48,7 @@ class Register(Credentials):
 class Recovery(BaseModel):
     model_config = ConfigDict(extra='forbid')
     email: str = Field(min_length=3, max_length=254)
+    locale: Literal['en', 'ar'] = 'en'
 
 
 class Reset(BaseModel):
@@ -57,6 +61,11 @@ class PasswordChange(BaseModel):
     model_config = ConfigDict(extra='forbid')
     current_password: str = Field(min_length=1, max_length=128)
     new_password: str = Field(min_length=12, max_length=128)
+
+
+class PasswordReceipt(PasswordChange):
+    action: Literal['password_receipt']
+    authorization: str = Field(min_length=1, max_length=8192)
 
 
 class Reauthenticate(BaseModel):
@@ -217,13 +226,35 @@ async def reauthenticate(body: Reauthenticate,request: Request):
     return {'proof':proof,'purpose':body.purpose,'binding_digest':binding_hash,'expires_in':300}
 
 
+def mutation_reference(request, kind, body):
+    raw = request.headers.get('Idempotency-Key', '')
+    if not 8 <= len(raw) <= 100:
+        raise PublicError('operation_key_required', 'A request key is required.', status=422)
+    key = digest(kind + ':' + raw)
+    binding = request.headers.get('authorization', '') if kind == 'password' else ''
+    signature = hmac.new(private_key().encode(), (binding + body.model_dump_json()).encode(), hashlib.sha256).hexdigest()
+    return key, signature
+
+
+async def mutation_replay(tx, key, signature):
+    if not await tx.fetchval("SELECT to_regclass('identity_l19_password_receipts') IS NOT NULL"):
+        raise PublicError('unavailable', 'Password access is temporarily unavailable.', status=503)
+    prior = await tx.fetchrow('SELECT digest FROM identity_l19_password_receipts WHERE key=$1', key)
+    if prior and not hmac.compare_digest(prior['digest'], signature):
+        raise PublicError('operation_conflict', 'Use the original request.', status=409)
+    return bool(prior)
+
+
 @router.post('/v1/accounts/password')
 async def change_password(body: PasswordChange, request: Request):
+    require_origin(request)
+    key, signature = mutation_reference(request, 'password', body)
     check_password(body.new_password)
     await admission(request, 'password:' + str(request.client.host), 20)
-    await admission(request, 'password-subject:' + require_principal(request).subject, 10)
     encoded = await password_work(hash_password, body.new_password)
-    async with unit_of_work(request.app.state.pool) as tx:
+    async with unit_of_work(request.app.state.pool, lock_key=key) as tx:
+        if await mutation_replay(tx, key, signature):
+            return {'sign_in_required': True}
         account, _ = await live_actor(tx, request, lock=True)
         if not await password_work(password_matches, body.current_password, account['password_hash']):
             raise PublicError('invalid_credentials', 'Check your current password.', status=401)
@@ -231,6 +262,7 @@ async def change_password(body: PasswordChange, request: Request):
         await tx.execute('UPDATE identity_sessions SET revoked_at=now() WHERE subject_id=$1', account['id'])
         await audit(tx, request, account['id'], account['id'], 'password.change', 'accepted')
         await event(tx, request, account['id'], 'identity.password-changed.v1')
+        await tx.execute('INSERT INTO identity_l19_password_receipts(key,digest,subject_id) VALUES($1,$2,$3)', key, signature, account['id'])
     return {'sign_in_required': True}
 
 
@@ -238,23 +270,36 @@ async def change_password(body: PasswordChange, request: Request):
 async def recover(body: Recovery, request: Request):
     require_origin(request)
     await admission(request, 'recovery-ip:' + str(request.client.host), 30)
-    # Per-address suppression stays generic and does not reveal account eligibility.
-    async with request.app.state.pool.acquire() as tx:
+    raw_key = request.headers.get('Idempotency-Key', '')
+    if not 8 <= len(raw_key) <= 100:
+        raise PublicError('operation_key_required', 'A request key is required.', status=422)
+    key = digest('recovery:' + raw_key)
+    payload_digest = hmac.new(private_key().encode(), body.model_dump_json().encode(), hashlib.sha256).hexdigest()
+    async with unit_of_work(request.app.state.pool, lock_key='recovery:' + key) as tx:
+        if not await tx.fetchval("SELECT to_regclass('identity_l19_recovery_receipts') IS NOT NULL"):
+            raise PublicError('unavailable', 'Recovery is temporarily unavailable.', status=503)
+        prior = await tx.fetchrow('SELECT digest FROM identity_l19_recovery_receipts WHERE key=$1', key)
+        if prior:
+            if prior['digest'] != payload_digest:
+                raise PublicError('operation_conflict', 'Use the original request.', status=409)
+            return {'accepted': True, 'delivery': 'simulated'}
+        # Suppression and ineligible recipients receive the same durable acknowledgement.
+        suppressed = False
         try:
             await limit(tx, 'recovery-email:' + body.email.lower().strip(), maximum=3)
         except PublicError:
-            return {'accepted': True, 'delivery': 'simulated'}
-    async with unit_of_work(request.app.state.pool) as tx:
+            suppressed = True
         account = await tx.fetchrow('SELECT * FROM identity_accounts WHERE email=$1 FOR UPDATE', body.email.lower().strip())
-        if account and account['status'] == 'active':
+        if not suppressed and account and account['status'] == 'active':
             raw = secrets.token_urlsafe(48)
             await tx.execute('UPDATE identity_password_resets SET consumed_at=now() WHERE subject_id=$1 AND consumed_at IS NULL', account['id'])
             await tx.execute("INSERT INTO identity_password_resets(hash,subject_id,expires_at) VALUES($1,$2,now()+interval '20 minutes')", digest(raw), account['id'])
             # A local-only encrypted mail capture is not token persistence in the reset ledger.
             nonce = secrets.token_bytes(12)
-            cipher = AESGCM(hashlib.sha256(private_key().encode()).digest()).encrypt(nonce, raw.encode(), str(account['id']).encode())
+            cipher = AESGCM(hashlib.sha256(private_key().encode()).digest()).encrypt(nonce, recovery_payload(raw, body.locale).encode(), str(account['id']).encode())
             await tx.execute('INSERT INTO identity_demo_mail(id,subject_id,ciphertext) VALUES($1,$2,$3)', uuid4(), account['id'], base64.b64encode(nonce+cipher).decode())
             await event(tx, request, account['id'], 'identity.recovery-requested.v1')
+        await tx.execute('INSERT INTO identity_l19_recovery_receipts(key,digest) VALUES($1,$2)', key, payload_digest)
     return {'accepted': True, 'delivery': 'simulated'}
 
 
@@ -275,21 +320,36 @@ async def captured_mail(request: Request):
         origin = os.environ.get('BT_WEB_ORIGIN','http://localhost:3000').rstrip('/')
         for row in rows:
             sealed = base64.b64decode(row['ciphertext'])
-            raw = cipher.decrypt(sealed[:12],sealed[12:],str(row['subject_id']).encode()).decode()
+            raw, locale = recovery_details(cipher.decrypt(sealed[:12],sealed[12:],str(row['subject_id']).encode()).decode())
             if (digest(raw),row['subject_id']) in valid:
                 messages.append({'id':str(row['id']),'recipient_id':str(row['subject_id']),
-                    'recovery_link':origin+'/en/account?mode=reset#'+raw,'delivery':'simulated'})
+                    'recovery_link':origin+'/'+locale+'/account?mode=reset#'+raw,'delivery':'simulated'})
         await audit(tx,request,account['id'],account['id'],'demo-mail.read','accepted')
     return {'messages':messages}
 
 
 @router.post('/v1/accounts/reset')
-async def reset(body: Reset, request: Request):
+async def reset(body: Reset | PasswordReceipt, request: Request):
     require_origin(request)
+    if isinstance(body, PasswordReceipt):
+        await admission(request, 'password-receipt:' + str(request.client.host), 20)
+        original = PasswordChange(current_password=body.current_password, new_password=body.new_password)
+        raw = request.headers.get('Idempotency-Key', '')
+        if not 8 <= len(raw) <= 100:
+            raise PublicError('operation_key_required', 'A request key is required.', status=422)
+        key = digest('password:' + raw)
+        signature = hmac.new(private_key().encode(), (body.authorization + original.model_dump_json()).encode(), hashlib.sha256).hexdigest()
+        async with unit_of_work(request.app.state.pool, lock_key=key) as tx:
+            if not await mutation_replay(tx, key, signature):
+                raise PublicError('operation_pending', 'The password change is unresolved. Retry the original request.', status=409)
+        return {'sign_in_required': True}
+    key, signature = mutation_reference(request, 'reset', body)
     check_password(body.password)
     await admission(request, 'reset:' + str(request.client.host), 30)
     encoded = await password_work(hash_password, body.password)
-    async with unit_of_work(request.app.state.pool) as tx:
+    async with unit_of_work(request.app.state.pool, lock_key=key) as tx:
+        if await mutation_replay(tx, key, signature):
+            return {'sign_in_required': True}
         token = await tx.fetchrow('SELECT * FROM identity_password_resets WHERE hash=$1', digest(body.token))
         if not token:
             raise PublicError('invalid_reset', 'Request a new recovery link.', status=400)
@@ -302,4 +362,5 @@ async def reset(body: Reset, request: Request):
         await tx.execute('UPDATE identity_sessions SET revoked_at=now() WHERE subject_id=$1', accepted)
         await audit(tx, request, accepted, accepted, 'password.reset', 'accepted')
         await event(tx, request, accepted, 'identity.password-changed.v1')
+        await tx.execute('INSERT INTO identity_l19_password_receipts(key,digest,subject_id) VALUES($1,$2,$3)', key, signature, accepted)
     return {'sign_in_required': True}

@@ -1,0 +1,10 @@
+{
+  "route": "/sellers/[id]",
+  "file": "web/app/(seller-profile)/sellers/[id]/page.tsx",
+  "view": "web/features/seller-profile/view.tsx",
+  "kind": "reads",
+  "reason": "Current permitted public seller identity and released-sale history",
+  "content": "Identity, permitted city, membership, verification, sales, reviews and paginated listings",
+  "read": "public-profile.v1",
+  "proof": "owed"
+}

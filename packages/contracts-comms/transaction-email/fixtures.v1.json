@@ -1,0 +1,79 @@
+{
+  "synthetic": true,
+  "now": "2026-11-17T10:01:00Z",
+  "command": {
+    "schema_version": "transaction-email.v1",
+    "operation_id": "00000000-0000-4000-8000-000000000001",
+    "event_id": "00000000-0000-4000-8000-000000000002",
+    "actor_id": "00000000-0000-4000-8000-000000000003",
+    "organization_id": null,
+    "subject_id": "00000000-0000-4000-8000-000000000004",
+    "watch_id": "00000000-0000-4000-8000-000000000005",
+    "expected_revision": 4,
+    "recipient_revision": 2,
+    "quote_id": null,
+    "quote_revision": null,
+    "policy_revision": 1,
+    "kind": "confirmation",
+    "locale": "en"
+  },
+  "authority": {
+    "actor_id": "00000000-0000-4000-8000-000000000003",
+    "organization_id": null,
+    "subject_id": "00000000-0000-4000-8000-000000000004",
+    "watch_id": "00000000-0000-4000-8000-000000000005",
+    "event_id": "00000000-0000-4000-8000-000000000002",
+    "recipient_revision": 2,
+    "quote_id": null,
+    "quote_revision": null,
+    "policy_revision": 1,
+    "kind": "confirmation",
+    "revision": 4,
+    "verified_revision": 2,
+    "permitted": true,
+    "occurred_at": "2026-11-17T10:00:00Z",
+    "valid_until": "2026-11-17T10:05:00Z",
+    "destination": "checkout",
+    "destination_id": "00000000-0000-4000-8000-000000000004",
+    "support_actor_id": "00000000-0000-4000-8000-000000000007"
+  },
+  "cases": [
+    {
+      "name": "success",
+      "state": "recorded"
+    },
+    {
+      "name": "denied",
+      "override": {
+        "permitted": false
+      },
+      "code": "denied"
+    },
+    {
+      "name": "stale",
+      "override": {
+        "revision": 5
+      },
+      "code": "stale_revision"
+    },
+    {
+      "name": "recipient_changed",
+      "override": {
+        "recipient_revision": 3
+      },
+      "code": "recipient_unverified"
+    },
+    {
+      "name": "lost_response",
+      "state": "possibly_sent"
+    }
+  ],
+  "scope": {
+    "actor_id": "00000000-0000-4000-8000-000000000003",
+    "organization_id": null,
+    "permitted": true,
+    "subject_ids": [
+      "00000000-0000-4000-8000-000000000004"
+    ]
+  }
+}

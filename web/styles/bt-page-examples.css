@@ -1,0 +1,11 @@
+@layer components {
+  :where(.bt-home-link) { color: inherit; text-decoration: none; min-inline-size: 0; border-radius: var(--bt-radius-raised); }
+  :where(.bt-home-link > .bt-card) { display: flex; gap: var(--bt-space-4); align-items: start; block-size: 100%; }
+  :where(.bt-home-link > .bt-card > div) { min-inline-size: 0; }
+  :where(.bt-home-link:focus-visible) { outline: var(--bt-space-half) solid var(--bt-ring); outline-offset: var(--bt-space-half); }
+
+  :where(.bt-page-example-stack) { display: grid; gap: var(--bt-space-4); min-inline-size: 0; }
+  :where(.bt-page-example-grid) { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--bt-space-4); min-inline-size: 0; }
+  :where(.bt-page-example-grid > *) { min-inline-size: 0; overflow-wrap: anywhere; }
+  :where(.bt-page-methods) { display: grid; gap: var(--bt-space-2); padding-inline-start: var(--bt-space-6); list-style: disc; }
+}

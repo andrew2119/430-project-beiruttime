@@ -1,0 +1,480 @@
+{
+  "command": {
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "transaction-email.v1",
+        "default": "transaction-email.v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "operation_id": {
+        "format": "uuid",
+        "title": "Operation Id",
+        "type": "string"
+      },
+      "event_id": {
+        "format": "uuid",
+        "title": "Event Id",
+        "type": "string"
+      },
+      "actor_id": {
+        "format": "uuid",
+        "title": "Actor Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Organization Id"
+      },
+      "subject_id": {
+        "format": "uuid",
+        "title": "Subject Id",
+        "type": "string"
+      },
+      "watch_id": {
+        "format": "uuid",
+        "title": "Watch Id",
+        "type": "string"
+      },
+      "expected_revision": {
+        "minimum": 1,
+        "title": "Expected Revision",
+        "type": "integer"
+      },
+      "recipient_revision": {
+        "minimum": 1,
+        "title": "Recipient Revision",
+        "type": "integer"
+      },
+      "quote_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Quote Id"
+      },
+      "quote_revision": {
+        "anyOf": [
+          {
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Quote Revision"
+      },
+      "policy_revision": {
+        "minimum": 1,
+        "title": "Policy Revision",
+        "type": "integer"
+      },
+      "kind": {
+        "enum": [
+          "confirmation",
+          "quote",
+          "ready",
+          "refund",
+          "receipt-link"
+        ],
+        "title": "Kind",
+        "type": "string"
+      },
+      "locale": {
+        "enum": [
+          "en",
+          "ar"
+        ],
+        "title": "Locale",
+        "type": "string"
+      }
+    },
+    "required": [
+      "operation_id",
+      "event_id",
+      "actor_id",
+      "organization_id",
+      "subject_id",
+      "watch_id",
+      "expected_revision",
+      "recipient_revision",
+      "quote_id",
+      "quote_revision",
+      "policy_revision",
+      "kind",
+      "locale"
+    ],
+    "title": "Command",
+    "type": "object"
+  },
+  "authority": {
+    "additionalProperties": false,
+    "description": "A fresh producer result; never derived from a projection or request body.",
+    "properties": {
+      "actor_id": {
+        "format": "uuid",
+        "title": "Actor Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Organization Id"
+      },
+      "subject_id": {
+        "format": "uuid",
+        "title": "Subject Id",
+        "type": "string"
+      },
+      "watch_id": {
+        "format": "uuid",
+        "title": "Watch Id",
+        "type": "string"
+      },
+      "event_id": {
+        "format": "uuid",
+        "title": "Event Id",
+        "type": "string"
+      },
+      "revision": {
+        "minimum": 1,
+        "title": "Revision",
+        "type": "integer"
+      },
+      "recipient_revision": {
+        "minimum": 1,
+        "title": "Recipient Revision",
+        "type": "integer"
+      },
+      "verified_revision": {
+        "anyOf": [
+          {
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Verified Revision"
+      },
+      "quote_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Quote Id"
+      },
+      "quote_revision": {
+        "anyOf": [
+          {
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Quote Revision"
+      },
+      "policy_revision": {
+        "minimum": 1,
+        "title": "Policy Revision",
+        "type": "integer"
+      },
+      "kind": {
+        "enum": [
+          "confirmation",
+          "quote",
+          "ready",
+          "refund",
+          "receipt-link"
+        ],
+        "title": "Kind",
+        "type": "string"
+      },
+      "support_actor_id": {
+        "format": "uuid",
+        "title": "Support Actor Id",
+        "type": "string"
+      },
+      "permitted": {
+        "title": "Permitted",
+        "type": "boolean"
+      },
+      "occurred_at": {
+        "format": "date-time",
+        "title": "Occurred At",
+        "type": "string"
+      },
+      "valid_until": {
+        "format": "date-time",
+        "title": "Valid Until",
+        "type": "string"
+      },
+      "destination": {
+        "enum": [
+          "checkout",
+          "prices",
+          "inbox"
+        ],
+        "title": "Destination",
+        "type": "string"
+      },
+      "destination_id": {
+        "format": "uuid",
+        "title": "Destination Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "actor_id",
+      "organization_id",
+      "subject_id",
+      "watch_id",
+      "event_id",
+      "revision",
+      "recipient_revision",
+      "verified_revision",
+      "quote_id",
+      "quote_revision",
+      "policy_revision",
+      "kind",
+      "support_actor_id",
+      "permitted",
+      "occurred_at",
+      "valid_until",
+      "destination",
+      "destination_id"
+    ],
+    "title": "Authority",
+    "type": "object"
+  },
+  "result": {
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "transaction-email.v1",
+        "default": "transaction-email.v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "operation_id": {
+        "format": "uuid",
+        "title": "Operation Id",
+        "type": "string"
+      },
+      "subject_id": {
+        "format": "uuid",
+        "title": "Subject Id",
+        "type": "string"
+      },
+      "watch_id": {
+        "format": "uuid",
+        "title": "Watch Id",
+        "type": "string"
+      },
+      "actor_id": {
+        "format": "uuid",
+        "title": "Actor Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Organization Id"
+      },
+      "expected_revision": {
+        "title": "Expected Revision",
+        "type": "integer"
+      },
+      "revision": {
+        "title": "Revision",
+        "type": "integer"
+      },
+      "state": {
+        "enum": [
+          "captured",
+          "recorded",
+          "failed",
+          "possibly_sent"
+        ],
+        "title": "State",
+        "type": "string"
+      },
+      "attempt_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Attempt Id"
+      },
+      "locale": {
+        "enum": [
+          "en",
+          "ar"
+        ],
+        "title": "Locale",
+        "type": "string"
+      },
+      "kind": {
+        "enum": [
+          "confirmation",
+          "quote",
+          "ready",
+          "refund",
+          "receipt-link"
+        ],
+        "title": "Kind",
+        "type": "string"
+      },
+      "synthetic": {
+        "const": true,
+        "default": true,
+        "title": "Synthetic",
+        "type": "boolean"
+      },
+      "pending_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Pending Reason"
+      },
+      "next_actor": {
+        "format": "uuid",
+        "title": "Next Actor",
+        "type": "string"
+      },
+      "next_review_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Next Review At"
+      },
+      "available_at": {
+        "format": "date-time",
+        "title": "Available At",
+        "type": "string"
+      },
+      "authenticated_link": {
+        "title": "Authenticated Link",
+        "type": "string"
+      }
+    },
+    "required": [
+      "operation_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "revision",
+      "state",
+      "attempt_id",
+      "locale",
+      "kind",
+      "pending_reason",
+      "next_actor",
+      "next_review_at",
+      "available_at",
+      "authenticated_link"
+    ],
+    "title": "Result",
+    "type": "object"
+  },
+  "read_scope": {
+    "additionalProperties": false,
+    "description": "Fresh current read scope for counts, including pages with no rows.",
+    "properties": {
+      "actor_id": {
+        "format": "uuid",
+        "title": "Actor Id",
+        "type": "string"
+      },
+      "organization_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Organization Id"
+      },
+      "permitted": {
+        "title": "Permitted",
+        "type": "boolean"
+      },
+      "subject_ids": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "maxItems": 10000,
+        "title": "Subject Ids",
+        "type": "array",
+        "uniqueItems": true
+      }
+    },
+    "required": [
+      "actor_id",
+      "organization_id",
+      "permitted",
+      "subject_ids"
+    ],
+    "title": "ReadScope",
+    "type": "object"
+  }
+}

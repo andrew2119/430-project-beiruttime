@@ -1,0 +1,1 @@
+{"version":1,"id":"L22.saved-watches","dependencies":["fastapi","pydantic"],"routes":["routes.py:router"],"workers":["workers.py:tick"],"storage":"local-development","migrations":["migrations/L22_0001_saved_watches.sql","migrations/L22_0002_alert_subscriptions.sql","migrations/L22_0003_recovery.sql"]}

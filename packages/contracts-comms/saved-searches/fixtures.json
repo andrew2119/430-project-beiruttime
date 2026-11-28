@@ -1,0 +1,282 @@
+{
+  "schema_version": "saved-searches.v1",
+  "synthetic": true,
+  "provider": {
+    "validation": {
+      "criteria": {
+        "q": "ساعة Cedar ⌚",
+        "brand": "",
+        "model": "",
+        "location": "",
+        "min_minor": 0,
+        "max_minor": 500000,
+        "currency": "USD",
+        "sale_mode": "fixed",
+        "sort": "newest"
+      },
+      "semantics_revision": "canonical-v1"
+    },
+    "publication": {
+      "occurrence_id": "40000000-0000-4000-8000-000000000001",
+      "listing_id": "50000000-0000-4000-8000-000000000001",
+      "watch_id": "60000000-0000-4000-8000-000000000001",
+      "revision": 3,
+      "published_at": "2026-11-17T12:00:00+00:00",
+      "sample": true
+    },
+    "positive_match": {
+      "occurrence_id": "40000000-0000-4000-8000-000000000001",
+      "listing_id": "50000000-0000-4000-8000-000000000001",
+      "watch_id": "60000000-0000-4000-8000-000000000001",
+      "revision": 3,
+      "semantics_revision": "canonical-v1",
+      "matches": true,
+      "currently_public": true
+    },
+    "negative_match": {
+      "occurrence_id": "40000000-0000-4000-8000-000000000001",
+      "listing_id": "50000000-0000-4000-8000-000000000001",
+      "watch_id": "60000000-0000-4000-8000-000000000001",
+      "revision": 3,
+      "semantics_revision": "canonical-v1",
+      "matches": false,
+      "currently_public": true
+    },
+    "denied_visibility": false,
+    "stale_match": {
+      "occurrence_id": "40000000-0000-4000-8000-000000000001",
+      "listing_id": "50000000-0000-4000-8000-000000000001",
+      "watch_id": "60000000-0000-4000-8000-000000000001",
+      "revision": 2,
+      "semantics_revision": "canonical-v1",
+      "matches": true,
+      "currently_public": true
+    },
+    "timeout": {
+      "state": "unavailable",
+      "receipt": null
+    }
+  },
+  "cases": [
+    {
+      "name": "empty-results-save",
+      "actor_id": "30000000-0000-4000-8000-000000000001",
+      "organization_id": null,
+      "search_result_total": 0,
+      "request": {
+        "schema_version": "saved-searches.v1",
+        "operation_id": "10000000-0000-4000-8000-000000000001",
+        "subject_id": "20000000-0000-4000-8000-000000000001",
+        "expected_revision": 0,
+        "kind": "save",
+        "name": "ساعة Cedar ⌚",
+        "criteria": {
+          "q": "ساعة Cedar ⌚",
+          "brand": "",
+          "model": "",
+          "location": "",
+          "min_minor": 0,
+          "max_minor": 500000,
+          "currency": "USD",
+          "sale_mode": "fixed",
+          "sort": "newest"
+        },
+        "alerts_enabled": true
+      },
+      "expected_status": 200,
+      "expected": {
+        "schema_version": "saved-searches.v1",
+        "operation_id": "10000000-0000-4000-8000-000000000001",
+        "subject_id": "20000000-0000-4000-8000-000000000001",
+        "actor_id": "30000000-0000-4000-8000-000000000001",
+        "organization_id": null,
+        "expected_revision": 0,
+        "state": "saved",
+        "revision": 1,
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null,
+        "result": {
+          "id": "20000000-0000-4000-8000-000000000001",
+          "revision": 1,
+          "name": "ساعة Cedar ⌚",
+          "criteria": {
+            "q": "ساعة Cedar ⌚",
+            "brand": "",
+            "model": "",
+            "location": "",
+            "min_minor": 0,
+            "max_minor": 500000,
+            "currency": "USD",
+            "sale_mode": "fixed",
+            "sort": "newest"
+          },
+          "alerts_enabled": true,
+          "state": "saved",
+          "created_at": "2026-11-17T12:00:00+00:00"
+        }
+      }
+    },
+    {
+      "name": "wrong-organization",
+      "actor_id": "30000000-0000-4000-8000-000000000001",
+      "organization_id": "70000000-0000-4000-8000-000000000001",
+      "request": {
+        "schema_version": "saved-searches.v1",
+        "operation_id": "10000000-0000-4000-8000-000000000001",
+        "subject_id": "20000000-0000-4000-8000-000000000001",
+        "expected_revision": 0,
+        "kind": "save",
+        "name": "ساعة Cedar ⌚",
+        "criteria": {
+          "q": "ساعة Cedar ⌚",
+          "brand": "",
+          "model": "",
+          "location": "",
+          "min_minor": 0,
+          "max_minor": 500000,
+          "currency": "USD",
+          "sale_mode": "fixed",
+          "sort": "newest"
+        },
+        "alerts_enabled": true
+      },
+      "expected_status": 403,
+      "expected": {
+        "code": "forbidden"
+      }
+    },
+    {
+      "name": "stale-revision",
+      "actor_id": "30000000-0000-4000-8000-000000000001",
+      "organization_id": null,
+      "current_revision": 2,
+      "request": {
+        "schema_version": "saved-searches.v1",
+        "operation_id": "10000000-0000-4000-8000-000000000002",
+        "subject_id": "20000000-0000-4000-8000-000000000001",
+        "expected_revision": 1,
+        "kind": "save",
+        "name": "ساعة Cedar ⌚",
+        "criteria": {
+          "q": "ساعة Cedar ⌚",
+          "brand": "",
+          "model": "",
+          "location": "",
+          "min_minor": 0,
+          "max_minor": 500000,
+          "currency": "USD",
+          "sale_mode": "fixed",
+          "sort": "newest"
+        },
+        "alerts_enabled": true
+      },
+      "expected_status": 409,
+      "expected": {
+        "code": "stale_revision"
+      }
+    },
+    {
+      "name": "lost-response",
+      "actor_id": "30000000-0000-4000-8000-000000000001",
+      "organization_id": null,
+      "request": {
+        "schema_version": "saved-searches.v1",
+        "operation_id": "10000000-0000-4000-8000-000000000001",
+        "subject_id": "20000000-0000-4000-8000-000000000001",
+        "expected_revision": 0,
+        "kind": "save",
+        "name": "ساعة Cedar ⌚",
+        "criteria": {
+          "q": "ساعة Cedar ⌚",
+          "brand": "",
+          "model": "",
+          "location": "",
+          "min_minor": 0,
+          "max_minor": 500000,
+          "currency": "USD",
+          "sale_mode": "fixed",
+          "sort": "newest"
+        },
+        "alerts_enabled": true
+      },
+      "lookup_path": "/v1/saved-searches/operations/10000000-0000-4000-8000-000000000001",
+      "expected_status": 200,
+      "expected": {
+        "schema_version": "saved-searches.v1",
+        "operation_id": "10000000-0000-4000-8000-000000000001",
+        "subject_id": "20000000-0000-4000-8000-000000000001",
+        "actor_id": "30000000-0000-4000-8000-000000000001",
+        "organization_id": null,
+        "expected_revision": 0,
+        "state": "saved",
+        "revision": 1,
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null,
+        "result": {
+          "id": "20000000-0000-4000-8000-000000000001",
+          "revision": 1,
+          "name": "ساعة Cedar ⌚",
+          "criteria": {
+            "q": "ساعة Cedar ⌚",
+            "brand": "",
+            "model": "",
+            "location": "",
+            "min_minor": 0,
+            "max_minor": 500000,
+            "currency": "USD",
+            "sale_mode": "fixed",
+            "sort": "newest"
+          },
+          "alerts_enabled": true,
+          "state": "saved",
+          "created_at": "2026-11-17T12:00:00+00:00"
+        }
+      }
+    },
+    {
+      "name": "invalid-range",
+      "actor_id": "30000000-0000-4000-8000-000000000001",
+      "organization_id": null,
+      "request": {
+        "schema_version": "saved-searches.v1",
+        "operation_id": "10000000-0000-4000-8000-000000000001",
+        "subject_id": "20000000-0000-4000-8000-000000000001",
+        "expected_revision": 0,
+        "kind": "save",
+        "name": "ساعة Cedar ⌚",
+        "criteria": {
+          "q": "ساعة Cedar ⌚",
+          "brand": "",
+          "model": "",
+          "location": "",
+          "min_minor": 500001,
+          "max_minor": 500000,
+          "currency": "USD",
+          "sale_mode": "fixed",
+          "sort": "newest"
+        },
+        "alerts_enabled": true
+      },
+      "expected_status": 422,
+      "expected": {
+        "code": "invalid_range"
+      }
+    },
+    {
+      "name": "replayed-publication",
+      "recipient_id": "30000000-0000-4000-8000-000000000001",
+      "publication": {
+        "occurrence_id": "40000000-0000-4000-8000-000000000001",
+        "listing_id": "50000000-0000-4000-8000-000000000001",
+        "watch_id": "60000000-0000-4000-8000-000000000001",
+        "revision": 3,
+        "published_at": "2026-11-17T12:00:00+00:00",
+        "sample": true
+      },
+      "deliveries": 2,
+      "expected_notice_count": 1
+    }
+  ]
+}

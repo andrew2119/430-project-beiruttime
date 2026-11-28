@@ -1,0 +1,1 @@
+{"version":1,"id":"L22.saved-searches","dependencies":["fastapi","pydantic"],"routes":["routes.py:router","events.py:router"],"migrations":["migrations/L22_0001_saved_searches.sql"],"workers":[]}

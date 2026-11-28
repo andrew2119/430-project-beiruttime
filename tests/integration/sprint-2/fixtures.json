@@ -1,0 +1,77 @@
+{
+  "schema_version": "l25.fixtures.v1",
+  "synthetic": true,
+  "commercial_state_seeded": false,
+  "responses": {
+    "success": {
+      "schema_version": "l25.operation.v1",
+      "operation_id": "sample-operation-1",
+      "subject_id": "sample-buyer",
+      "watch_id": "sample-watch",
+      "actor_id": "sample-buyer",
+      "organization_id": null,
+      "expected_revision": 1,
+      "state": "success",
+      "revision": 1,
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    "denied": {
+      "schema_version": "l25.operation.v1",
+      "operation_id": "sample-operation-1",
+      "subject_id": "sample-buyer",
+      "watch_id": "sample-watch",
+      "actor_id": "sample-buyer",
+      "organization_id": null,
+      "expected_revision": 1,
+      "state": "denied",
+      "revision": 1,
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    "stale": {
+      "schema_version": "l25.operation.v1",
+      "operation_id": "sample-operation-1",
+      "subject_id": "sample-buyer",
+      "watch_id": "sample-watch",
+      "actor_id": "sample-buyer",
+      "organization_id": null,
+      "expected_revision": 1,
+      "state": "stale",
+      "revision": 1,
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    "pending": {
+      "schema_version": "l25.operation.v1",
+      "operation_id": "sample-operation-1",
+      "subject_id": "sample-buyer",
+      "watch_id": "sample-watch",
+      "actor_id": "sample-buyer",
+      "organization_id": null,
+      "expected_revision": 1,
+      "state": "pending",
+      "revision": 1,
+      "pending_reason": "source_unavailable",
+      "next_actor": "sample-operator",
+      "next_review_at": "2026-11-18T00:00:00Z"
+    },
+    "unavailable": {
+      "schema_version": "l25.operation.v1",
+      "operation_id": "sample-operation-1",
+      "subject_id": "sample-buyer",
+      "watch_id": "sample-watch",
+      "actor_id": "sample-buyer",
+      "organization_id": null,
+      "expected_revision": 1,
+      "state": "unavailable",
+      "revision": 1,
+      "pending_reason": "source_unavailable",
+      "next_actor": "sample-operator",
+      "next_review_at": "2026-11-18T00:00:00Z"
+    }
+  }
+}

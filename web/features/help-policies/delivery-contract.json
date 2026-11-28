@@ -1,0 +1,10 @@
+{
+  "route": "/help",
+  "file": "web/app/(help-policies)/help/page.tsx",
+  "view": "web/features/help-policies/view.tsx",
+  "kind": "static",
+  "reason": "Public bilingual guidance is bundled and requires no private or remote read.",
+  "content": ".l20-help-articles",
+  "read": "none",
+  "proof": "owed"
+}

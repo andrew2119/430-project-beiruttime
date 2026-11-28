@@ -1,0 +1,18 @@
+.l22-conversation,
+.l22-message-list {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+.l22-conversation p,
+.l22-conversation bdi {
+  overflow-wrap: anywhere;
+}
+.l22-message-body {
+  white-space: pre-wrap;
+}
+.l22-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

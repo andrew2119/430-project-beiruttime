@@ -1,0 +1,9 @@
+.account-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:var(--ds-space-4);align-items:start}
+.account-stack,.account-form{display:grid;gap:var(--ds-space-4);min-inline-size:0}
+.account-grid .bt-card{display:grid;gap:var(--ds-space-4);min-inline-size:0}
+.account-grid :is(p,bdi,h2){overflow-wrap:anywhere}
+.account-actions{display:flex;flex-wrap:wrap;gap:var(--ds-space-2)}
+.account-feedback{display:grid;gap:var(--ds-space-2);overflow-wrap:anywhere}
+.account-file{display:grid;gap:var(--ds-space-2);min-inline-size:0}
+.account-file input{max-inline-size:100%;min-block-size:var(--ds-hit-target);font-size:1rem;color:var(--foreground)}
+@media(max-width:850px){.account-grid{grid-template-columns:minmax(0,1fr)}}

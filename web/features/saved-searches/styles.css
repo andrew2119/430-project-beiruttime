@@ -1,0 +1,5 @@
+.saved-search-stack,.saved-search-form{display:grid;gap:var(--ds-space-4);min-inline-size:0}
+.saved-search-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:var(--ds-space-4)}
+.saved-search-actions{display:flex;flex-wrap:wrap;gap:var(--ds-space-3);align-items:center}
+.saved-search-stack h2,.saved-search-stack p,.saved-search-stack bdi{overflow-wrap:anywhere;min-inline-size:0}
+.saved-search-feedback{display:grid;gap:var(--ds-space-3)}
