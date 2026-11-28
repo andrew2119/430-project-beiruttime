@@ -133,8 +133,8 @@ async def main():
                 await asyncio.to_thread(proof.policy_cases)
                 await asyncio.to_thread(proof.browser)
                 await asyncio.to_thread(proof.race)
-                await asyncio.to_thread(proof.extension_close)
-                print('Connected policy, reviewed prebid recovery, first-bid race and reserve no-sale passed.',flush=True)
+                await asyncio.to_thread(proof.fixed_deadline_close)
+                print('Connected fixed policy, reviewed bid recovery, auction purchase denial and reserve no-sale passed.',flush=True)
             finally:
                 try:
                     if proof:proof.save()

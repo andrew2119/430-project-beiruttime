@@ -5,7 +5,7 @@ import { BidiReference, Button, Card, Checkbox, Input, StatusBadge } from '@beir
 import type { SlotContext } from '@/registry-types';
 import { request, ApiError } from '@/lib/api/client';
 import { authenticatedRequest, useSession, useSessionState, refreshSession, signInHref } from '@/features/identity/session';
-import { auctionBase, command, displayMinor, errorCopy, minor, Outcome, quotePreview, QuotePreview, readLots } from './api';
+import { auctionBase, bidQuoteRequest, command, displayMinor, errorCopy, minor, Outcome, quotePreview, QuotePreview, readLots } from './api';
 import en from './en.json';
 import ar from './ar.json';
 import { useOperationScope } from './operation-scope';
@@ -24,11 +24,11 @@ function BidView({resourceId,locale,session,sessionState}:SlotContext&{session:R
   const attempt=useRef<{key:string;reviewKey:string;body:unknown;quote:QuotePreview;phase:'review'|'bid'}|null>(null);
   const history=useQuery({queryKey:['auction-history',lot?.id,lot?.revision],enabled:!!lot,queryFn:({signal})=>request<History>(`${auctionBase}/auctions/${lot!.id}/history?limit=10`,{signal}),retry:false});
   async function preview() {
-    if(!lot||!session||!owner||pending||uncertain) return;
+    if(!lot||lot.currency!=='USD'||!session||!owner||pending||uncertain) return;
     const scope=operationScope(); setPending(true); setQuote(null);setReviewed(false);
     try {
       const amount_minor=minor(amount);
-      const result=await authenticatedRequest<unknown>('/api/web/v1/pricing/v1/quotes',{method:'POST',signal:scope.controller.signal,accessFingerprint:owner,headers:{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},body:JSON.stringify({subject_id:lot.id,subject_revision:lot.revision,purpose:'bid',currency:lot.currency,price_minor:amount_minor,schedule_id:'sample-v1',source:'sample'})});
+      const result=await authenticatedRequest<unknown>('/api/web/v1/pricing/v1/quotes',{method:'POST',signal:scope.controller.signal,accessFingerprint:owner,headers:{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},body:JSON.stringify(bidQuoteRequest(lot.id,lot.revision,amount_minor))});
       if(!scope.active) return;
       setQuote(quotePreview(result,amount_minor,lot.revision,lot.id,session.principal.actor.subject_id,lot.currency));setMessage('');
     } catch(error) {if(scope.active) setMessage(errorCopy(error,t));}
