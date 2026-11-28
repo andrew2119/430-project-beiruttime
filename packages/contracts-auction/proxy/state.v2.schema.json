@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Private maximum v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "opening_minor",
+    "current_minor",
+    "leader_id",
+    "sequence",
+    "increment_bands",
+    "maxima"
+  ],
+  "properties": {
+    "opening_minor": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9000000000000000
+    },
+    "current_minor": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9000000000000000
+    },
+    "leader_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9000000000000000
+    },
+    "increment_bands": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from_minor",
+          "step_minor"
+        ],
+        "properties": {
+          "from_minor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9000000000000000
+          },
+          "step_minor": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9000000000000000
+          }
+        }
+      }
+    },
+    "maxima": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bidder_id",
+          "amount_minor",
+          "sequence",
+          "active"
+        ],
+        "properties": {
+          "bidder_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "amount_minor": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9000000000000000
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9000000000000000
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

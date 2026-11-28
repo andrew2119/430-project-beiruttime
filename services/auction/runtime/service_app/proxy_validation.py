@@ -9,12 +9,17 @@ def expected_result(state, command):
     old = {m['bidder_id']: dict(m) for m in state['maxima']}
     bidder, amount = command['bidder_id'], command['amount_minor']
     incumbent = next((m for m in old.values() if m['active']), None)
-    prior = old.get(bidder)
     maxima = {key: dict(value) for key, value in old.items()}
-    if prior is None or amount > prior['amount_minor']:
+    setting_ceiling = command['kind'] == 'maximum'
+    if setting_ceiling:
+        prior = old.get(bidder)
+        if prior and amount <= prior['amount_minor']:
+            raise ValueError('maximum_must_increase')
         maxima[bidder] = {'bidder_id': bidder, 'amount_minor': amount,
                           'sequence': command['sequence'], 'active': True}
-    if bidder == state['leader_id'] and command['kind'] == 'maximum':
+    if bidder == state['leader_id'] and setting_ceiling:
+        if amount < state['current_minor']:
+            raise ValueError('below_current_bid')
         return {'leader_id': bidder, 'current_minor': state['current_minor'],
                 'maxima': list(maxima.values()), 'bids': []}
     minimum = (state['opening_minor'] if not state['sequence'] else
@@ -28,7 +33,7 @@ def expected_result(state, command):
         leader, price = incumbent['bidder_id'], response
         bids.append({'bidder_id': leader, 'amount_minor': price, 'automatic': True})
     for holder in maxima.values():
-        holder['active'] = holder['bidder_id'] == leader and holder['active']
+        holder['active'] = holder['bidder_id'] == leader and holder['active'] and holder['amount_minor'] >= price
     return {'leader_id': leader, 'current_minor': price, 'maxima': list(maxima.values()), 'bids': bids}
 
 
@@ -41,7 +46,7 @@ def validate_result(state, command, result):
         UUID(result['leader_id'])
         if type(result['current_minor']) is not int or not 1 <= result['current_minor'] <= MAX_MINOR:
             invalid()
-        if type(result['maxima']) is not list or not 1 <= len(result['maxima']) <= 10000:
+        if type(result['maxima']) is not list or len(result['maxima']) > 10000:
             invalid()
         if type(result['bids']) is not list or len(result['bids']) > 2:
             invalid()

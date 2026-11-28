@@ -66,6 +66,33 @@ class Dependencies:
             raise PublicError('identity_unavailable', 'Current access cannot be verified.', status=503)
         return principal
 
+    async def bid_admission(self, request, tx, principal):
+        def unavailable():
+            return PublicError('admission_unavailable', 'Current bid admission cannot be confirmed.', status=503)
+
+        try:
+            from bt_contracts.identity.marketplace_admission.v1 import hold_deadline, signed_body, verify_hold
+        except ImportError:
+            raise unavailable() from None
+        try:
+            session_id = UUID(principal.actor.session_id)
+        except (TypeError, ValueError):
+            raise AccessDenied('A current marketplace session is required') from None
+        deadline = await hold_deadline(tx)
+        raw, digest = signed_body({'actor_id': str(principal.actor.subject_id), 'session_id': str(session_id)}, deadline)
+        try:
+            reply = await self.json('identity', 'POST', '/internal/v1/marketplace-admission', request,
+                headers={**self.service_headers(request, 'identity'), 'Content-Type': 'application/json'}, content=raw)
+        except (AccessDenied, PublicError, HTTPException):
+            raise unavailable() from None
+        if set(reply) != {'binding_hash', 'held_until', 'status'}:
+            raise unavailable()
+        verify_hold(reply, digest, deadline)
+        if reply['status'] == 'suspended':
+            raise PublicError('bid_permission_required', 'Current access does not permit new bids.', status=403)
+        if reply['status'] != 'held' or await tx.fetchval('SELECT clock_timestamp()') >= deadline:
+            raise unavailable()
+
     async def listing(self, request, listing_id):
         # Catalog's canonical PublicListing V1 names the physical watch and
         # organization explicitly and includes its immutable Orders registration.
@@ -75,6 +102,7 @@ class Dependencies:
             watch_id = UUID(publication['physical_watch_id'])
             seller_id = UUID(publication['seller_id'])
             organization = publication['organization_id']
+            demo = publication.get('is_demo')
             if organization is not None:
                 organization = str(UUID(organization))
             if (UUID(publication['id']) != listing_id or type(publication['revision']) is not int
@@ -86,7 +114,10 @@ class Dependencies:
                 raise ValueError()
             return {'id':str(listing_id), 'watch_id':str(watch_id),
                 'seller_id':str(seller_id), 'seller_organization_id':organization,
-                'status':publication['status'], 'revision': publication['revision']}
+                'status':publication['status'], 'revision': publication['revision'],
+                # Catalog validates the registration's flag at publication and
+                # retains it on the public listing, not in the registration reference.
+                'is_demo': demo if type(demo) is bool else None}
         except (KeyError, TypeError, ValueError):
             raise PublicError('catalog_unavailable', 'The listing cannot currently be verified.', status=503) from None
 
@@ -126,28 +157,64 @@ class Dependencies:
             raise PublicError('sale_mode_denied', 'The watch is not registered for auction.', status=409)
         return result
 
-    async def fence(self, request, listing, auction_id, key):
-        state = await self.fence_state(request, listing['watch_id'], listing['id'], auction_id)
-        if state.get('status') == 'fenced' and state.get('source_matches') is True:
-            # Canonical reread reconciles a remote commit whose response/local transaction was lost.
-            return str(auction_id)
-        if state.get('status') != 'available':
-            raise PublicError('sale_mode_denied', 'The watch has another sale commitment.', status=409)
-        operation_key = 'auction-open:' + str(auction_id)
-        if state['api_version'] == 1:
-            result = await self.json('orders', 'POST', f"/internal/v1/watches/{listing['watch_id']}/fences", request,
-                headers={**self.service_headers(request, 'orders'), 'Idempotency-Key': 'auction-create:' + str(auction_id)},
-                json={'source_id': str(auction_id), 'expected_revision': state['revision'], 'reason': 'Open ordinary auction'})
-        else:
-            result = await self.json('orders', 'POST', '/internal/v2/commitments', request,
-                headers={**self.service_headers(request, 'orders'), 'Idempotency-Key': operation_key},
-                json={'operation_key': operation_key, 'watch_id': listing['watch_id'], 'listing_id': listing['id'],
-                      'listing_revision': listing['revision'], 'source_id': str(auction_id),
-                      'expected_revision': state['revision'], 'kind': 'auction_open', 'reason': 'Open ordinary auction'})
-        if result.get('status') != 'succeeded':
-            raise PublicError('sale_mode_pending', 'The sale commitment is not confirmed.', status=409)
-        await self.check_fence(request, {'watch_id': listing['watch_id'], 'listing_id': listing['id'], 'id': auction_id})
-        return str(auction_id)
+    @staticmethod
+    def opening_command(intent):
+        return dict(operation_key='auction-open:' + intent['auction_id'], watch_id=intent['watch_id'], listing_id=intent['listing_id'],
+                    listing_revision=intent['listing_revision'], expected_revision=intent['watch_revision'],
+                    source_id=intent['auction_id'], kind='auction_open', reason='Open ordinary auction')
+
+    async def start_commitment(self, request, intent, organization):
+        result = await self.start_command(request, '/internal/v2/commitments', self.opening_command(intent))
+        if result.get('status') == 'denied':
+            return result
+        watch = result.get('watch')
+        if result.get('status') != 'succeeded' or not isinstance(watch, dict):
+            raise self.start_pending()
+        expected = dict(watch_id=intent['watch_id'], listing_id=intent['listing_id'],
+                        listing_revision=intent['listing_revision'], seller_id=intent['seller_id'],
+                        organization_id=str(organization) if organization else None, source_id=intent['auction_id'],
+                        source_kind='auction_open', status='fenced', revision=intent['watch_revision']+1)
+        if (any(watch.get(name) != value for name, value in expected.items())
+                or type(watch.get('revision')) is not int or type(watch.get('listing_revision')) is not int
+                or watch.get('auction_committed') is not False or watch.get('sale_mode') != 'auction'):
+            raise self.start_pending()
+        return result
+
+    async def release_start_commitment(self, request, intent, open_key):
+        scope = dict(operation_key='auction-open-release:' + intent['auction_id'], open_operation_id=intent['open_operation_id'],
+                     auction_id=intent['auction_id'], listing_id=intent['listing_id'], listing_revision=intent['listing_revision'],
+                     watch_id=intent['watch_id'], expected_revision=intent['watch_revision']+1)
+        result = await self.start_command(request, '/internal/v2/auction-open-releases',
+            dict(scope, open_operation_key=open_key, reason=intent['release_reason']))
+        if (result.get('state') not in ('released', 'superseded') or any(result.get(key) != value for key, value in scope.items())
+                or type(result.get('listing_revision')) is not int or type(result.get('expected_revision')) is not int):
+            raise self.start_pending()
+
+    async def expire_start_commitment(self, request, intent):
+        key = 'auction-open-expire:' + intent['auction_id']
+        result = await self.start_command(request, '/internal/v2/auction-open-expirations',
+            dict(operation_key=key, original=self.opening_command(intent)))
+        expected = dict(operation_key=key, auction_id=intent['auction_id'], watch_id=intent['watch_id'],
+                        listing_id=intent['listing_id'], listing_revision=intent['listing_revision'],
+                        expected_revision=intent['watch_revision'])
+        if (result.get('state') not in ('abandoned', 'released', 'superseded')
+                or any(result.get(name) != value for name, value in expected.items())
+                or type(result.get('listing_revision')) is not int or type(result.get('expected_revision')) is not int):
+            raise self.start_pending()
+
+    @staticmethod
+    def start_pending():
+        return PublicError('sale_mode_pending', 'The sale commitment is not confirmed. Retry the original request.', status=503)
+
+    async def start_command(self, request, path, payload):
+        try:
+            result = await self.json('orders', 'POST', path, request,
+                headers={**self.service_headers(request, 'orders'), 'Idempotency-Key': payload['operation_key']}, json=payload)
+            if str(UUID(result['id'])) != result['id']:
+                raise ValueError()
+            return result
+        except (KeyError, TypeError, ValueError, PublicError, AccessDenied, HTTPException):
+            raise self.start_pending() from None
 
     async def check_fence(self, request, lot):
         result = await self.fence_state(request, lot['watch_id'], lot['listing_id'], lot['id'])
@@ -156,7 +223,7 @@ class Dependencies:
                     and result['listing_revision'] != lot['listing_revision'])):
             raise PublicError('sale_mode_denied', 'The watch is not committed to this auction.', status=409)
 
-    async def fee(self, request, command, lot, principal, now):
+    async def bid_quote(self, request, command, lot, principal):
         quote = await self.json('pricing', 'GET', f'/v1/quotes/{command.fee_quote_id}', request)
         try:
             snapshot = BidFeeSnapshot.model_validate(quote)
@@ -164,14 +231,22 @@ class Dependencies:
             raise PublicError('pricing_unavailable', 'The fee preview cannot currently be verified.', status=503) from None
         valid = (snapshot.id == command.fee_quote_id and snapshot.owner_id == principal.actor.subject_id
             and snapshot.purpose == 'bid' and snapshot.subject_id == lot['id']
-            and snapshot.subject_revision == lot['revision'] and snapshot.price_minor == command.amount_minor
-            and snapshot.currency == lot['currency'] and snapshot.expires_at > now
+            and snapshot.subject_revision == command.expected_revision and snapshot.price_minor == command.amount_minor
+            and snapshot.currency == lot['currency']
             and snapshot.sample is True and snapshot.source == 'sample' and snapshot.source_verified is False)
         if not valid:
             raise PublicError('fee_preview_required', 'Review a current fee preview for this amount.', status=409)
         if snapshot.reviewed_at is None:
             raise PublicError('fee_review_required', 'Confirm the retained fee preview before bidding.', status=409)
-        # Auction ID/revision binds its immutable listing and economic settings; Pricing's schedule is distinct.
+        return snapshot
+
+    async def fee(self, request, command, lot, principal, now, *, maximum_binding=None):
+        snapshot = await self.bid_quote(request, command, lot, principal)
+        if maximum_binding is not None and (snapshot.revision != maximum_binding['quote_revision']
+                or snapshot.policy is None or str(snapshot.policy.revision) != maximum_binding['policy_revision']):
+            raise PublicError('fee_preview_required', 'Review a current fee preview for this amount.', status=409)
+        if snapshot.expires_at <= now or command.expected_revision != lot['revision']:
+            raise PublicError('fee_preview_required', 'Review a current fee preview for this amount.', status=409)
         return snapshot.expires_at
 
     async def contact(self, request):

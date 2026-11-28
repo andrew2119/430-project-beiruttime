@@ -1,7 +1,9 @@
 import asyncio
+from service_app.start_recovery import tick_start_recovery
 from .service import close, recover_assignments
 from .follow_up import escalate_overdue
 from .reconcile import Sources, reconcile
+from .support_events import deliver_support
 
 
 async def tick(app, sources):
@@ -52,6 +54,16 @@ async def run(app, stop):
     sources = Sources(app)
     try:
         while not stop.is_set():
+            try:
+                await tick_start_recovery(app)
+            except Exception:
+                # The durable phase stays eligible after its retry boundary.
+                pass
+            try:
+                await deliver_support(app.state.pool, sources)
+            except Exception:
+                # Unacknowledged events remain on the original delivery lease.
+                pass
             try:
                 await tick(app, sources)
             except Exception:

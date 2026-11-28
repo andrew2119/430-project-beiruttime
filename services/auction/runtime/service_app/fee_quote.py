@@ -6,6 +6,11 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StrictBool, St
 PRICING_MAX_MINOR = 9_000_000_000_000
 
 
+class BidFeePolicy(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    revision: StrictInt = Field(ge=1)
+
+
 class BidFeeSnapshot(BaseModel):
     # The provider also returns seller/policy detail. Never project it into public Auction DTOs.
     model_config = ConfigDict(extra='ignore')
@@ -30,6 +35,7 @@ class BidFeeSnapshot(BaseModel):
     created_at: AwareDatetime
     expires_at: AwareDatetime
     reviewed_at: AwareDatetime | None = None
+    policy: BidFeePolicy | None = None
 
     @model_validator(mode='after')
     def coherent(self):

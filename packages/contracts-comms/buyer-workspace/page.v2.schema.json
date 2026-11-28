@@ -1,0 +1,370 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Current buyer activity v2",
+  "$defs": {
+    "CurrentResult": {
+      "additionalProperties": false,
+      "properties": {
+        "is_demo": {
+          "title": "Is Demo",
+          "type": "boolean"
+        },
+        "auction_id": {
+          "format": "uuid",
+          "title": "Auction Id",
+          "type": "string"
+        },
+        "watch_id": {
+          "format": "uuid",
+          "title": "Watch Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "state": {
+          "enum": [
+            "won",
+            "lost",
+            "no_sale"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "currency": {
+          "const": "USD",
+          "title": "Currency",
+          "type": "string"
+        },
+        "final_minor": {
+          "anyOf": [
+            {
+              "maximum": 9000000000000000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Final Minor"
+        },
+        "ended_at": {
+          "format": "date-time",
+          "title": "Ended At",
+          "type": "string"
+        },
+        "order_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Order Id"
+        },
+        "completed_sale": {
+          "title": "Completed Sale",
+          "type": "boolean"
+        },
+        "next_action": {
+          "enum": [
+            "view_auction",
+            "review_order",
+            "contact_support"
+          ],
+          "title": "Next Action",
+          "type": "string"
+        },
+        "listing_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "allocation_state": {"const": "denied"},
+        "financial_state": {
+          "enum": [
+            "pending",
+            "unknown",
+            "unpaid",
+            "unpaid_released",
+            "paid_held",
+            "released",
+            null
+          ]
+        }
+      },
+      "required": [
+        "is_demo",
+        "auction_id",
+        "watch_id",
+        "revision",
+        "state",
+        "currency",
+        "final_minor",
+        "ended_at",
+        "order_id",
+        "completed_sale",
+        "next_action",
+        "listing_id",
+        "financial_state"
+      ],
+      "if": {"required": ["allocation_state"]},
+      "then": {"properties": {
+        "state": {"enum": ["won", "lost"]},
+        "order_id": {"const": null},
+        "financial_state": {"const": null},
+        "completed_sale": {"const": false}
+      }},
+      "title": "CurrentResult",
+      "type": "object"
+    },
+    "CurrentBid": {
+      "additionalProperties": false,
+      "properties": {
+        "is_demo": {
+          "title": "Is Demo",
+          "type": "boolean"
+        },
+        "auction_id": {
+          "format": "uuid",
+          "title": "Auction Id",
+          "type": "string"
+        },
+        "listing_title": {
+          "anyOf": [
+            {"type": "string", "minLength": 1, "maxLength": 240},
+            {"type": "null"}
+          ]
+        },
+        "listing_id": {
+          "format": "uuid",
+          "title": "Listing Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "leading",
+            "outbid",
+            null
+          ],
+          "title": "Status"
+        },
+        "lifecycle": {
+          "enum": [
+            "scheduled",
+            "live"
+          ],
+          "title": "Lifecycle",
+          "type": "string"
+        },
+        "current_price_minor": {
+          "maximum": 9000000000000000,
+          "minimum": 0,
+          "title": "Current Price Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "const": "USD",
+          "title": "Currency",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "starts_at": {
+          "format": "date-time",
+          "title": "Starts At",
+          "type": "string"
+        },
+        "ends_at": {
+          "format": "date-time",
+          "title": "Ends At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "is_demo",
+        "auction_id",
+        "listing_id",
+        "status",
+        "lifecycle",
+        "current_price_minor",
+        "currency",
+        "revision",
+        "starts_at",
+        "ends_at"
+      ],
+      "title": "CurrentBid",
+      "type": "object",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "lifecycle": {
+                "const": "scheduled"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "status": {
+                "const": null
+              },
+              "current_price_minor": {
+                "const": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "current_price_minor": {
+                "const": 0
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "status": {
+                "const": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "anyOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/CurrentBid"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Cursor"
+        },
+        "schema_version": {
+          "const": 2
+        },
+        "state": {
+          "const": "available"
+        }
+      },
+      "required": [
+        "items",
+        "total",
+        "schema_version",
+        "state"
+      ],
+      "title": "CurrentBids",
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "state": {
+          "const": "available",
+          "title": "State",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/CurrentResult"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        },
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Next Cursor"
+        }
+      },
+      "required": [
+        "schema_version",
+        "state",
+        "items",
+        "total"
+      ],
+      "title": "CurrentResults",
+      "type": "object"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "state",
+        "items",
+        "total",
+        "next_cursor"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 2
+        },
+        "state": {
+          "const": "unavailable"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "total": {
+          "type": "null"
+        },
+        "next_cursor": {
+          "type": "null"
+        }
+      }
+    }
+  ]
+}

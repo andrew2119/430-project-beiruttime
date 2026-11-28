@@ -8,6 +8,7 @@ from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from service_app.kernel import lock_lot, server_now, transition
+from .support_events import retain_support
 
 
 def public(row, currency=None, *, version=1):
@@ -186,6 +187,8 @@ async def close(app, auction_id, expected_end_version, request_id):
             scheduled_end,
         )
         row = await bind_follow_up(tx, app, row)
+        if winner is not None:
+            await retain_support(tx, row, listing_id=lot['listing_id'], watch_id=lot['watch_id'])
         await enqueue(
             tx,
             EventEnvelope(

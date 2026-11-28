@@ -1,0 +1,137 @@
+[
+  {
+    "challenge_minor": 420000,
+    "prior_minor": 400000,
+    "event": {
+      "auction_id": "00000000-0000-4000-8000-000000000003",
+      "listing_id": "00000000-0000-4000-8000-000000000004",
+      "sequence": 4,
+      "revision": 3,
+      "current_minor": 430000,
+      "currency": "USD",
+      "ends_at": "2026-11-20T00:00:00Z",
+      "bidder_id": "00000000-0000-4000-8000-000000000002",
+      "previous_leader_id": "00000000-0000-4000-8000-000000000001",
+      "leader_id": "00000000-0000-4000-8000-000000000001"
+    },
+    "notices": [
+      {
+        "recipient_id": "00000000-0000-4000-8000-000000000002",
+        "kind": "bid_accepted"
+      },
+      {
+        "recipient_id": "00000000-0000-4000-8000-000000000002",
+        "kind": "outbid"
+      }
+    ],
+    "kind": "manual"
+  },
+  {
+    "challenge_minor": 445000,
+    "prior_minor": 430000,
+    "event": {
+      "auction_id": "00000000-0000-4000-8000-000000000003",
+      "listing_id": "00000000-0000-4000-8000-000000000004",
+      "sequence": 3,
+      "revision": 3,
+      "current_minor": 445000,
+      "currency": "USD",
+      "ends_at": "2026-11-20T00:00:00Z",
+      "bidder_id": "00000000-0000-4000-8000-000000000002",
+      "previous_leader_id": "00000000-0000-4000-8000-000000000001",
+      "leader_id": "00000000-0000-4000-8000-000000000002"
+    },
+    "notices": [
+      {
+        "recipient_id": "00000000-0000-4000-8000-000000000002",
+        "kind": "bid_accepted"
+      },
+      {
+        "recipient_id": "00000000-0000-4000-8000-000000000001",
+        "kind": "outbid"
+      }
+    ],
+    "kind": "manual"
+  },
+  {
+    "challenge_minor": 450000,
+    "prior_minor": 430000,
+    "event": {
+      "auction_id": "00000000-0000-4000-8000-000000000003",
+      "listing_id": "00000000-0000-4000-8000-000000000004",
+      "sequence": 3,
+      "revision": 3,
+      "current_minor": 450000,
+      "currency": "USD",
+      "ends_at": "2026-11-20T00:00:00Z",
+      "bidder_id": "00000000-0000-4000-8000-000000000002",
+      "previous_leader_id": "00000000-0000-4000-8000-000000000001",
+      "leader_id": "00000000-0000-4000-8000-000000000002"
+    },
+    "notices": [
+      {
+        "recipient_id": "00000000-0000-4000-8000-000000000002",
+        "kind": "bid_accepted"
+      },
+      {
+        "recipient_id": "00000000-0000-4000-8000-000000000001",
+        "kind": "outbid"
+      }
+    ],
+    "kind": "manual"
+  },
+  {
+    "challenge_minor": 420000,
+    "prior_minor": 400000,
+    "event": {
+      "auction_id": "00000000-0000-4000-8000-000000000003",
+      "listing_id": "00000000-0000-4000-8000-000000000004",
+      "sequence": 4,
+      "revision": 3,
+      "current_minor": 430000,
+      "currency": "USD",
+      "ends_at": "2026-11-20T00:00:00Z",
+      "bidder_id": "00000000-0000-4000-8000-000000000002",
+      "previous_leader_id": "00000000-0000-4000-8000-000000000001",
+      "leader_id": "00000000-0000-4000-8000-000000000001"
+    },
+    "notices": [
+      {
+        "recipient_id": "00000000-0000-4000-8000-000000000002",
+        "kind": "bid_accepted"
+      },
+      {
+        "recipient_id": "00000000-0000-4000-8000-000000000002",
+        "kind": "outbid"
+      }
+    ],
+    "kind": "maximum"
+  },
+  {
+    "challenge_minor": 450000,
+    "prior_minor": 430000,
+    "event": {
+      "auction_id": "00000000-0000-4000-8000-000000000003",
+      "listing_id": "00000000-0000-4000-8000-000000000004",
+      "sequence": 3,
+      "revision": 3,
+      "current_minor": 450000,
+      "currency": "USD",
+      "ends_at": "2026-11-20T00:00:00Z",
+      "bidder_id": "00000000-0000-4000-8000-000000000002",
+      "previous_leader_id": "00000000-0000-4000-8000-000000000001",
+      "leader_id": "00000000-0000-4000-8000-000000000002"
+    },
+    "notices": [
+      {
+        "recipient_id": "00000000-0000-4000-8000-000000000002",
+        "kind": "bid_accepted"
+      },
+      {
+        "recipient_id": "00000000-0000-4000-8000-000000000001",
+        "kind": "outbid"
+      }
+    ],
+    "kind": "maximum"
+  }
+]

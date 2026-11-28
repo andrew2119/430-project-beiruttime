@@ -8,6 +8,7 @@ from bt_contracts_core.errors import PublicError
 from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
+from .support_events import retain_support
 
 
 def valid_total(value, price):
@@ -40,7 +41,7 @@ class Sources:
                 timeout=1.2,
                 concurrency=2,
             )
-            for name in ("pricing", "orders")
+            for name in ("pricing", "orders", "communications")
         }
 
     async def json(self, name, method, path, **kwargs):
@@ -232,22 +233,28 @@ async def reconcile(app, source, auction_id):
                 status=503,
             )
         order_id = reference(order["id"]) if result["status"] == "succeeded" else None
+        financial_revision = result.get('auction_support_financial_revision') if order_id else None
+        if order_id and (type(financial_revision) is not int or financial_revision < 1):
+            raise ValueError('The original allocation financial revision is unavailable')
         if result.get("code") is not None and (
             not isinstance(result["code"], str) or len(result["code"]) > 200
         ):
             raise ValueError("Invalid outcome reason")
         async with unit_of_work(app.state.pool) as tx:
-            wrote = await tx.fetchval(
+            finished = await tx.fetchrow(
                 """UPDATE l13_auction_closes SET state=$3,order_id=$4,reason=$5,lease=NULL,lease_until=NULL,
                 next_action=CASE WHEN $4::uuid IS NULL THEN 'review_allocation_denial' ELSE NULL END,
-                result_revision=result_revision+1,updated_at=clock_timestamp() WHERE auction_id=$1 AND lease=$2 AND lease_until>clock_timestamp() AND state='allocation_pending' RETURNING 1""",
+                result_revision=result_revision+1,updated_at=clock_timestamp() WHERE auction_id=$1 AND lease=$2 AND lease_until>clock_timestamp() AND state='allocation_pending' RETURNING *""",
                 auction_id,
                 lease,
                 "closed" if order_id else "allocation_denied",
                 order_id,
                 result.get("code"),
             )
-            if wrote and order_id:
+            if finished:
+                await retain_support(tx, finished, listing_id=payload['listing_id'], watch_id=payload['watch_id'],
+                                     financial_revision=financial_revision)
+            if finished and order_id:
                 await enqueue(
                     tx,
                     EventEnvelope(

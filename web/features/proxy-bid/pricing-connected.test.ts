@@ -46,7 +46,7 @@ describe.skipIf(process.env.BT_L06_CONNECTED_PRICING!=='1')('connected non-bindi
       buyers.push(await register());buyers.push(await register());
       const [owner,other]=buyers;live.token=owner.token;live.fingerprint=owner.fingerprint;
       const proposed={id:crypto.randomUUID(),revision:1,currency:'USD' as const};
-      const quote=await previewMaximum(proposed,800000,{subjectId:owner.id,accessFingerprint:owner.fingerprint},AbortSignal.timeout(4000));
+      const quote=await previewMaximum(proposed,800000,{subjectId:owner.id,accessFingerprint:owner.fingerprint},AbortSignal.timeout(4000),crypto.randomUUID());
       expect(quote.sample).toBe(true);expect(quote.buyer_fee_minor).toBe(24000);expect(quote.total_minor).toBe(824000);
       await reviewMaximum(quote,crypto.randomUUID(),AbortSignal.timeout(4000));
       const read=await fetch(`${pricing}/v1/quotes/${quote.fee_quote_id}`,{headers:{Authorization:`Bearer ${owner.token}`},signal:AbortSignal.timeout(4000)});

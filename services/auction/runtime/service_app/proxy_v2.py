@@ -70,7 +70,7 @@ def calculate(state, command):
     minimum = opening if sequence == 0 else current + step
     if bidder == leader and command['kind'] == 'maximum':
         minimum = current
-    if amount < minimum or (prior is None and len(maxima) == 10000):
+    if amount < minimum or (command['kind'] == 'maximum' and prior is None and len(maxima) == 10000):
         raise ValueError('Private bid cannot be admitted')
     result = expected_result(deepcopy(state), dict(command))
     validate_result(state, command, result)

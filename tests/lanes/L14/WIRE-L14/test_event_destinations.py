@@ -101,6 +101,7 @@ class RouteStore:
     def __init__(self, now):
         self.now = now
         self.lot = None
+        self.operations = {}
         self.outbox = {}
         self.inbox = set()
 
@@ -114,12 +115,13 @@ class RouteStore:
 
     async def fetchrow(self, sql, *args):
         if 'FROM auction_operations' in sql:
-            return None
+            return self.operations.get(args)
         if 'FROM auction_lots' in sql:
             return self.lot
         if sql.startswith('INSERT INTO auction_lots'):
             (auction, listing, watch, seller, organization, currency, opening, reserve,
-             bands, starts, ends, commitment, high_value, listing_revision) = args
+             bands, starts, ends, commitment, high_value, listing_revision, is_demo) = args
+            assert is_demo is False and commitment == str(auction)
             self.lot = dict(id=auction, listing_id=listing, watch_id=watch, seller_id=seller,
                 seller_organization_id=organization, currency=currency, opening_minor=opening,
                 reserve_minor=reserve, increment_bands=bands, starts_at=starts, ends_at=ends,
@@ -139,6 +141,11 @@ class RouteStore:
             return self.now
         if 'FROM auction_listing_edits' in sql:
             return False
+        if 'SELECT EXISTS(SELECT 1 FROM auction_operations' in sql:
+            return any(json.loads(row['outcome'])['status'] == 'pending'
+                       for row in self.operations.values())
+        if 'SELECT EXISTS(SELECT 1 FROM auction_lots' in sql:
+            return self.lot is not None and self.lot['listing_id'] == args[0]
         if 'FROM auction_publication_watermarks' in sql:
             return None
         if 'INSERT INTO inbox' in sql:
@@ -163,8 +170,18 @@ class RouteStore:
         elif sql.startswith('UPDATE outbox'):
             self.outbox[args[0]]['state'] = 'delivered' if 'delivered_at=now()' in sql else 'retry'
             return 'UPDATE 1'
+        elif sql.startswith('INSERT INTO auction_operations'):
+            operation, actor, org, key, digest, auction, outcome = args
+            assert (actor, key) not in self.operations
+            self.operations[actor, key] = dict(id=operation, organization_id=org, request_hash=digest,
+                                               auction_id=auction, outcome=outcome)
+        elif sql.startswith('UPDATE auction_operations'):
+            operation, outcome = args
+            row = next(row for row in self.operations.values() if row['id'] == operation)
+            assert json.loads(row['outcome'])['status'] == 'pending'
+            row['outcome'] = outcome
         else:
-            assert sql.startswith(('SELECT pg_advisory_xact_lock', 'INSERT INTO auction_operations'))
+            assert sql.startswith('SELECT pg_advisory_xact_lock')
 
 
 @pytest.mark.asyncio
@@ -211,6 +228,8 @@ async def test_catalog_accepts_auction_command_events(runtime, monkeypatch):
     async def track_delivery(request, call_next):
         response = await call_next(request)
         statuses.append(response.status_code)
+        # The relay sends every catalog event to its one path, so the subscription itself refuses an unrouted type.
+        assert request.url.path == catalog_path
         if len(statuses) in (2, 3):
             stop.set()
         return response
@@ -221,7 +240,8 @@ async def test_catalog_accepts_auction_command_events(runtime, monkeypatch):
         original_init(self, dependency, base_url, transport=transport, **kwargs)
 
     monkeypatch.setattr(DependencyClient, '__init__', local_client)
-    listing, watch, seller, commitment = (uuid4() for _ in range(4))
+    listing, watch, seller = (uuid4() for _ in range(3))
+    starts = {}
     principal = CurrentPrincipal(
         actor=Actor(subject_id=seller, session_id='test-session'),
         permissions=['identity.listings.publish'],
@@ -234,13 +254,29 @@ async def test_catalog_accepts_auction_command_events(runtime, monkeypatch):
         async def listing(self, request, listing_id):
             assert listing_id == listing
             return {'id': str(listing), 'watch_id': str(watch), 'seller_id': str(seller),
-                    'status': 'published', 'revision': 1}
+                    'status': 'published', 'revision': 1, 'is_demo': False, 'seller_organization_id': None}
 
-        async def fence(self, request, current, auction_id, operation_key):
-            return commitment
+        async def fence_state(self, request, watch_id, listing_id, auction_id):
+            assert str(watch_id) == str(watch) and listing_id == listing
+            if auction_id not in starts:
+                return dict(api_version=2, status='available', listing_revision=1, revision=7)
+            return dict(api_version=2, status='fenced', listing_revision=1, revision=8,
+                        source_id=str(auction_id), source_kind='auction_open', auction_committed=False)
+
+        async def bid_admission(self, request, tx, current):
+            assert tx is pool and current == principal and request.state.request_id == 'test-open'
+
+        async def start_commitment(self, request, intent, organization):
+            row = pool.operations[seller, 'test-open']
+            assert json.loads(row['outcome']) == intent and intent['code'] == 'auction_start_pending'
+            assert (intent['listing_id'], intent['watch_id'], intent['watch_revision'], organization) == (
+                str(listing), str(watch), 7, None,
+            )
+            starts[UUID(intent['auction_id'])] = intent
+            return dict(status='succeeded', id=str(uuid4()))
 
         async def check_fence(self, request, lot):
-            assert lot['commitment_id'] == commitment
+            assert lot['id'] in starts and lot['commitment_id'] == str(lot['id'])
 
     engine = AuctionEngine(Dependencies())
     now = datetime.now(timezone.utc)
@@ -259,6 +295,8 @@ async def test_catalog_accepts_auction_command_events(runtime, monkeypatch):
 
     opened = await engine.create(request('test-open'), command)
     auction = UUID(opened['auction_id'])
+    assert opened['status'] == 'succeeded' and set(starts) == {auction}
+    assert json.loads(pool.operations[seller, 'test-open']['outcome']) == opened
     updated = await engine.update_rules(
         request('test-update', **{'if-match': str(opened['auction']['revision'])}), auction,
         AuctionRules(**command.model_dump(exclude={'listing_id', 'opening_minor'}), opening_minor=500),

@@ -63,15 +63,28 @@ async def test_first_publication_serializes_with_admission(database_url):
     modules = Path(os.environ.get('BT_MODULES_PATH', '/app/modules'))
     rules = next(module for module in discover(modules) if module.id == 'L05.a-rules')
     publication = rules.load('events.py:publication')
-    listing, seller, watch, commitment = (uuid4() for _ in range(4))
+    listing, seller, watch = (uuid4() for _ in range(3))
     catalog_listing = {'id': str(listing), 'seller_id': str(seller), 'watch_id': str(watch),
-                       'seller_organization_id': None, 'revision': 1, 'status': 'published'}
+                       'seller_organization_id': None, 'revision': 1, 'status': 'published', 'is_demo': False}
+    watch_revision = 4
+
+    def watch_state(request, watch_id, listing_id, auction_id):
+        # The watch reads as fenced for this auction only after the commitment write.
+        revision = dependencies.listing.return_value['revision']
+        if dependencies.start_commitment.await_count:
+            return {'api_version': 2, 'revision': watch_revision + 1, 'listing_revision': revision,
+                    'status': 'fenced', 'source_kind': 'auction_open', 'source_id': str(auction_id),
+                    'auction_committed': False}
+        return {'api_version': 2, 'revision': watch_revision, 'listing_revision': revision, 'status': 'available'}
+
     dependencies = SimpleNamespace(
         principal=AsyncMock(return_value=CurrentPrincipal(
             actor=Actor(subject_id=seller, session_id='seller-session'),
             permissions=['identity.listings.publish'])),
         listing=AsyncMock(return_value=catalog_listing),
-        fence=AsyncMock(return_value=str(commitment)),
+        fence_state=AsyncMock(side_effect=watch_state),
+        bid_admission=AsyncMock(return_value=None),
+        start_commitment=AsyncMock(return_value={'status': 'succeeded', 'id': str(uuid4())}),
     )
     engine = AuctionEngine(dependencies)
     now = datetime.now(timezone.utc)
@@ -105,7 +118,8 @@ async def test_first_publication_serializes_with_admission(database_url):
                                 pytest.fail('Admission passed before the first publication committed')
                             await asyncio.sleep(0.01)
                     dependencies.listing.assert_not_awaited()
-                    dependencies.fence.assert_not_awaited()
+                    dependencies.fence_state.assert_not_awaited()
+                    dependencies.start_commitment.assert_not_awaited()
                 with pytest.raises(PublicError, match='^listing_changed$') as denied:
                     await asyncio.wait_for(pending, timeout=5)
                 assert denied.value.status == 409
@@ -121,12 +135,13 @@ async def test_first_publication_serializes_with_admission(database_url):
                     error = pending.exception()
                     if not isinstance(error, PublicError) or error.code != 'listing_changed':
                         raise error
-            dependencies.fence.assert_not_awaited()
+            dependencies.bid_admission.assert_not_awaited()
+            dependencies.start_commitment.assert_not_awaited()
             assert await writer.fetchval('SELECT count(*) FROM auction_lots WHERE listing_id=$1', listing) == 0
             dependencies.listing.return_value = {**catalog_listing, 'revision': 2}
             outcome = await asyncio.wait_for(engine.create(request, command), timeout=5)
             assert outcome['code'] == 'auction_opened'
-            _, admitted_listing, _, _ = dependencies.fence.await_args.args
-            assert admitted_listing['revision'] == 2
+            _, admitted, _ = dependencies.start_commitment.await_args.args
+            assert admitted['listing_revision'] == 2
             assert await writer.fetchval(
                 'SELECT listing_revision FROM auction_lots WHERE listing_id=$1', listing) == 2

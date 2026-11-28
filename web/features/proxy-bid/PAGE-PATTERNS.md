@@ -1,43 +1,184 @@
-# Buyer page patterns
+# Buyer bids and results
 
-Buyer pages consume the shared design system. Existing routes, authorization, amounts, operation keys, EN/AR dictionaries and API contracts remain unchanged.
+The buyer workspace uses the canonical PageFrame, PageHeader, Segmented,
+Card, AnimatedList, State, skeletons and controls. One shell owns theme,
+direction, safe areas and page arrival. No local overlay or duration table.
 
-## Shared recipes
+Both buyer routes use the shared locale control action. It preserves the
+current URL's search and fragment while updating the shared shell, direction
+and page labels in place. The same mounted workspace keeps
+the chosen view and page across in-place language changes. The maximum form keeps its input, quote, review and exact
+pending operation reference in memory. Identity changes remount private form
+and activity boundaries. Submitted commands stay in document memory across
+route remounts and are partitioned by buyer and listing.
+A current read of the original auction must authorize recovery before any
+private detail appears. A bound terminal receipt removes the command.
+Before sending either command, the page saves its operation and quote bindings
+in browser storage, keyed by buyer and listing. A reopened tab in the same
+browser profile restores the reference for the original auction, including
+after relisting. A receipt lookup can finish without a quote read. To replay a
+fee review or bid, the page reads the owner's original quote for the exact
+amount. Credentials, access fingerprints and amounts stay out of storage.
+If the browser cannot save the reference, the corresponding command stays
+unsent. Recovery from another browser profile or after storage is cleared
+requires an Auction-owned intent lookup.
 
-- PageLayout and Calm PageHeader own gutters, title/count lines, optional navigation and named control gaps. No feature-specific hero or heading scale.
-- Shared Button, Input, Select and Checkbox own hover, press, focus, disabled and busy states. Select uses a menu with native form-value bridging where required. Compact phone controls paint at 36px within 44px targets; input text is at least 16px.
-- AnimatedList owns keyed exits and reorders. Initial data and pagination appear atomically; only actual live arrivals enter individually.
-- SectionState, State and skeletons cover compact/page empties, locked and failed reads. Independent dependencies remain independent; no sample success replaces a failed money/permission read.
-- Theme, font, direction and page transitions are shell-owned. Layout uses logical axes; `BidiReference` isolates money and opaque identifiers.
+The activity read key is [L16, buyer-activity, access fingerprint, view, cursor].
+The registered workspace path serves all activity views, with 50 rows and source totals when
+available. Reservations and unread notices remain independently recoverable.
+Reservations call the Orders-only workspace section. Auction-specific denial
+hides activity while those independent reads check their own access.
+Every current activity view shows unavailable when its v2 source is absent.
+The original workspace response remains separate for existing callers without
+a view. Failed identity verification closes the activity gate across tabs and
+pages until the current read succeeds.
+An Auction-specific denial hides activity rows, totals and record links across
+views until a current Auction page succeeds. Reservation and inbox access
+checks continue independently during denial and recovery.
 
-## `/buyer`
+The listing-auction read key includes the listing and, when supplied, the
+auction ID. An activity link requests the exact auction by ID and checks
+its listing against the route. The watch shortcut uses the shared listing descriptor without a recurring
+refresh loop. Empty, failed, ended, held and mismatched answers hide the link.
+The observed server deadline also hides an expired shortcut locally; only the
+server decides bid admission. The link binds the exact auction it displays.
+The manual bid slot owns the refresh cadence for the same mounted listing
+read, so the shortcut gets current answers without a separate recurring read. The history read binds the displayed
+auction and revision. Price, minimum and countdown use server facts.
 
-Two independent dashboard cards hold active bids and reservations, with CardHead title/count rhythm, status badges, aligned facts and quiet sample markings. Desktop has two columns; phone stacks in DOM order. Preserve restoring, unavailable, signed-out and denied states without exposing cached previous-owner data.
+The buyer views use the root shared read scope. Open-only activity,
+reservation and inbox reads require current authorized answers and hide them
+on access failure. Public snapshots and history are retained in the shared
+cache. Reservation keys include the Orders cursor, with previous and
+first-page recovery. AnswerArrival uses the shared recipe once per view
+and access scope. Intent warming, first-frame behavior, browser motion and
+bundle-size measurement remain owed.
 
-## `/buyer/auctions/[listingId]` and watch-detail maximum slot
+The maximum form uses current v2 authority for read-back and new submissions
+when configured. Before v2 activation, the compatibility read permits earlier
+receipt recovery. New maximums and stored ceilings require the current provider.
+Earlier receipts use the registered auction-scoped lookup after current record
+verification. A retained legacy command can repeat its original body and key
+to recover a matching receipt or record a terminal denial if it never arrived.
+An existing pending receipt remains pending until the canonical transaction
+reconciles the original intent and records its terminal decision.
+An explicit retry repeats the original v2 body and key for current commands.
+V2 read-back requires the displayed revision and rechecks current authority
+after five seconds with a three-second request deadline that covers the sequential Identity and Auction gateway calls. A denial hides the private reference
+and controls. After identity restoration, request references and recovery actions stay hidden
+until the original auction’s private read confirms current access. The typed amount
+stays hidden under the same condition. An unavailable
+or denied read keeps the original submitted reference in memory.
 
-The detail header and maximum form use shared cards, fields, hints and actions. The route and watch slot share one form. Preserve restoring, unavailable, denied, scheduled/ended, quoting, expiry, stale revision, sending, acknowledgement, uncertain and offline states. Preview and confirm remain separate operations; no new bid engine or modal.
+Route intent warming for /buyer, automatic view-visibility refresh beyond the
+existing poll, measured bundle gates, earliest theme/font frame and browser
+arrival behavior require shared-shell integration. The local page does not
+claim those speed methods as proven. The published contract is additive;
+missing v2 providers show unavailable rather than seeded successful activity.
 
-## `/checkout`
+The registered Auction maximum path carries explicitly versioned read,
+submission and receipt requests for the buyer. They share the direct v2 route
+handlers and cannot fall through to legacy admission. An absent current provider returns unavailable for v2 submission and receipt lookup.
+The buyer's historical recovery request carries the original command and key.
+It uses the canonical operation lock before provider registration and after
+cutover. Explicit recovery can retire an absent command under its original reference.
+The installed transaction uses full-step competition and stores only verified
+buyer ceilings. Ordinary bids cannot create, raise or reactivate a ceiling.
+The consumer handles both classes of outbid notice. Historical receipt
+recovery does not reopen old-rule admission.
+The buyer route advertises current maximum read-back for bidding only when
+the canonical transaction declares v2 and the provider exposes read, submit,
+and receipt lookup. A partially installed provider still must pass its access
+check for recovery. An authorized historical read returns only the revision.
+Fresh maxima require the canonical transaction that can persist the D27
+outcome. Unwrapped requests recover earlier receipts by the original key.
+Once cutover starts,
+fresh unwrapped admission requires the current provider and explicit canonical
+activation. Fresh maxima from the buyer form require current v2 access at the
+displayed revision. Both bid kinds share the canonical transaction. The stored activity flag and
+ceiling provenance stay separate from public standing. Connected verification
+of admission, receipt and both durable notice paths remains owed.
 
-The quote/reference form is the primary card; reservation history is secondary. Notices describe availability, uncertain writes and payment limitations without invented success. Reserve stays disabled until fixed-price availability and quote authority permit it. Preserve independent availability/order failures, denial, uncertainty and retry.
+Activity validates the complete page and row fields before rendering. A
+restored session with the same buyer fingerprint gets a distinct read key;
+activity, totals and private actions stay hidden until the current response.
+The reservation and unread notice reads then start under that access epoch.
 
-## `/checkout/[id]`
+A v2 private ceiling response must match the displayed auction revision before
+preview or submission is enabled. The mounted form survives scheduled/live/ended
+changes for the same auction and access partition. Closing removes new admission
+controls while retaining an uncertain operation reference. A temporary
+identity outage hides private content and keeps the same buyer boundary mounted.
+Recovery reads the private receipt or explicitly replays the exact original
+command against its original auction. An auction selected in activity keeps
+its own facts and private form. On reopening a selected auction, a retained
+reference can restore the form during an empty, invalid or unavailable public
+read. The original auction must pass a current private access check before the
+form reveals the reference or enables recovery. Fresh bidding still requires
+valid public facts. Requests for other auctions on the same listing appear in
+a separate panel with their own access check. The canonical lock resolves any existing
+receipt first, then checks current admission for a command that never arrived.
+Pending or unavailable responses keep the same reference.
+A replacement auction leaves the original recovery in place until its
+reference is resolved. A definitive fee-review expiry or stale response
+clears that review and permits a fresh preview for a live auction. A transport
+failure with no definitive decision preserves the original fee-review reference.
+A generic review 404 triggers one bounded, owner-scoped quote read. Pricing’s
+explicit missing-quote response ends review recovery, while an unverified 404
+leaves the original reference pending. An ended or replaced auction still
+shows the terminal review decision, with a continuation to the replacement.
 
-Quiet order reference in the detail header; summary fact rows and keyed history in cards. Existing permission-gated hold/intake forms stay inline. Preserve invalid ID, restoring, outage, denied, sample, payment unknown, expiry, stale revision, uncertain write and saved receipt states. Long references wrap on phone.
+With the current v2 provider, own stored ceiling and active/outbid status remain
+readable after close. A first fee-review request that receives a definitive
+denial clears the unsent auction intent. An access change hides unresolved
+requests. Fee-review recovery checks current
+access to the original auction and watch before using the current session to replay
+only the fee review with its original reference. A recovered acknowledgement
+shows the original auction and review reference, confirms that no bid was sent,
+and stays visible under current record access until dismissal or continuation
+to the replacement auction. A submitted uncertain bid
+retains its own reference for private receipt recovery.
 
-## `/prices`
+The private workspace includes a watch-reference checkout form. Its watch_id
+field forwards the selected reference using checkout’s watch query parameter.
+The inbox link shows an accessible unread dot from the canonical inbox read
+in the same private page scope. No dot is shown after a failed read or when
+the confirmed unread count is zero. These controls disappear with buyer access.
 
-Prices/Inbox/Buying are real locale-aware links with `aria-current`. Quote form and selected quote use balanced cards, shared Select/Input and aligned fee rows. A strong total is separated by the border token. Preserve source verification, sample policy, expiry, commission, quote review, validation and references.
+A stale cursor prompts a fresh first-page read in the same activity view.
+A lost fee-preview response keeps the same creation reference for the same
+amount and auction revision, even after a denied retry. The private input stays
+hidden until a fresh access check succeeds. Preview validation requires exactly
+15 minutes between the server timestamps. Submission and recovery check the same receipt
+bindings against the original reviewed intent before resolving a request.
 
-## `/buying`
+The maximum form displays the canonical verified-contact threshold in USD
+before confirmation. Definitive fee-review failures clear the unsent intent.
+Result rows pair auction standing with the winner's own current payment state
+and link to the scoped order or auction. Held results link to the auction's
+private support conversation.
 
-Readiness, offer editor and keyed draft rows use shared cards/fields/facts. Unreleased payment routes remain visibly disabled. Bound quotes reuse the fee component. Preserve independent source statuses, create/edit validation, revision/reference metadata, saved feedback and no-commitment copy; edit/cancel stays in the current form.
+A fresh bid needs a complete public snapshot with current price, next
+minimum, contact verification threshold and UTC timing consistent with its
+status. The advertised minimum must match opening or the current price plus
+the applicable increment. Invalid admission facts suspend fresh bids while
+preserving valid public history and recovery for the original auction and command.
+The maximum form also checks whether the current buyer can raise or compete
+within the fee preview limit. The fee preview discloses its
+simulated source and the 3% buyer fee in both languages.
 
-## `/inbox`
+Pricing decides fee-review expiry on its server clock. Auction checks
+current admission under its lock, including expiry after a successful review.
+An explicit recovery shows the terminal receipt with its original auction
+and request references until the buyer continues. A confirmed end links
+to the Won view of the activity workspace, where current source results
+determine the action. Buyers can switch to Lost or No sale from there.
 
-A full page with shared header/tabs, soft notice cards, fixed unread indicator and quiet metadata. Required/optional, read state, event time, sample and resource revision remain visible. Read, clear and open remain independent authenticated operations with allowlisted destinations. The optional preference uses Switch with revision/pending/disabled/retry guards. Keyed removal is shared; pagination is atomic. No invented grouping, bulk operations or mark-on-open behavior.
-
-## Verification target
-
-For each route: EN/AR, light/dark, desktop/real 390px viewport; shared header/card/form/list/state geometry, hover/focus/press, keyboard behavior, theme transition, live-list changes and mutation safeguards. See [validation](VALIDATION.md) and [the design contract](../../../docs/design-system.md).
+The support page opens only the selected auction's conversation under current
+buyer access. Its open-only read key includes buyer, access scope, auction and
+message cursor. Reading does not create a conversation; opening and sending
+are explicit, with separate stable keys. A message's exact draft stays in memory
+while its response is uncertain. Denial hides conversation content. Ordinary
+message blocks do not govern this transaction conversation. Until an operator
+is assigned, it says so and shows the 24-hour follow-up commitment. No external
+contact settings or invented inbox destinations are used.

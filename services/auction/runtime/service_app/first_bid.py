@@ -27,7 +27,7 @@ async def operation(tx, principal, key, digest, auction_id):
     return row
 
 
-async def receipt(tx, lot, row, principal, key, digest, *, status, code, commitment='pending'):
+async def receipt(tx, lot, row, principal, key, digest, *, status, code, commitment='pending', maximum_binding=None):
     prior = decoded(row['outcome']) if row else None
     if prior and prior['status'] != 'pending':
         return prior
@@ -41,9 +41,14 @@ async def receipt(tx, lot, row, principal, key, digest, *, status, code, commitm
         await tx.execute('UPDATE auction_operations SET outcome=$2::jsonb WHERE id=$1', row['id'], json.dumps(value))
     else:
         from uuid import UUID
-        await tx.execute('''INSERT INTO auction_operations(id,subject_id,organization_id,operation_key,request_hash,auction_id,outcome)
-            VALUES($1,$2,NULL,$3,$4,$5,$6::jsonb)''', UUID(value['operation_id']), principal.actor.subject_id,
-            key, digest, lot['id'], json.dumps(value))
+        values = (UUID(value['operation_id']), principal.actor.subject_id, key, digest, lot['id'], json.dumps(value))
+        if maximum_binding is None:
+            await tx.execute('''INSERT INTO auction_operations(id,subject_id,organization_id,operation_key,request_hash,auction_id,outcome)
+                VALUES($1,$2,NULL,$3,$4,$5,$6::jsonb)''', *values)
+        else:
+            await tx.execute('''INSERT INTO auction_operations
+                (id,subject_id,organization_id,operation_key,request_hash,auction_id,outcome,private_maximum_binding)
+                VALUES($1,$2,NULL,$3,$4,$5,$6::jsonb,$7::jsonb)''', *values, json.dumps(maximum_binding))
     return value
 
 
@@ -65,9 +70,15 @@ async def expire_known(tx, lot, row, intent, principal, key, digest):
             await receipt(tx, lot, row, principal, key, digest, status='denied', code=code, commitment='succeeded')
 
 
-async def prepare(request, dependencies, auction_id, principal, key, digest, *, fee_expires_at=None):
+def is_terminal(row):
+    return row is not None and decoded(row['outcome'])['status'] != 'pending'
+
+
+async def prepare(request, dependencies, auction_id, principal, key, digest, *, fee_expires_at=None, maximum_binding=None):
     async with unit_of_work(request.app.state.pool) as tx:
         prior = await operation(tx, principal, key, digest, auction_id)
+        if is_terminal(prior):
+            return
         lot = await lock_lot(tx, auction_id)
         intent = await tx.fetchrow('SELECT * FROM auction_first_bid_intents WHERE auction_id=$1', auction_id)
         if lot['first_bid_confirmed'] or lot['accepted_sequence']:
@@ -93,6 +104,8 @@ async def prepare(request, dependencies, auction_id, principal, key, digest, *, 
             # Existing V1 fences were already conservative commitments.
             async with unit_of_work(request.app.state.pool) as tx:
                 prior = await operation(tx, principal, key, digest, auction_id)
+                if is_terminal(prior):
+                    return
                 current = await lock_lot(tx, auction_id)
                 require_bidding(current)
                 if current['revision'] != lot['revision']:
@@ -105,6 +118,8 @@ async def prepare(request, dependencies, auction_id, principal, key, digest, *, 
             'reason': 'Commit the first admitted auction bid'}
         async with unit_of_work(request.app.state.pool) as tx:
             prior = await operation(tx, principal, key, digest, auction_id)
+            if is_terminal(prior):
+                return
             current = await lock_lot(tx, auction_id)
             intent = await tx.fetchrow('SELECT * FROM auction_first_bid_intents WHERE auction_id=$1', auction_id)
             if intent:
@@ -115,17 +130,25 @@ async def prepare(request, dependencies, auction_id, principal, key, digest, *, 
                 require_bidding(current)
                 if current['revision'] != lot['revision']:
                     raise PublicError('stale_revision', 'Reload the current auction.', status=409)
+                await dependencies.bid_admission(request, tx, principal)
+                now = await server_now(tx)
+                if now < current['starts_at'] or now >= current['ends_at'] or now >= fee_expires_at:
+                    raise PublicError('auction_window_or_fee_expired', 'Review the current auction and fees.', status=409)
                 await tx.execute('''INSERT INTO auction_first_bid_intents
                     (auction_id,subject_id,operation_key,request_hash,command,bid_revision,bid_expires_at)
                     VALUES($1,$2,$3,$4,$5::jsonb,$6,$7)''', auction_id, principal.actor.subject_id,
                     key, digest, json.dumps(command), current['revision'], fee_expires_at)
                 await tx.execute("UPDATE auction_lots SET mode='first_bid_pending' WHERE id=$1", auction_id)
                 await receipt(tx, current, prior, principal, key, digest,
-                              status='pending', code='first_bid_commitment_pending')
+                              status='pending', code='first_bid_commitment_pending', maximum_binding=maximum_binding)
     try:
         result = await dependencies.json('orders', 'GET', '/internal/v2/operations/' + command['operation_key'], request,
             headers=dependencies.service_headers(request, 'orders'), missing=True)
         if result is None:
+            async with unit_of_work(request.app.state.pool) as tx:
+                prior = await operation(tx, principal, key, digest, auction_id)
+                if is_terminal(prior):
+                    return
             result = await dependencies.json('orders', 'POST', '/internal/v2/commitments', request,
                 headers={**dependencies.service_headers(request, 'orders'), 'Idempotency-Key': command['operation_key']}, json=command)
     except (PublicError, AccessDenied, HTTPException):
@@ -134,6 +157,8 @@ async def prepare(request, dependencies, auction_id, principal, key, digest, *, 
         raise PublicError('sale_mode_pending', 'The first bid commitment is not confirmed.', status=503)
     async with unit_of_work(request.app.state.pool) as tx:
         prior = await operation(tx, principal, key, digest, auction_id)
+        if is_terminal(prior):
+            return
         lot = await lock_lot(tx, auction_id)
         await tx.execute('UPDATE auction_first_bid_intents SET status=$2,outcome=$3::jsonb WHERE auction_id=$1',
                          auction_id, result['status'], json.dumps(result))

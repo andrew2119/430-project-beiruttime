@@ -1,0 +1,120 @@
+[
+  {
+    "case": "success",
+    "source": {
+      "is_demo": true,
+      "buyer_id": "00000000-0000-4000-8000-000000000001",
+      "auction_id": "00000000-0000-4000-8000-000000000003",
+      "watch_id": "00000000-0000-4000-8000-000000000004",
+      "revision": 2,
+      "source_revision": 3,
+      "currency": "USD",
+      "result_recorded": true,
+      "participated": true,
+      "ended_at": "2030-01-01T00:00:00Z",
+      "final_minor": 500000,
+      "sale_qualified": true,
+      "winner_id": "00000000-0000-4000-8000-000000000001",
+      "order_id": "00000000-0000-4000-8000-000000000005",
+      "financial_state": "pending",
+      "listing_id": "00000000-0000-4000-8000-000000000006"
+    },
+    "authority": {
+      "actor_id": "00000000-0000-4000-8000-000000000001",
+      "organization_id": null,
+      "allowed": true,
+      "expected_source_revision": 3
+    },
+    "response": {
+      "schema_version": 2,
+      "state": "available",
+      "items": [
+        {
+          "is_demo": true,
+          "auction_id": "00000000-0000-4000-8000-000000000003",
+          "watch_id": "00000000-0000-4000-8000-000000000004",
+          "buyer_id": "00000000-0000-4000-8000-000000000001",
+          "revision": 2,
+          "state": "won",
+          "currency": "USD",
+          "final_minor": 500000,
+          "ended_at": "2030-01-01T00:00:00Z",
+          "order_id": "00000000-0000-4000-8000-000000000005",
+          "completed_sale": false,
+          "next_action": "review_order",
+          "listing_id": "00000000-0000-4000-8000-000000000006",
+          "financial_state": "pending"
+        }
+      ],
+      "total": 1,
+      "next_cursor": null
+    }
+  },
+  {
+    "case": "denied",
+    "source": {
+      "is_demo": true,
+      "buyer_id": "00000000-0000-4000-8000-000000000001",
+      "auction_id": "00000000-0000-4000-8000-000000000003",
+      "watch_id": "00000000-0000-4000-8000-000000000004",
+      "revision": 2,
+      "source_revision": 3,
+      "currency": "USD",
+      "result_recorded": true,
+      "participated": true,
+      "ended_at": "2030-01-01T00:00:00Z",
+      "final_minor": 500000,
+      "sale_qualified": true,
+      "winner_id": "00000000-0000-4000-8000-000000000001",
+      "order_id": "00000000-0000-4000-8000-000000000005",
+      "financial_state": "pending",
+      "listing_id": "00000000-0000-4000-8000-000000000006"
+    },
+    "authority": {
+      "actor_id": "00000000-0000-4000-8000-000000000001",
+      "organization_id": null,
+      "allowed": false,
+      "expected_source_revision": 3
+    },
+    "http_status": 403
+  },
+  {
+    "case": "stale",
+    "source": {
+      "is_demo": true,
+      "buyer_id": "00000000-0000-4000-8000-000000000001",
+      "auction_id": "00000000-0000-4000-8000-000000000003",
+      "watch_id": "00000000-0000-4000-8000-000000000004",
+      "revision": 2,
+      "source_revision": 3,
+      "currency": "USD",
+      "result_recorded": true,
+      "participated": true,
+      "ended_at": "2030-01-01T00:00:00Z",
+      "final_minor": 500000,
+      "sale_qualified": true,
+      "winner_id": "00000000-0000-4000-8000-000000000001",
+      "order_id": "00000000-0000-4000-8000-000000000005",
+      "financial_state": "pending",
+      "listing_id": "00000000-0000-4000-8000-000000000006"
+    },
+    "authority": {
+      "actor_id": "00000000-0000-4000-8000-000000000001",
+      "organization_id": null,
+      "allowed": true,
+      "expected_source_revision": 4
+    },
+    "http_status": 409
+  },
+  {
+    "case": "lost_response",
+    "response": {
+      "schema_version": 2,
+      "state": "unavailable",
+      "items": [],
+      "total": null,
+      "next_cursor": null
+    },
+    "http_status": 503
+  }
+]

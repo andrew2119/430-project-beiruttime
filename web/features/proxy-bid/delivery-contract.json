@@ -1,0 +1,32 @@
+[
+  {
+    "route": "/buyer",
+    "file": "web/app/(buyer)/buyer/page.tsx",
+    "view": "web/features/proxy-bid/buyer-workspace.tsx",
+    "kind": "reads",
+    "reason": "Current buyer access, activity and unread notices govern this private workspace.",
+    "content": ".bt-page",
+    "read": "buyer-activity",
+    "proof": "owed"
+  },
+  {
+    "route": "/buyer/auctions/[listingId]",
+    "file": "web/app/(buyer)/buyer/auctions/[listingId]/page.tsx",
+    "view": "web/features/proxy-bid/proxy-bid.tsx",
+    "kind": "reads",
+    "reason": "Current buyer access and source records govern this private view.",
+    "content": ".bt-page",
+    "read": "listing-auction",
+    "proof": "owed"
+  },
+  {
+    "route": "/buyer/auctions/[listingId]/support",
+    "file": "web/app/(buyer)/buyer/auctions/[listingId]/support/page.tsx",
+    "view": "web/features/proxy-bid/buyer-support.tsx",
+    "kind": "reads",
+    "reason": "Read the current buyer's support conversation only on the selected auction.",
+    "content": ".bt-page",
+    "read": "auction-support",
+    "proof": "owed"
+  }
+]

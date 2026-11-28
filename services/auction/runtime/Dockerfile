@@ -30,6 +30,7 @@ COPY ${SERVICE_PATH}/modules /app/modules
 COPY tests/foundation /foundation-tests
 COPY tests/lanes /lane-tests
 COPY contracts /contracts
+COPY packages/contracts-auction/results/buyer-support.v1.schema.json /contracts/auction/buyer-support.v1.schema.json
 USER app
 CMD ["python", "/app/run_tests.py"]
 

@@ -13,3 +13,8 @@ export type BuyerWorkspace = {
   version:1; as_of:string; bids:WorkspaceSection<BuyerBid>; reservations:WorkspaceSection<BuyerReservation>;
   final_results_available:false;
 };
+
+export type ActivityView = 'leading'|'outbid'|'calendar'|'won'|'lost'|'no_sale'|'unpaid'|'released';
+export type CurrentBid = Omit<BuyerBid,'next_action'|'is_demo'|'currency'|'status'> & {status:BuyerBid['status']|null;is_demo:boolean;currency:'USD';lifecycle:'scheduled'|'live';starts_at:string;listing_title?:string|null};
+export type CurrentResult = Omit<import('../../contracts-auction/results').BuyerResult,'buyer_id'>;
+export type CurrentActivity = {schema_version:2;state:'available'|'unavailable';items:(CurrentBid|CurrentResult)[];total:number|null;next_cursor:string|null};
