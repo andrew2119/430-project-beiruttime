@@ -303,3 +303,21 @@ jobs:
         run: |
           printf '%s' "$NEEDS" > "$RUNNER_TEMP/needs.json"
           python3 .github/ci/verify.py light "$RUNNER_TEMP/needs.json" "$RUNNER_TEMP/reports"
+
+  # Proof-only job for a throwaway proof pull request; never merged.
+  gateway-budgets-proof:
+    name: gateway route budgets (proof only)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/node-env
+      - name: Generate the navigation index
+        working-directory: web
+        run: node scripts/generate-nav.mjs
+      - name: Run the gateway route budget tests
+        working-directory: web
+        run: pnpm exec vitest run --config gateway/vitest.config.ts gateway/route-budgets.test.ts --reporter=verbose
