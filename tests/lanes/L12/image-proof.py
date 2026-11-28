@@ -59,7 +59,8 @@ class HistoricalUnavailable(ProofError):
 
 
 def command(label, *args, data=None, env=None, timeout=90, quiet=False):
-    # No raw logs, argv, stderr, response bodies, or credentials reach public CI output.
+    # Outside the redacted stack-failure report, no raw logs, argv, stderr, response bodies,
+    # or credentials reach public CI output.
     try:
         result = subprocess.run(args, cwd=ROOT, env=env, input=data, text=True, timeout=timeout,
                                 stdout=subprocess.DEVNULL if quiet else subprocess.PIPE, stderr=subprocess.PIPE)
@@ -157,6 +158,50 @@ def build(owned, sha, images):
                                           lambda tag=tag: docker('image', 'rm', '--no-prune', tag))
 
 
+def diagnostic(*args):
+    try:
+        result = subprocess.run(('docker', *args), cwd=ROOT, text=True, errors='replace', timeout=20,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except (OSError, subprocess.TimeoutExpired):
+        return 'unavailable or timed out'
+    return result.stdout.strip() or f'no output, exit {result.returncode}'
+
+
+def stack_report(owned, notes):
+    # Failure path only: container names, states, exit codes, the failed readiness probe and
+    # log tails, with every generated password and private key replaced before printing.
+    try:
+        hidden = sorted({part for value in notes['hidden'] for part in (value, *value.splitlines()) if len(part) >= 16},
+                        key=len, reverse=True)
+
+        def say(text):
+            for value in hidden:
+                text = text.replace(value, '[redacted]')
+            print(text, flush=True)
+
+        say('L12 stack diagnostics:')
+        ids = [line for line in diagnostic('ps', '--all', '--quiet', '--no-trunc', '--filter',
+                                           f'label={owned.flag}').split() if OBJECT_ID.fullmatch(line)]
+        for container in ids:
+            say('  ' + diagnostic('inspect', '--format', 'container {{.Name}}: state {{.State.Status}}, '
+                                  'exit code {{.State.ExitCode}}', container))
+        if notes['probe']:
+            name, container, url = notes['probe']
+            probe = ('node', '-e', "fetch(process.argv[1]).then(async r=>console.log(r.status,(await r.text())"
+                     ".slice(0,500))).catch(e=>console.log(e.name,e.message))") if name == 'web' else (
+                'python', '-c', "import sys,urllib.request,urllib.error\ntry:\n r=urllib.request.urlopen("
+                "sys.argv[1],timeout=3); print(r.status,r.read(500).decode('utf-8','replace'))\nexcept urllib.error."
+                "HTTPError as e: print(e.code,e.read(500).decode('utf-8','replace'))\nexcept Exception as e: "
+                "print(type(e).__name__,e)")
+            say(f'  readiness probe {name} failed: {url} -> ' + diagnostic('exec', container, *probe, url))
+        for container in ids:
+            if container not in notes['ready']:
+                say(f"  last 40 log lines of {diagnostic('inspect', '--format', '{{.Name}}', container)}:")
+                say('\n'.join('    ' + line for line in diagnostic('logs', '--tail', '40', container).splitlines()))
+    except Exception:
+        print('L12 stack diagnostics incomplete', flush=True)
+
+
 def db_urls(service, passwords):
     runtime, owner = passwords[service]
     return (f'postgresql://bt_{service}:{runtime}@postgres:5432/bt_{service}',
@@ -173,11 +218,12 @@ def retry(label, action, seconds=90):
     raise ProofError(f'{label}: not ready')
 
 
-def provision(postgres):
+def provision(postgres, notes):
     retry('PostgreSQL', lambda: docker('exec', postgres, 'pg_isready', '-q', '-h', '127.0.0.1', timeout=5))
     # Reuse the existing owner/runtime role init, without publishing a DB port.
     names = (*SERVICES, 'eligibility', 'trust', 'communications', 'service_ops')
     passwords = {name: (secrets.token_hex(16), secrets.token_hex(16)) for name in names}
+    notes['hidden'] += [value for pair in passwords.values() for value in pair]
     env = dict(os.environ, POSTGRES_USER='postgres', L12_POSTGRES=postgres)
     for name, (runtime, owner) in passwords.items():
         env[f'{name.upper()}_DB_PASSWORD'] = runtime
@@ -192,7 +238,7 @@ def create_container(owned, network, name, alias, image, env, *options, argv=())
     with owned.acquiring(name):
         alias_flags = ('--network-alias', alias) if alias else ()
         container = docker('create', '--pull', 'never', '--name', name, '--label', owned.flag,
-                           '--network', network, *alias_flags, '--log-driver', 'none', '--security-opt',
+                           '--network', network, *alias_flags, '--log-driver', 'local', '--security-opt',
                            'no-new-privileges', *env_flags(env), *options, image, *argv,
                            env={**os.environ, **env}).strip()
         if not OBJECT_ID.fullmatch(container):
@@ -244,7 +290,7 @@ def create_volume(owned, name):
         return name
 
 
-def run_stack(owned, images):
+def run_stack(owned, images, notes):
     project = owned.project
     net_name = f'{project}-net'
     network = create_network(owned, net_name)
@@ -255,13 +301,16 @@ def run_stack(owned, images):
     postgres_id = postgres_meta['Id']
     if not (ID.fullmatch(postgres_id) and postgres_meta['Os'] == 'linux' and postgres_meta['Architecture'] == 'amd64'):
         raise ProofError('PostgreSQL digest did not resolve to a Linux/amd64 image')
+    notes['hidden'].append(secrets.token_hex(16))
     postgres = create_container(owned, network, project+'-postgres', 'postgres', postgres_id,
-                                {'POSTGRES_PASSWORD': secrets.token_hex(16)}, '--mount',
+                                {'POSTGRES_PASSWORD': notes['hidden'][-1]}, '--mount',
                                 f'type=volume,source={volume},target=/var/lib/postgresql/data')
     docker('start', postgres)
-    passwords = provision(postgres)
+    passwords = provision(postgres, notes)
+    notes['ready'].add(postgres)
     identity_private, identity_public = rsa_pair()
     service_private, service_public = rsa_pair()
+    notes['hidden'] += [identity_private, service_private]
     routes = {}
     for name in (*SERVICES, 'communications', 'eligibility', 'trust', 'service-operations'):
         url = f'http://{name}:8000' if name in SERVICES else 'http://127.0.0.1:3499'
@@ -285,6 +334,7 @@ def run_stack(owned, images):
         state = json.loads(docker('container', 'inspect', migration))[0]['State']
         if state['Status'] != 'exited' or state['ExitCode'] != 0:
             raise ProofError(f'{name}: migration did not complete successfully')
+        notes['ready'].add(migration)
     containers = {}
     for name in SERVICES:
         database, _ = db_urls(name, passwords)
@@ -307,7 +357,11 @@ def run_stack(owned, images):
         endpoints[name] = networks[net_name]['IPAddress']
         health = ('node', '-e', "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)})") if name == 'web' else (
             'python', '-c', "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)")
+        notes['probe'] = (name, container, 'http://127.0.0.1:3000/api/health' if name == 'web'
+                          else 'http://127.0.0.1:8000/health/ready')
         retry(name, lambda: docker('exec', container, *health, timeout=6))
+        notes['ready'].add(container)
+        notes['probe'] = None
     return containers, endpoints
 
 
@@ -611,11 +665,16 @@ def run(out, sha):
         owned = Owned(stack, project)
 
         def app_stack():
-            containers, endpoints = run_stack(owned, report['images'])
-            stack.enter_context(loopback_relay(3412, endpoints['web'], 3000))
-            stack.enter_context(loopback_relay(3413, endpoints['auction'], 8000))
-            proof = ImageScenarios(ORIGIN, out, project)
-            stack.callback(proof.client.close)
+            notes = {'hidden': [], 'ready': set(), 'probe': None}
+            try:
+                containers, endpoints = run_stack(owned, report['images'], notes)
+                stack.enter_context(loopback_relay(3412, endpoints['web'], 3000))
+                stack.enter_context(loopback_relay(3413, endpoints['auction'], 8000))
+                proof = ImageScenarios(ORIGIN, out, project)
+                stack.callback(proof.client.close)
+            except Exception:
+                stack_report(owned, notes)
+                raise
             return proof, containers
 
         def scenario(method, *args, refresh=False):
