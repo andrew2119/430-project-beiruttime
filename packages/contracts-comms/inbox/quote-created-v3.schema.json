@@ -1,0 +1,62 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "occurrence_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Occurrence Id",
+      "type": "string"
+    },
+    "recipient_id": {
+      "format": "uuid",
+      "title": "Recipient Id",
+      "type": "string"
+    },
+    "kind": {
+      "const": "quote_ready",
+      "title": "Kind",
+      "type": "string"
+    },
+    "resource_id": {
+      "format": "uuid",
+      "title": "Resource Id",
+      "type": "string"
+    },
+    "resource_revision": {
+      "minimum": 1,
+      "title": "Resource Revision",
+      "type": "integer"
+    },
+    "resource_owner_id": {
+      "format": "uuid",
+      "title": "Resource Owner Id",
+      "type": "string"
+    },
+    "event_time": {
+      "format": "date-time",
+      "title": "Event Time",
+      "type": "string"
+    },
+    "required": {
+      "default": true,
+      "title": "Required",
+      "type": "boolean"
+    },
+    "sample": {
+      "default": false,
+      "title": "Sample",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "occurrence_id",
+    "recipient_id",
+    "kind",
+    "resource_id",
+    "resource_revision",
+    "resource_owner_id",
+    "event_time"
+  ],
+  "title": "QuoteCreatedV3",
+  "type": "object"
+}

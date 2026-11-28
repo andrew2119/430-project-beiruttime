@@ -15,7 +15,7 @@ class Band(PublicModel):
 class Snapshot(PublicModel):
     id: str = Field(pattern=r'^[A-Za-z0-9_-]{1,100}$')
     listing_id: str = Field(pattern=r'^[A-Za-z0-9_-]{1,100}$')
-    currency: Literal['USD', 'LBP']
+    currency: Literal['USD']
     opening_minor: StrictInt = Field(ge=1, le=MAX_MINOR)
     current_minor: StrictInt = Field(ge=0, le=MAX_MINOR)
     next_minimum_minor: StrictInt = Field(ge=1, le=MAX_MINOR)

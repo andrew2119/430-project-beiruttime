@@ -37,6 +37,9 @@ export async function command(path:string, body:unknown, key:string, signal?:Abo
     throw error;
   }
 }
+const BID_SCHEDULE = 'usd-v2';
+export const bidQuoteRequest = (subject_id:string,subject_revision:number,price_minor:number):QuoteInput =>
+  ({subject_id,subject_revision,price_minor,purpose:'bid',currency:'USD',schedule_id:BID_SCHEDULE,source:'sample'});
 export type QuotePreview={id:string;buyer_fee_minor:number;shipping_minor:number;tax_minor:number;total_minor:number;expires_at:string;auction_revision:number;quote_revision:number;sample:true;request:QuoteInput};
 export function quotePreview(value:unknown,amountMinor:number,revision:number,auctionId:string,ownerId:string,currency:'USD'|'LBP'):QuotePreview {
   const fail=()=>{throw new ApiError(503,'malformed_quote','');};
@@ -46,7 +49,7 @@ export function quotePreview(value:unknown,amountMinor:number,revision:number,au
   if(typeof raw.id!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(raw.id)
     ||raw.owner_id!==ownerId||raw.subject_id!==auctionId||raw.subject_revision!==revision
     ||raw.purpose!=='bid'||raw.price_minor!==amountMinor||raw.currency!==currency
-    ||raw.schedule_id!=='sample-v1'||raw.sample!==true||raw.source!=='sample'||raw.source_verified!==false
+    ||raw.schedule_id!==BID_SCHEDULE||raw.sample!==true||raw.source!=='sample'||raw.source_verified!==false
     ||raw.minor_unit_exponent!==2||raw.rounding!=='half_up'
     ||typeof raw.revision!=='number'||!Number.isSafeInteger(raw.revision)||raw.revision<1
     ||!safeMinor(raw.buyer_fee_minor)||!safeMinor(raw.shipping_minor)||!safeMinor(raw.tax_minor)||!safeMinor(raw.payable_minor)
@@ -54,7 +57,7 @@ export function quotePreview(value:unknown,amountMinor:number,revision:number,au
     ||typeof raw.expires_at!=='string'||raw.expires_at.length>64||!/(Z|[+-]\d{2}:\d{2})$/.test(raw.expires_at)
     ||!Number.isFinite(Date.parse(raw.expires_at))) return fail();
   return {id:raw.id,buyer_fee_minor:raw.buyer_fee_minor,shipping_minor:raw.shipping_minor,tax_minor:raw.tax_minor,total_minor:raw.payable_minor,expires_at:raw.expires_at,auction_revision:revision,quote_revision:raw.revision,sample:true,
-    request:{subject_id:auctionId,subject_revision:revision,purpose:'bid',currency,price_minor:amountMinor,schedule_id:'sample-v1',source:'sample'}};
+    request:bidQuoteRequest(auctionId,revision,amountMinor)};
 }
 export function minor(value:string):number {
   const normalized=value.replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632)).replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-1776)).replace('٫','.');

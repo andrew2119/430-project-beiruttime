@@ -1,0 +1,10 @@
+{
+  "route": "/cancellations",
+  "file": "web/app/(cancellations)/cancellations/page.tsx",
+  "view": "web/features/cancellations/page.tsx",
+  "kind": "reads",
+  "reason": "Private operation lookup on explicit intent; no initial transaction read.",
+  "content": "Cancellation request, retained operation and current money/custody consequences.",
+  "read": "web/features/cancellations/composition.ts#cancellationRead",
+  "proof": "owed"
+}

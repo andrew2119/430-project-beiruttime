@@ -1,0 +1,254 @@
+{
+  "schema_version": "auction-kernel.v4",
+  "receipts": [
+    {
+      "schema_version": "auction-kernel.v4",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "auction_id": "00000000-0000-0000-0000-000000000003",
+      "watch_id": "00000000-0000-0000-0000-000000000002",
+      "actor_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "policy_revision": 1,
+      "revision": 2,
+      "server_time": "2026-11-17T00:00:00Z",
+      "state": "succeeded",
+      "code": "no_sale",
+      "mode": "closed_no_sale",
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "auction-kernel.v4",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "auction_id": "00000000-0000-0000-0000-000000000003",
+      "watch_id": "00000000-0000-0000-0000-000000000002",
+      "actor_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "policy_revision": 1,
+      "revision": 2,
+      "server_time": "2026-11-17T00:00:00Z",
+      "state": "denied",
+      "code": "stale_revision",
+      "mode": "bidding",
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "auction-kernel.v4",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "auction_id": "00000000-0000-0000-0000-000000000003",
+      "watch_id": "00000000-0000-0000-0000-000000000002",
+      "actor_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "policy_revision": 1,
+      "revision": 2,
+      "server_time": "2026-11-17T00:00:00Z",
+      "state": "pending",
+      "code": "legacy_outcome_review",
+      "mode": "ended_legacy_review",
+      "pending_reason": "legacy_outcome_review",
+      "next_actor": "00000000-0000-0000-0000-000000000005",
+      "next_review_at": "2026-11-18T00:00:00Z"
+    },
+    {
+      "schema_version": "auction-kernel.v4",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "auction_id": "00000000-0000-0000-0000-000000000003",
+      "watch_id": "00000000-0000-0000-0000-000000000002",
+      "actor_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "policy_revision": 1,
+      "revision": 2,
+      "server_time": "2026-11-17T00:00:00Z",
+      "state": "pending",
+      "code": "cancellation_pending",
+      "mode": "cancellation_pending",
+      "pending_reason": "cancellation_pending",
+      "next_actor": "00000000-0000-0000-0000-000000000005",
+      "next_review_at": "2026-11-18T00:00:00Z"
+    },
+    {
+      "schema_version": "auction-kernel.v4",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "auction_id": "00000000-0000-0000-0000-000000000003",
+      "watch_id": "00000000-0000-0000-0000-000000000002",
+      "actor_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "policy_revision": 1,
+      "revision": 2,
+      "server_time": "2026-11-17T00:00:00Z",
+      "state": "succeeded",
+      "code": "cancelled",
+      "mode": "cancelled",
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "auction-kernel.v4",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "auction_id": "00000000-0000-0000-0000-000000000003",
+      "watch_id": "00000000-0000-0000-0000-000000000002",
+      "actor_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "policy_revision": 1,
+      "revision": 2,
+      "server_time": "2026-11-17T00:00:00Z",
+      "state": "succeeded",
+      "code": "allocation_pending",
+      "mode": "closed_winner",
+      "pending_reason": "allocation_pending",
+      "next_actor": "00000000-0000-0000-0000-000000000005",
+      "next_review_at": "2026-11-18T00:00:00Z"
+    },
+    {
+      "schema_version": "auction-kernel.v4",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "auction_id": "00000000-0000-0000-0000-000000000003",
+      "watch_id": "00000000-0000-0000-0000-000000000002",
+      "actor_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "policy_revision": 1,
+      "revision": 2,
+      "server_time": "2026-11-17T00:00:00Z",
+      "state": "denied",
+      "code": "auction_final",
+      "mode": "closed_no_sale",
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "auction-kernel.v4",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "auction_id": "00000000-0000-0000-0000-000000000003",
+      "watch_id": "00000000-0000-0000-0000-000000000002",
+      "actor_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "policy_revision": 1,
+      "revision": 2,
+      "server_time": "2026-11-17T00:00:00Z",
+      "state": "denied",
+      "code": "auction_ended",
+      "mode": "bidding",
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "auction-kernel.v4",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "auction_id": "00000000-0000-0000-0000-000000000003",
+      "watch_id": "00000000-0000-0000-0000-000000000002",
+      "actor_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "policy_revision": 1,
+      "revision": 2,
+      "server_time": "2026-11-17T00:00:00Z",
+      "state": "denied",
+      "code": "auction_not_ended",
+      "mode": "bidding",
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "auction-kernel.v4",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "auction_id": "00000000-0000-0000-0000-000000000003",
+      "watch_id": "00000000-0000-0000-0000-000000000002",
+      "actor_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "policy_revision": 1,
+      "revision": 2,
+      "server_time": "2026-11-17T00:00:00Z",
+      "state": "denied",
+      "code": "cancellation_denied",
+      "mode": "bidding",
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null
+    },
+    {
+      "schema_version": "auction-kernel.v4",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "auction_id": "00000000-0000-0000-0000-000000000003",
+      "watch_id": "00000000-0000-0000-0000-000000000002",
+      "actor_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "policy_revision": 1,
+      "revision": 1,
+      "server_time": "2026-11-17T00:00:00Z",
+      "state": "pending",
+      "code": "currency_reconciliation_required",
+      "mode": "prebid_reserved",
+      "pending_reason": "currency_reconciliation_required",
+      "next_actor": "00000000-0000-0000-0000-000000000005",
+      "next_review_at": "2026-11-18T00:00:00Z"
+    }
+  ],
+  "messages": {
+    "no_sale": {
+      "en": "The auction ended without a sale.",
+      "ar": "انتهى المزاد دون بيع."
+    },
+    "stale_revision": {
+      "en": "Reload the current auction and review your action.",
+      "ar": "أعد تحميل المزاد الحالي وراجع الإجراء."
+    },
+    "legacy_outcome_review": {
+      "en": "The auction ended. The previous purchase outcome is under review. Contact support.",
+      "ar": "انتهى المزاد. نتيجة الشراء السابق قيد المراجعة. تواصل مع الدعم."
+    },
+    "cancellation_pending": {
+      "en": "Cancellation is pending. Check this same request again.",
+      "ar": "الإلغاء قيد الانتظار. تحقق من الطلب نفسه مجدداً."
+    },
+    "cancelled": {
+      "en": "The auction is cancelled.",
+      "ar": "تم إلغاء المزاد."
+    },
+    "allocation_pending": {
+      "en": "The winner is recorded. Order allocation is pending.",
+      "ar": "تم تسجيل الفائز. تخصيص الطلب قيد الانتظار."
+    },
+    "auction_final": {
+      "en": "The auction result is final. Review the current record.",
+      "ar": "نتيجة المزاد نهائية. راجع السجل الحالي."
+    },
+    "auction_ended": {
+      "en": "The auction has ended. Review the current result.",
+      "ar": "انتهى المزاد. راجع النتيجة الحالية."
+    },
+    "auction_not_ended": {
+      "en": "The auction has not ended. Check again at its scheduled end.",
+      "ar": "لم ينته المزاد. تحقق مجدداً في موعد نهايته المحدد."
+    },
+    "cancellation_denied": {
+      "en": "Cancellation is unavailable. Review the accepted bids and current commitment.",
+      "ar": "الإلغاء غير متاح. راجع المزايدات المقبولة والالتزام الحالي."
+    },
+    "currency_reconciliation_required": {
+      "en": "This auction is unavailable while its currency is under review. Contact support.",
+      "ar": "هذا المزاد غير متاح أثناء مراجعة عملته. تواصل مع الدعم."
+    }
+  },
+  "recovery": {
+    "lost_response": "lookup with the original command",
+    "unknown_release": "retain cancellation_pending",
+    "duplicate": "return the original receipt"
+  }
+}

@@ -1,0 +1,41 @@
+services:
+  auction:
+    image: beirut-time/auction:local
+    build:
+      context: .
+      dockerfile: services/auction/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/auction
+    environment:
+      IDENTITY_API_URL: http://identity:8000
+      CATALOG_API_URL: http://catalog:8000
+      PRICING_API_URL: http://pricing:8000
+      ORDERS_API_URL: http://orders:8000
+  auction-migrate:
+    image: beirut-time/auction:local
+    build:
+      context: .
+      dockerfile: services/auction/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/auction
+  pricing:
+    image: beirut-time/pricing:local
+    build:
+      context: .
+      dockerfile: services/pricing/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/pricing
+    environment:
+      IDENTITY_API_URL: http://identity:8000
+      CATALOG_API_URL: http://catalog:8000
+      ORDERS_API_URL: http://orders:8000
+      AUCTION_API_URL: http://auction:8000
+      COMMUNICATIONS_API_URL: http://communications:8000
+      SERVICE_OPERATIONS_API_URL: http://service-operations:8000
+  pricing-migrate:
+    image: beirut-time/pricing:local
+    build:
+      context: .
+      dockerfile: services/pricing/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/pricing

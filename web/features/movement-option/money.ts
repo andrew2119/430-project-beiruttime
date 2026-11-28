@@ -1,13 +1,10 @@
-// LBP exponent/rounding requires the versioned pricing policy; never guess a major-unit amount.
-export function formatMinor(minor: number, currency: 'USD' | 'LBP', locale: 'en' | 'ar', minorLabel: string) {
-  if (!Number.isSafeInteger(minor) || minor < 0 || !['USD', 'LBP'].includes(currency)) {
-    throw new RangeError('Invalid indicative amount');
-  }
-  const language = locale === 'ar' ? 'ar-LB' : 'en-LB';
-  if (currency === 'LBP') {
-    return `${new Intl.NumberFormat(language, { maximumFractionDigits: 0 }).format(minor)} LBP · ${minorLabel}`;
-  }
-  return new Intl.NumberFormat(language, {
-    style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2,
-  }).format(minor / 100);
+export function formatMinor(minor: number, currency: 'USD' | 'LBP', locale: 'en' | 'ar', minorUnits = 'minor units') {
+  if (!Number.isSafeInteger(minor) || minor < 0 || (currency !== 'USD' && currency !== 'LBP')) throw new RangeError('Invalid indicative amount');
+  if (currency === 'LBP') return `${new Intl.NumberFormat(`${locale}-LB`).format(minor)} LBP · ${minorUnits}`;
+  const options = { numberingSystem: locale === 'ar' ? 'arab' : 'latn' };
+  const number = new Intl.NumberFormat(locale, options);
+  const integer = new Intl.NumberFormat(locale, { ...options, useGrouping: false });
+  const decimal = number.formatToParts(1.1).find(part => part.type === 'decimal')?.value ?? '.';
+  const fraction = String(minor % 100).padStart(2, '0').replace(/\d/g, digit => integer.format(Number(digit)));
+  return `${number.format(BigInt(Math.floor(minor / 100)))}${decimal}${fraction} USD`;
 }

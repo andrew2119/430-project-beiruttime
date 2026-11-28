@@ -32,3 +32,15 @@ Seller create/update/read requires the canonical Identity permission `identity.l
 ## Dependency contracts (fail closed)
 
 Catalog's visible publication HTTP proof must return the canonical seller subject/org and physical watch ID. Its exact owner-defined DTO is still required; the current provisional `/v1/listings/{id}` fixture is not a production fallback. Independent watch inspection is not an auction-opening prerequisite. Orders `GET /internal/v1/watches/{watch_id}/fence?source_id={auction_id}` and `POST /internal/v1/watches/{watch_id}/fences` use authenticated Auction service tokens. A watch registered for auction must be fenced to this exact source before opening. The fence command uses current Orders expected_revision and a deterministic auction-create operation key; a lost remote response is reconciled through source_matches on canonical reread. Unknown/timeout never opens a second sale. Pricing quotes v1 bind the current buyer (`owner_id`), Auction ID (`subject_id`), Auction revision (`subject_revision`), purpose `bid`, currency and exact `price_minor`. The retained balanced sample-policy snapshot must have `reviewed_at` and be unexpired. Explicit `/v1/quotes/{id}/review` confirmation precedes admission; it is not payment. Pricing schedule/revision are distinct from Auction ordinary rules/revision. Expiry is checked again against database time after prerequisite calls. Identity current principal is authoritative; high-value contact verification is additionally checked. Adapters and deterministic transport fixtures live in the lane tests; they are not production fallback data.
+
+An authenticated buyer can read `GET /v1/auctions/{auction_id}/bid-receipts/{sequence}`.
+The receipt returns `event_id`, `auction_id`, and the accepted `sequence` only
+when the current subject submitted that admission. Other subjects receive 404.
+The source binding is retained in the durable outbox, including immediately
+beaten challengers; public history rows need not map one to one to admissions.
+
+`GET /v1/auctions/{auction_id}/deadline-boundary` is seller-private and uses
+current authentication. It returns the stored `ends_at`, identical `evaluated_at`,
+`auction_id`, `revision`, `accepted_sequence`, and the production window denial
+`code` evaluated at that deadline. It is a policy read, not a submission clock
+or permission to bid. Missing auctions and other scopes return 404.

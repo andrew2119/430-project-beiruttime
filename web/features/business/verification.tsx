@@ -1,11 +1,14 @@
 "use client";
+import { PageControls, pagedRequest } from "./pagination";
+import { accessDenied, PendingRecovery, CommandForm, useCommandSnapshot, usePendingCommands } from "./command-form";
+import { ListingPossession } from "./possession";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { BidiReference, Button, Card } from "@beirut-time/ui";
+import { useBusinessRead, reviewQueueRead } from "./reads";
+import { Button, Card } from "@beirut-time/ui/foundation";
 import type { PrivateReview } from "@contracts/contracts-identity/businesses";
 import { useAccessContext } from "@/shell/access-context";
 import { useSession } from "@/features/identity/session";
-import { businessRequest, businessFile, command } from "./transport";
+import { businessRequest, businessFile } from "./transport";
 import { DecisionHistory, type ReviewDetail } from "./history";
 import {
   BusinessEmpty,
@@ -13,7 +16,6 @@ import {
   Feedback,
   Field,
   Select,
-  Submit,
   integer,
   text,
   useAction,
@@ -26,23 +28,27 @@ export default function VerificationDesk() {
     session = useSession(),
     action = useAction(),
     [selected, setSelected] = useState("");
+  const [page,setPage]=useState(1);
+  const [historyDenial, setHistoryDenial] = useState<unknown>(null);
+  const {busy, onPending, recovery} = usePendingCommands();
   const canAssign =
     session?.principal.permissions.includes("identity.private-seller.assign") ??
     false;
-  const query = useQuery({
-    queryKey: ["l02", "reviews", access.fingerprint],
+  const query = useBusinessRead({
+    read: reviewQueueRead(access.fingerprint,page),
+    queryKey: ["business-v2", "reviews", access.fingerprint,page],
     queryFn: () =>
-      businessRequest<{ items: PrivateReview[] }>("/v1/private-reviews"),
+      pagedRequest<PrivateReview>("/v2/private-reviews",page),
     retry: false,
   });
-  const detail = useQuery({
+  const detail = useBusinessRead({
     queryKey: ["l02", "review", access.fingerprint, selected],
     queryFn: () =>
-      businessRequest<ReviewDetail>(`/v1/private-reviews/${selected}`),
+      businessRequest<ReviewDetail>(`/v2/private-reviews/${selected}`),
     enabled: !!selected,
     retry: false,
   });
-  const evidence = useQuery({
+  const evidence = useBusinessRead({
     queryKey: ["l02", "evidence", access.fingerprint, selected],
     queryFn: () =>
       businessRequest<{
@@ -51,8 +57,10 @@ export default function VerificationDesk() {
     enabled: !!selected,
     retry: false,
   });
+  const currentDetail = useCommandSnapshot(detail.isError || evidence.isError ? undefined : detail.data, busy, access.fingerprint, accessDenied(detail.error) || accessDenied(evidence.error) || !!historyDenial);
   return (
     <Workspace title={t.reviewTitle} intro={t.reviewIntro}>
+      <ListingPossession />
       <Card>
         <h2>{t.queue}</h2>
         <p>{t.reviewHelp}</p>
@@ -67,35 +75,43 @@ export default function VerificationDesk() {
             {query.data.items.map((review) => (
               <li key={review.id}>
                 <div>
-                  <BidiReference>{review.application_id}</BidiReference>
+                  <bdi dir="ltr">{review.application_id}</bdi>
                   <p>
                     {t[review.state]} · {t.revision} {review.revision}
                   </p>
                 </div>
-                <Button variant="outline" aria-pressed={selected === review.id} onClick={() => setSelected(review.id)}>{t.open}</Button>
+                <Button variant="outline" disabled={busy} onClick={() => { if (!busy) { if (selected !== review.id) setHistoryDenial(null); setSelected(review.id); } }}>{t.open}</Button>
               </li>
             ))}
           </ul>
         )}
-        <Button onClick={() => query.refetch()}>{t.reload}</Button>
+        <Button disabled={busy} onClick={() => query.refetch()}>{t.reload}</Button>
+        {query.data && !query.isError && <PageControls answer={query.data} change={setPage} disabled={busy} />}
       </Card>
+    {busy && !currentDetail ? <PendingRecovery recovery={recovery} onPending={onPending} refresh={() => void detail.refetch()} /> : null}
       {selected && (
-        <Card className="pg-detail-arrive">
-          {detail.isError ? (
-            <Feedback error={detail.error} />
-          ) : detail.isPending ? (
+        <Card >
+          {!currentDetail && (detail.isError || evidence.isError || historyDenial) ? (
+            <>
+              <Feedback error={historyDenial ?? (evidence.isError ? evidence.error : detail.error)} />
+              <Button onClick={() => void Promise.all([detail.refetch(), evidence.refetch()]).then(([record, files]) => {
+                if (!record.isError && !files.isError) setHistoryDenial(null);
+              })}>{t.retry}</Button>
+            </>
+          ) : !currentDetail ? (
             <BusinessLoading />
           ) : (
             <>
               <h2>
-                <BidiReference>{detail.data.application_id}</BidiReference>
+                <bdi dir="ltr">{currentDetail.application_id}</bdi>
               </h2>
               <h3>{t.evidence}</h3>
               <Feedback error={evidence.error} />
+              {evidence.isError && <Button onClick={() => void evidence.refetch()}>{t.retry}</Button>}
               {evidence.isPending && <BusinessLoading />}
-              {evidence.data?.items.length === 0 && <BusinessEmpty text={t.evidenceIncomplete} />}
+              {!evidence.isError && evidence.data?.items.length === 0 && <BusinessEmpty text={t.evidenceIncomplete} />}
               <ul className="business-queue">
-                {evidence.data?.items.map((file) => (
+                {!evidence.isError && evidence.data?.items.map((file) => (
                   <li key={file.id}>
                     <span>
                       {file.kind === "identity"
@@ -109,7 +125,10 @@ export default function VerificationDesk() {
                           const blob = await businessFile(
                             `/v1/private-reviews/${selected}/files/${file.id}`,
                             session?.access_token ?? null,
-                          );
+                          ).catch((error: unknown) => {
+                            if (accessDenied(error)) setHistoryDenial(error);
+                            throw error;
+                          });
                           const url = URL.createObjectURL(blob);
                           const anchor = document.createElement("a");
                           anchor.href = url;
@@ -131,31 +150,21 @@ export default function VerificationDesk() {
                   </li>
                 ))}
               </ul>
-              <form
-                key={`${selected}:${detail.data.revision}`}
-                className="business-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const data = new FormData(event.currentTarget);
-                  void action.run(async () => {
-                    await command(`/v1/private-reviews/${selected}/verdict`, {
-                      revision: detail.data.revision,
-                      application_revision: integer(
-                        data,
-                        "application_revision",
-                      ),
-                      state: text(data, "state"),
-                      reason: text(data, "reason"),
-                    });
-                    await Promise.all([query.refetch(), detail.refetch()]);
-                  });
-                }}
+              <CommandForm
+                key={`${selected}:${currentDetail.revision}`}
+                disabled={busy} onPending={onPending}
+                onComplete={() => { void query.refetch(); void detail.refetch(); }}
+                submit={(data, operation) => operation.membership(`/v1/private-reviews/${selected}/verdict`, {
+                  revision: currentDetail.revision,
+                  application_revision: integer(data, "application_revision"),
+                  state: text(data, "state"), reason: text(data, "reason"),
+                })}
               >
                 <Field
                   name="application_revision"
                   label={t.applicationRevision}
                   type="number"
-                  defaultValue={String(detail.data.application_revision)}
+                  defaultValue={String(currentDetail.application_revision)}
                   inputMode="numeric"
                 />
                 <Select
@@ -171,14 +180,15 @@ export default function VerificationDesk() {
                   minLength={5}
                   maxLength={500}
                 />
-                <Submit pending={action.pending} label={t.verdict} />
-              </form>
+              </CommandForm>
               <h3>{t.history}</h3>
               <DecisionHistory
-                key={`${selected}:${detail.data.revision}`}
+                key={`${selected}:${currentDetail.revision}`}
                 reviewId={selected}
-                items={detail.data.history}
-                before={detail.data.history_before_revision}
+                items={currentDetail.history}
+                before={currentDetail.history_before_revision}
+                total={currentDetail.history_total}
+                onDenied={setHistoryDenial}
               />
             </>
           )}
@@ -187,21 +197,11 @@ export default function VerificationDesk() {
       {canAssign && (
         <Card>
           <h2>{t.assign}</h2>
-          <form
-            className="business-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const data = new FormData(event.currentTarget);
-              void action.run(async () => {
-                await command("/v1/private-reviews", {
-                  application_id: text(data, "application"),
-                  reviewer_id: text(data, "reviewer"),
-                  reason: text(data, "reason"),
-                });
-                await query.refetch();
-              });
-            }}
-          >
+          <CommandForm disabled={busy} onPending={onPending}
+            onComplete={() => { void query.refetch(); }}
+            submit={(data, operation) => operation.membership("/v1/private-reviews", {
+              application_id: text(data, "application"), reviewer_id: text(data, "reviewer"), reason: text(data, "reason"),
+            })}>
             <Field name="application" label={t.application} maxLength={36} />
             <Field name="reviewer" label={t.reviewer} maxLength={36} />
             <Field
@@ -210,32 +210,17 @@ export default function VerificationDesk() {
               minLength={5}
               maxLength={500}
             />
-            <Submit pending={action.pending} label={t.assign} />
-          </form>
+          </CommandForm>
         </Card>
       )}
       {canAssign && (
         <Card>
           <h2>{t.reassign}</h2>
-          <form
-            className="business-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const data = new FormData(event.currentTarget);
-              void action.run(async () => {
-                await command(
-                  `/v1/private-reviews/${text(data, "review")}/reassign`,
-                  {
-                    revision: integer(data, "revision"),
-                    reviewer_id: text(data, "reviewer"),
-                    reason: text(data, "reason"),
-                  },
-                );
-                setSelected("");
-                await query.refetch();
-              });
-            }}
-          >
+          <CommandForm disabled={busy} onPending={onPending}
+            onComplete={() => { setSelected(""); void query.refetch(); }}
+            submit={(data, operation) => operation.membership(`/v1/private-reviews/${text(data, "review")}/reassign`, {
+              revision: integer(data, "revision"), reviewer_id: text(data, "reviewer"), reason: text(data, "reason"),
+            })}>
             <Field name="review" label={t.reviewReference} maxLength={36} />
             <Field
               name="revision"
@@ -250,8 +235,7 @@ export default function VerificationDesk() {
               minLength={5}
               maxLength={500}
             />
-            <Submit pending={action.pending} label={t.reassign} />
-          </form>
+          </CommandForm>
         </Card>
       )}
       <Feedback error={action.error} success={action.success} />

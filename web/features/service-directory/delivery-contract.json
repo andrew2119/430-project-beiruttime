@@ -1,0 +1,10 @@
+{
+  "route": "/services",
+  "file": "web/app/(service-directory)/services/page.tsx",
+  "view": "web/features/service-directory/view.tsx",
+  "kind": "reads",
+  "reason": "Service destinations and movement choices use current declared business capabilities.",
+  "content": "Bilingual directory, scoped offering maintenance and movement selection; saving never confirms an appointment or authorizes work.",
+  "read": "usePageRead",
+  "proof": "owed"
+}

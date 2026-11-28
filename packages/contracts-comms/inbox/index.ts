@@ -1,3 +1,6 @@
 export type Notice = {id:string;kind:'quote_ready'|'bid_accepted'|'outbid'|'reservation_ready'|'payment_required'|'case_update';resource_id:string;resource_revision:number|null;event_time:string;read_at:string|null;cleared_at:string|null;revision:number;required:boolean;sample:boolean;destination:string|null};
-export type Inbox = {items:Notice[];unread_count:number;next_cursor:string|null};
+export type Inbox = {items:Notice[];unread_count:number;total_count:number;next_cursor:string|null};
 export type Readiness = {release:{payment:false;send_offer:false;accept_offer:false};routes:{id:string;label:{en:string;ar:string};released:false}[];reservation:{status:string;record?:{id:string;state:string;quote_id?:string;listing_id?:string;is_demo?:boolean;currency:import('../../contracts-pricing/quotes').Currency;total_minor:number;deadline:string;revision:number}};quote:{status:string;record?:import('../../contracts-pricing/quotes').Quote};drafts:import('../../contracts-pricing/quotes').OfferDraft[]};
+export type PaymentNoticeReceiptV3 = {event_id:string;notice_id:string;order_id:string;buyer_id:string;notified_at:string;verified_delivery_recorded:true};
+export type PaymentActionRequiredV3 = {order_id:string;buyer_id:string;revision:number;sample?:boolean};
+export type PaymentNoticeLookupV2 = {receipt:PaymentNoticeReceiptV3;state:'pending'|'acknowledged'};

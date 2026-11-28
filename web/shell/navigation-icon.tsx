@@ -14,6 +14,11 @@ export const navigationIcons = {
   'private-inbox': {icon:Inbox, motion:'arrive'}, 'buying-readiness': {icon:CheckCheck, motion:'confirm'}, 'l08-checkout': {icon:ShoppingBag, motion:'reveal'},
   'l08-requests': {icon:ClipboardList, motion:'arrive'}, 'operator-desk': {icon:LayoutDashboard, motion:'notice'}, moderation: {icon:ShieldCheck, motion:'confirm'},
   'business-intake': {icon:Building2, motion:'reveal'}, 'brand-options': {icon:SlidersHorizontal, motion:'adjust'}, 'official-services': {icon:Wrench, motion:'wind'},
+  'l13-withdrawals': {icon:ClipboardList, motion:'notice'},
+  'brand-quotes': {icon:CircleDollarSign, motion:'balance'},
+  offers: {icon:ShoppingBag, motion:'balance'},
+  'repair-quotes': {icon:Wrench, motion:'adjust'},
+  'brand-customizations': {icon:Wrench, motion:'adjust'},
 } as const satisfies Record<string, {icon:LucideIcon; motion:NavigationMotion}>;
 export type NavigationDestination = keyof typeof navigationIcons;
 

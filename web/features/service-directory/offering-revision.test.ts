@@ -1,0 +1,90 @@
+import { beforeEach, expect, it, vi } from 'vitest';
+import type { ReactElement } from 'react';
+const memory=vi.hoisted(()=>({slots:[] as unknown[],cursor:0,revision:1,error:null as unknown,send:vi.fn()}));
+vi.mock('react',()=>({useEffect:(effect:()=>void)=>{effect();},useState:(initial:unknown)=>{const i=memory.cursor++;if(!(i in memory.slots))memory.slots[i]=typeof initial==='function'?initial():initial;return [memory.slots[i],(value:unknown)=>{memory.slots[i]=typeof value==='function'?value(memory.slots[i]):value;}];}}));
+vi.mock('@beirut-time/ui/foundation',()=>({Button:'button',Input:'input',Textarea:'textarea',Checkbox:'checkbox',Select:'select',State:'state',Fold:'fold',Card:'card'}));
+vi.mock('@/shell/locale-context',()=>({useLocale:()=>'en'}));
+vi.mock('@/shell/access-context',()=>({useAccessContext:()=>({fingerprint:'synthetic'})}));
+vi.mock('@/features/identity/session',()=>({useSession:()=>({principal:{organization_grants:[{organization_id:'business',permissions:['business.stock.write']}]}})}));
+vi.mock('./api',()=>({directoryPath:'/api/directory',movementPath:'/api/movement',privateRequest:vi.fn(),useJsonCommand:()=>memory.send,useCommandMutation:({mutationFn}:{mutationFn:()=>unknown})=>({mutate:mutationFn,isPending:false,needsRecovery:false})}));
+vi.mock('@/lib/page-speed/read',()=>({usePageRead:()=>({data:{profile:{revision:memory.revision,contact:'current',capabilities:['maintenance']},items:[{id:'private-option',label_en:'Private offering',label_ar:'عرض خاص'}]},isSuccess:!memory.error,isFetching:false,isError:Boolean(memory.error),error:memory.error,refetch:vi.fn()})}));
+import { MaintenanceForm } from './maintenance';
+import { ApiError } from '@/lib/api/client';
+import { MovementOffering, OfferingForm } from '../movement-option/offering';
+function elements(node:unknown):ReactElement<Record<string,unknown>>[]{if(Array.isArray(node))return node.flatMap(elements);if(!node||typeof node!=='object'||!('props' in node))return [];const el=node as ReactElement<Record<string,unknown>>;return [el,...elements(el.props.children)];}
+function render(kind:string){memory.cursor=0;return kind==='service'?MaintenanceForm({business:'business',onLock:()=>{}}):OfferingForm({brandId:'business',selected:{id:'option',brand_id:'business',revision:memory.revision,label_en:'current',label_ar:'حالي',caliber:'c',cases:['c'],dials:['d'],hands:['h'],functions:[],currency:'USD',quote_minor:100},onLock:()=>{},onSaved:()=>{}});}
+beforeEach(()=>{memory.slots=[];memory.cursor=0;memory.revision=1;memory.error=null;memory.send.mockReset();});
+it.each(['service','movement'])('blocks refreshed revisions from authorizing older %s fields',kind=>{
+  let tree=render(kind);
+  const field=elements(tree).find(el=>el.props.label===(kind==='service'?'Public contact':'Movement name in English'))!;
+  (field.props.onValueChange as (value:string)=>void)('unsent');
+  memory.revision=2;tree=render(kind);
+  expect(elements(tree).find(el=>el.props.type==='submit')?.props.disabled).toBe(true);
+  (tree.props.onSubmit as (event:{preventDefault:()=>void})=>void)({preventDefault:()=>{}});
+  expect(memory.send).not.toHaveBeenCalled();
+  expect(elements(tree).some(el=>el.props.value==='unsent')).toBe(true);
+  const reload=elements(tree).find(el=>el.props.children===(kind==='service'?'Refresh directory':'Reload movement options'))!;
+  (reload.props.onClick as ()=>void)();
+  tree=render(kind);
+  expect(elements(tree).find(el=>el.props.type==='submit')?.props.disabled).toBe(false);
+  expect(elements(tree).some(el=>el.props.value==='current')).toBe(true);
+  (tree.props.onSubmit as (event:{preventDefault:()=>void})=>void)({preventDefault:()=>{}});
+  return vi.waitFor(()=>expect(memory.send.mock.calls[0][1].expected_revision).toBe(2));
+});
+
+it.each([',','،'])('retains raw compatibility functions with %s until submission',separator=>{
+  let tree=render('movement');
+  const add=elements(tree).find(el=>el.props.children==='Add a compatibility rule')!;
+  (add.props.onClick as ()=>void)();
+  tree=render('movement');
+  const functionField=()=>elements(tree).filter(el=>el.props.label==='Functions (comma-separated)').at(-1)!;
+  (functionField().props.onValueChange as (value:string)=>void)(`hours${separator}`);
+  tree=render('movement');
+  expect(functionField().props.value).toBe(`hours${separator}`);
+  (functionField().props.onValueChange as (value:string)=>void)(`hours${separator} minutes`);
+  tree=render('movement');
+  expect(functionField().props.value).toBe(`hours${separator} minutes`);
+  (tree.props.onSubmit as (event:{preventDefault:()=>void})=>void)({preventDefault:()=>{}});
+  return vi.waitFor(()=>expect(memory.send.mock.calls[0][1].compatibility_rules[0].functions).toEqual(['hours','minutes']));
+});
+
+it.each([401,403,404])('clears service drafts after a denied refresh (%s) and allows current recovery',status=>{
+  let tree=render('service');
+  const field=elements(tree).find(el=>el.props.label==='Public contact')!;
+  (field.props.onValueChange as (value:string)=>void)('private unsent contact');
+  memory.error=new ApiError(503,'unavailable','');
+  tree=render('service');
+  expect(elements(tree).some(el=>el.props.value==='private unsent contact')).toBe(true);
+  memory.error=new ApiError(status,'forbidden','');
+  tree=render('service');
+  expect(elements(tree).some(el=>el.type==='form')).toBe(false);
+  expect(elements(tree).some(el=>el.props.value==='private unsent contact')).toBe(false);
+  memory.error=new ApiError(503,'unavailable','');
+  tree=render('service');
+  expect(elements(tree).some(el=>el.type==='form')).toBe(false);
+  expect(JSON.stringify(tree)).not.toContain('private unsent contact');
+  expect(elements(tree).some(el=>el.props.value==='current')).toBe(false);
+  memory.error=null;memory.revision=2;
+  tree=render('service');
+  expect(elements(tree).some(el=>el.props.value==='current')).toBe(true);
+  expect(elements(tree).some(el=>el.props.value==='private unsent contact')).toBe(false);
+});
+it.each([new ApiError(403,'forbidden',''),new ApiError(409,'not_official','')])('unmounts private movement forms on denied refresh and restores only after recovery',error=>{
+  const offering=()=>{memory.cursor=0;return MovementOffering({brandId:'business',onSaved:()=>{}});};
+  let tree=offering();
+  expect(elements(tree).some(el=>el.type===OfferingForm)).toBe(true);
+  memory.error=new ApiError(503,'unavailable','');
+  tree=offering();
+  expect(elements(tree).some(el=>el.type===OfferingForm)).toBe(true);
+  memory.error=error;
+  tree=offering();  expect(elements(tree).some(el=>el.type===OfferingForm)).toBe(false);
+  expect(elements(tree).some(el=>el.props.label==='Brand-supported movement')).toBe(false);
+  memory.error=new ApiError(503,'unavailable','');
+  tree=offering();
+  expect(elements(tree).some(el=>el.type===OfferingForm)).toBe(false);
+  expect(elements(tree).some(el=>el.props.label==='Brand-supported movement')).toBe(false);
+  expect(JSON.stringify(tree)).not.toContain('private-option');
+  memory.error=null;
+  tree=offering();
+  expect(elements(tree).some(el=>el.type===OfferingForm)).toBe(true);
+});

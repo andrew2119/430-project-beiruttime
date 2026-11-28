@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "assignment": {
+    "schema_version": 1,
+    "assignment_id": "00000000-0000-4000-8000-000000000011",
+    "assignment_revision": 1,
+    "operator_id": "00000000-0000-4000-8000-000000000099",
+    "quote_id": "00000000-0000-4000-8000-000000000010",
+    "buyer_id": "00000000-0000-4000-8000-000000000003",
+    "organization_id": "00000000-0000-4000-8000-000000000004",
+    "operation_id": "return-once"
+  },
+  "held_since": "2026-11-05T10:00:00+00:00",
+  "next_review_at": "2026-11-06T10:00:00+00:00",
+  "escalate_at": "2026-11-07T10:00:00+00:00",
+  "denied": {
+    "assignment_current": false,
+    "writes": 0
+  },
+  "stale": {
+    "assignment_revision": 0,
+    "writes": 0
+  },
+  "lost_response": {
+    "retry_operation_id": "return-once",
+    "deadlines_restart": false
+  }
+}

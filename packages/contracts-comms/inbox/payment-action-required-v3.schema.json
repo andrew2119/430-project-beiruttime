@@ -1,0 +1,32 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "order_id": {
+      "format": "uuid",
+      "title": "Order Id",
+      "type": "string"
+    },
+    "buyer_id": {
+      "format": "uuid",
+      "title": "Buyer Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "sample": {
+      "default": false,
+      "title": "Sample",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "order_id",
+    "buyer_id",
+    "revision"
+  ],
+  "title": "PaymentActionRequiredV3",
+  "type": "object"
+}

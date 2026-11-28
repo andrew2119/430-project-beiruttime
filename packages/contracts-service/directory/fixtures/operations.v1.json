@@ -1,0 +1,58 @@
+{
+  "success": {
+    "schema_version": "directory.operation.v1",
+    "operation_id": "directory-choice-0001",
+    "subject_id": "synthetic-customer-1",
+    "watch_id": null,
+    "actor_id": "synthetic-customer-1",
+    "organization_id": "synthetic-business-1",
+    "expected_revision": 0,
+    "state": "saved",
+    "revision": 1,
+    "pending_reason": null,
+    "next_actor": null,
+    "next_review_at": null
+  },
+  "denied": {
+    "schema_version": "directory.operation.v1",
+    "operation_id": "directory-choice-0001",
+    "subject_id": "synthetic-customer-1",
+    "watch_id": null,
+    "actor_id": "synthetic-customer-1",
+    "organization_id": "synthetic-business-1",
+    "expected_revision": 0,
+    "state": "denied",
+    "revision": 0,
+    "pending_reason": "current_permission_required",
+    "next_actor": "synthetic-customer-1",
+    "next_review_at": null
+  },
+  "stale": {
+    "schema_version": "directory.operation.v1",
+    "operation_id": "directory-choice-0001",
+    "subject_id": "synthetic-customer-1",
+    "watch_id": null,
+    "actor_id": "synthetic-customer-1",
+    "organization_id": "synthetic-business-1",
+    "expected_revision": 0,
+    "state": "stale",
+    "revision": 0,
+    "pending_reason": "reload_revision",
+    "next_actor": "synthetic-customer-1",
+    "next_review_at": null
+  },
+  "lost_response": {
+    "schema_version": "directory.operation.v1",
+    "operation_id": "directory-choice-0001",
+    "subject_id": "synthetic-customer-1",
+    "watch_id": null,
+    "actor_id": "synthetic-customer-1",
+    "organization_id": "synthetic-business-1",
+    "expected_revision": 0,
+    "state": "pending",
+    "revision": 0,
+    "pending_reason": "retry_original_reference",
+    "next_actor": "synthetic-customer-1",
+    "next_review_at": null
+  }
+}

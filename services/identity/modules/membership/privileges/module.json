@@ -1,0 +1,1 @@
+{"version":1,"id":"L20.eligibility-privileges","migration_dependencies":["L02.membership","L01.accounts"],"migrations":["migrations/L20_0001_eligibility_privileges.sql"]}

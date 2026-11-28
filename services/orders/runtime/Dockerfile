@@ -12,8 +12,8 @@ COPY packages/runtime /tmp/packages/runtime
 RUN pip install --no-cache-dir /tmp/packages/contracts-core /tmp/packages/bulkheads /tmp/packages/events /tmp/packages/runtime
 COPY packages /tmp/repository/packages
 COPY contracts /tmp/repository/contracts
-COPY infra/foundation/discover-contracts.py infra/foundation/package-contracts.py /tmp/repository/infra/foundation/
-RUN python /tmp/repository/infra/foundation/package-contracts.py /opt/domain-contracts
+COPY ${SERVICE_PATH}/runtime/package_contracts.py /tmp/package_contracts.py
+RUN python /tmp/package_contracts.py /tmp/repository /opt/domain-contracts
 
 FROM python:3.11.14-slim AS base
 ENV PATH="/opt/venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/opt/domain-contracts
@@ -41,4 +41,4 @@ COPY --chown=app:app ${SERVICE_PATH}/modules /app/modules
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=6 CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)"]
-CMD ["uvicorn", "bt_runtime.app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+CMD ["uvicorn", "service_app.bootstrap:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

@@ -259,10 +259,10 @@ def quote_snapshot(api, row, token="seller", quote_id=None):
         "revision": 1,
         "subject_id": row["id"],
         "subject_revision": row["revision"],
-        "purpose": "business_quote",
+        "purpose": "purchase",
         "source": "sample",
         "source_verified": False,
-        "schedule_id": "sample-v1",
+        "schedule_id": "usd-v2",
         "currency": "USD",
         "price_minor": 18000,
         "minor_unit_exponent": 2,
@@ -277,6 +277,7 @@ def quote_snapshot(api, row, token="seller", quote_id=None):
         "fx": None,
         "commission_basis": "price_excluding_buyer_fee_shipping_tax",
         "policy": {
+            "revision": 2,
             "buyer_fee_bps": 300,
             "seller_commission_bps": 500,
             "shipping": "sample_zero",
@@ -301,7 +302,7 @@ async def ready(api):
 async def publish(api, row, key=None, token="seller"):
     return await api.client.post(
         f"/v1/seller/listings/{row['id']}/publish",
-        json={"fee_quote_id": str(api.quote_id), "rules_version": "sample-v1"},
+        json={"fee_quote_id": str(api.quote_id), "rules_version": "usd-v2"},
         headers=headers(token, row["revision"], key),
     )
 

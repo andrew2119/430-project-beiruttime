@@ -1,0 +1,179 @@
+{
+  "schema_version": "catalog-public-read-cases.v1",
+  "cases": [
+    {
+      "name": "success",
+      "status": 200,
+      "body": {
+        "schema_version": "catalog-public-facts.v1",
+        "seller_id": "00000000-0000-0000-0000-000000000001",
+        "watch_id": "00000000-0000-0000-0000-000000000002",
+        "listing_revision": 3,
+        "revision": 1,
+        "released_sales": 0,
+        "joined_at": "2026-01-01T00:00:00Z",
+        "review_distribution": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "history": [],
+        "inspection": null,
+        "organization_id": null,
+        "city": "Beirut",
+        "history_next_cursor": null
+      }
+    },
+    {
+      "name": "denied",
+      "status": 403,
+      "body": {
+        "code": "permission_denied",
+        "message_en": "Public facts are not permitted.",
+        "message_ar": "لا يُسمح بعرض المعلومات العامة."
+      }
+    },
+    {
+      "name": "stale",
+      "status": 200,
+      "body": {
+        "schema_version": "catalog-public-facts.v1",
+        "seller_id": "00000000-0000-0000-0000-000000000001",
+        "watch_id": "00000000-0000-0000-0000-000000000002",
+        "listing_revision": 2,
+        "revision": 1,
+        "released_sales": 0,
+        "joined_at": "2026-01-01T00:00:00Z",
+        "review_distribution": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "history": [],
+        "inspection": null,
+        "organization_id": null,
+        "city": "Beirut",
+        "history_next_cursor": null
+      }
+    },
+    {
+      "name": "wrong_business",
+      "status": 200,
+      "body": {
+        "schema_version": "catalog-public-facts.v1",
+        "seller_id": "00000000-0000-0000-0000-000000000001",
+        "watch_id": "00000000-0000-0000-0000-000000000002",
+        "listing_revision": 3,
+        "revision": 1,
+        "released_sales": 0,
+        "joined_at": "2026-01-01T00:00:00Z",
+        "review_distribution": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "history": [],
+        "inspection": null,
+        "organization_id": "00000000-0000-0000-0000-000000000009",
+        "city": "Beirut",
+        "history_next_cursor": null
+      }
+    },
+    {
+      "name": "lost_response",
+      "status": null,
+      "body": null,
+      "recovery": "Repeat the same scoped read."
+    },
+    {
+      "name": "total_success",
+      "status": 200,
+      "body": {
+        "schema_version": "catalog-public-total.v1",
+        "criteria": "00000000000000000000000000000000",
+        "total": 1000,
+        "revision": 1,
+        "as_of": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "total_stale",
+      "status": 200,
+      "body": {
+        "schema_version": "catalog-public-total.v1",
+        "criteria": "00000000000000000000000000000000",
+        "total": 1000,
+        "revision": 1,
+        "as_of": "2025-12-31T23:59:00Z"
+      }
+    },
+    {
+      "name": "history_first",
+      "status": 200,
+      "body": {
+        "schema_version": "catalog-public-facts.v1",
+        "seller_id": "00000000-0000-0000-0000-000000000001",
+        "watch_id": "00000000-0000-0000-0000-000000000002",
+        "listing_revision": 3,
+        "revision": 1,
+        "released_sales": 0,
+        "joined_at": "2026-01-01T00:00:00Z",
+        "review_distribution": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "history": [
+          {
+            "occurred_at": "2026-01-01T00:00:00Z",
+            "summary_en": "Released record 1",
+            "summary_ar": "سجل مكتمل 1"
+          }
+        ],
+        "inspection": null,
+        "organization_id": null,
+        "city": "Beirut",
+        "history_next_cursor": "history-page-2"
+      }
+    },
+    {
+      "name": "history_last",
+      "status": 200,
+      "body": {
+        "schema_version": "catalog-public-facts.v1",
+        "seller_id": "00000000-0000-0000-0000-000000000001",
+        "watch_id": "00000000-0000-0000-0000-000000000002",
+        "listing_revision": 3,
+        "revision": 1,
+        "released_sales": 0,
+        "joined_at": "2026-01-01T00:00:00Z",
+        "review_distribution": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "history": [
+          {
+            "occurred_at": "2026-01-01T00:00:00Z",
+            "summary_en": "Released record 2",
+            "summary_ar": "سجل مكتمل 2"
+          }
+        ],
+        "inspection": null,
+        "organization_id": null,
+        "city": "Beirut",
+        "history_next_cursor": null
+      }
+    }
+  ]
+}

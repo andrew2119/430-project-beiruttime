@@ -36,12 +36,14 @@ async def existing(tx, subject, key, digest=None):
 
 @router.get('/v1/prebid-operations/{operation_key}')
 async def operation(operation_key:str,request:Request):
-    if not 1<=len(operation_key)<=128: raise PublicError('invalid_key','Invalid operation key.',status=422)
+    if not 1<=len(operation_key)<=128:
+        raise PublicError('invalid_key','Invalid operation key.',status=422)
     principal=await request.app.state.auction.dependencies.principal(request)
     buyer(principal)
     async with request.app.state.pool.acquire() as tx:
         row=await existing(tx,principal.actor.subject_id,operation_key)
-        if not row: raise PublicError('not_found','Operation not found.',status=404)
+        if not row:
+            raise PublicError('not_found','Operation not found.',status=404)
         return decoded(row['outcome'])
 
 
@@ -86,5 +88,44 @@ async def purchase(auction_id:UUID,command:PrebidCommand,request:Request):
     async with request.app.state.pool.acquire() as tx:
         # Exact historical replay is a read, not permission for another allocation.
         replay=await existing(tx,subject,key,digest)
-        if replay: return decoded(replay['outcome'])
+        if replay:
+            return decoded(replay['outcome'])
     raise PublicError('auction_purchase_removed', 'Auctions do not offer Buy Now.', status=409)
+
+
+@router.get('/v3/prebid-operations/{operation_key}')
+async def operation_v3(operation_key: str, request: Request):
+    from .recovery import Binding, MESSAGES, lookup_resolution, historical_resolution
+
+    if not 1 <= len(operation_key) <= 128:
+        raise PublicError('invalid_key', 'Invalid operation key. مرجع العملية غير صالح.', status=422)
+    try:
+        principal = await request.app.state.auction.dependencies.principal(request)
+        buyer(principal)
+    except AccessDenied:
+        raise PublicError('access_denied',
+            'Access denied. An individual buyer is required. الوصول مرفوض. يلزم حساب مشترٍ فردي.',
+            status=403) from None
+    async with request.app.state.pool.acquire() as tx:
+        row = await existing(tx, principal.actor.subject_id, operation_key)
+        if not row:
+            raise PublicError('not_found', 'Operation not found. لم يتم العثور على العملية.', status=404)
+        snapshot = await legacy_view(tx, row)
+    allocation = decoded(row['allocation'])
+    recovery = historical_resolution(None, None)
+    if (allocation.get('currency') == 'USD' and row['admission_revision'] is not None
+            and allocation.get('quote_revision') is not None and allocation.get('policy_revision') is not None):
+        try:
+            binding = Binding(operation_id=row['id'], subject_id=row['auction_id'],
+                watch_id=allocation['watch_id'], actor_id=principal.actor.subject_id,
+                organization_id=None, expected_revision=row['admission_revision'],
+                quote_id=allocation['quote_id'], quote_revision=allocation['quote_revision'],
+                policy_revision=allocation['policy_revision'])
+        except (ValueError, KeyError):
+            binding = None
+        if binding is not None:
+            recovery = await lookup_resolution(request.app.state.auction.dependencies, binding)
+    state = recovery['state']
+    en, ar = MESSAGES[state]
+    return {'schema_version': 1, 'operation_id': str(row['id']), 'historical': snapshot,
+            'resolution': state, 'recovery': recovery, 'message': {'en': en, 'ar': ar}}

@@ -42,6 +42,10 @@ it.each([
   ['POST', '/v1/request-drafts', 34600],
   ['GET', '/v1/request-drafts', 19400],
   ['PATCH', '/v1/request-drafts/test-record', 37600],
+  ['POST', '/v1/request-drafts/test-record/submit', 88200],
+  ['PUT', '/v1/brands/test-brand/compatibility/test-rule', 38200],
+  ['GET', '/v1/brands/test-brand/compatibility', 8700],
+  ['POST', '/v1/configurations/test-record/validate', 64200],
   ['GET', '/v1/seller/listings/test-record/media', 9700],
   ['GET', '/v1/seller/listings', 17700],
   ['POST', '/v1/seller/listings', 32200],
@@ -51,6 +55,10 @@ it.each([
   ['POST', '/v1/brand-options/configurations/test-record/references', 37700],
   ['PUT', '/v1/seller/listings/test-record/gallery', 32700],
   ['DELETE', '/v1/seller/listings/test-record/media/test-asset', 35700],
+  ['GET', '/v1/seller/listings/test-record/revisions', 14700],
+  ['POST', '/v1/seller/listings/test-record/revisions', 190200],
+  ['POST', '/v1/seller/listing-edit-operations/test-record/resume', 148200],
+  ['GET', '/v1/seller/listing-edit-operations/test-record', 11700],
   ['GET', '/v1/brand-options/configurations/test-record/references/test-reference', 5700],
   ['GET', '/v1/brand-options/brands', 3900],
   ['GET', '/v1/brand-options/brands/test-brand', 9200],
@@ -92,12 +100,19 @@ it.each([
   ['GET', '/v1/private-reviews/mine', 23200],
   ['GET', '/v1/private-reviews/test-record', 53200],
   ['GET', '/v1/private-reviews/test-record/evidence', 44200],
+  ['POST', '/v1/listing-reviews/test-record/challenges', 57200],
+  ['POST', '/v1/listing-reviews/test-record/assignment', 78200],
+  ['POST', '/v1/listing-reviews/test-record/decision', 75200],
+  ['POST', '/v1/listing-reviews/test-record/stock-decision', 60200],
+  ['GET', '/v1/listing-reviews/test-record', 18200],
 ] as const)('assigns Identity %s %s the expected override (%s)', (method, path, budget) => {
   expect(routeBudget('identity', method, path)).toBe(budget);
 });
 
 it.each([
   ['catalog', '/v1/seller/listings', 6201, 32200, 201],
+  ['catalog', '/v1/seller/listings/test-record/revisions', 31201, 190200, 200],
+  ['catalog', '/v1/seller/listing-edit-operations/test-operation/resume', 26201, 148200, 200],
   ['service-operations', '/v1/intake/records/test-record/evidence', 6001, 47000, 201],
 ] as const)('returns %s %s receipts after %s ms within the %s ms deadline', async (
   service, path, delay, budget, status,
@@ -204,10 +219,19 @@ it.each([
 it.each([
   ['identity', 'PATCH', '/v1/businesses/test-record', 200000, 298800, 200],
   ['catalog', 'GET', '/v1/discovery/watches', 1201, 2150, 200],
+  ['catalog', 'GET', '/v1/customization-requests', 6201, 298800, 200],
+  ['catalog', 'GET', '/v1/customization-requests/test-record', 6201, 14200, 200],
+  ['catalog', 'GET', '/v1/customization-requests/test-record/revisions', 18000, 19200, 200],
+  ['catalog', 'GET', '/v1/customization-operations/test-operation', 16000, 17200, 200],
+  ['catalog', 'GET', '/v1/customization-requests/test-record/decision', 16000, 17200, 200],
+  ['catalog', 'GET', '/v1/brand-decision-operations/test-operation', 16000, 17200, 200],
   ['orders', 'POST', '/v1/orders/test-record/transitions', 31401, 39400, 200],
   ['orders', 'POST', '/v1/orders/test-record/intake', 37401, 45400, 200],
   ['auction', 'POST', '/v1/auctions', 9601, 53600, 200],
   ['auction', 'PATCH', '/v1/auctions/test-record/rules', 6001, 55000, 200],
+  ['catalog', 'POST', '/v1/customization-requests/test-record/decisions', 28701, 113700, 200],
+  ['catalog', 'POST', '/v1/brand-decision-operations/test-record/resume', 23701, 74700, 200],
+  ['catalog', 'GET', '/v1/customization-requests/test-record/decision-readiness', 13701, 21700, 200],
   ['catalog', 'GET', '/v1/listings/test-record/report-subject', 6201, 11200, 200],
   ['service-operations', 'GET', '/v1/intake/records', 4801, 12800, 200],
   ['service-operations', 'GET', '/v1/intake/records/test-record', 7201, 12200, 200],
@@ -269,6 +293,23 @@ it.each([
 });
 
 it.each([
+  ['GET', '/v1/brands/test-brand/compatibility', 2501, 8700],
+  ['POST', '/v1/configurations/test-record/validate', 6201, 64200],
+] as const)('returns Catalog %s %s after the previous deadline', async (method, path, delay, budget) => {
+  const response = Response.json({ status: 'ok' });
+  const upstream = delayedResponse(delay, response);
+  const client = new Dependency('catalog', 'https://catalog.test');
+  const pending = client.request(method, path, 'test-request');
+  expect(AbortSignal.timeout).toHaveBeenCalledExactlyOnceWith(budget);
+  await vi.advanceTimersByTimeAsync(delay);
+  const result = await pending;
+  expect(result).toBeInstanceOf(Response);
+  expect((result as Response).status).toBe(200);
+  expect(await (result as Response).json()).toEqual({ status: 'ok' });
+  expect(upstream).toHaveBeenCalledTimes(1);
+});
+
+it.each([
   ['auction', '/v1/auctions/test-record/bids', 13201, 298800],
   ['auction', '/v1/auctions/test-record/maximum', 13201, 298800],
   ['trust', '/v1/moderation/reports', 4801, 33800],
@@ -286,6 +327,22 @@ it.each([
   expect(result).toBeInstanceOf(Response);
   expect((result as Response).status).toBe(status);
   expect(await (result as Response).json()).toEqual(receipt);
+  expect(upstream).toHaveBeenCalledTimes(1);
+});
+
+it('returns the stored customization reference after the former deadline', async () => {
+  const png = Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10);
+  const upstream = delayedResponse(6201, new Response(png, { headers: { 'Content-Type': 'image/png' } }));
+  const client = new Dependency('catalog', 'https://catalog.test');
+  const pending = client.get('/v1/customization-requests/test-record/references/test-reference', 'test-request');
+  expect(AbortSignal.timeout).toHaveBeenCalledExactlyOnceWith(19200);
+  await vi.advanceTimersByTimeAsync(6201);
+  const result = await pending;
+  expect(result).toBeInstanceOf(Response);
+  const response = result as Response;
+  expect(response.status).toBe(200);
+  expect(response.headers.get('Content-Type')).toBe('image/png');
+  expect(new Uint8Array(await response.arrayBuffer())).toEqual(png);
   expect(upstream).toHaveBeenCalledTimes(1);
 });
 

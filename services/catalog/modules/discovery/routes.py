@@ -1,7 +1,7 @@
 from typing import Annotated, Literal
 from fastapi import APIRouter, Path, Query, Request
 from bt_contracts_core.errors import PublicError
-from .models import AuctionRead, MAX_MINOR, SearchPage, WatchDetail
+from .models import AuctionRead, HistoryPage, MAX_MINOR, SearchPage, WatchDetail
 from .search import Filters, normalize
 from .source_contract import PublicListing
 from .dependencies import from_app
@@ -22,10 +22,10 @@ def minor(value):
 
 
 @router.get('',response_model=SearchPage)
-async def find_watches(request:Request,q:str=Query('',max_length=160),brand:str=Query('',max_length=100),model:str=Query('',max_length=160),location:str=Query('',max_length=160),
-    min_minor:str|None=Query(None,max_length=16),max_minor:str|None=Query(None,max_length=16),currency:Literal['USD','LBP']='USD',sale_mode:Literal['','fixed','auction','offer']='',
+async def find_watches(request:Request,seller_id:str=Query('',max_length=36),q:str=Query('',max_length=160),brand:str=Query('',max_length=100),model:str=Query('',max_length=160),location:str=Query('',max_length=160),
+    min_minor:str|None=Query(None,max_length=16),max_minor:str|None=Query(None,max_length=16),currency:Literal['USD']='USD',sale_mode:Literal['','fixed','auction','offer']='',
     sort:Literal['newest','price_asc','price_desc','ending_soon']='newest',cursor:str=Query('',max_length=1024),limit:int=Query(12,ge=1,le=24)):
-    filters=Filters(q=q,brand=brand,model=model,location=location,min_minor=minor(min_minor),max_minor=minor(max_minor),currency=currency,sale_mode=sale_mode,sort=sort,limit=limit)
+    filters=Filters(seller_id=seller_id,q=q,brand=brand,model=model,location=location,min_minor=minor(min_minor),max_minor=minor(max_minor),currency=currency,sale_mode=sale_mode,sort=sort,limit=limit)
     return await service.find(request.app.state.pool,from_app(request.app,request.state.request_id),filters,cursor)
 
 
@@ -47,3 +47,11 @@ async def canonical_listing(identifier:Identifier,request:Request):
     # This is publication/fact proof, NEVER current Orders availability or an
     # independent watch-authentication pass. Commands recheck their own authority.
     return await service.canonical(request.app.state.pool,from_app(request.app,request.state.request_id),identifier)
+
+
+@router.get('/{identifier}/history', response_model=HistoryPage)
+async def watch_history(identifier: Identifier, request: Request,
+    listing_revision: int = Query(..., ge=1), revision: int = Query(..., ge=1),
+    cursor: str = Query('', max_length=1024)):
+    return await service.history(request.app.state.pool, from_app(request.app, request.state.request_id),
+        identifier, cursor, listing_revision, revision)

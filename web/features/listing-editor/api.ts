@@ -12,6 +12,7 @@ import type {
   SellerWorkspace,
 } from "@contracts/contracts-catalog/listings/v1";
 import type { Session } from "@contracts/contracts-identity/accounts";
+import type { ListingRevisionHistory } from '@contracts/contracts-catalog/listings/revisions';
 const base = "/api/web/v1/catalog/v1/seller/listings";
 function headers(revision?: number, operation?: string) {
   return {
@@ -91,6 +92,12 @@ export function listingApiFor(
         },
         body: JSON.stringify({ facts }),
       }),
+    revise: (row: Listing, facts: WatchFacts, reason: string, operation: string) =>
+      request<{id:string;status:string;listing:Listing}>(`/api/web/v1/catalog/v1/seller/listings/${row.id}/revisions`, {
+        method:'POST', headers:{...headers(row.revision,operation),'Content-Type':'application/json'}, body:JSON.stringify({facts,reason}),
+      }),
+    history: (id:string) => request<ListingRevisionHistory>(`/api/web/v1/catalog/v1/seller/listings/${id}/revisions`),
+    resumeEdit: (id:string) => request<{id:string;status:string;listing:Listing}>(`/api/web/v1/catalog/v1/seller/listing-edit-operations/${id}/resume`,{method:'POST'}),
     media: (id: string) =>
       request<{ items: Media[] }>(`${base}/${id}/media`, {
         headers: headers(),
@@ -146,9 +153,9 @@ export function listingApiFor(
         body: JSON.stringify({
           subject_id: row.id,
           subject_revision: row.revision,
-          purpose: "business_quote",
+          purpose: "purchase",
           source: "sample",
-          schedule_id: "sample-v1",
+          schedule_id: "usd-v2",
           price_minor: row.facts.price_minor,
           currency: row.facts.currency,
         }),

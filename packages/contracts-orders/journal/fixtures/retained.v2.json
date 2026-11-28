@@ -1,0 +1,25 @@
+{
+  "version": "2.1",
+  "sale": {
+    "order_kind": "sale", "currency": "USD", "price_minor": 500000,
+    "buyer_fee_minor": 15000, "seller_commission_minor": 25000,
+    "seller_net_minor": 475000, "shipping_minor": 0, "tax_minor": 0,
+    "payable_minor": 515000, "return_fee_minor": 2000, "refundable_max_minor": 500000
+  },
+  "job": {
+    "order_kind": "service_job", "currency": "USD", "price_minor": 500000,
+    "buyer_fee_minor": 0, "seller_commission_minor": 25000,
+    "seller_net_minor": 475000, "shipping_minor": 0, "tax_minor": 0,
+    "payable_minor": 500000, "return_fee_minor": 2000, "refundable_max_minor": 500000
+  },
+  "expected": {
+    "failed_sale_collection_minor": 27000,
+    "full_job_customer_refund_minor": 500000,
+    "separate_job_business_receivable_minor": 25000,
+    "customer_fee_deduction_minor": 0,
+    "unknown_collection_is_paid": false,
+    "return_authorized_by_binding": false,
+    "refund_authorized_by_fixture": false
+  },
+  "negative": ["missing accepted return line", "wrong method owner", "changed source revision", "job buyer surcharge", "customer refund reduced by business fee", "unknown treated as collection", "duplicate collection or refund", "legacy non-USD active authority"]
+}

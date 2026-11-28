@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "Configuration": {
+      "additionalProperties": false,
+      "properties": {
+        "case": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Case",
+          "type": "string"
+        },
+        "dial": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Dial",
+          "type": "string"
+        },
+        "hands": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Hands",
+          "type": "string"
+        },
+        "functions": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Functions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "case",
+        "dial",
+        "hands",
+        "functions"
+      ],
+      "title": "Configuration",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "brand_id": {
+      "format": "uuid",
+      "title": "Brand Id",
+      "type": "string"
+    },
+    "option_id": {
+      "format": "uuid",
+      "title": "Option Id",
+      "type": "string"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "option_revision": {
+      "minimum": 1,
+      "title": "Option Revision",
+      "type": "integer"
+    },
+    "configuration": {
+      "$ref": "#/$defs/Configuration"
+    }
+  },
+  "required": [
+    "brand_id",
+    "option_id",
+    "expected_revision",
+    "option_revision",
+    "configuration"
+  ],
+  "title": "Selection",
+  "type": "object"
+}

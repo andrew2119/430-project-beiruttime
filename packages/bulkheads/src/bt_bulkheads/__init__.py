@@ -11,6 +11,7 @@ class Unavailable:
     dependency: str
     reason: Literal['timeout', 'saturated', 'circuit_open', 'network', 'upstream']
     retry_after: float = 1.0
+    status_code: int | None = None  # Headers observed, without retaining any response body.
 
 
 class DependencyClient:
@@ -37,7 +38,7 @@ class DependencyClient:
             limits=httpx.Limits(max_connections=concurrency, max_keepalive_connections=concurrency),
             transport=transport, follow_redirects=False)
 
-    async def request(self, method: str, path: str, **kwargs) -> httpx.Response | Unavailable:
+    async def request(self, method: str, path: str, *, observe_failure=None, **kwargs) -> httpx.Response | Unavailable:
         if not path.startswith('/') or path.startswith('//') or httpx.URL(path).is_absolute_url:
             raise ValueError('Dependency paths must be relative to the registered origin')
         now = time.monotonic()
@@ -51,29 +52,35 @@ class DependencyClient:
         if half_open:
             self._probe = True
         failed = True
+        status = None
         try:
             async with asyncio.timeout(self.timeout):
                 async with self.client.stream(method, path, **kwargs) as upstream:
+                    status = upstream.status_code
                     chunks, size = [], 0
                     async for chunk in upstream.aiter_bytes():
                         size += len(chunk)
                         if size > 2 * 1024 * 1024:
-                            return Unavailable(self.dependency, 'upstream')
+                            return Unavailable(self.dependency, 'upstream', status_code=status)
                         chunks.append(chunk)
                     headers = {key: value for key, value in upstream.headers.items()
                                if key.lower() not in {'content-encoding', 'content-length', 'transfer-encoding'}}
                     response = httpx.Response(upstream.status_code, headers=headers,
                         content=b''.join(chunks), request=upstream.request)
             if response.status_code >= 500 or response.status_code == 429:
-                return Unavailable(self.dependency, 'upstream')
+                # Optional local projection of the already bounded failure response;
+                # do not retain it in Unavailable, retry it or change breaker behavior.
+                if observe_failure is not None:
+                    observe_failure(response)
+                return Unavailable(self.dependency, 'upstream', status_code=status)
             failed = False
             self._failures = 0
             self._opened_at = None
             return response
         except (TimeoutError, httpx.TimeoutException):
-            return Unavailable(self.dependency, 'timeout')
+            return Unavailable(self.dependency, 'timeout', status_code=status)
         except httpx.HTTPError:
-            return Unavailable(self.dependency, 'network')
+            return Unavailable(self.dependency, 'network', status_code=status)
         except asyncio.CancelledError:
             failed = False
             raise

@@ -1,1 +1,25 @@
-{"version":1,"id":"L02.private-review","dependencies":["fastapi","asyncpg","httpx"],"routes":["routes.py:router","evidence.py:router"],"migrations":["migrations/L02_0001_private_review.sql","migrations/L02_0002_evidence_audit.sql"]}
+{
+  "version": 1,
+  "id": "L02.private-review",
+  "dependencies": [
+    "fastapi",
+    "asyncpg",
+    "httpx",
+    "pyjwt"
+  ],
+  "routes": [
+    "routes.py:router",
+    "evidence.py:router",
+    "eligibility.py:router",
+    "listing_review.py:router"
+  ],
+  "migrations": [
+    "migrations/L02_0001_private_review.sql",
+    "migrations/L02_0002_evidence_audit.sql",
+    "migrations/L02_0003_listing_review.sql",
+    "migrations/L02_0004_review_delivery.sql"
+  ],
+  "workers": [
+    "workers.py:run"
+  ]
+}

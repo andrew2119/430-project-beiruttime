@@ -1,1 +1,21 @@
-{"version":1,"id":"L07.inbox","dependencies":["fastapi","asyncpg","pyjwt","pydantic"],"routes":["routes.py:router","bridge.py:router","events.py:router"],"migrations":["migrations/L07_0001_inbox.sql","migrations/L07_0002_payment_notice.sql","migrations/L07_0003_bid_bridge.sql"]}
+{
+  "version": 1,
+  "id": "L07.inbox",
+  "dependencies": [
+    "fastapi",
+    "asyncpg",
+    "pyjwt",
+    "pydantic"
+  ],
+  "routes": [
+    "routes.py:router",
+    "bridge.py:router",
+    "events.py:router",
+    "private_review.py:router"
+  ],
+  "migrations": [
+    "migrations/L07_0001_inbox.sql",
+    "migrations/L07_0002_payment_notice.sql",
+    "migrations/L07_0003_bid_bridge.sql"
+  ]
+}
