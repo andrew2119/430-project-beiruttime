@@ -8,7 +8,7 @@ router = APIRouter()
 
 def timing(lot, now):
     return {'auction_id': str(lot['id']), 'listing_id': str(lot['listing_id']),
-        'starts_at': lot['starts_at'].isoformat(), 'scheduled_ends_at': lot['ends_at'].isoformat(),
+        'starts_at': lot['starts_at'].isoformat(), 'scheduled_ends_at': lot['scheduled_ends_at'].isoformat(),
         'current_ends_at': lot['ends_at'].isoformat(), 'server_time': now.isoformat(),
         'status': 'scheduled' if now < lot['starts_at'] else 'ended' if now >= lot['ends_at'] else 'live',
         'revision': lot['revision'], 'rules_version': lot['rules_version'],

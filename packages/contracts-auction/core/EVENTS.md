@@ -2,7 +2,7 @@
 
 ## Delivery and receiver ownership
 
-The sole bid event is **`auction.bid-accepted.v1`**, producer/source `auction`. It is atomically enqueued with the bid and stored operation acknowledgement. There is no separate outbid envelope: Communications derives the actual transition from the previous/current leader in this one event. Manual and maximum admission share this event contract.
+The durable notice source is **`auction.bid-accepted.v1`** from `auction`. Manual and maximum admission enqueue it atomically with the bid and operation acknowledgement. Communications derives the outbid notice from the accepted bid. The newer immediately beaten bidder event reconciles that same occurrence.
 
 Outbox destination registry key: `communications`. Runtime URL: `COMMUNICATIONS_URL`, default `http://communications:8000`. The foundation `OutboxRelay` sends `POST /internal/v1/events` with the contracts-core V1 envelope and authenticated short-lived RS256 service token: `sub=auction`, `type=service`, `aud=communications`, `iss=beirut-time-identity` (configured issuer), required exp/iat. User tokens cannot publish.
 
@@ -55,3 +55,21 @@ Opening an old notice must fetch current Auction `GET /v1/auctions/{auction_id}`
 ## Other Auction events
 
 `auction.opened.v1` and `auction.rules-updated.v1` are sent only to destination `catalog`; data is the public canonical AuctionSnapshot. They are not buyer notices. There is no automatic closing/winner payment in this delivery.
+
+Auction receives `catalog.listing.published.v1` at `POST /internal/v1/events`, with
+service subject `catalog`, audience `auction`, and envelope subject equal to
+`listing_id`. The publication revision invalidates older Catalog reads for
+admission. The receiver and final bid and rules checks take the same listing
+lock, including before the first publication is recorded. Rules, scheduling,
+payment and allocation still require their canonical command paths.
+
+The same endpoint independently admits Identity's `identity.business-status-changed.v1`,
+`identity.membership-changed.v1` and `identity.contact-verified.v1` from service
+subject `identity`. Current access and verification are read on each command.
+
+The `auction-timing-v2` destination uses audience `auction` and accepts
+`auction.timing-updated.v2`, `auction.listing-revised.v2` and
+`auction.listing-edit-aborted.v3` from service subject `auction`. The receiver
+reconciles the canonical lot or edit record. Event values never set the schedule
+or admit bids. The `catalog` destination uses audience `catalog` and the scoped
+`POST /internal/v1/auction/events` receiver for the two public snapshots above.

@@ -1,0 +1,29 @@
+services:
+  auction:
+    image: beirut-time/auction:local
+    build:
+      context: .
+      dockerfile: services/auction/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/auction
+  auction-migrate:
+    image: beirut-time/auction:local
+    build:
+      context: .
+      dockerfile: services/auction/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/auction
+  pricing:
+    image: beirut-time/pricing:local
+    build:
+      context: .
+      dockerfile: services/pricing/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/pricing
+  pricing-migrate:
+    image: beirut-time/pricing:local
+    build:
+      context: .
+      dockerfile: services/pricing/runtime/Dockerfile
+      args:
+        SERVICE_PATH: services/pricing
