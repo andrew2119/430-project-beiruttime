@@ -1,0 +1,42 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "assignment_revision": {
+      "minimum": 1,
+      "title": "Assignment Revision",
+      "type": "integer"
+    },
+    "request_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 10000,
+      "title": "Request Ids",
+      "type": "array"
+    },
+    "routing_allowed": {
+      "default": false,
+      "title": "Routing Allowed",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "actor_id",
+    "organization_id",
+    "assignment_revision",
+    "request_ids"
+  ],
+  "title": "AssessmentQueueAccess",
+  "type": "object"
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Eligibility privilege administration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["operation_id", "subject_id", "permission", "reason"],
+  "properties": {
+    "operation_id": {"type": "string", "format": "uuid"},
+    "subject_id": {"type": "string", "format": "uuid"},
+    "business_id": {"type": ["string", "null"], "format": "uuid"},
+    "permission": {"enum": ["eligibility.identity.assign", "eligibility.identity.review", "identity.private-seller.review", "identity.data-requests.restore", "identity.data-requests.oversight", "eligibility.grants.prepare", "eligibility.grants.consume", "eligibility.grants.revoke"]},
+    "reason": {"type": "string", "minLength": 10, "maxLength": 500},
+    "revoke": {"type": "boolean", "default": false}
+  },
+  "allOf": [{
+    "if": {"properties": {"permission": {"enum": ["eligibility.identity.assign", "eligibility.identity.review", "identity.private-seller.review", "identity.data-requests.restore", "identity.data-requests.oversight"]}}},
+    "then": {"properties": {"business_id": {"type": "null"}}},
+    "else": {"required": ["business_id"], "properties": {"business_id": {"type": "string", "format": "uuid"}}}
+  }]
+}

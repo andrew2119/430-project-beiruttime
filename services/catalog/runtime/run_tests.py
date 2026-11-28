@@ -4,10 +4,13 @@ import os
 from pathlib import Path
 import re
 import pytest
+from service_app.discovery import configure
+
+configure()
 
 lane = os.environ.get("BT_TEST_LANE", "L00")
-if not re.fullmatch(r"L(0[0-9]|1[01])", lane):
-    raise SystemExit("BT_TEST_LANE must be L00 through L11")
+if not re.fullmatch(r"L(0[0-9]|1[0-9]|2[0-5])", lane):
+    raise SystemExit("BT_TEST_LANE must be L00 through L25")
 paths = ["tests", "modules", "/foundation-tests", "/lane-tests/L00"]
 if lane != "L00":
     root = Path("/lane-tests") / lane

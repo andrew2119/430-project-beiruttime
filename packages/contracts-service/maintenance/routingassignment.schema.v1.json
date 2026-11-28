@@ -1,0 +1,46 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "request_revision": {
+      "minimum": 1,
+      "title": "Request Revision",
+      "type": "integer"
+    },
+    "assignment_revision": {
+      "minimum": 0,
+      "title": "Assignment Revision",
+      "type": "integer"
+    },
+    "assessor_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Assessor Id"
+    }
+  },
+  "required": [
+    "request_id",
+    "organization_id",
+    "request_revision",
+    "assignment_revision",
+    "assessor_id"
+  ],
+  "title": "RoutingAssignment",
+  "type": "object"
+}

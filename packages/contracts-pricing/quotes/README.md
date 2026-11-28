@@ -1,8 +1,8 @@
 # Exact quotes v1
 
-`POST /v1/quotes` accepts QuoteRequest, Idempotency-Key and a current personal buyer Bearer token. `GET /v1/quotes` lists the latest 30 owner snapshots; `GET /v1/quotes/:id` is owner-only. Amounts are bounded strict integer minor units (USD cents; LBP piastres, explicit exponent 2), never floats or separator-bearing strings. Snapshots retain subject/revision, purpose, currency, policy, commission basis, rounding, creation/expiration and separately acknowledged review time. Database constraints balance totals and prohibit rewriting/deleting retained snapshots.
+`POST /v1/quotes` accepts QuoteRequest, Idempotency-Key and a current personal buyer Bearer token. `GET /v1/quotes` lists current owner snapshots with pagination; `GET /v1/quotes/:id` is owner-only. Active prices are bounded integer USD cents, never floats or separator-bearing strings. Archived quotes keep their original amounts and currency and are excluded from both reads. Snapshots retain subject/revision, purpose, currency, policy, commission basis, rounding, creation/expiration and separately acknowledged review time. Database constraints balance totals and prohibit rewriting/deleting retained snapshots.
 
-Only the explicitly selected `sample-v1` fee policy exists. Every quote is `sample:true`, not an approved production tariff. USD 500000 cents + 15000 buyer fee = 515000 payable. Separate sample seller commission is 5% of base and net is base minus commission. Shipping/tax are explicit sample zero, FX is not applied. Half-up rounding is integer-only; both exponents are included in the policy snapshot.
+Use `usd-v2` (policy revision 2) for active watch quotes. Quotes are marked `sample:true`; collection is simulated. USD 500000 cents + 15000 buyer fee = 515000 payable. Separate sample seller commission is 5% of base and net is base minus commission. Shipping/tax are explicit sample zero, FX is not applied. Half-up rounding is integer-only; both exponents are included in the policy snapshot.
 
 ## Proposed versus authoritative listing basis
 
@@ -12,7 +12,7 @@ Only the explicitly selected `sample-v1` fee policy exists. Every quote is `samp
 
 ## Other command consumers
 
-Seller publication reads the owner-only snapshot and must bind its own still-current draft ID/revision, exact currency/base amount, purpose `business_quote`, expiry and fee schedule. Map `subject_id` to listing_id, `subject_revision` to listing_revision and `schedule_id` to fee rules_version; `sample:true` is the explicit demo-policy marker. This preview does not grant seller verification or publication permission.
+Seller publication reads the owner-only snapshot and must bind its own still-current draft ID/revision, exact USD base amount, purpose `purchase`, source `sample`, expiry and schedule `usd-v2`. Map `subject_id` to listing_id, `subject_revision` to listing_revision and `schedule_id` to fee rules_version; `sample:true` is the explicit demo-policy marker. This preview does not grant seller verification or publication permission.
 
 Auction reads that same owner-only snapshot and must bind purpose `bid`, bidder owner_id, subject_id = its auction ID, subject_revision = the expected current Auction revision, exact proposed amount/currency and unexpired time inside its own admission guard. Auction's immutable listing reference supplies the listing binding; this does not expose a private maximum to other actors. Auction must not use the purchase-only Orders validation endpoint.
 

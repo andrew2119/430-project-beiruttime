@@ -1,0 +1,1 @@
+{"version":1,"id":"L20.command-receipts","migration_dependencies":["L02.membership"],"migrations":["migrations/L20_0001_command_receipts.sql"]}

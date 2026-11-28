@@ -1,0 +1,112 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "service.maintenance.v1",
+      "default": "service.maintenance.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "subject_id": {
+      "format": "uuid",
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "watch_revision": {
+      "minimum": 1,
+      "title": "Watch Revision",
+      "type": "integer"
+    },
+    "capability_revision": {
+      "minimum": 1,
+      "title": "Capability Revision",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "brand_id": {
+      "format": "uuid",
+      "title": "Brand Id",
+      "type": "string"
+    },
+    "intervention": {
+      "enum": [
+        "limited_maintenance",
+        "overhaul_assessment"
+      ],
+      "title": "Intervention",
+      "type": "string"
+    },
+    "reported_symptoms": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Reported Symptoms",
+      "type": "string"
+    },
+    "known_modifications": {
+      "maxLength": 2000,
+      "title": "Known Modifications",
+      "type": "string"
+    },
+    "photo_refs": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 10,
+      "title": "Photo Refs",
+      "type": "array"
+    },
+    "limited_assessment_permission": {
+      "title": "Limited Assessment Permission",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "operation_id",
+    "subject_id",
+    "watch_id",
+    "actor_id",
+    "organization_id",
+    "expected_revision",
+    "watch_revision",
+    "capability_revision",
+    "policy_revision",
+    "brand_id",
+    "intervention",
+    "reported_symptoms",
+    "known_modifications",
+    "photo_refs",
+    "limited_assessment_permission"
+  ],
+  "title": "Request",
+  "type": "object"
+}

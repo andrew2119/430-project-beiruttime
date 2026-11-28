@@ -1,0 +1,10 @@
+{
+  "route": "/business/job-changes",
+  "file": "web/app/(job-changes)/business/job-changes/page.tsx",
+  "view": "web/features/job-changes/view.tsx",
+  "kind": "reads",
+  "reason": "Current private material-change review and stable-operation recovery.",
+  "content": "Current scope, retained terms, explicit buyer acceptance and pending recovery in English and Arabic.",
+  "read": "web/features/job-changes/page-boundary.ts#usePageRead",
+  "proof": "owed"
+}

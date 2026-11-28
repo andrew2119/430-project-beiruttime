@@ -1,0 +1,414 @@
+{
+  "schema_version": 1,
+  "synthetic": true,
+  "command": {
+    "schema_version": 1,
+    "operation_id": "00000000-0000-4000-8000-000000000006",
+    "subject_id": "00000000-0000-4000-8000-000000000001",
+    "watch_id": "00000000-0000-4000-8000-000000000002",
+    "organization_id": null,
+    "expected_revision": 4,
+    "action": "request",
+    "reason": "Synthetic cancellation request"
+  },
+  "facts": {
+    "subject_id": "00000000-0000-4000-8000-000000000001",
+    "watch_id": "00000000-0000-4000-8000-000000000002",
+    "buyer_id": "00000000-0000-4000-8000-000000000003",
+    "organization_id": null,
+    "revision": 4,
+    "quote_id": "00000000-0000-4000-8000-000000000004",
+    "quote_revision": 1,
+    "policy_revision": 1,
+    "kind": "watch",
+    "payment": "unpaid",
+    "attempts": [],
+    "principal_minor": 500000,
+    "collected_fee_minor": 15000,
+    "refundable_labor_minor": 0,
+    "unused_returnable_parts_minor": 0,
+    "reserved_refund_minor": 0,
+    "confirmed_refund_minor": 0,
+    "work_started": false,
+    "parts_consumed": false,
+    "dispatched": false,
+    "custody_transferred": false,
+    "return_state": "none",
+    "failure_exception_id": null,
+    "cancellation_state": "none",
+    "responsible_actor": "00000000-0000-4000-8000-000000000005",
+    "escalation_actor": "00000000-0000-4000-8000-000000000009",
+    "hold_started_at": null,
+    "last_progress_at": null
+  },
+  "cases": [
+    {
+      "name": "unpaid",
+      "facts": {},
+      "command": {},
+      "expected": {
+        "state": "accepted",
+        "effect": "release_commitment",
+        "completed": true
+      }
+    },
+    {
+      "name": "all_declined",
+      "facts": {
+        "attempts": [
+          "declined"
+        ]
+      },
+      "command": {},
+      "expected": {
+        "state": "accepted",
+        "effect": "release_commitment"
+      }
+    },
+    {
+      "name": "attempt_pending",
+      "facts": {
+        "attempts": [
+          "pending"
+        ]
+      },
+      "command": {},
+      "expected": {
+        "state": "pending",
+        "effect": "pause_fulfilment",
+        "completed": false
+      }
+    },
+    {
+      "name": "attempt_unknown",
+      "facts": {
+        "attempts": [
+          "unknown"
+        ]
+      },
+      "command": {},
+      "expected": {
+        "state": "pending",
+        "effect": "pause_fulfilment",
+        "completed": false
+      }
+    },
+    {
+      "name": "attempt_confirmed",
+      "facts": {
+        "attempts": [
+          "confirmed"
+        ]
+      },
+      "command": {},
+      "expected": {
+        "state": "pending",
+        "effect": "pause_fulfilment",
+        "completed": false
+      }
+    },
+    {
+      "name": "work_started",
+      "facts": {
+        "work_started": true
+      },
+      "command": {},
+      "expected": {
+        "state": "pending",
+        "effect": "pause_fulfilment"
+      }
+    },
+    {
+      "name": "parts_consumed",
+      "facts": {
+        "parts_consumed": true
+      },
+      "command": {},
+      "expected": {
+        "state": "pending",
+        "effect": "pause_fulfilment"
+      }
+    },
+    {
+      "name": "dispatched",
+      "facts": {
+        "dispatched": true
+      },
+      "command": {},
+      "expected": {
+        "state": "pending",
+        "effect": "pause_fulfilment"
+      }
+    },
+    {
+      "name": "custody_transferred",
+      "facts": {
+        "custody_transferred": true
+      },
+      "command": {},
+      "expected": {
+        "state": "pending",
+        "effect": "pause_fulfilment"
+      }
+    },
+    {
+      "name": "paid_request",
+      "facts": {
+        "payment": "paid_held"
+      },
+      "command": {},
+      "expected": {
+        "state": "pending",
+        "pending_reason": "decision_required"
+      }
+    },
+    {
+      "name": "paid_accept",
+      "facts": {
+        "payment": "paid_held",
+        "cancellation_state": "pending",
+        "hold_started_at": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "action": "accept"
+      },
+      "expected": {
+        "state": "accepted",
+        "refundable_minor": 500000,
+        "completed": false,
+        "effect": "pause_fulfilment"
+      }
+    },
+    {
+      "name": "return_required",
+      "facts": {
+        "payment": "paid_held",
+        "cancellation_state": "pending",
+        "custody_transferred": true,
+        "hold_started_at": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "action": "accept"
+      },
+      "expected": {
+        "state": "pending",
+        "pending_reason": "return_pending",
+        "refundable_minor": 0
+      }
+    },
+    {
+      "name": "wrong_return",
+      "facts": {
+        "payment": "paid_held",
+        "cancellation_state": "pending",
+        "custody_transferred": true,
+        "return_state": "mismatch",
+        "hold_started_at": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "action": "accept"
+      },
+      "expected": {
+        "state": "pending",
+        "refundable_minor": 0
+      }
+    },
+    {
+      "name": "verified_return",
+      "facts": {
+        "payment": "paid_held",
+        "cancellation_state": "pending",
+        "custody_transferred": true,
+        "return_state": "verified",
+        "hold_started_at": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "action": "accept"
+      },
+      "expected": {
+        "state": "accepted",
+        "refundable_minor": 500000
+      }
+    },
+    {
+      "name": "exception",
+      "facts": {
+        "payment": "paid_held",
+        "cancellation_state": "pending",
+        "custody_transferred": true,
+        "failure_exception_id": "00000000-0000-4000-8000-000000000007",
+        "hold_started_at": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "action": "accept"
+      },
+      "expected": {
+        "state": "accepted",
+        "refundable_minor": 500000
+      }
+    },
+    {
+      "name": "job_partial",
+      "facts": {
+        "payment": "paid_held",
+        "cancellation_state": "pending",
+        "kind": "job",
+        "work_started": true,
+        "parts_consumed": true,
+        "refundable_labor_minor": 100000,
+        "unused_returnable_parts_minor": 50000,
+        "reserved_refund_minor": 30000,
+        "confirmed_refund_minor": 20000,
+        "hold_started_at": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "action": "accept"
+      },
+      "expected": {
+        "state": "accepted",
+        "refundable_minor": 100000
+      }
+    },
+    {
+      "name": "job_full",
+      "facts": {
+        "payment": "paid_held",
+        "cancellation_state": "pending",
+        "kind": "job",
+        "refundable_labor_minor": 500000,
+        "hold_started_at": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "action": "accept"
+      },
+      "expected": {
+        "state": "accepted",
+        "refundable_minor": 500000
+      }
+    },
+    {
+      "name": "over_cap",
+      "facts": {
+        "payment": "paid_held",
+        "cancellation_state": "pending",
+        "confirmed_refund_minor": 500000,
+        "reserved_refund_minor": 100,
+        "hold_started_at": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "action": "accept"
+      },
+      "expected": {
+        "state": "accepted",
+        "refundable_minor": 0
+      }
+    },
+    {
+      "name": "decline",
+      "facts": {
+        "payment": "paid_held",
+        "cancellation_state": "pending",
+        "hold_started_at": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "action": "decline"
+      },
+      "expected": {
+        "state": "declined",
+        "effect": "none"
+      }
+    },
+    {
+      "name": "stale",
+      "facts": {},
+      "command": {
+        "expected_revision": 3
+      },
+      "expected": {
+        "state": "denied",
+        "pending_reason": "stale_revision",
+        "revision": 4
+      }
+    },
+    {
+      "name": "wrong_organization",
+      "facts": {},
+      "command": {
+        "organization_id": "00000000-0000-4000-8000-000000000008"
+      },
+      "expected": {
+        "state": "denied",
+        "pending_reason": "scope"
+      }
+    },
+    {
+      "name": "request_required",
+      "facts": {},
+      "command": {
+        "action": "accept"
+      },
+      "expected": {
+        "state": "denied",
+        "pending_reason": "request_required"
+      }
+    },
+    {
+      "name": "already_accepted",
+      "facts": {
+        "cancellation_state": "accepted",
+        "hold_started_at": "2026-11-17T00:00:00Z"
+      },
+      "command": {},
+      "expected": {
+        "state": "denied",
+        "effect": "none"
+      }
+    },
+    {
+      "name": "settlement",
+      "facts": {
+        "payment": "released"
+      },
+      "command": {},
+      "expected": {
+        "state": "pending",
+        "effect": "pause_fulfilment"
+      }
+    }
+  ],
+  "recovery_cases": [
+    {
+      "name": "lost_response",
+      "command": {
+        "schema_version": 1,
+        "operation_id": "00000000-0000-4000-8000-000000000006",
+        "subject_id": "00000000-0000-4000-8000-000000000001",
+        "watch_id": "00000000-0000-4000-8000-000000000002",
+        "organization_id": null,
+        "expected_revision": 4,
+        "action": "request",
+        "reason": "Synthetic cancellation request"
+      },
+      "first_delivery": "response_lost_after_commit",
+      "retry_operation_id": "00000000-0000-4000-8000-000000000006",
+      "expected_state": "accepted",
+      "expected_effect_count": 1
+    },
+    {
+      "name": "duplicate",
+      "command": {
+        "schema_version": 1,
+        "operation_id": "00000000-0000-4000-8000-000000000006",
+        "subject_id": "00000000-0000-4000-8000-000000000001",
+        "watch_id": "00000000-0000-4000-8000-000000000002",
+        "organization_id": null,
+        "expected_revision": 4,
+        "action": "request",
+        "reason": "Synthetic cancellation request"
+      },
+      "retry_operation_id": "00000000-0000-4000-8000-000000000006",
+      "expected_state": "accepted",
+      "expected_effect_count": 1
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "lane": "L17",
+  "contracts": [
+    {
+      "namespace": "service.maintenance.v1",
+      "path": "packages/contracts-service/maintenance",
+      "fixtures": [
+        "packages/contracts-service/maintenance/fixtures.json",
+        "packages/contracts-service/maintenance/provider-fixtures.json"
+      ]
+    }
+  ],
+  "composition": {
+    "schema_version": "l17.registration.v1",
+    "outcomes": [
+      "C08",
+      "S01",
+      "S05",
+      "S11"
+    ],
+    "missing_fragment": "unavailable",
+    "operation_lookup": "exact_service_method_path",
+    "maintenance_gateway": [
+      {"service":"service-operations","path":"/v1/maintenance/context/:watch_id","methods":["GET"],"roles":["buyer"],"maxBodyBytes":4096,"maxResponseBytes":131072},
+      {"service":"service-operations","path":"/v1/maintenance/requests","methods":["POST"],"roles":["buyer"],"maxBodyBytes":16384,"maxResponseBytes":16384},
+      {"service":"service-operations","path":"/v1/maintenance/operations/:operation_id","methods":["GET","DELETE"],"roles":["buyer"],"maxBodyBytes":4096,"maxResponseBytes":16384},
+      {"service":"service-operations","path":"/v1/maintenance/photos","methods":["POST"],"roles":["buyer"],"maxBodyBytes":524288,"maxResponseBytes":16384},
+      {"service":"service-operations","path":"/v1/maintenance/assessment-inbox","methods":["GET"],"roles":["brand","dealer"],"maxBodyBytes":4096,"maxResponseBytes":32768},
+      {"service":"service-operations","path":"/v1/maintenance/requests/:request_id","methods":["GET"],"roles":["brand","dealer"],"maxBodyBytes":4096,"maxResponseBytes":32768},
+      {"service":"service-operations","path":"/v1/maintenance/requests/:request_id/photos/:photo_ref","methods":["GET"],"roles":["brand","dealer"],"maxBodyBytes":4096,"maxResponseBytes":524288},
+      {"service":"service-operations","path":"/v1/maintenance/requests/:request_id/assignment","methods":["GET","POST"],"roles":["brand","dealer"],"maxBodyBytes":8192,"maxResponseBytes":8192},
+      {"service":"service-operations","path":"/v1/maintenance/requests/:request_id/watch-confirmation","methods":["POST"],"roles":["brand","dealer"],"maxBodyBytes":8192,"maxResponseBytes":8192},
+      {"service":"service-operations","path":"/v1/maintenance/requests/:request_id/staff-operations/:operation_id","methods":["GET"],"roles":["brand","dealer"],"maxBodyBytes":4096,"maxResponseBytes":8192},
+      {"service":"service-operations","path":"/v1/maintenance/requests/:request_id/disposition","methods":["GET"],"roles":["buyer"],"maxBodyBytes":4096,"maxResponseBytes":8192},
+      {"service":"service-operations","path":"/v1/maintenance/requests/:request_id/opening-consent","methods":["GET","POST"],"roles":["buyer"],"maxBodyBytes":4096,"maxResponseBytes":8192},
+      {"service":"service-operations","path":"/v1/maintenance/requests/:request_id/opening-consent/operations/:operation_id","methods":["GET","DELETE"],"roles":["buyer"],"maxBodyBytes":4096,"maxResponseBytes":8192},
+      {"service":"service-operations","path":"/v1/maintenance/opening-consent/intake/:order_id","methods":["GET"],"roles":["brand","dealer"],"maxBodyBytes":4096,"maxResponseBytes":8192},
+      {"service":"service-operations","path":"/v1/maintenance/requests/:request_id/opening-consent/intake","methods":["POST"],"roles":["brand","dealer"],"maxBodyBytes":4096,"maxResponseBytes":8192},
+      {"service":"service-operations","path":"/v1/maintenance/requests/:request_id/opening-consent/intake/operations/:operation_id","methods":["GET","DELETE"],"roles":["brand","dealer"],"maxBodyBytes":4096,"maxResponseBytes":8192}
+    ],
+    "authority": "current_destination_permission_and_revision",
+    "retry": "same_operation_id",
+    "migration_order": "all_modules_before_receivers_before_destinations",
+    "dependency_policy": {
+      "timeout_ms": 1200,
+      "concurrency": 4,
+      "failure_threshold": 3,
+      "cooldown_ms": 10000,
+      "automatic_command_retries": 0
+    },
+    "required_receipt_fields": [
+      "schema_version",
+      "operation_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "state",
+      "revision",
+      "pending_reason",
+      "next_actor",
+      "next_review_at"
+    ],
+    "states": {
+      "success": {
+        "retry": false,
+        "en": "The current result is available.",
+        "ar": "النتيجة الحالية متاحة."
+      },
+      "denied": {
+        "retry": false,
+        "en": "Access denied. Request current permission.",
+        "ar": "الوصول مرفوض. اطلب الصلاحية الحالية."
+      },
+      "stale": {
+        "retry": false,
+        "en": "The record changed. Review the current version before continuing.",
+        "ar": "تغير السجل. راجع النسخة الحالية قبل المتابعة."
+      },
+      "pending": {
+        "retry": true,
+        "en": "The result is pending. Check the same action reference.",
+        "ar": "النتيجة قيد الانتظار. تحقق من مرجع الإجراء نفسه."
+      },
+      "unavailable": {
+        "retry": true,
+        "en": "The service is unavailable. Retry the same action reference.",
+        "ar": "الخدمة غير متاحة. أعد المحاولة باستخدام مرجع الإجراء نفسه."
+      }
+    },
+    "fixtures": [
+      {
+        "operation_id": "l17-example-001",
+        "expected_revision": 4,
+        "revision": 5,
+        "state": "success",
+        "schema_version": "l17.registration.v1",
+        "subject_id": "synthetic-subject",
+        "watch_id": "synthetic-watch",
+        "actor_id": "synthetic-actor",
+        "organization_id": "synthetic-business",
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null
+      },
+      {
+        "operation_id": "l17-example-002",
+        "expected_revision": 4,
+        "revision": 4,
+        "state": "denied",
+        "schema_version": "l17.registration.v1",
+        "subject_id": "synthetic-subject",
+        "watch_id": "synthetic-watch",
+        "actor_id": "synthetic-actor",
+        "organization_id": "synthetic-business",
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null
+      },
+      {
+        "operation_id": "l17-example-003",
+        "expected_revision": 4,
+        "revision": 5,
+        "state": "stale",
+        "schema_version": "l17.registration.v1",
+        "subject_id": "synthetic-subject",
+        "watch_id": "synthetic-watch",
+        "actor_id": "synthetic-actor",
+        "organization_id": "synthetic-business",
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null
+      },
+      {
+        "operation_id": "l17-example-004",
+        "expected_revision": 4,
+        "revision": 4,
+        "state": "pending",
+        "pending_reason": "lost_response",
+        "schema_version": "l17.registration.v1",
+        "subject_id": "synthetic-subject",
+        "watch_id": "synthetic-watch",
+        "actor_id": "synthetic-actor",
+        "organization_id": "synthetic-business",
+        "next_actor": "synthetic-actor",
+        "next_review_at": "2026-11-18T00:00:00Z"
+      },
+      {
+        "operation_id": "l17-example-004",
+        "expected_revision": 4,
+        "revision": 4,
+        "state": "pending",
+        "pending_reason": "lost_response",
+        "schema_version": "l17.registration.v1",
+        "subject_id": "synthetic-subject",
+        "watch_id": "synthetic-watch",
+        "actor_id": "synthetic-actor",
+        "organization_id": "synthetic-business",
+        "next_actor": "synthetic-actor",
+        "next_review_at": "2026-11-18T00:00:00Z"
+      }
+    ],
+    "discovery": {
+      "metadata_pattern": "web/features/**/L17.registration.ts",
+      "export": "default",
+      "module_schema": "L17Module",
+      "missing_fragment": "unavailable",
+      "runtime_entry": "applyL17",
+      "startup_boundary": "existing_service_serialized_startup",
+      "admission_prerequisite": {
+        "lane_range": "L00-L25",
+        "status": "deferred",
+        "required_paths": [
+          "web/scripts/generate-nav.mjs",
+          "web/registry-loader.ts"
+        ],
+        "proof": "tests/lanes/L17/WIRE-L17/admission.test.mjs",
+        "activation": "after_shared_admission_checks_pass"
+      }
+    }
+  }
+}

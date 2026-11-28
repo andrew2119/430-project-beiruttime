@@ -1,0 +1,61 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "operation_id": {
+      "pattern": "^[A-Za-z0-9_-]{8,128}$",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "record_id": {
+      "format": "uuid",
+      "title": "Record Id",
+      "type": "string"
+    },
+    "order_id": {
+      "format": "uuid",
+      "title": "Order Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "kind": {
+      "enum": [
+        "save",
+        "evidence"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "maintenance_request_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Maintenance Request Id"
+    }
+  },
+  "required": [
+    "operation_id",
+    "organization_id",
+    "record_id",
+    "order_id",
+    "revision",
+    "kind"
+  ],
+  "title": "IntakeOperationReceipt",
+  "type": "object"
+}

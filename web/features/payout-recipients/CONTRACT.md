@@ -1,0 +1,15 @@
+# Recipient page connection
+
+The page uses the existing shell and shared controls. It reads the private current-operation adapter and shows unavailable with disabled submission when it is not registered. No recipient, proof or operation is written to browser storage. Locale changes retain the mounted form; access fingerprint changes remount it.
+
+Required connection: current private read, POST change and operation lookup defined by the v1 contract. The read key must contain current access fingerprint and subject/organization. Private answers must clear immediately on access change. Private warming and retention use the scoped read below. Shared navigation connection and measurements remain deferred.
+
+Save consumes current revision and method selection and retains one stable operation reference across pending lookup and language changes. Responses are checked against the operation and private scope. Identity proof must be collected by the protected identity flow; this page never collects payment credentials.
+
+The current read is defined once in read.ts. Its key is [payout-recipients, access fingerprint, subject, selected organization]; language is intentionally absent. The existing root cache holds only read results in memory for five minutes, with a 30-second freshness window and no retries. Proof, drafts and operation bodies remain component memory only. Access change cancels and clears the root cache; authenticated requests fence late responses. Denied reads replace retained results, and command denials remove them. Commands always recheck authority on the server; a retained answer never authorizes a change.
+
+Warming handoff: the navigation steward must call warmRecipient with the existing root client and current scope on keyboard focus, pointer intent or touch intent, and prefetch /seller/payout-recipient through the existing router. The same read definition serves warming and page entry, deduplicating concurrent reads. No private read occurs without the current scope. Shared navigation registration is outside this lease and remains deferred.
+
+The six methods are: route code ready before press (navigation handoff); data on intent (exported warmRecipient); retained answers between visits (root cache); content during refresh (retained current result); first-load-only loading state (no cached answer); and one arrival transition (existing shell boundary, no additional page animation). A warm or retained successful answer supplies the first content frame; a cold entry shows loading and an unavailable response offers reload. Size, timing, shared navigation and first-frame measurements remain deferred, as do the separate browser and phone matrix. No measured speed or complete phone result is claimed.
+
+The delivery declaration names the private read page. The shared PageFrame and usePageRead exports are absent on this input; page-boundary.ts temporarily delegates to the existing shared PageLayout and recipientRead definition without adding a shell or cache. Replacement with the shared exports and the page-rule check remain deferred until that foundation is available.

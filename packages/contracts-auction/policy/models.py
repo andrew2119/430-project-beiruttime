@@ -9,6 +9,7 @@ POLICY_VERSION = 'fixed-end.v2'
 
 class AcceptedBidPolicy(Contract):
     ends_at: AwareDatetime
+    scheduled_ends_at: AwareDatetime | None = None
     server_time: AwareDatetime
     end_version: StrictInt = Field(ge=1)
     # Read compatibility only; a legacy value has no timing effect.
@@ -19,6 +20,12 @@ class ExtensionResult(Contract):
     ends_at: AwareDatetime
     end_version: StrictInt = Field(ge=1)
     extended: bool
+
+
+class ReserveBasis(Contract):
+    current_minor: StrictInt = Field(ge=0, le=9_000_000_000_000_000)
+    reserve_minor: StrictInt | None = Field(ge=1, le=9_000_000_000_000_000)
+    accepted_sequence: StrictInt = Field(ge=0)
 
 
 class ConfigurePolicy(Contract):

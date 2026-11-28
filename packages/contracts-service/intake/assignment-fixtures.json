@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "list": {
+    "actor_id": "30000000-0000-4000-8000-000000000003",
+    "organization_id": "30000000-0000-4000-8000-000000000001",
+    "assignment_revision": 1,
+    "order_ids": ["30000000-0000-4000-8000-000000000004"]
+  },
+  "read": {
+    "actor_id": "30000000-0000-4000-8000-000000000003",
+    "organization_id": "30000000-0000-4000-8000-000000000001",
+    "order_id": "30000000-0000-4000-8000-000000000004",
+    "permission": "read",
+    "assignment_revision": 1,
+    "allowed": true
+  },
+  "write": {
+    "actor_id": "30000000-0000-4000-8000-000000000003",
+    "organization_id": "30000000-0000-4000-8000-000000000001",
+    "order_id": "30000000-0000-4000-8000-000000000004",
+    "permission": "write",
+    "assignment_revision": 1,
+    "allowed": true
+  },
+  "revoked": {
+    "actor_id": "30000000-0000-4000-8000-000000000003",
+    "organization_id": "30000000-0000-4000-8000-000000000001",
+    "order_id": "30000000-0000-4000-8000-000000000004",
+    "permission": "write",
+    "assignment_revision": 2,
+    "allowed": false
+  }
+}

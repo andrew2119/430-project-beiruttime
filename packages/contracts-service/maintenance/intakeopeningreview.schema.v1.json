@@ -1,0 +1,208 @@
+{
+  "$defs": {
+    "AcceptedFee": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "request_id": {
+          "format": "uuid",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "request_revision": {
+          "minimum": 1,
+          "title": "Request Revision",
+          "type": "integer"
+        },
+        "buyer_id": {
+          "format": "uuid",
+          "title": "Buyer Id",
+          "type": "string"
+        },
+        "organization_id": {
+          "format": "uuid",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "offer_id": {
+          "format": "uuid",
+          "title": "Offer Id",
+          "type": "string"
+        },
+        "offer_revision": {
+          "minimum": 1,
+          "title": "Offer Revision",
+          "type": "integer"
+        },
+        "policy_revision": {
+          "minimum": 1,
+          "title": "Policy Revision",
+          "type": "integer"
+        },
+        "amount_minor": {
+          "minimum": 0,
+          "title": "Amount Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "const": "USD",
+          "title": "Currency",
+          "type": "string"
+        },
+        "state": {
+          "const": "accepted",
+          "title": "State",
+          "type": "string"
+        },
+        "decided_at": {
+          "format": "date-time",
+          "title": "Decided At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation_id",
+        "request_id",
+        "request_revision",
+        "buyer_id",
+        "organization_id",
+        "offer_id",
+        "offer_revision",
+        "policy_revision",
+        "amount_minor",
+        "currency",
+        "state",
+        "decided_at"
+      ],
+      "title": "AcceptedFee",
+      "type": "object"
+    },
+    "AcknowledgementBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "request_revision": {
+          "minimum": 1,
+          "title": "Request Revision",
+          "type": "integer"
+        },
+        "consent_revision": {
+          "minimum": 1,
+          "title": "Consent Revision",
+          "type": "integer"
+        },
+        "assignment_revision": {
+          "minimum": 1,
+          "title": "Assignment Revision",
+          "type": "integer"
+        },
+        "order_id": {
+          "format": "uuid",
+          "title": "Order Id",
+          "type": "string"
+        },
+        "receipt_id": {
+          "format": "uuid",
+          "title": "Receipt Id",
+          "type": "string"
+        },
+        "receipt_revision": {
+          "minimum": 1,
+          "title": "Receipt Revision",
+          "type": "integer"
+        },
+        "fee_acceptance_operation_id": {
+          "format": "uuid",
+          "title": "Fee Acceptance Operation Id",
+          "type": "string"
+        },
+        "offer_id": {
+          "format": "uuid",
+          "title": "Offer Id",
+          "type": "string"
+        },
+        "offer_revision": {
+          "minimum": 1,
+          "title": "Offer Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "request_revision",
+        "consent_revision",
+        "assignment_revision",
+        "order_id",
+        "receipt_id",
+        "receipt_revision",
+        "fee_acceptance_operation_id",
+        "offer_id",
+        "offer_revision"
+      ],
+      "title": "AcknowledgementBinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "received_at": {
+      "format": "date-time",
+      "title": "Received At",
+      "type": "string"
+    },
+    "opening_permitted": {
+      "title": "Opening Permitted",
+      "type": "boolean"
+    },
+    "no_polish": {
+      "title": "No Polish",
+      "type": "boolean"
+    },
+    "binding": {
+      "$ref": "#/$defs/AcknowledgementBinding"
+    },
+    "fee": {
+      "$ref": "#/$defs/AcceptedFee"
+    },
+    "acknowledged": {
+      "title": "Acknowledged",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "request_id",
+    "organization_id",
+    "actor_id",
+    "watch_id",
+    "received_at",
+    "opening_permitted",
+    "no_polish",
+    "binding",
+    "fee",
+    "acknowledged"
+  ],
+  "title": "IntakeOpeningReview",
+  "type": "object"
+}

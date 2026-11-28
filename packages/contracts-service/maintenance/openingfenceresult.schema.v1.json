@@ -1,0 +1,21 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "binding_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Binding Hash",
+      "type": "string"
+    },
+    "held_until": {
+      "format": "date-time",
+      "title": "Held Until",
+      "type": "string"
+    }
+  },
+  "required": [
+    "binding_hash",
+    "held_until"
+  ],
+  "title": "OpeningFenceResult",
+  "type": "object"
+}

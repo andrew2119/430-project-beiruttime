@@ -1,9 +1,9 @@
 'use client';
 import { authenticatedRequest } from '@/features/identity/session';
-import type { DraftInput,RequestDraft,DraftReadiness,ConfigurationIntent } from '@contracts/contracts-catalog/request-drafts';
+import type { DraftInput,RequestDraft,DraftReadiness,ConfigurationIntent,DraftPage } from '@contracts/contracts-catalog/request-drafts';
 const root='/api/web/v1/catalog/v1';
 export const draftApi={
-  list:(signal?:AbortSignal)=>authenticatedRequest<{items:RequestDraft[]}>(`${root}/request-drafts`,{signal}),
+  list:(signal?:AbortSignal,before:string|null=null)=>authenticatedRequest<DraftPage>(`${root}/request-drafts?limit=50${before?'&before='+encodeURIComponent(before):''}`,{signal}),
   get:(id:string,signal?:AbortSignal)=>authenticatedRequest<RequestDraft>(`${root}/request-drafts/${encodeURIComponent(id)}`,{signal}),
   readiness:(id:string,signal?:AbortSignal)=>authenticatedRequest<DraftReadiness>(`${root}/request-drafts/${encodeURIComponent(id)}/readiness`,{signal}),
   configuration:(id:string,revision:number,signal?:AbortSignal)=>authenticatedRequest<ConfigurationIntent>(`${root}/request-draft-configurations/${encodeURIComponent(id)}?revision=${revision}`,{signal}),

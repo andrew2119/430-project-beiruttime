@@ -37,6 +37,22 @@ const auctionBidWorkMs = 10 * standardCallMs + 3 * pooledReadMs + 2 * dbCommandM
   + transactionMs(5) + transactionMs(9) + transactionMs(14)
   + transactionMs(16 + 2 + 10_000) + localWorkMs;
 const auctionBidMs = Math.min(auctionBidWorkMs, maxRouteBudgetMs);
+// listings/revisions/routes resume uses up to ten 2.5 s Catalog peer calls.
+// Initial load and reconciliation reload each read the edit and listing.
+// The five write transactions include an advisory lock each and persist the
+// Orders revision (3 commands), mark Auction prepared (2), mark Orders
+// started (3), commit listing/history/outbox changes (9, including both
+// listing locks and the optional price event), and persist the receipt (5).
+const listingEditResumeMs = 10 * catalogCallMs + 2 * (pooledReadMs + dbCommandMs)
+  + transactionMs(3) + transactionMs(2) + transactionMs(3) + transactionMs(9) + transactionMs(5) + localWorkMs;
+// brand-decisions/routes resume reads the operation, request, and revision on
+// one connection. It uses nine Catalog peer calls (two approver checks, three
+// authority reads, and two consume calls). Binding persistence takes the
+// request lock and writes bindings. Finalization takes the request lock,
+// reads the request, revision, and operation, updates status, and adds an
+// outbox row. The denial branch uses at most three commands in place of finalization.
+const brandDecisionResumeMs = pooledReadMs + 2 * dbCommandMs + 9 * catalogCallMs
+  + transactionMs(2) + transactionMs(6) + localWorkMs;
 const id = '[A-Za-z0-9_-]{1,200}';
 export const publicationPath = new RegExp(`^/v1/seller/listings/${id}/publish$`);
 
@@ -59,6 +75,7 @@ export const routeBudgets: readonly RouteBudget[] = [
   // private-seller/routes mine and private-review/listing_review status load
   // the live account and session, then the application or review in one transaction.
   ['identity', 'GET', '/v1/private-seller/applications/me', transactionMs(3) + localWorkMs],
+  ['identity', 'GET', '/v1/listing-reviews/:id', transactionMs(3) + localWorkMs],
   // accounts/routes logout uses one transaction to read the refresh owner,
   // lock the account, revoke the session and insert the audit record.
   ['identity', 'POST', '/v1/accounts/logout', transactionMs(4) + localWorkMs],
@@ -120,6 +137,22 @@ export const routeBudgets: readonly RouteBudget[] = [
   // private-seller/routes evidence checks account, session, case and assignment,
   // audits access and reads the bytes.
   ['identity', 'GET', '/v1/private-seller/applications/:id/evidence/:evidenceId', transactionMs(6) + localWorkMs],
+  // private-review/listing_review.command uses 16 commands for challenge and
+  // submission: account and session, review reads and three fence locks,
+  // seller authority, operation lock, replay and clock, then proof, audit and receipt.
+  // Submission also validates up to 2 MiB / 4 MP of PNG data.
+  ['identity', 'POST', '/v1/listing-reviews/:id/challenges', transactionMs(16) + localWorkMs],
+  ['identity', 'POST', '/v1/listing-reviews/:id/submissions', imageWorkMs + transactionMs(16) + localWorkMs],
+  // Assignment and decision add two three-command require_current checks.
+  // Assignment also checks reviewer qualification with one command.
+  ['identity', 'POST', '/v1/listing-reviews/:id/assignment', transactionMs(23) + localWorkMs],
+  ['identity', 'POST', '/v1/listing-reviews/:id/decision', transactionMs(22) + localWorkMs],
+  // Stock decision reads account and session, checks current permission,
+  // reads and fences the review, checks reviewer qualification, locks the
+  // operation, reads replay and stock matches, then writes clearance, audit and receipt.
+  ['identity', 'POST', '/v1/listing-reviews/:id/stock-decision', transactionMs(17) + localWorkMs],
+  // The photo read rechecks permission and audits the download.
+  ['identity', 'GET', '/v1/listing-reviews/:id/photo', transactionMs(7) + localWorkMs],
   // private-review/security loads account, session and grants. evidence then
   // rechecks those three records and the assignment, reads metadata or file
   // bytes, and writes the access audit.
@@ -168,10 +201,80 @@ export const routeBudgets: readonly RouteBudget[] = [
   // listings/routes save resolves Identity, then takes the advisory and listing
   // locks, checks replay, updates the draft, emits one outbox row and saves replay.
   ['catalog', 'PUT', '/v1/seller/listings/:id', catalogCallMs + transactionMs(6) + localWorkMs],
+  // listings/revisions/routes uses the 2.5 s Catalog principal lookup before
+  // one pool acquisition. History reads listing, revisions and pending edit.
+  // Operation lookup reads the edit and its listing.
+  ['catalog', 'GET', '/v1/seller/listings/:id/revisions', catalogCallMs + pooledReadMs + 2 * dbCommandMs + localWorkMs],
+  ['catalog', 'GET', '/v1/seller/listing-edit-operations/:id', catalogCallMs + pooledReadMs + dbCommandMs + localWorkMs],
+  // Starting a revision adds principal and eligibility calls, the preview and
+  // prior edit reads, and a staging transaction with seven commands: the
+  // unit_of_work lock, two listing locks, prior edit read, two pending edit
+  // checks and the edit insert. It then runs the same resume path.
+  ['catalog', 'POST', '/v1/seller/listings/:id/revisions',
+    2 * catalogCallMs + pooledReadMs + dbCommandMs + transactionMs(7) + listingEditResumeMs],
+  ['catalog', 'POST', '/v1/seller/listing-edit-operations/:id/resume', listingEditResumeMs],
   // listings/routes checks Identity, reads the published listing in one pool
   // query, then checks Orders for a hidden listing's non-owner.
   // catalog_dependencies caps each peer call at 2.5 s.
   ['catalog', 'GET', '/v1/listings/:id/report-subject', 2 * catalogCallMs + pooledReadMs + localWorkMs],
+  // configuration/routes publish resolves a principal and active brand, then
+  // takes the advisory lock, reads rules and option inputs (five commands),
+  // inserts the rule and adds one outbox row.
+  ['catalog', 'PUT', '/v1/brands/:id/compatibility/:rule', 2 * catalogCallMs + transactionMs(8) + localWorkMs],
+  // configuration/routes rules checks the active brand via catalog_dependencies
+  // (2.5 s), then fetches the latest rule revisions in one pool query.
+  ['catalog', 'GET', '/v1/brands/:id/compatibility', catalogCallMs + pooledReadMs + localWorkMs],
+  // configuration/routes validate resolves the principal and active brand via
+  // catalog_dependencies (2.5 s each), with a separate ownership query between them.
+  // The validation transaction takes one unit_of_work lock. service_app/configuration
+  // adds three locks, two configuration reads, and reads for selections, movement
+  // and references. It then reads five option revisions and the matching rule.
+  ['catalog', 'POST', '/v1/configurations/:id/validate', 2 * catalogCallMs + pooledReadMs + transactionMs(15) + localWorkMs],
+  // request-drafts/submission/routes resolves principal and active brand via
+  // catalog_dependencies. One pool acquisition covers draft and replay reads.
+  // The write transaction uses 22 commands: operation lock, replay and draft
+  // reads, 14 configuration commands, and five request, revision, draft,
+  // replay and outbox writes.
+  ['catalog', 'POST', '/v1/request-drafts/:id/submit',
+    2 * catalogCallMs + pooledReadMs + dbCommandMs + transactionMs(22) + localWorkMs],
+  // submission/routes lists at most 100 requests. One acquisition covers the
+  // page, optional cursor check and two queries from customization.current
+  // per item. The sum of the individual command ceilings exceeds the transport
+  // window, so cap the overall route deadline.
+  ['catalog', 'GET', '/v1/customization-requests',
+    Math.min(2 * catalogCallMs + pooledReadMs + (1 + 2 * 100) * dbCommandMs + localWorkMs, maxRouteBudgetMs)],
+  // Detail reads the request and revision, then customization.readable checks
+  // the principal and, for business access, the active brand.
+  ['catalog', 'GET', '/v1/customization-requests/:id', 2 * catalogCallMs + pooledReadMs + dbCommandMs + localWorkMs],
+  // request-drafts/submission/routes history reads the request and current
+  // revision, checks the principal and active brand, then acquires another
+  // connection to read the revision page.
+  ['catalog', 'GET', '/v1/customization-requests/:id/revisions',
+    2 * catalogCallMs + 2 * pooledReadMs + dbCommandMs + localWorkMs],
+  // request-drafts/submission/routes reference reads the request and revision
+  // on one connection. After the principal and brand checks (2.5 s each),
+  // it acquires another connection to read the PNG. Allow local time for transfer.
+  ['catalog', 'GET', '/v1/customization-requests/:id/references/:reference',
+    2 * catalogCallMs + 2 * pooledReadMs + dbCommandMs + localWorkMs],
+  // request-drafts/submission/routes operation and brand-decisions/routes
+  // decision and operation each read the request, revision and operation on
+  // one connection, then check the principal and active brand.
+  ['catalog', 'GET', '/v1/customization-operations/:id',
+    2 * catalogCallMs + pooledReadMs + 2 * dbCommandMs + localWorkMs],
+  ['catalog', 'GET', '/v1/customization-requests/:id/decision',
+    2 * catalogCallMs + pooledReadMs + 2 * dbCommandMs + localWorkMs],
+  ['catalog', 'GET', '/v1/brand-decision-operations/:id',
+    2 * catalogCallMs + pooledReadMs + 2 * dbCommandMs + localWorkMs],
+  // brand-decisions/routes readiness reads the request and revision before
+  // two approver calls and three authority reads.
+  ['catalog', 'GET', '/v1/customization-requests/:id/decision-readiness',
+    pooledReadMs + dbCommandMs + 5 * catalogCallMs + localWorkMs],
+  // decide adds the request and revision reads, two approver calls, and a
+  // staging transaction: advisory lock, request and revision reads, two
+  // checks for existing decisions, and intent insertion.
+  ['catalog', 'POST', '/v1/customization-requests/:id/decisions',
+    pooledReadMs + dbCommandMs + 2 * catalogCallMs + transactionMs(6) + brandDecisionResumeMs],
+  ['catalog', 'POST', '/v1/brand-decision-operations/:id/resume', brandDecisionResumeMs],
   // color/routes upload_reference uses the 1.5 s principal deadline from
   // color/dependencies and validates and sanitizes a PNG up to 1 MiB and 1 MP
   // (color/images). Allow local image work separately from the eight commands:
@@ -433,6 +536,12 @@ export const routeBudgets: readonly RouteBudget[] = [
   // existing intake. Update locks and reads the existing intake in one command.
   ['service-operations', 'POST', '/v1/intake/records', 4 * standardCallMs + transactionMs(9) + localWorkMs],
   ['service-operations', 'PUT', '/v1/intake/records/:id', 4 * standardCallMs + transactionMs(8) + localWorkMs],
+  // Intake receipt lookup checks the selected principal and provider, locks and
+  // reads the operation, then rechecks record access on an existing receipt.
+  ['service-operations', 'GET', '/v1/intake/operations/:key', 3 * standardCallMs + transactionMs(2) + localWorkMs],
+  // Closure can return an existing receipt or insert a tombstone without a
+  // record access read. Budget for the slower of those mutually exclusive paths.
+  ['service-operations', 'DELETE', '/v1/intake/operations/:key', Math.max(3 * standardCallMs + transactionMs(2), 2 * standardCallMs + transactionMs(3)) + localWorkMs],
   // Intake evidence checks principal, provider and record scope. Upload also
   // validates the bounded file payload in evidence and photo. intake/evidence
   // upload takes the operation and intake locks, checks replay, count and

@@ -1,6 +1,6 @@
 import asyncio
-from bt_runtime.app.db import migrate
 from bt_runtime.app.settings import Settings
+from .main import migrate
 
 if __name__ == '__main__':
     settings = Settings()

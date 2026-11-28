@@ -1,23 +1,55 @@
-# Business and operations page patterns
+# Business workspace composition
 
-All pages use the shared Calm card `PageHeader`, Pane tabs and list-page/tray spacing. Typography comes from the shared sans family, including Arabic.
+The directory, contacts, ordinary colleague administration, seller history and
+verification desk share the canonical page frame, header, body and foundation
+controls. They add no shell landmark or notification outlet. Navigation links
+keep their locale and current-route marker. Labels change in place; private
+forms are keyed by access and record revision, never by language or appearance.
 
-## Page compositions
+Contacts keep the current verified recipient while the proposed recipient is
+pending. Current-password proof binds the exact recipient. Codes accept Arabic
+digits and use the contact service's six-digit, ten-minute, five-attempt policy
+and one-per-minute/five-per-hour limits. Neither passwords nor private files are
+stored by the page.
 
-- `/business`: Calm header with route tabs, `pg-card` business rows, status chips and quiet references. The operator onboarding panel uses section-card/form-field spacing and native submission. Capability choices use Checkbox; loading uses row skeletons; empty and failed loads use State.
-- `/business/contacts`: Two current-contact panels above a contact-change form with shared Input, Select, Button and status chip. Pending proof stays in the same section behind a hairline. Password, proof expiry, simulated-code reveal and six-digit verification remain unchanged.
-- `/business/membership`: Compact lookup toolbar and member cards with revision metadata, status chip and editable form. Grant/edit forms use shared Input, Select and Checkbox with common focus, press and disabled states.
-- `/business/review-history`: Calm header and empty/failed faces. Review cards use the `pap-timeline` / `pap-step` decision timeline, status chips and existing older/latest pagination.
-- `/operations/verification`: Queue beside a decision panel. Rows keep fixed reference/state/action slots; facts, downloads, verdict and history use `pap-panel` blocks. Assignment uses form cards. Selection has a pressed state and shared motion. Phone layout stacks queue and panel.
-- `/business-intake`: Organization Select and intake queue beside an editor card. Identity, condition, permissions, fees and currency use shared controls. Evidence uses common list-row/upload controls. Phone layout stacks the queue/editor, retaining native validation, custody guards, idempotency and file restrictions.
-- `/operations/moderation`: Queue and decision panel with shared report/reference controls. Explicit selection, claim and release actions remain. Evidence and policy use soft surfaces, not colored edge stripes. Decision/appeal forms retain independent pending/error states and revision guards; audit events use the timeline.
-- `/operations/dashboard`: Queue cards with quiet metadata, status chips and button links. Actual queue items and prerequisite/denied/unavailable states remain the source of truth; no invented metrics.
-- `/operations/dashboard/queues/[key]`: The same overview/queue composition for one queue, retaining its route and endpoint.
+Listing possession lives beside seller history and the verification desk. A
+watch reference and listing revision select current facts. Only current server
+permissions expose issue, submit, assign and decide controls. The private photo
+uses a separate challenge-bound upload; the command includes its private
+reference, never its bytes. Assignment controls are separate from the assigned
+reviewer's evidence and reasoned verdict. History pages use server totals and
+25-record requests, without deriving permission from a historical approval.
 
-## Shared states and motion
+Ordinary colleague administration selects one business. The private workspace
+returns its current permission ceiling, ordinary memberships, complete active
+responsibilities and qualified replacement choices. Self and privileged targets
+are excluded; the command boundary rechecks every restriction. Removing job
+permission, suspension and removal bind the current job and replacement
+revisions. Responsibility replacement and membership change are one transaction.
+Unavailable responsibility facts disable administration.
 
-Boundaries preserve authentication restoration, access-fingerprint remounting and retry behavior. State, RowSkeleton, AnimatedList and the shared content-entry recipe own empty/error/loading and list motion. Buttons and fields inherit focus, hover, press and disabled states from `@beirut-time/ui`. Tabs are real locale-aware links with an active route.
+Each command form freezes its request and action reference on submission.
+Unknown results stay pending; retry and lookup keep that reference. A known
+rejection permits editing before a new action. Private upload retries retain the
+same upload reference and file in memory. Access changes dispose outstanding
+requests and remove the private form. A denied private read clears retained records,
+history and evidence immediately, even during an unresolved command. The workspace
+keeps only the immutable operation for authorized recovery with its original reference;
+a later temporary failure cannot restore the denied record. Current record changes create a new form
+only after an acknowledged transition or explicit reload.
 
-EN/AR copy and bidi isolation remain intact. Feature CSS only supplies token-consuming layout with logical properties; it defines no palette, font, radius, shadow or keyframe system.
+## Reads and first frame
 
-See [the design contract](../../../docs/design-system.md) and [validation](VALIDATION.md).
+`reads.ts` defines shared page questions through `definePageRead` and mounts them
+through `usePageRead`. The root access scope owns retained answers across visits,
+refreshes and cancellation. Keys include selected records, revisions and pages;
+language and appearance never replace the scope. Private reads are open-only.
+The directory permits safe intent warming. `businessRouteReads` supplies the
+initial questions for destination integration; `delivery-contract.json` declares
+each route, feature view and read definition without editing shared registration.
+
+Content remains during same-key refresh, with actionable private details hidden
+on failed refresh. Skeletons appear only without a first answer. Shared motion
+owns arrival feedback. Root route discovery, destination warming integration,
+emitted-size gates and first-frame measurements remain owed. No measured speed
+or complete phone verdict is claimed.

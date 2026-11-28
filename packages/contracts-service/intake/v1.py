@@ -46,6 +46,7 @@ class Receipt(Contract):
 
 
 class EvidenceUpload(Contract):
+    safe_photo_declared: StrictBool = False
     kind: Literal['condition_photo','prior_owner_record']
     media_type: Literal['image/jpeg','image/png','image/webp','application/pdf']
     content_base64: str = Field(min_length=4,max_length=349528)

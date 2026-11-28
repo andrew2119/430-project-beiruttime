@@ -1,7 +1,8 @@
-"""Released Communications V1 reservation intent, never payment authority."""
+"""Durable notification intents. Only the buyer-inbox receipt starts the clock."""
 
 from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
+from service_app.payment_notices import payment_notice as payment_notice
 
 
 class InboxDestination:

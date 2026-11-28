@@ -8,7 +8,7 @@ export function reconcileSnapshot(current: AuctionSnapshot|null, next: AuctionSn
     if(!Number.isSafeInteger(bid.sequence)||bid.sequence<1||bid.sequence>next.last_sequence||sequences.has(bid.sequence))return null;
     sequences.add(bid.sequence);
   }
-  if(current&&next.end_version===current.end_version&&next.ends_at!==current.ends_at) return null;
+  if(current&&next.ends_at!==current.ends_at) return null;
   if(current&&next.revision===current.revision&&(next.last_sequence!==current.last_sequence||next.end_version!==current.end_version||next.current_price.amount!==current.current_price.amount||next.current_price.currency!==current.current_price.currency))return null;
   return next;
 }

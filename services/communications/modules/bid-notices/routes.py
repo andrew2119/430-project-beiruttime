@@ -2,13 +2,17 @@ import os
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Request
 from bt_bulkheads import DependencyClient, Unavailable
+from bt_contracts.comms.bid_notices.receipts import BidNoticeReceipt
 from bt_contracts_core.errors import PublicError
 from bt_runtime.event_http import build_event_router
 from bt_runtime.principal import current_principal
-from .events import accepted
+from .events import accepted, bid_outbid
 
 router = APIRouter()
-router.include_router(build_event_router('L05.bid-notices', {'auction.bid-accepted.v1': ('auction', accepted)}))
+router.include_router(build_event_router('L05.bid-notices', {
+    'auction.bid-accepted.v1': ('auction', accepted),
+    'auction.bid-outbid.v2': ('auction', bid_outbid),
+}))
 
 
 def clients(request):
@@ -70,3 +74,20 @@ async def open_notice(notice_id: UUID, request: Request):
             pass
     return {'notice': dto(row), 'current': canonical,
         'current_status': 'available' if canonical else 'unavailable', 'requires_new_fee_preview': True}
+
+
+@router.get('/v1/bid-notice-receipts/{event_id}', response_model=BidNoticeReceipt)
+async def notice_receipt(event_id: UUID, request: Request):
+    subject = await owner(request)
+    async with request.app.state.pool.acquire() as tx:
+        async with tx.transaction(isolation='repeatable_read', readonly=True):
+            row = await tx.fetchrow('''SELECT * FROM bid_notices WHERE event_id=$1
+                AND recipient_id=$2 AND kind='bid_accepted' ''', event_id, subject)
+            if not row:
+                raise PublicError('not_found', 'Notice receipt not found.', status=404)
+            inbox = await tx.fetchrow('''SELECT id FROM l07_notices WHERE recipient_id=$1
+                AND source='communications' AND occurrence_id=$2 AND kind='bid_accepted'
+                AND resource_id=$3''', subject, str(row['id']), row['auction_id'])
+    return {'event_id': str(event_id), 'notice_id': str(row['id']),
+            'auction_id': str(row['auction_id']), 'sequence': row['sequence'],
+            'inbox_id': str(inbox['id']) if inbox else None}

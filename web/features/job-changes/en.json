@@ -1,0 +1,13 @@
+{
+ "title":"Review a material job change","intro":"Changed work stays paused until a durable hold and fresh scope decisions are confirmed.",
+ "loading":"Loading the current change…","empty":"Choose a job change from your job record.",
+ "unavailable":"The current change is unavailable. Retry this same reference; work is not confirmed to resume.",
+ "denied":"Access is unavailable for this identity or business. Return to your job record.",
+ "retry":"Check again","pending_hold":"Waiting for the durable Orders hold. The old scope remains paused.",
+ "awaiting_reapproval":"Hold confirmed. Review the new assessment, quote, eligibility and brand decision in your job record before accepting.",
+ "pending_resume":"Acceptance is retained. Waiting for Orders to confirm the exact new bindings.",
+ "reapproved":"Orders acknowledged the new bindings. Check the job record for current work authorization.",
+ "reference":"Action reference","revision":"Revision","next":"Responsible operator review due","open":"Return to jobs",
+ "reason":"Reason for the change","start":"Request a hold","accept":"Accept the reviewed changed scope","confirm":"Confirm the exact reviewed scope and amount","cancel":"Cancel",
+ "private":"Current private scope must be loaded from the job record. This page does not infer acceptance from an old quote."
+}

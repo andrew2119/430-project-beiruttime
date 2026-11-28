@@ -1,0 +1,56 @@
+{
+  "$defs": {
+    "LocalizedTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "en": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "En",
+          "type": "string"
+        },
+        "ar": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Ar",
+          "type": "string"
+        }
+      },
+      "required": [
+        "en",
+        "ar"
+      ],
+      "title": "LocalizedTerm",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "lead_time": {
+      "$ref": "#/$defs/LocalizedTerm"
+    },
+    "fees": {
+      "$ref": "#/$defs/LocalizedTerm"
+    },
+    "return_terms": {
+      "$ref": "#/$defs/LocalizedTerm"
+    },
+    "assurance": {
+      "$ref": "#/$defs/LocalizedTerm"
+    },
+    "conditions": {
+      "$ref": "#/$defs/LocalizedTerm"
+    }
+  },
+  "required": [
+    "lead_time",
+    "fees",
+    "return_terms",
+    "assurance",
+    "conditions"
+  ],
+  "title": "RetainedTerms",
+  "type": "object"
+}

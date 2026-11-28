@@ -1,0 +1,149 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "request_revision": {
+      "minimum": 1,
+      "title": "Request Revision",
+      "type": "integer"
+    },
+    "consent_revision": {
+      "minimum": 1,
+      "title": "Consent Revision",
+      "type": "integer"
+    },
+    "assignment_revision": {
+      "minimum": 1,
+      "title": "Assignment Revision",
+      "type": "integer"
+    },
+    "order_id": {
+      "format": "uuid",
+      "title": "Order Id",
+      "type": "string"
+    },
+    "receipt_id": {
+      "format": "uuid",
+      "title": "Receipt Id",
+      "type": "string"
+    },
+    "receipt_revision": {
+      "minimum": 1,
+      "title": "Receipt Revision",
+      "type": "integer"
+    },
+    "fee_acceptance_operation_id": {
+      "format": "uuid",
+      "title": "Fee Acceptance Operation Id",
+      "type": "string"
+    },
+    "offer_id": {
+      "format": "uuid",
+      "title": "Offer Id",
+      "type": "string"
+    },
+    "offer_revision": {
+      "minimum": 1,
+      "title": "Offer Revision",
+      "type": "integer"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "buyer_id": {
+      "format": "uuid",
+      "title": "Buyer Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "watch_revision": {
+      "minimum": 1,
+      "title": "Watch Revision",
+      "type": "integer"
+    },
+    "incident_revision": {
+      "minimum": 0,
+      "title": "Incident Revision",
+      "type": "integer"
+    },
+    "customer_opening_permission": {
+      "title": "Customer Opening Permission",
+      "type": "boolean"
+    },
+    "customer_no_polish_acknowledged": {
+      "title": "Customer No Polish Acknowledged",
+      "type": "boolean"
+    },
+    "no_polish": {
+      "title": "No Polish",
+      "type": "boolean"
+    },
+    "accepted_assessment_fee": {
+      "title": "Accepted Assessment Fee",
+      "type": "boolean"
+    },
+    "accepted_fee_minor": {
+      "minimum": 0,
+      "title": "Accepted Fee Minor",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "received_at": {
+      "format": "date-time",
+      "title": "Received At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_revision",
+    "consent_revision",
+    "assignment_revision",
+    "order_id",
+    "receipt_id",
+    "receipt_revision",
+    "fee_acceptance_operation_id",
+    "offer_id",
+    "offer_revision",
+    "operation_id",
+    "request_id",
+    "actor_id",
+    "buyer_id",
+    "organization_id",
+    "watch_id",
+    "watch_revision",
+    "incident_revision",
+    "customer_opening_permission",
+    "customer_no_polish_acknowledged",
+    "no_polish",
+    "accepted_assessment_fee",
+    "accepted_fee_minor",
+    "policy_revision",
+    "received_at"
+  ],
+  "title": "OpeningAcknowledgement",
+  "type": "object"
+}

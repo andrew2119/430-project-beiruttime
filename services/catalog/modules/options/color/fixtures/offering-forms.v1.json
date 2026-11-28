@@ -1,0 +1,834 @@
+{
+  "synthetic": true,
+  "forms": [
+    {
+      "schema_version": "catalog.offering-form.v1",
+      "dimension": "color",
+      "label": {
+        "en": "Color and finish",
+        "ar": "اللون والتشطيب"
+      },
+      "write_schema": {
+        "$defs": {
+          "Localized": {
+            "additionalProperties": false,
+            "properties": {
+              "en": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "En",
+                "type": "string"
+              },
+              "ar": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Ar",
+                "type": "string"
+              }
+            },
+            "required": [
+              "en",
+              "ar"
+            ],
+            "title": "Localized",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "maximum": 2147483646,
+            "minimum": 0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "component": {
+            "enum": [
+              "case",
+              "bezel",
+              "dial",
+              "hands",
+              "markers",
+              "strap",
+              "bracelet",
+              "package"
+            ],
+            "title": "Component",
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/$defs/Localized"
+          },
+          "base_models": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Base Models",
+            "type": "array"
+          },
+          "calibers": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Calibers",
+            "type": "array"
+          },
+          "available": {
+            "default": true,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "details": {
+            "additionalProperties": true,
+            "maxProperties": 16,
+            "title": "Details",
+            "type": "object"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "component",
+          "label",
+          "base_models",
+          "calibers",
+          "details"
+        ],
+        "title": "OptionWrite",
+        "type": "object"
+      },
+      "details_schema": {
+        "$defs": {
+          "Localized": {
+            "additionalProperties": false,
+            "properties": {
+              "en": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "En",
+                "type": "string"
+              },
+              "ar": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Ar",
+                "type": "string"
+              }
+            },
+            "required": [
+              "en",
+              "ar"
+            ],
+            "title": "Localized",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "color": {
+            "$ref": "#/$defs/Localized"
+          },
+          "finish": {
+            "$ref": "#/$defs/Localized"
+          },
+          "coating": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Localized"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "swatch": {
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Swatch",
+            "type": "string"
+          }
+        },
+        "required": [
+          "color",
+          "finish",
+          "swatch"
+        ],
+        "title": "ColorDetails",
+        "type": "object"
+      },
+      "currency": "USD",
+      "money_input": "dollars",
+      "money_storage": "integer_cents",
+      "operation_header": "Idempotency-Key",
+      "write_method": "PUT",
+      "write_path": "/v1/brand-options/brands/{brand_id}/{kind}/{option_id}",
+      "lookup_path": "/v1/brand-options/brands/{brand_id}/operations/{operation_id}",
+      "states": {
+        "draft": {
+          "en": "Review the offering before saving.",
+          "ar": "راجع العرض قبل الحفظ."
+        },
+        "pending": {
+          "en": "Check the same operation before retrying.",
+          "ar": "تحقق من العملية نفسها قبل إعادة المحاولة."
+        },
+        "saved": {
+          "en": "Offering revision saved.",
+          "ar": "تم حفظ إصدار العرض."
+        },
+        "stale": {
+          "en": "Reload and review the current revision.",
+          "ar": "أعد التحميل وراجع الإصدار الحالي."
+        },
+        "denied": {
+          "en": "Ask your business administrator for access.",
+          "ar": "اطلب صلاحية الوصول من مسؤول المنشأة."
+        },
+        "unavailable": {
+          "en": "Retry the same operation when available.",
+          "ar": "أعد محاولة العملية نفسها عند توفر الخدمة."
+        }
+      }
+    },
+    {
+      "schema_version": "catalog.offering-form.v1",
+      "dimension": "material",
+      "label": {
+        "en": "Material and grade",
+        "ar": "المادة والدرجة"
+      },
+      "write_schema": {
+        "$defs": {
+          "Localized": {
+            "additionalProperties": false,
+            "properties": {
+              "en": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "En",
+                "type": "string"
+              },
+              "ar": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Ar",
+                "type": "string"
+              }
+            },
+            "required": [
+              "en",
+              "ar"
+            ],
+            "title": "Localized",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "maximum": 2147483646,
+            "minimum": 0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "component": {
+            "enum": [
+              "case",
+              "bezel",
+              "dial",
+              "hands",
+              "markers",
+              "strap",
+              "bracelet",
+              "package"
+            ],
+            "title": "Component",
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/$defs/Localized"
+          },
+          "base_models": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Base Models",
+            "type": "array"
+          },
+          "calibers": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Calibers",
+            "type": "array"
+          },
+          "available": {
+            "default": true,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "details": {
+            "additionalProperties": true,
+            "maxProperties": 16,
+            "title": "Details",
+            "type": "object"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "component",
+          "label",
+          "base_models",
+          "calibers",
+          "details"
+        ],
+        "title": "OptionWrite",
+        "type": "object"
+      },
+      "details_schema": {
+        "$defs": {
+          "Localized": {
+            "additionalProperties": false,
+            "properties": {
+              "en": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "En",
+                "type": "string"
+              },
+              "ar": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Ar",
+                "type": "string"
+              }
+            },
+            "required": [
+              "en",
+              "ar"
+            ],
+            "title": "Localized",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "material": {
+            "$ref": "#/$defs/Localized"
+          },
+          "grade": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Grade",
+            "type": "string"
+          },
+          "construction": {
+            "enum": [
+              "solid",
+              "plating",
+              "coating"
+            ],
+            "title": "Construction",
+            "type": "string"
+          },
+          "substrate": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Localized"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "thickness_micrometers": {
+            "anyOf": [
+              {
+                "maximum": 1000,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Thickness Micrometers"
+          }
+        },
+        "required": [
+          "material",
+          "grade",
+          "construction"
+        ],
+        "title": "MaterialDetails",
+        "type": "object"
+      },
+      "currency": "USD",
+      "money_input": "dollars",
+      "money_storage": "integer_cents",
+      "operation_header": "Idempotency-Key",
+      "write_method": "PUT",
+      "write_path": "/v1/brand-options/brands/{brand_id}/{kind}/{option_id}",
+      "lookup_path": "/v1/brand-options/brands/{brand_id}/operations/{operation_id}",
+      "states": {
+        "draft": {
+          "en": "Review the offering before saving.",
+          "ar": "راجع العرض قبل الحفظ."
+        },
+        "pending": {
+          "en": "Check the same operation before retrying.",
+          "ar": "تحقق من العملية نفسها قبل إعادة المحاولة."
+        },
+        "saved": {
+          "en": "Offering revision saved.",
+          "ar": "تم حفظ إصدار العرض."
+        },
+        "stale": {
+          "en": "Reload and review the current revision.",
+          "ar": "أعد التحميل وراجع الإصدار الحالي."
+        },
+        "denied": {
+          "en": "Ask your business administrator for access.",
+          "ar": "اطلب صلاحية الوصول من مسؤول المنشأة."
+        },
+        "unavailable": {
+          "en": "Retry the same operation when available.",
+          "ar": "أعد محاولة العملية نفسها عند توفر الخدمة."
+        }
+      }
+    },
+    {
+      "schema_version": "catalog.offering-form.v1",
+      "dimension": "dial",
+      "label": {
+        "en": "Dial, hands and markers",
+        "ar": "الميناء والعقارب والمؤشرات"
+      },
+      "write_schema": {
+        "$defs": {
+          "Localized": {
+            "additionalProperties": false,
+            "properties": {
+              "en": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "En",
+                "type": "string"
+              },
+              "ar": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Ar",
+                "type": "string"
+              }
+            },
+            "required": [
+              "en",
+              "ar"
+            ],
+            "title": "Localized",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "maximum": 2147483646,
+            "minimum": 0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "component": {
+            "enum": [
+              "case",
+              "bezel",
+              "dial",
+              "hands",
+              "markers",
+              "strap",
+              "bracelet",
+              "package"
+            ],
+            "title": "Component",
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/$defs/Localized"
+          },
+          "base_models": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Base Models",
+            "type": "array"
+          },
+          "calibers": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Calibers",
+            "type": "array"
+          },
+          "available": {
+            "default": true,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "details": {
+            "additionalProperties": true,
+            "maxProperties": 16,
+            "title": "Details",
+            "type": "object"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "component",
+          "label",
+          "base_models",
+          "calibers",
+          "details"
+        ],
+        "title": "OptionWrite",
+        "type": "object"
+      },
+      "details_schema": {
+        "$defs": {
+          "Localized": {
+            "additionalProperties": false,
+            "properties": {
+              "en": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "En",
+                "type": "string"
+              },
+              "ar": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Ar",
+                "type": "string"
+              }
+            },
+            "required": [
+              "en",
+              "ar"
+            ],
+            "title": "Localized",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "dial": {
+            "$ref": "#/$defs/Localized"
+          },
+          "hands": {
+            "$ref": "#/$defs/Localized"
+          },
+          "markers": {
+            "$ref": "#/$defs/Localized"
+          },
+          "provenance": {
+            "enum": [
+              "original",
+              "aftermarket"
+            ],
+            "title": "Provenance",
+            "type": "string"
+          },
+          "source_reference": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Source Reference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dial",
+          "hands",
+          "markers",
+          "provenance",
+          "source_reference"
+        ],
+        "title": "DialDetails",
+        "type": "object"
+      },
+      "currency": "USD",
+      "money_input": "dollars",
+      "money_storage": "integer_cents",
+      "operation_header": "Idempotency-Key",
+      "write_method": "PUT",
+      "write_path": "/v1/brand-options/brands/{brand_id}/{kind}/{option_id}",
+      "lookup_path": "/v1/brand-options/brands/{brand_id}/operations/{operation_id}",
+      "states": {
+        "draft": {
+          "en": "Review the offering before saving.",
+          "ar": "راجع العرض قبل الحفظ."
+        },
+        "pending": {
+          "en": "Check the same operation before retrying.",
+          "ar": "تحقق من العملية نفسها قبل إعادة المحاولة."
+        },
+        "saved": {
+          "en": "Offering revision saved.",
+          "ar": "تم حفظ إصدار العرض."
+        },
+        "stale": {
+          "en": "Reload and review the current revision.",
+          "ar": "أعد التحميل وراجع الإصدار الحالي."
+        },
+        "denied": {
+          "en": "Ask your business administrator for access.",
+          "ar": "اطلب صلاحية الوصول من مسؤول المنشأة."
+        },
+        "unavailable": {
+          "en": "Retry the same operation when available.",
+          "ar": "أعد محاولة العملية نفسها عند توفر الخدمة."
+        }
+      }
+    },
+    {
+      "schema_version": "catalog.offering-form.v1",
+      "dimension": "sophistication",
+      "label": {
+        "en": "Finishing package",
+        "ar": "حزمة التشطيب"
+      },
+      "write_schema": {
+        "$defs": {
+          "Localized": {
+            "additionalProperties": false,
+            "properties": {
+              "en": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "En",
+                "type": "string"
+              },
+              "ar": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Ar",
+                "type": "string"
+              }
+            },
+            "required": [
+              "en",
+              "ar"
+            ],
+            "title": "Localized",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "maximum": 2147483646,
+            "minimum": 0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "component": {
+            "enum": [
+              "case",
+              "bezel",
+              "dial",
+              "hands",
+              "markers",
+              "strap",
+              "bracelet",
+              "package"
+            ],
+            "title": "Component",
+            "type": "string"
+          },
+          "label": {
+            "$ref": "#/$defs/Localized"
+          },
+          "base_models": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Base Models",
+            "type": "array"
+          },
+          "calibers": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Calibers",
+            "type": "array"
+          },
+          "available": {
+            "default": true,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "details": {
+            "additionalProperties": true,
+            "maxProperties": 16,
+            "title": "Details",
+            "type": "object"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "component",
+          "label",
+          "base_models",
+          "calibers",
+          "details"
+        ],
+        "title": "OptionWrite",
+        "type": "object"
+      },
+      "details_schema": {
+        "$defs": {
+          "Localized": {
+            "additionalProperties": false,
+            "properties": {
+              "en": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "En",
+                "type": "string"
+              },
+              "ar": {
+                "maxLength": 300,
+                "minLength": 1,
+                "title": "Ar",
+                "type": "string"
+              }
+            },
+            "required": [
+              "en",
+              "ar"
+            ],
+            "title": "Localized",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "interventions": {
+            "items": {
+              "$ref": "#/$defs/Localized"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Interventions",
+            "type": "array"
+          },
+          "exclusions": {
+            "items": {
+              "$ref": "#/$defs/Localized"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Exclusions",
+            "type": "array"
+          },
+          "required_tests": {
+            "items": {
+              "$ref": "#/$defs/Localized"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Required Tests",
+            "type": "array"
+          },
+          "price_reference": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+            "title": "Price Reference",
+            "type": "string"
+          },
+          "price_minor": {
+            "maximum": 999999999999,
+            "minimum": 0,
+            "title": "Price Minor",
+            "type": "integer"
+          },
+          "currency": {
+            "const": "USD",
+            "type": "string"
+          },
+          "conversion": {
+            "const": "none",
+            "default": "none",
+            "title": "Conversion",
+            "type": "string"
+          }
+        },
+        "required": [
+          "interventions",
+          "exclusions",
+          "required_tests",
+          "price_reference",
+          "price_minor",
+          "currency"
+        ],
+        "title": "SophisticationDetails",
+        "type": "object"
+      },
+      "currency": "USD",
+      "money_input": "dollars",
+      "money_storage": "integer_cents",
+      "operation_header": "Idempotency-Key",
+      "write_method": "PUT",
+      "write_path": "/v1/brand-options/brands/{brand_id}/{kind}/{option_id}",
+      "lookup_path": "/v1/brand-options/brands/{brand_id}/operations/{operation_id}",
+      "states": {
+        "draft": {
+          "en": "Review the offering before saving.",
+          "ar": "راجع العرض قبل الحفظ."
+        },
+        "pending": {
+          "en": "Check the same operation before retrying.",
+          "ar": "تحقق من العملية نفسها قبل إعادة المحاولة."
+        },
+        "saved": {
+          "en": "Offering revision saved.",
+          "ar": "تم حفظ إصدار العرض."
+        },
+        "stale": {
+          "en": "Reload and review the current revision.",
+          "ar": "أعد التحميل وراجع الإصدار الحالي."
+        },
+        "denied": {
+          "en": "Ask your business administrator for access.",
+          "ar": "اطلب صلاحية الوصول من مسؤول المنشأة."
+        },
+        "unavailable": {
+          "en": "Retry the same operation when available.",
+          "ar": "أعد محاولة العملية نفسها عند توفر الخدمة."
+        }
+      }
+    }
+  ]
+}

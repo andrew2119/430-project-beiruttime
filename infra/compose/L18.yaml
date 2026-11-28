@@ -1,0 +1,8 @@
+services:
+  trust:
+    environment:
+      BT_SERVICE_NAME: trust
+    command: ["uvicorn", "service_app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+  trust-migrate:
+    environment:
+      BT_SERVICE_NAME: trust

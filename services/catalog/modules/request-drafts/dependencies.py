@@ -33,7 +33,7 @@ async def principal(request: Request):
         raise PublicError("identity_unavailable", "Current permissions are unavailable.", status=503) from None
     if isinstance(value, Unavailable):
         raise PublicError("identity_unavailable", "Current permissions are unavailable.", status=503)
-    if "buyer" not in value.roles:
+    if "buyer" not in value.roles or value.actor.organization_id:
         raise AccessDenied("Buyer scope required")
     return value
 

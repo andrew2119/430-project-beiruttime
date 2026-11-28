@@ -1,0 +1,96 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "case_id": {
+      "format": "uuid",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "quote_id": {
+      "format": "uuid",
+      "title": "Quote Id",
+      "type": "string"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "accepted_terms_revision": {
+      "minimum": 1,
+      "title": "Accepted Terms Revision",
+      "type": "integer"
+    },
+    "terms_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Terms Digest",
+      "type": "string"
+    },
+    "currency": {
+      "const": "USD",
+      "title": "Currency",
+      "type": "string"
+    },
+    "lead_time_days": {
+      "maximum": 730,
+      "minimum": 0,
+      "title": "Lead Time Days",
+      "type": "integer"
+    },
+    "assessment_fee_minor": {
+      "maximum": 9000000000000,
+      "minimum": 0,
+      "title": "Assessment Fee Minor",
+      "type": "integer"
+    },
+    "return_fee_minor": {
+      "maximum": 9000000000000,
+      "minimum": 0,
+      "title": "Return Fee Minor",
+      "type": "integer"
+    },
+    "accepted_assessment_fee": {
+      "title": "Accepted Assessment Fee",
+      "type": "boolean"
+    },
+    "accepted_return_fee": {
+      "title": "Accepted Return Fee",
+      "type": "boolean"
+    },
+    "warranty_terms": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Warranty Terms",
+      "type": "string"
+    },
+    "modification_terms": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Modification Terms",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_id",
+    "case_id",
+    "quote_id",
+    "policy_revision",
+    "accepted_terms_revision",
+    "terms_digest",
+    "currency",
+    "lead_time_days",
+    "assessment_fee_minor",
+    "return_fee_minor",
+    "accepted_assessment_fee",
+    "accepted_return_fee",
+    "warranty_terms",
+    "modification_terms"
+  ],
+  "title": "RetainedRepairTerms",
+  "type": "object"
+}

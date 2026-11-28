@@ -1,0 +1,166 @@
+{
+  "$defs": {
+    "LocalizedTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "en": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "En",
+          "type": "string"
+        },
+        "ar": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Ar",
+          "type": "string"
+        }
+      },
+      "required": [
+        "en",
+        "ar"
+      ],
+      "title": "LocalizedTerm",
+      "type": "object"
+    },
+    "RetainedTerms": {
+      "additionalProperties": false,
+      "properties": {
+        "lead_time": {
+          "$ref": "#/$defs/LocalizedTerm"
+        },
+        "fees": {
+          "$ref": "#/$defs/LocalizedTerm"
+        },
+        "return_terms": {
+          "$ref": "#/$defs/LocalizedTerm"
+        },
+        "assurance": {
+          "$ref": "#/$defs/LocalizedTerm"
+        },
+        "conditions": {
+          "$ref": "#/$defs/LocalizedTerm"
+        }
+      },
+      "required": [
+        "lead_time",
+        "fees",
+        "return_terms",
+        "assurance",
+        "conditions"
+      ],
+      "title": "RetainedTerms",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "service.case-lines.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "subject_id": {
+      "format": "uuid",
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "request_revision": {
+      "minimum": 1,
+      "title": "Request Revision",
+      "type": "integer"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "quote_id": {
+      "format": "uuid",
+      "title": "Quote Id",
+      "type": "string"
+    },
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "accepted_line_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Accepted Line Ids",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "total_minor": {
+      "maximum": 999999999999,
+      "minimum": 0,
+      "title": "Total Minor",
+      "type": "integer"
+    },
+    "accepted_terms_revision": {
+      "minimum": 1,
+      "title": "Accepted Terms Revision",
+      "type": "integer"
+    },
+    "reviewed_terms": {
+      "$ref": "#/$defs/RetainedTerms"
+    }
+  },
+  "required": [
+    "schema_version",
+    "operation_id",
+    "actor_id",
+    "subject_id",
+    "organization_id",
+    "watch_id",
+    "request_id",
+    "request_revision",
+    "expected_revision",
+    "quote_id",
+    "quote_revision",
+    "policy_revision",
+    "accepted_line_ids",
+    "total_minor",
+    "accepted_terms_revision",
+    "reviewed_terms"
+  ],
+  "title": "ScopeAcceptance",
+  "type": "object"
+}

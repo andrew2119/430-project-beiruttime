@@ -1,0 +1,60 @@
+{
+  "synthetic": true,
+  "authority": {
+    "success": {
+      "actor_id": "00000000-0000-0000-0000-000000000002",
+      "subject_id": "00000000-0000-0000-0000-000000000002",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "watch_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": "00000000-0000-0000-0000-000000000003",
+      "brand_id": "00000000-0000-0000-0000-000000000005",
+      "intervention": "limited_maintenance",
+      "watch_revision": 2,
+      "capability_revision": 3,
+      "policy_revision": 1,
+      "identity_current": true,
+      "watch_owned": true,
+      "business_active": true,
+      "assessment_supported": true,
+      "commitment_available": true,
+      "private_refs_current": true
+    },
+    "denied": {
+      "actor_id": "00000000-0000-0000-0000-000000000002",
+      "subject_id": "00000000-0000-0000-0000-000000000002",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "watch_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": "00000000-0000-0000-0000-000000000003",
+      "brand_id": "00000000-0000-0000-0000-000000000005",
+      "intervention": "limited_maintenance",
+      "watch_revision": 2,
+      "capability_revision": 3,
+      "policy_revision": 1,
+      "identity_current": true,
+      "watch_owned": true,
+      "business_active": true,
+      "assessment_supported": false,
+      "commitment_available": true,
+      "private_refs_current": true
+    },
+    "stale": {
+      "actor_id": "00000000-0000-0000-0000-000000000002",
+      "subject_id": "00000000-0000-0000-0000-000000000002",
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "watch_id": "00000000-0000-0000-0000-000000000004",
+      "organization_id": "00000000-0000-0000-0000-000000000003",
+      "brand_id": "00000000-0000-0000-0000-000000000005",
+      "intervention": "limited_maintenance",
+      "watch_revision": 2,
+      "capability_revision": 4,
+      "policy_revision": 1,
+      "identity_current": true,
+      "watch_owned": true,
+      "business_active": true,
+      "assessment_supported": true,
+      "commitment_available": true,
+      "private_refs_current": true
+    },
+    "lost_response": null
+  }
+}

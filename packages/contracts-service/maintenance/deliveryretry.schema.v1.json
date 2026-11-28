@@ -1,0 +1,15 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "held_at": {
+      "format": "date-time",
+      "title": "Held At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "held_at"
+  ],
+  "title": "DeliveryRetry",
+  "type": "object"
+}

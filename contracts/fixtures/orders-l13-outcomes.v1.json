@@ -1,0 +1,74 @@
+[
+  {
+    "scenario": "success",
+    "sample": true,
+    "result": {
+      "schema_version": "orders.wiring.v1",
+      "operation_id": "00000000-0000-4000-8000-000000000001",
+      "subject_id": "00000000-0000-4000-8000-000000000002",
+      "watch_id": "00000000-0000-4000-8000-000000000003",
+      "actor_id": "00000000-0000-4000-8000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "state": "acknowledged",
+      "revision": 1,
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null
+    }
+  },
+  {
+    "scenario": "denied",
+    "sample": true,
+    "result": {
+      "schema_version": "orders.wiring.v1",
+      "operation_id": "00000000-0000-4000-8000-000000000001",
+      "subject_id": "00000000-0000-4000-8000-000000000002",
+      "watch_id": "00000000-0000-4000-8000-000000000003",
+      "actor_id": "00000000-0000-4000-8000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "state": "denied",
+      "revision": 1,
+      "pending_reason": "current_permission_denied",
+      "next_actor": null,
+      "next_review_at": null
+    }
+  },
+  {
+    "scenario": "stale",
+    "sample": true,
+    "result": {
+      "schema_version": "orders.wiring.v1",
+      "operation_id": "00000000-0000-4000-8000-000000000001",
+      "subject_id": "00000000-0000-4000-8000-000000000002",
+      "watch_id": "00000000-0000-4000-8000-000000000003",
+      "actor_id": "00000000-0000-4000-8000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "state": "denied",
+      "revision": 1,
+      "pending_reason": "revision_conflict",
+      "next_actor": null,
+      "next_review_at": null
+    }
+  },
+  {
+    "scenario": "lost_response",
+    "sample": true,
+    "result": {
+      "schema_version": "orders.wiring.v1",
+      "operation_id": "00000000-0000-4000-8000-000000000001",
+      "subject_id": "00000000-0000-4000-8000-000000000002",
+      "watch_id": "00000000-0000-4000-8000-000000000003",
+      "actor_id": "00000000-0000-4000-8000-000000000004",
+      "organization_id": null,
+      "expected_revision": 1,
+      "state": "pending",
+      "revision": 1,
+      "pending_reason": "outcome_unknown",
+      "next_actor": "operator",
+      "next_review_at": "2026-11-18T00:00:00Z"
+    }
+  }
+]

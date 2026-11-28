@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "lane": "L15",
+  "contracts": [
+    {
+      "namespace": "catalog.configuration.v1",
+      "path": "packages/contracts-catalog/configuration",
+      "fixtures": [
+        "packages/contracts-catalog/configuration/fixtures/boundaries.json"
+      ]
+    },
+    {
+      "namespace": "catalog.request-drafts.v2",
+      "path": "packages/contracts-catalog/request-drafts",
+      "fixtures": [
+        "packages/contracts-catalog/request-drafts/fixtures/submission.v2.json",
+        "packages/contracts-catalog/request-drafts/fixtures/request.v2.json"
+      ]
+    },
+    {
+      "namespace": "catalog.brand-decisions.v1",
+      "path": "packages/contracts-catalog/brand-decisions",
+      "fixtures": []
+    },
+    {
+      "namespace": "catalog.listing-revisions.v1",
+      "path": "packages/contracts-catalog/listings",
+      "fixtures": []
+    }
+  ],
+  "runtime": {
+    "schema_version": 1,
+    "service": "catalog",
+    "module_ids": [
+      "L15.brand-decisions",
+      "L15.configuration",
+      "L15.listing-revisions",
+      "L15.request-submissions"
+    ],
+    "operation_lookup": {
+      "listing_edit": "/v2/seller/listing-edit-operations/:id",
+      "submission": "/v2/customization-operations/:id",
+      "brand_decision": "/v2/brand-decision-operations/:id"
+    },
+    "dependency_budget": {
+      "timeout_seconds": 2.5,
+      "concurrency": 4,
+      "failure_threshold": 3,
+      "cooldown_seconds": 10
+    },
+    "recovery": {
+      "retry": "same_operation",
+      "authority": "current_provider",
+      "unknown_result": "pending",
+      "messages": {
+        "pending": {
+          "en": "The result is pending. Retry the same operation reference.",
+          "ar": "النتيجة قيد الانتظار. أعد المحاولة باستخدام مرجع العملية نفسه."
+        },
+        "unavailable": {
+          "en": "A required service is unavailable. Retry the same operation reference.",
+          "ar": "إحدى الخدمات المطلوبة غير متاحة. أعد المحاولة باستخدام مرجع العملية نفسه."
+        }
+      }
+    },
+    "fixtures": [
+      {
+        "operation_id": "l15-example-001",
+        "expected_revision": 1,
+        "revision": 1,
+        "state": "pending",
+        "pending_reason": "timeout",
+        "next_actor": "requester",
+        "next_action": "retry_same_operation"
+      },
+      {
+        "operation_id": "l15-example-001",
+        "expected_revision": 1,
+        "revision": 1,
+        "state": "pending",
+        "pending_reason": "lost_response",
+        "next_actor": "requester",
+        "next_action": "retry_same_operation"
+      },
+      {
+        "operation_id": "l15-example-001",
+        "expected_revision": 1,
+        "revision": 1,
+        "state": "pending",
+        "pending_reason": "circuit_open",
+        "next_actor": "requester",
+        "next_action": "retry_same_operation"
+      },
+      {
+        "operation_id": "l15-example-001",
+        "expected_revision": 1,
+        "revision": 2,
+        "state": "denied",
+        "code": "stale_revision"
+      },
+      {
+        "operation_id": "l15-example-001",
+        "expected_revision": 1,
+        "revision": 1,
+        "state": "denied",
+        "code": "forbidden"
+      }
+    ]
+  }
+}

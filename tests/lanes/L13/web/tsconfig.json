@@ -1,0 +1,20 @@
+{
+  "extends": "../../../../web/tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "plugins": [],
+    "paths": {
+      "@/*": ["../../../../web/*"],
+      "@contracts/*": ["../../../../packages/*"]
+    }
+  },
+  "include": [
+    "../../../../packages/contracts-orders/allocation/index.ts",
+    "../../../../packages/contracts-orders/payments/index.ts",
+    "../../../../web/features/buy-now/checkout.tsx",
+    "../../../../web/features/buy-now/order-detail.tsx",
+    "../../../../web/features/payments/checkout-payment.tsx",
+    "../../../../web/registrations/L13.ts"
+  ],
+  "exclude": ["../../../../web/node_modules"]
+}

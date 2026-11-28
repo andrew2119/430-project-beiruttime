@@ -1,0 +1,24 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "enum": [
+        "lookup",
+        "close"
+      ],
+      "title": "Action",
+      "type": "string"
+    },
+    "operation_id": {
+      "pattern": "^[A-Za-z0-9_-]{8,128}$",
+      "title": "Operation Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "action",
+    "operation_id"
+  ],
+  "title": "IntakeOperationCommand",
+  "type": "object"
+}

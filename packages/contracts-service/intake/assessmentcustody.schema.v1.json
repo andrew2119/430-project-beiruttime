@@ -1,0 +1,39 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "watch_revision": {
+      "minimum": 1,
+      "title": "Watch Revision",
+      "type": "integer"
+    },
+    "receipt_id": {
+      "format": "uuid",
+      "title": "Receipt Id",
+      "type": "string"
+    },
+    "receipt_revision": {
+      "minimum": 1,
+      "title": "Receipt Revision",
+      "type": "integer"
+    },
+    "incident_revision": {
+      "minimum": 0,
+      "title": "Incident Revision",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "watch_id",
+    "watch_revision",
+    "receipt_id",
+    "receipt_revision",
+    "incident_revision"
+  ],
+  "title": "AssessmentCustody",
+  "type": "object"
+}

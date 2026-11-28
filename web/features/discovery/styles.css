@@ -108,3 +108,6 @@
  .discovery-zoom.ui-dialog { inline-size:calc(100vw - var(--ds-space-6)); }
 }
 @media (prefers-reduced-motion:reduce) { .discovery-photo img { transition:none; } }
+
+.discovery-watch-card:has(>.discovery-card-copy) { display:flex; flex-direction:column; }
+.discovery-watch-card:has(>.discovery-card-copy)>.discovery-card-link { block-size:auto; flex:1; }

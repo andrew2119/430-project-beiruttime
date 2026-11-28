@@ -1,0 +1,230 @@
+{
+  "$defs": {
+    "AssessmentFeeBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "order_id": {
+          "format": "uuid",
+          "title": "Order Id",
+          "type": "string"
+        },
+        "request_id": {
+          "format": "uuid",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "request_revision": {
+          "minimum": 1,
+          "title": "Request Revision",
+          "type": "integer"
+        },
+        "buyer_id": {
+          "format": "uuid",
+          "title": "Buyer Id",
+          "type": "string"
+        },
+        "organization_id": {
+          "format": "uuid",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "watch_id": {
+          "format": "uuid",
+          "title": "Watch Id",
+          "type": "string"
+        },
+        "receipt_id": {
+          "format": "uuid",
+          "title": "Receipt Id",
+          "type": "string"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "offer_id": {
+          "format": "uuid",
+          "title": "Offer Id",
+          "type": "string"
+        },
+        "offer_revision": {
+          "minimum": 1,
+          "title": "Offer Revision",
+          "type": "integer"
+        },
+        "policy_revision": {
+          "minimum": 1,
+          "title": "Policy Revision",
+          "type": "integer"
+        },
+        "amount_minor": {
+          "minimum": 0,
+          "title": "Amount Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "const": "USD",
+          "title": "Currency",
+          "type": "string"
+        }
+      },
+      "required": [
+        "order_id",
+        "request_id",
+        "request_revision",
+        "buyer_id",
+        "organization_id",
+        "watch_id",
+        "receipt_id",
+        "operation_id",
+        "offer_id",
+        "offer_revision",
+        "policy_revision",
+        "amount_minor",
+        "currency"
+      ],
+      "title": "AssessmentFeeBinding",
+      "type": "object"
+    },
+    "CurrentCustodyReceipt": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "order_id": {
+          "format": "uuid",
+          "title": "Order Id",
+          "type": "string"
+        },
+        "organization_id": {
+          "format": "uuid",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "valid": {
+          "const": true,
+          "title": "Valid",
+          "type": "boolean"
+        },
+        "actor_id": {
+          "format": "uuid",
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "watch_id": {
+          "format": "uuid",
+          "title": "Watch Id",
+          "type": "string"
+        },
+        "watch_revision": {
+          "minimum": 1,
+          "title": "Watch Revision",
+          "type": "integer"
+        },
+        "incident_revision": {
+          "minimum": 0,
+          "title": "Incident Revision",
+          "type": "integer"
+        },
+        "current_watch_id": {
+          "format": "uuid",
+          "title": "Current Watch Id",
+          "type": "string"
+        },
+        "current_watch_revision": {
+          "minimum": 1,
+          "title": "Current Watch Revision",
+          "type": "integer"
+        },
+        "current_incident_revision": {
+          "minimum": 0,
+          "title": "Current Incident Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "order_id",
+        "organization_id",
+        "received_at",
+        "revision",
+        "valid",
+        "actor_id",
+        "watch_id",
+        "watch_revision",
+        "incident_revision",
+        "current_watch_id",
+        "current_watch_revision",
+        "current_incident_revision"
+      ],
+      "title": "CurrentCustodyReceipt",
+      "type": "object"
+    },
+    "OpeningFenceBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "assignment_revision": {
+          "minimum": 1,
+          "title": "Assignment Revision",
+          "type": "integer"
+        },
+        "custody": {
+          "$ref": "#/$defs/CurrentCustodyReceipt"
+        },
+        "retained_fee": {
+          "$ref": "#/$defs/AssessmentFeeBinding"
+        }
+      },
+      "required": [
+        "operation_id",
+        "assignment_revision",
+        "custody",
+        "retained_fee"
+      ],
+      "title": "OpeningFenceBinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "hold_until": {
+      "format": "date-time",
+      "title": "Hold Until",
+      "type": "string"
+    },
+    "binding": {
+      "$ref": "#/$defs/OpeningFenceBinding"
+    }
+  },
+  "required": [
+    "schema_version",
+    "hold_until",
+    "binding"
+  ],
+  "title": "OpeningFenceRequest",
+  "type": "object"
+}

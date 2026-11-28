@@ -1,0 +1,21 @@
+{
+  "schema_version": "catalog-public-facts.v1",
+  "seller_id": "00000000-0000-0000-0000-000000000001",
+  "watch_id": "00000000-0000-0000-0000-000000000002",
+  "listing_revision": 3,
+  "revision": 1,
+  "released_sales": 0,
+  "joined_at": "2026-01-01T00:00:00Z",
+  "review_distribution": [
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "history": [],
+  "inspection": null,
+  "organization_id": null,
+  "city": "Beirut",
+  "history_next_cursor": null
+}

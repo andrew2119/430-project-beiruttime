@@ -1,9 +1,11 @@
 """Bounded public contract reads; publication is never an availability claim."""
+from datetime import datetime, timezone
+from dataclasses import asdict
 from typing import Literal
 from uuid import UUID
 from pydantic import AwareDatetime, Field, StrictBool, StrictInt, model_validator
 from bt_bulkheads import Unavailable
-from .models import PublicModel
+from .models import PublicModel, HistoryEntry, MAX_MINOR
 
 class Availability(PublicModel):
     watch_id: UUID
@@ -82,6 +84,36 @@ async def request_model(client, path, model, *, params=None, request_id=None):
     except (ValueError,TypeError):return None
 
 
+class PublicFacts(PublicModel):
+    schema_version: Literal['catalog-public-facts.v1']
+    seller_id: UUID
+    organization_id: UUID | None
+    watch_id: UUID
+    listing_revision: StrictInt = Field(ge=1)
+    revision: StrictInt = Field(ge=1)
+    city: str | None = Field(max_length=160)
+    released_sales: StrictInt = Field(ge=0, le=MAX_MINOR)
+    joined_at: AwareDatetime
+    review_distribution: list[StrictInt] = Field(min_length=5, max_length=5)
+    history: list[HistoryEntry] = Field(max_length=100)
+    history_next_cursor: str | None = Field(max_length=1024, min_length=1)
+    inspection: Literal['passed', 'failed', 'inconclusive'] | None
+
+    @model_validator(mode='after')
+    def released_only(self):
+        if any(count < 0 for count in self.review_distribution) or sum(self.review_distribution) > self.released_sales:
+            raise ValueError('Ratings exceed released sales')
+        return self
+
+
+class SearchTotal(PublicModel):
+    schema_version: Literal['catalog-public-total.v1']
+    criteria: str = Field(pattern=r'^[a-f0-9]{32}$')
+    total: StrictInt = Field(ge=0, le=MAX_MINOR)
+    revision: StrictInt = Field(ge=1)
+    as_of: AwareDatetime
+
+
 class Reads:
     def __init__(self, *, auction=None, orders=None, identity=None, media=None, request_id=None):
         self.auction,self.orders,self.identity,self.media=auction,orders,identity,media
@@ -96,6 +128,24 @@ class Reads:
         if source.organization_id is None:return None
         result=await request_model(self.identity,'/v1/businesses/'+str(source.organization_id),Business,request_id=self.request_id)
         return result if result and result.id==source.organization_id and result.kind==source.seller_type else None
+
+    async def search_total(self, filters, now):
+        result = await request_model(self.orders, '/v1/public/listing-search-total', SearchTotal,
+            params={'criteria': filters.fingerprint(), **{key: value for key, value in asdict(filters).items() if value is not None}}, request_id=self.request_id)
+        if result is None or result.criteria != filters.fingerprint() or not 0 <= (datetime.now(timezone.utc)-result.as_of).total_seconds() <= 15:
+            return None
+        return result.total
+
+    async def public_facts(self, source, cursor='', revision=None):
+        params = {'watch_id': str(source.physical_watch_id), 'listing_revision': source.revision}
+        if cursor:params['cursor'] = cursor
+        if revision is not None:params['revision'] = revision
+        result = await request_model(self.identity, '/v1/public/sellers/'+str(source.seller_id)+'/facts', PublicFacts,
+            params=params, request_id=self.request_id)
+        if result is None or result.seller_id != source.seller_id or result.organization_id != source.organization_id or result.watch_id != source.physical_watch_id or result.listing_revision != source.revision:
+            return None
+        if result.history_next_cursor == cursor or (revision is not None and result.revision != revision):return None
+        return result
 
     async def timing_batch(self, ids):
         if not ids:return {},set()

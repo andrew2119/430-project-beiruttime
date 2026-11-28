@@ -41,12 +41,21 @@ class NativeWalkthroughTests(unittest.TestCase):
 
 
     def test_publication_plan_and_real_result_checks(self):
-        rows = [{'id': str(number), 'is_demo': True, 'status': 'published'}
-                for number in range(6)]
+        private = {'DEMO-WATCH-01', 'DEMO-WATCH-03', 'DEMO-WATCH-05'}
+        references = [*sorted(private), 'DEMO-WATCH-02', 'DEMO-WATCH-04', 'DEMO-WATCH-06']
+        rows = [{'id': str(number), 'is_demo': True, 'status': 'published', 'revision': 3,
+                 'physical_watch_id': f'watch-{number}', 'facts': {'reference': ref},
+                 'seller_type': 'private' if ref in private else 'dealer'}
+                for number, ref in enumerate(references)]
+        self.walk.state['listing_proofs'] = {row['facts']['reference']: {
+            'binding': {'id': row['id'], 'watch_id': row['physical_watch_id'], 'revision': 2},
+            'commands': {'decide': {'result': {'state': 'approved'}}},
+        } for row in rows[:3]}
         with patch.object(self.walk, 'login'), patch.object(self.walk, 'call', side_effect=[
             {'items': rows[:3]}, {'items': rows[3:]}, {'items': [{'demo': True}]}]), \
-                patch.object(module.subprocess, 'run', return_value=Mock(returncode=0)) as process:
+                patch.object(module, 'run_publication_child', return_value=(0, b'')) as process:
             self.walk.publication()
+        self.assertFalse(list(self.run.glob('publication-child-*.json')))
         args, kwargs = process.call_args
         command = args[0]
         self.assertEqual(command[1:], ['-m', 'bt_runtime.fixtures', 'L03.listings', 'demo'])
@@ -56,6 +65,7 @@ class NativeWalkthroughTests(unittest.TestCase):
         env = kwargs['env']
         self.assertEqual(env['BT_DEMO_PRIVATE_TOKEN'], 'seller-private-token')
         self.assertEqual(env['BT_DEMO_IMPORT_ACK'], 'illustrative-stock-only')
+        self.assertEqual(env['BT_DEMO_PRIVATE_DIAGNOSTICS'], '1')
         self.assertEqual(env['BT_MODULES_PATH'], str(module.ROOT / 'services/catalog/modules'))
         self.assertIn(str(self.run / 'domain-contracts'), env['PYTHONPATH'])
         self.assertEqual(env['BT_DEMO_ROOT'], str(self.run / 'demo'))
@@ -67,9 +77,42 @@ class NativeWalkthroughTests(unittest.TestCase):
 
     def test_incomplete_publication_is_rejected(self):
         with patch.object(self.walk, 'login'), patch.object(self.walk, 'call', return_value={'items': []}), \
-                patch.object(module.subprocess, 'run', return_value=Mock(returncode=0)):
+                patch.object(module, 'run_publication_child', return_value=(0, b'')):
             with self.assertRaises(AssertionError):
                 self.walk.publication()
+
+    def test_publication_failure_and_timeout_write_only_allowlisted_fields(self):
+        arbitrary = (b'{\n  "refresh_token":\n    "unknown-refresh-secret"\n}\n'
+                     b'Unstructured traceback with absent-from-env-token\n')
+        tag = module.PUBLICATION_FAILURE_PREFIX
+        good = tag + b'{"category":"publication_review_pending","http_status":503,"upstream":"identity"}\n'
+        extra_key = tag + b'{"category":"upstream","http_status":429,"upstream":null,"other":"extra-secret"}\n'
+        bad_type = tag + b'{"category":"upstream","http_status":true,"upstream":"identity"}\n'
+        bad_value = tag + b'{"category":"unexpected-category","http_status":503,"upstream":"other-secret"}\n'
+        bad_json = tag + b'{not a record with malformed-secret}\n'
+        failures = [(1, arbitrary + good + extra_key + bad_type + bad_value + bad_json),
+                    (None, arbitrary + extra_key + bad_type + bad_value + bad_json)]
+        with patch.object(self.walk, 'login'), patch.object(self.walk, 'call') as http, \
+                patch('builtins.print') as printed, patch.object(module, 'run_publication_child', side_effect=failures):
+            for reason in ('failed', 'timed out'):
+                with self.assertRaisesRegex(RuntimeError, f'^Local command {reason};') as caught:
+                    self.walk.publication()
+                self.assertIsNone(caught.exception.__cause__)
+        http.assert_not_called()
+        printed.assert_not_called()
+        self.assertEqual(self.walk.evidence, [{'transport': 'native', 'status': 1},
+                                              {'transport': 'native', 'status': 'timeout'}])
+        records = {}
+        for path in self.run.glob('publication-child-*.json'):
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+            data = json.loads(path.read_text())
+            records[data['timed_out']] = data
+        self.assertEqual(records, {
+            False: {'exit_code': 1, 'timed_out': False, 'exception_type': 'PublicationUnavailable',
+                    'failure_category': 'publication_review_pending', 'http_status': 503, 'upstream': 'identity'},
+            True: {'exit_code': None, 'timed_out': True, 'exception_type': 'TimeoutExpired',
+                   'failure_category': 'timeout', 'http_status': None, 'upstream': None},
+        })
 
     def test_bootstrap_fresh_login_and_checkpoint(self):
         events = []
@@ -385,6 +428,109 @@ class NativeWalkthroughTests(unittest.TestCase):
             self.walk.call('catalog', 'GET', route, 'seller')
         self.client.request.assert_called_once()
         self.assertEqual(self.walk.state['call_journal'][key]['status'], 200)
+
+    def test_listing_review_uses_owning_requests_and_resumes_exact_publication_binding(self):
+        ref = 'DEMO-WATCH-01'
+        listing_id = '00000000-0000-4000-8000-000000000011'
+        path = '/v1/listing-reviews/' + listing_id
+        row = dict(id=listing_id, is_demo=True, status='draft', revision=8, seller_type='private',
+                   physical_watch_id='00000000-0000-4000-8000-000000000012', facts={'reference': ref})
+        current = {'state': 'required', 'revision': 0, 'assignment_revision': 0}
+        sessions = {name: {'account': {'id': name + '-subject'}, 'access_token': name + '-private-token',
+                          'principal': {'permissions': permissions}} for name, permissions in {
+            'seller': [], 'operator': ['identity.private-seller.assign'],
+            'reviewer': ['identity.private-seller.review'],
+        }.items()}
+        code_file, photo_file, inspected_file, verdict_file = [self.run / name for name in (
+            'code.json', 'possession.png', 'reviewer-copy.png', 'verdict.json')]
+        photo = module.PNG_SIGNATURE + b'unit-response-not-proof'
+        photo_file.touch(mode=0o600)
+        photo_file.write_bytes(photo)
+        verdict_file.touch(mode=0o600)
+        verdict_file.write_text(json.dumps({'verdict': 'approved', 'reason': 'Reviewed the supplied evidence'}))
+        calls = []
+        challenge_key = None
+
+        def request(service, method, route, actor=None, body=None, **kwargs):
+            nonlocal challenge_key
+            if service == 'catalog':
+                self.assertEqual((method, route, actor), ('GET', '/v1/seller/listings?limit=50', 'seller'))
+                return {'items': [row]}
+            self.assertEqual(service, 'identity')
+            if route == path:
+                self.assertEqual((method, actor), ('GET', 'seller'))
+                return dict(current)
+            action = route.removeprefix(path + '/')
+            headers = kwargs['headers']
+            role = {'challenges': 'seller', 'submissions': 'seller', 'assignment': 'operator',
+                    'photo': 'reviewer', 'decision': 'reviewer'}[action]
+            self.assertEqual(headers['Authorization'], 'Bearer ' + sessions[role]['access_token'])
+            calls.append(action)
+            if action == 'challenges':
+                self.assertEqual(body, {'revision': 0})
+                if challenge_key is None:
+                    challenge_key = headers['Idempotency-Key']
+                    current.update(state='issued', revision=1)
+                    raise TimeoutError('Lost acknowledgement after issuing')
+                self.assertEqual(headers['Idempotency-Key'], challenge_key)
+                return {**current, 'challenge_id': 'owning-challenge', 'code': '654321'}
+            if action == 'submissions':
+                self.assertEqual(body, {'revision': 1, 'code': '654321', 'challenge_id': 'owning-challenge',
+                                        'photo_base64': module.base64.b64encode(photo).decode()})
+                current.update(state='pending', revision=2)
+            elif action == 'assignment':
+                self.assertEqual(body, {'revision': 2, 'reviewer_id': 'reviewer-subject'})
+                current.update(revision=3, assignment_revision=1)
+            elif action == 'photo':
+                self.assertTrue(kwargs['raw'])
+                return Mock(content=photo, headers={'content-type': 'image/png'})
+            elif action == 'decision':
+                self.assertEqual(body, {'revision': 3, 'assignment_revision': 1,
+                                        'verdict': 'approved', 'reason': 'Reviewed the supplied evidence'})
+                current.update(state='approved', revision=4)
+            return dict(current)
+
+        with patch.object(self.walk, 'private_demo_references', return_value={ref}), \
+                patch.object(self.walk, 'login', side_effect=sessions.__getitem__), \
+                patch.object(self.walk, 'listing_reviewer', return_value=sessions['reviewer']), \
+                patch.object(self.walk, 'call', side_effect=request), patch('builtins.print') as printed:
+            with self.assertRaises(TimeoutError):
+                self.walk.listing_review(ref, 'challenge', code_file)
+            self.walk.listing_review(ref, 'challenge', code_file)
+            self.assertEqual(json.loads(code_file.read_text())['code'], '654321')
+            self.assertEqual(stat.S_IMODE(code_file.stat().st_mode), 0o600)
+            row['revision'] += 1
+            with self.assertRaisesRegex(RuntimeError, 'exact draft'):
+                self.walk.listing_review(ref, 'submit', photo_file)
+            row['revision'] -= 1
+            self.walk.listing_review(ref, 'submit', photo_file)
+            self.walk.listing_review(ref, 'assign', None)
+            with self.assertRaisesRegex(RuntimeError, 'must read'):
+                self.walk.listing_review(ref, 'decide', verdict_file)
+            self.walk.listing_review(ref, 'inspect', inspected_file)
+            self.assertEqual(inspected_file.read_bytes(), photo)
+            self.assertEqual(stat.S_IMODE(inspected_file.stat().st_mode), 0o600)
+            self.walk.listing_review(ref, 'decide', verdict_file)
+            published = {**row, 'status': 'published', 'revision': 9}
+            self.walk.verify_reviewed_publication([published])
+            with self.assertRaisesRegex(RuntimeError, 'does not match'):
+                self.walk.verify_reviewed_publication([{**published, 'id': 'different-listing'}])
+        self.assertEqual(calls, ['challenges', 'challenges', 'submissions', 'assignment', 'photo', 'decision'])
+        persisted = self.walk.path.read_text()
+        for private in ('654321', module.base64.b64encode(photo).decode(), 'Reviewed the supplied evidence'):
+            self.assertNotIn(private, persisted)
+            self.assertNotIn(private, str(printed.call_args_list))
+
+    def test_listing_review_refuses_a_preapproved_record(self):
+        row = dict(id='00000000-0000-4000-8000-000000000011', is_demo=True, status='draft', revision=8,
+                   seller_type='private', physical_watch_id='watch', facts={'reference': 'DEMO-WATCH-01'})
+        with patch.object(self.walk, 'private_demo_references', return_value={'DEMO-WATCH-01'}), \
+                patch.object(self.walk, 'login', return_value={'account': {'id': 'seller'}}), \
+                patch.object(self.walk, 'call', side_effect=[{'items': [row]}, {'state': 'approved', 'revision': 4}]) as call:
+            with self.assertRaisesRegex(RuntimeError, 'existing approvals cannot count'):
+                self.walk.listing_review('DEMO-WATCH-01', 'challenge', self.run / 'challenge.json')
+        self.assertEqual(call.call_count, 2)
+        self.assertNotIn('DEMO-WATCH-01', self.walk.state['listing_proofs'])
 
     def test_completed_contacts_reject_current_unverified_state(self):
         self.walk.state['completed_phases'] = ['contacts']

@@ -1,0 +1,225 @@
+{
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "state": {
+        "const": "accepted"
+      }
+    },
+    "required": [
+      "state"
+    ]
+  },
+  "properties": {
+    "schema_version": {
+      "const": "service.case-lines.v1",
+      "default": "service.case-lines.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "subject_id": {
+      "format": "uuid",
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "request_revision": {
+      "minimum": 1,
+      "title": "Request Revision",
+      "type": "integer"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "quote_id": {
+      "format": "uuid",
+      "title": "Quote Id",
+      "type": "string"
+    },
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "accepted_terms_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Accepted Terms Revision"
+    },
+    "terms_digest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Terms Digest"
+    },
+    "state": {
+      "enum": [
+        "accepted",
+        "denied",
+        "stale",
+        "pending"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "revision": {
+      "description": "An accepted result has exactly the expected revision plus one.",
+      "minimum": 0,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "pending_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pending Reason"
+    },
+    "next_actor": {
+      "enum": [
+        "customer",
+        "business",
+        "support"
+      ],
+      "title": "Next Actor",
+      "type": "string"
+    },
+    "next_review_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Next Review At"
+    },
+    "case_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Case Id"
+    },
+    "assessment_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Assessment Id"
+    },
+    "assessment_revision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Assessment Revision"
+    }
+  },
+  "required": [
+    "operation_id",
+    "actor_id",
+    "subject_id",
+    "organization_id",
+    "watch_id",
+    "request_id",
+    "request_revision",
+    "expected_revision",
+    "quote_id",
+    "quote_revision",
+    "policy_revision",
+    "state",
+    "revision",
+    "next_actor"
+  ],
+  "then": {
+    "properties": {
+      "accepted_terms_revision": {
+        "minimum": 1,
+        "type": "integer"
+      },
+      "terms_digest": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      }
+    },
+    "required": [
+      "accepted_terms_revision",
+      "terms_digest"
+    ]
+  },
+  "title": "ScopeReceipt",
+  "type": "object"
+}
