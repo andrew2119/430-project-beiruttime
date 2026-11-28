@@ -1,0 +1,513 @@
+# The full Beirut Time suite. See .github/ci/README.md.
+# Runs on every push to main, on demand, and on pull requests whose head branch starts with
+# bt/group- (group pull requests). Other pull requests get the Light checks workflow only.
+# On demand it can test one pull request by number: its merge commit with main, or its head
+# commit when GitHub has no merge commit for it, always with this workflow's own CI files.
+name: Tests
+run-name: ${{ inputs.pr && format('Tests for pull request {0}', inputs.pr) || github.event.pull_request.title || github.event.head_commit.message || 'Tests' }}
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to test (empty tests the chosen branch)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+# Pull requests cancel their own older run. Pushes to main and dispatches queue; a dispatch for
+# a pull request has its own group per number, so dispatches for different ones run side by side.
+concurrency:
+  group: tests-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || inputs.pr && format('dispatch-pr-{0}', inputs.pr) || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  target:
+    name: tested commit
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'bt/group-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - name: Check the pull request number
+        if: inputs.pr
+        env:
+          PR: ${{ inputs.pr }}
+        run: '[[ "$PR" =~ ^[1-9][0-9]{0,6}$ ]] || { echo "::error::Not a pull request number: $PR"; exit 1; }'
+      - name: Check out the pull request merged with main
+        id: merge
+        if: inputs.pr
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/pull/${{ inputs.pr }}/merge
+          persist-credentials: false
+      - name: Check out the pull request head (GitHub has no merge commit for it)
+        if: inputs.pr && steps.merge.outcome == 'failure'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/pull/${{ inputs.pr }}/head
+          persist-credentials: false
+      - name: Record the tested commit
+        id: commit
+        env:
+          PR: ${{ inputs.pr }}
+          SOURCE: ${{ steps.merge.outcome == 'success' && 'merged with main' || 'head, not merged' }}
+        run: |
+          set -euo pipefail
+          if [ -n "$PR" ]; then
+            sha=$(git rev-parse HEAD)
+            echo "sha=$sha" >> "$GITHUB_OUTPUT"
+            echo "Testing pull request $PR at \`$sha\` ($SOURCE), with the CI files of \`$GITHUB_SHA\`." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Testing \`$GITHUB_SHA\` ($GITHUB_EVENT_NAME)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  services:
+    name: service (${{ matrix.service }})
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [identity, catalog, auction, pricing, orders, eligibility, trust, communications, service-operations]
+    services:
+      postgres:
+        image: postgres:17.6-alpine@sha256:747d5ed1fdeeb124b880fbe3d7c6557d2c4064ae41d6b6297d417882effce4be
+        env:
+          POSTGRES_PASSWORD: local-bootstrap-only
+        ports: ["54329:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 5s --health-retries 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      - uses: ./.github/actions/python-env
+      - name: Create the service databases
+        run: bash .github/ci/db-init.sh
+      - name: Run the service tests
+        run: mkdir -p "$RUNNER_TEMP/reports" && python .github/ci/services.py "${{ matrix.service }}" "$RUNNER_TEMP/reports/${{ matrix.service }}.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-${{ matrix.service }}
+          path: ${{ runner.temp }}/reports/${{ matrix.service }}.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  lanes:
+    name: integration lanes
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      - uses: ./.github/actions/python-env
+      - name: Run the integration lane tests
+        run: mkdir -p "$RUNNER_TEMP/reports" && python .github/ci/lanes.py "$RUNNER_TEMP/reports/lanes.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-lanes
+          path: ${{ runner.temp }}/reports/lanes.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  web:
+    name: web lint and types
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      - uses: ./.github/actions/node-env
+      - name: Lint, type check and the money format test
+        run: mkdir -p "$RUNNER_TEMP/reports" && bash .github/ci/web-checks.sh "$RUNNER_TEMP/reports/web.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-web
+          path: ${{ runner.temp }}/reports/web.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  vitest:
+    name: web tests (${{ matrix.shard }}/4)
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      - uses: ./.github/actions/node-env
+      # The navigation index is generated and kept out of git; the web scripts make it before use.
+      - name: Generate the navigation index
+        working-directory: web
+        run: node scripts/generate-nav.mjs
+      - name: Run this shard's share of the web test suites
+        run: mkdir -p "$RUNNER_TEMP/reports" && python3 .github/ci/vitest.py "${{ matrix.shard }}" 4 "$RUNNER_TEMP/reports/shard${{ matrix.shard }}.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-shard${{ matrix.shard }}
+          path: ${{ runner.temp }}/reports/shard${{ matrix.shard }}.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  build:
+    name: web build
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      - uses: ./.github/actions/node-env
+      - name: Production web build
+        run: pnpm --filter beirut-time-web build
+      - name: Pack the build
+        run: tar -C web --exclude=.next/cache -cf "$RUNNER_TEMP/web-build.tar" .next
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: web-build
+          path: ${{ runner.temp }}/web-build.tar
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: error
+
+  # One job on purpose: the container smoke needs every image in the same Docker engine.
+  # It reads the layer cache but never writes it, so it does not wait for the cache upload.
+  images:
+    name: images and container smoke
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      # Started from a script step so only the build sees the Actions cache settings.
+      - name: Build every image from the cached layers
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: await exec.exec('python3', ['.github/ci/images.py', 'build'])
+      - name: Container smoke
+        if: success() || failure()
+        run: mkdir -p "$RUNNER_TEMP/reports" && python3 .github/ci/images.py smoke "$RUNNER_TEMP/reports/images.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-images
+          path: ${{ runner.temp }}/reports/images.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  # Writes the layer cache for later runs, split so no machine uploads every image's layers.
+  # The container smoke above builds on its own and never waits for these jobs, and the check
+  # job does not need them: they test nothing, and a failed one shows red on its own.
+  image-cache:
+    name: image cache (${{ matrix.shard }}/4)
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      # Started from a script step so only the build sees the Actions cache settings.
+      - name: Build this shard's images and write their layers to the cache
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          SHARD: ${{ matrix.shard }}
+        with:
+          script: await exec.exec('python3', ['.github/ci/images.py', 'cache', process.env.SHARD, '4'])
+
+  # Each part runs its own share of a stage's steps on its own stack; required.json lists the parts.
+  stages:
+    name: stage (${{ matrix.stage }})
+    needs: [target, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ matrix.minutes }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { stage: native, minutes: 15 }
+          - { stage: smokes, minutes: 25 }
+          - { stage: origin-proof, minutes: 25 }
+          - { stage: proxy-proof, minutes: 25 }
+          - { stage: browser-desktop, minutes: 20 }
+          - { stage: browser-phone, minutes: 20 }
+          - { stage: scenarios-e06, minutes: 20 }
+          - { stage: scenarios-e04, minutes: 20 }
+          - { stage: scenarios-e09, minutes: 20 }
+    services:
+      postgres:
+        image: postgres:17.6-alpine@sha256:747d5ed1fdeeb124b880fbe3d7c6557d2c4064ae41d6b6297d417882effce4be
+        env:
+          POSTGRES_PASSWORD: local-bootstrap-only
+        ports: ["54329:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 5s --health-retries 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      - uses: ./.github/actions/python-env
+      - uses: ./.github/actions/node-env
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: web-build
+          path: ${{ runner.temp }}
+      - name: Unpack the build
+        run: tar -C web -xf "$RUNNER_TEMP/web-build.tar"
+      - name: Create the service databases
+        run: bash .github/ci/db-init.sh
+      - name: Let headless Chrome use its sandbox
+        if: startsWith(matrix.stage, 'browser-')
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: ${{ matrix.stage == 'smokes' && 'Run the stage part, with a scripted possession review (not physical inspection)' || 'Run the stage part' }}
+        run: mkdir -p "$RUNNER_TEMP/reports" && python .github/ci/stage.py "${{ matrix.stage }}" "$RUNNER_TEMP/reports/${{ matrix.stage }}.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-${{ matrix.stage }}
+          path: ${{ runner.temp }}/reports/${{ matrix.stage }}.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  # One job on purpose: its steps are one start-to-stop lifecycle of the same stack.
+  n01:
+    name: native stack lifecycle
+    needs: [target, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      - uses: ./.github/actions/python-env
+      - uses: ./.github/actions/node-env
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: web-build
+          path: ${{ runner.temp }}
+      - name: Unpack the build
+        run: tar -C web -xf "$RUNNER_TEMP/web-build.tar"
+      - name: Install the PostgreSQL 17 server, without a default cluster
+        run: |
+          set -euo pipefail
+          echo 'create_main_cluster = false' | sudo tee -a /etc/postgresql-common/createcluster.conf
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends postgresql-17
+          /usr/lib/postgresql/17/bin/postgres --version
+      - name: Run the native stack lifecycle
+        run: mkdir -p "$RUNNER_TEMP/reports" && python .github/ci/n01.py "$RUNNER_TEMP/reports/n01.json"
+      - name: Publish the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report-n01
+          path: ${{ runner.temp }}/reports/n01.json
+          retention-days: 3
+          overwrite: true
+          if-no-files-found: ignore
+
+  verify:
+    name: every required test ran
+    needs: [target, services, lanes, web, vitest, build, images, stages, n01]
+    if: always() && (github.event_name != 'pull_request' || startsWith(github.head_ref, 'bt/group-'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.target.outputs.sha }}
+          persist-credentials: false
+      - name: Fetch this workflow's CI files
+        if: inputs.pr
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: .ci-self
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Use this workflow's CI files
+        if: inputs.pr
+        run: |
+          if [ -e .github ]; then mv .github "$RUNNER_TEMP/tested-github"; fi
+          mv .ci-self/.github .github && mv .ci-self "$RUNNER_TEMP/ci-self"
+      # verify.py judges missing reports, so a download with nothing to fetch must not stop it.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        continue-on-error: true
+        with:
+          pattern: report-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/reports
+      - name: Check every job's report against the pinned lists
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          printf '%s' "$NEEDS" > "$RUNNER_TEMP/needs.json"
+          python3 .github/ci/verify.py full "$RUNNER_TEMP/needs.json" "$RUNNER_TEMP/reports"
