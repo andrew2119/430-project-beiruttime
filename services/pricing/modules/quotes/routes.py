@@ -52,8 +52,14 @@ async def create(body: QuoteRequest, request: Request, owner=Depends(actor), key
             return project(prior)
         snapshot = calculate(body, owner, source_verified=body.source == 'listing')
         quote_id, now = UUID(snapshot['id']), datetime.fromisoformat(snapshot['created_at'])
-        await tx.execute('INSERT INTO l07_quotes(id,owner_id,idempotency_key,request_hash,snapshot,created_at,expires_at) VALUES($1,$2,$3,$4,$5::jsonb,$6,$7)',
+        inserted = await tx.fetchval('''INSERT INTO l07_quotes
+            (id,owner_id,idempotency_key,request_hash,snapshot,created_at,expires_at) VALUES($1,$2,$3,$4,$5::jsonb,$6,$7)
+            ON CONFLICT (owner_id,idempotency_key) DO NOTHING RETURNING id''',
             quote_id, owner, key, digest(body), json.dumps(snapshot), now, datetime.fromisoformat(snapshot['expires_at']))
+        if inserted is None:
+            # Archived operations retain their keys without replaying old terms.
+            raise PublicError('idempotency_conflict', 'Request a new quote with a new operation key.', status=409,
+                details={'next_action': 'review_current_quote'})
         event = EventEnvelope(type='pricing.quote-created.v1', source='pricing', subject=str(quote_id), request_id=request.state.request_id,
             data={'occurrence_id': 'quote:' + str(quote_id), 'recipient_id': str(owner), 'kind': 'quote_ready', 'resource_id': str(quote_id),
                   'resource_revision': 1, 'resource_owner_id': str(owner), 'event_time': now.isoformat(), 'sample': True, 'required': False})
@@ -115,7 +121,10 @@ async def review(quote_id: UUID, body: QuoteReview, request: Request, owner=Depe
         now = datetime.now(timezone.utc)
         if now >= row['expires_at']:
             raise PublicError('quote_expired', 'Review a new quote before continuing.', status=409, details={'next_action': 'review_current_quote'})
-        await tx.execute('INSERT INTO l07_quote_reviews VALUES($1,$2,$3,$4,$5)', quote_id, owner, key, digest(body), now)
+        inserted = await tx.fetchval('''INSERT INTO l07_quote_reviews VALUES($1,$2,$3,$4,$5)
+            ON CONFLICT (owner_id,idempotency_key) DO NOTHING RETURNING quote_id''', quote_id, owner, key, digest(body), now)
+        if inserted is None:
+            raise PublicError('idempotency_conflict', 'This request key belongs to another quote review.', status=409)
         await tx.execute('UPDATE l07_quotes SET reviewed_at=$2 WHERE id=$1', quote_id, now)
         await enqueue(tx, EventEnvelope(type='pricing.quote-reviewed.v1', source='pricing', subject=str(quote_id), request_id=request.state.request_id,
             data={'quote_id': str(quote_id), 'owner_id': str(owner), 'revision': 1}), ['communications'])

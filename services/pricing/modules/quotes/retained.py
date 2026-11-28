@@ -57,4 +57,7 @@ async def retained(quote_id: UUID, buyer_id: UUID, request: Request):
             'terms_digest': q['terms_digest'], 'state': assessed['state'], 'return_fee_minor': q['return_fee_minor'],
             'accepted_fee_lines': decoded(decision['accepted_fee_lines']) if decision else {},
             'authority': 'retained_read_only'}
+    if ((commitment and commitment['buyer_id'] == buyer_id)
+            or (offer and offer['buyer_id'] == buyer_id and offer['state'] in ('acceptance_pending', 'accepted'))):
+        raise PublicError('legacy_reconciliation', 'Legacy quote economics require recorded reconciliation.', status=409)
     raise PublicError('not_found', 'Retained quote not found.', status=404)

@@ -22,6 +22,8 @@ async def tick(app):
                     organization_id=row['organization_id'], state=row['state']).model_dump(mode='json', exclude_none=True)),
                 ['pricing-notices-v2', 'accepted-quotes-v1'])
         offers = await tx.fetch("""WITH due AS (SELECT id FROM l14_offers WHERE state='open'
+            AND snapshot @> '{"purpose":"offer","currency":"USD","schedule_id":"usd-v2","policy":{"revision":2}}'::jsonb
+            AND snapshot #>> '{policy,revision}' = '2'
             AND expires_at<=clock_timestamp() ORDER BY expires_at,id FOR UPDATE SKIP LOCKED LIMIT 30)
             UPDATE l14_offers o SET state='expired',revision=revision+1 FROM due WHERE o.id=due.id RETURNING o.*""")
         for row in offers:

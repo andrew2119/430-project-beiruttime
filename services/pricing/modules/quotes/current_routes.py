@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 from fastapi import APIRouter, Depends, Request
+from bt_contracts.pricing.offers.current import is_current, require_current
 from bt_contracts.pricing.quotes.current import CurrentQuoteV3, FixedPurchaseCommitV3
 from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
@@ -20,9 +21,15 @@ async def operation(key: str, request: Request, p=Depends(peers.principal)):
         raise PublicError('invalid_key', 'Use the original operation key.', status=422)
     async with request.app.state.pool.acquire() as tx:
         row = await tx.fetchrow('SELECT * FROM l14_pricing_operations WHERE actor_id=$1 AND operation_key=$2', p.actor.subject_id, key)
-    if row is None or row['organization_id'] != p.actor.organization_id:
-        raise PublicError('not_found', 'Operation not found in this scope.', status=404)
-    return decoded(row['result'])
+        if row is None or row['organization_id'] != p.actor.organization_id:
+            raise PublicError('not_found', 'Operation not found in this scope.', status=404)
+        result = decoded(row['result'])
+        receipt = result.get('offer')
+        if isinstance(receipt, dict) and not is_current(receipt.get('quote')):
+            offer = await tx.fetchrow('SELECT state,orders_command FROM l14_offers WHERE id=$1', UUID(receipt['id']))
+            require_current(receipt.get('quote'), state=offer['state'] if offer else receipt.get('state'),
+                            has_intent=offer is not None and offer['orders_command'] is not None)
+    return result
 
 
 Commitment = FixedPurchaseCommitV3
@@ -86,6 +93,8 @@ async def validation(quote_id: UUID, buyer_id: UUID, request: Request):
             raise AccessDenied('Wrong quote subject or consumer')
         if offer['state'] not in ('acceptance_pending', 'accepted'):
             raise PublicError('quote_not_current', 'An admitted accepted offer intent is required.', status=409)
+        # Sent offers hold an immutable copy of the original quote binding.
+        require_current(q, state=offer['state'])
         await peers.listing(request, offer['listing_id'], offer['listing_revision'])
         result = {'source_id': offer['id'], 'source_revision': offer['accepted_revision'], 'kind': 'offer',
                   'listing_id': offer['listing_id'], 'listing_revision': offer['listing_revision'],
@@ -112,6 +121,8 @@ async def validation(quote_id: UUID, buyer_id: UUID, request: Request):
             row = await tx.fetchrow('SELECT * FROM l07_quotes WHERE id=$1 AND owner_id=$2', quote_id, buyer_id)
             commitment = await tx.fetchrow('SELECT * FROM l14_quote_commitments WHERE quote_id=$1', quote_id)
         if not row:
+            if caller == 'orders' and commitment and commitment['buyer_id'] == buyer_id:
+                raise PublicError('legacy_reconciliation', 'Legacy purchase economics require recorded reconciliation.', status=409)
             raise PublicError('not_found', 'Current quote not found.', status=404)
         q = decoded(row['snapshot'])
         if (caller != 'orders' or not row['reviewed_at'] or q.get('source') != 'listing'
