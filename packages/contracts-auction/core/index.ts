@@ -12,7 +12,7 @@ export type AuctionSnapshot = {
 export type SellerAuctionSnapshot = AuctionSnapshot & {reserve_minor:number|null};
 export type BidCommand = { amount_minor:number;fee_quote_id:string;expected_revision:number };
 export type AuctionOutcome = {
-  operation_id:string;status:'succeeded'|'denied';code:string;auction_id:string;
+  operation_id:string;status:'succeeded'|'denied'|'pending';code:string;auction_id:string;
   revision?:number;accepted_sequence?:number;current_minor?:number;next_minimum_minor?:number;
   server_time?:string;auction?:AuctionSnapshot;
 };
