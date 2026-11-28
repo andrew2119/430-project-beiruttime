@@ -37,5 +37,6 @@ await login(context.buyer_email,context.buyer_password);
 await page.open(base+orderHref);
 await page.wait('.checkout-result');
 const order=await page.eval(()=>document.querySelector('.checkout-result').textContent);
-if(!order.includes('Awaiting payment')||!order.includes('92.70'))throw new Error('Real scoped awaiting-payment review missing: '+order);
-console.log(JSON.stringify({offer_id:offerId,listing_id:context.listing_id,order_href:orderHref,state:'accepted',payment_invoked:false},null,2));
+const hasClock=await page.eval(()=>!!document.querySelector('.checkout-result time'));
+if(!order.includes('Payment notice pending')||!order.includes('92.70')||hasClock)throw new Error('Real scoped order must have exact terms and no clock before notice: '+order);
+console.log(JSON.stringify({offer_id:offerId,listing_id:context.listing_id,order_href:orderHref,state:'accepted',payment_notice:'withheld_missing_producer',payment_invoked:false},null,2));

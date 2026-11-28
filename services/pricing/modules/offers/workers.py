@@ -3,14 +3,14 @@ import asyncio
 from types import SimpleNamespace
 from uuid import uuid4
 from bt_runtime.app.db import unit_of_work
-from .routes import reconcile_intent
+from .routes import CURRENT_TERMS, reconcile_intent
 from .closure import close_other_route
 
 
 async def tick(app):
     lease = uuid4()
     async with unit_of_work(app.state.pool) as tx:
-        rows = await tx.fetch("""WITH due AS (SELECT id FROM l14_offers WHERE state='acceptance_pending'
+        rows = await tx.fetch(f"""WITH due AS (SELECT id FROM l14_offers WHERE state='acceptance_pending' AND {CURRENT_TERMS}
             AND reconcile_after<=clock_timestamp() AND (reconcile_until IS NULL OR reconcile_until<clock_timestamp())
             ORDER BY reconcile_after,id FOR UPDATE SKIP LOCKED LIMIT 5)
             UPDATE l14_offers o SET reconcile_lease=$1,reconcile_until=clock_timestamp()+interval '30 seconds',
@@ -26,7 +26,7 @@ async def tick(app):
                 reconcile_after=clock_timestamp()+$3*interval '1 second' WHERE id=$1 AND reconcile_lease=$2''',
                 row['id'], lease, min(300, 2 ** min(row['reconcile_attempts'], 8)))
     async with unit_of_work(app.state.pool) as tx:
-        open_rows = await tx.fetch("""WITH due AS (SELECT id FROM l14_offers WHERE state='open'
+        open_rows = await tx.fetch(f"""WITH due AS (SELECT id FROM l14_offers WHERE state='open' AND {CURRENT_TERMS}
             AND availability_check_after<=clock_timestamp() ORDER BY availability_check_after,id
             FOR UPDATE SKIP LOCKED LIMIT 5)
             UPDATE l14_offers o SET availability_check_after=clock_timestamp()+interval '15 seconds'

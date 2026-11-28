@@ -98,7 +98,7 @@ class Peers:
         fee = (amount * 300 + 5000) // 10000
         self.quotes[quote_id] = {'id': quote_id, 'owner_id': str(actor), 'subject_id': str(auction), 'subject_revision': revision,
             'revision': 1, 'purpose': 'bid', 'currency': 'USD', 'price_minor': amount, 'buyer_fee_minor': fee,
-            'shipping_minor': 0, 'tax_minor': 0, 'payable_minor': amount + fee, 'schedule_id': 'sample-v1',
+            'shipping_minor': 0, 'tax_minor': 0, 'payable_minor': amount + fee, 'schedule_id': 'usd-v2',
             'source': 'sample', 'source_verified': False, 'sample': True, 'minor_unit_exponent': 2, 'rounding': 'half_up',
             'created_at': (now - timedelta(seconds=2)).isoformat(), 'reviewed_at': (now - timedelta(seconds=1)).isoformat(),
             'expires_at': (now + timedelta(minutes=15)).isoformat()}

@@ -1,7 +1,7 @@
 """Bounded cross-route reconciliation from authoritative facts, not UI guesses."""
 from bt_runtime.app.db import unit_of_work
 from service_app import peers
-from .routes import notice
+from .routes import CURRENT_TERMS, notice
 
 
 def committed(watch, row):
@@ -22,8 +22,8 @@ async def close_other_route(request, row):
     if not close:
         return 0  # Missing/hidden/pending/unknown is not an invented withdrawal.
     async with unit_of_work(request.app.state.pool, lock_key='offer-listing:' + str(row['listing_id'])) as tx:
-        closed = await tx.fetch("""UPDATE l14_offers SET state='closed',revision=revision+1
-            WHERE watch_id=$1 AND listing_id=$2 AND state='open' RETURNING *""", row['watch_id'], row['listing_id'])
+        closed = await tx.fetch(f"""UPDATE l14_offers SET state='closed',revision=revision+1
+            WHERE watch_id=$1 AND listing_id=$2 AND state='open' AND {CURRENT_TERMS} RETURNING *""", row['watch_id'], row['listing_id'])
         for offer in closed:
             await notice(tx, request, offer, 'closed')
     return len(closed)

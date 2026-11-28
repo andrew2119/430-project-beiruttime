@@ -3,17 +3,35 @@ import json
 from datetime import datetime, timezone, timedelta
 from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Request, HTTPException
-from bt_contracts.pricing.offers.models import MakeOffer, AnswerOffer
+from bt_contracts.pricing.offers.current import is_current, require_current
+from bt_contracts.pricing.offers.models import MakeOffer, LegacyMakeOffer, AnswerOffer
 from bt_contracts.pricing.offers.events import OfferFact
 from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from service_app import peers
-from service_app.current import buyer, decoded, digest, replay, remember, require_usd
+from service_app.current import buyer, decoded, digest, replay, remember
 from service_app.security import idempotency
 
 router = APIRouter(prefix='/v1/offers', tags=['offers'])
+CURRENT_TERMS = """snapshot @> '{"purpose":"offer","currency":"USD","schedule_id":"usd-v2","policy":{"revision":2}}'::jsonb
+    AND snapshot #>> '{policy,revision}' = '2'"""
+
+
+def current_terms(row):
+    return require_current(decoded(row['snapshot']), state=row['state'], has_intent=row.get('orders_command') is not None)
+
+
+async def offer_replay(tx, principal, key, fingerprint):
+    result = await replay(tx, principal, key, fingerprint)
+    receipt = result.get('offer') if result else None
+    if isinstance(receipt, dict) and not is_current(receipt.get('quote')):
+        # A make receipt may still say open after an acceptance was admitted.
+        live = await tx.fetchrow('SELECT state,orders_command FROM l14_offers WHERE id=$1', UUID(receipt['id']))
+        require_current(receipt.get('quote'), state=live['state'] if live else receipt.get('state'),
+                        has_intent=live is not None and live['orders_command'] is not None)
+    return result
 
 
 def seller_scope(row):
@@ -29,15 +47,15 @@ def party(row, p):
 
 
 def project(row):
+    quote = current_terms(row)
     state = row['state']
     if state == 'open' and datetime.now(timezone.utc) >= row['expires_at']:
         state = 'expired'
-    require_usd(decoded(row['snapshot']))
     remote = decoded(row['orders_result']) if row['orders_result'] else None
     return {'id': str(row['id']), 'listing_id': str(row['listing_id']), 'listing_revision': row['listing_revision'],
             'revision': row['revision'], 'buyer_id': str(row['buyer_id']), 'seller_id': str(row['seller_id']),
             'organization_id': str(row['seller_organization_id']) if row['seller_organization_id'] else None,
-            'state': state, 'expires_at': row['expires_at'].isoformat(), 'quote': decoded(row['snapshot']),
+            'state': state, 'expires_at': row['expires_at'].isoformat(), 'quote': quote,
             'order_id': str(remote['order']['id']) if remote and (remote.get('order') or {}).get('id') else None}
 
 
@@ -64,12 +82,31 @@ async def notice(tx, request, row, kind):
             revision=row['revision'], state=row['state']).model_dump(mode='json')), ['pricing-notices-v2'])
 
 
+async def recover_legacy_make(request, principal, key, body, fingerprint):
+    async with request.app.state.pool.acquire() as tx:
+        prior = await tx.fetchrow('SELECT organization_id,request_hash,result FROM l14_pricing_operations'
+                                  ' WHERE actor_id=$1 AND operation_key=$2', principal.actor.subject_id, key)
+        if not prior or prior['organization_id'] != principal.actor.organization_id:
+            raise PublicError('fee_review_required', 'Review fresh USD terms before making a new offer.', status=409,
+                              details={'next_action': 'review_current_quote'})
+        if prior['request_hash'] != fingerprint:
+            raise PublicError('idempotency_conflict', 'This operation key has different fields or scope.', status=409)
+        receipt = decoded(prior['result']).get('offer')
+        live = await tx.fetchrow('SELECT state,orders_command FROM l14_offers WHERE id=$1 AND buyer_id=$2 AND quote_id=$3',
+                                 UUID(receipt['id']), principal.actor.subject_id, body.fee_quote_id) if receipt else None
+        # This shape is recovery-only even if a receipt is missing or malformed.
+        require_current(None, state=live['state'] if live else (receipt or {}).get('state'),
+                        has_intent=live is not None and live['orders_command'] is not None)
+
+
 @router.post('', status_code=201)
-async def make(body: MakeOffer, request: Request, p=Depends(peers.principal), key=Depends(idempotency)):
+async def make(body: MakeOffer | LegacyMakeOffer, request: Request, p=Depends(peers.principal), key=Depends(idempotency)):
     buyer(p)
     fingerprint = digest(['offer', body.model_dump(mode='json')])
+    if isinstance(body, LegacyMakeOffer):
+        return await recover_legacy_make(request, p, key, body, fingerprint)
     async with unit_of_work(request.app.state.pool) as tx:
-        prior = await replay(tx, p, key, fingerprint)
+        prior = await offer_replay(tx, p, key, fingerprint)
     if prior:
         return prior
     source = await peers.listing(request, body.listing_id, body.listing_revision)
@@ -83,7 +120,7 @@ async def make(body: MakeOffer, request: Request, p=Depends(peers.principal), ke
             or availability.get('watch_id') != source['physical_watch_id'] or availability.get('listing_id') != str(body.listing_id)):
         raise PublicError('watch_committed', 'This current watch is unavailable for offers.', status=409)
     async with unit_of_work(request.app.state.pool) as tx:
-        prior = await replay(tx, p, key, fingerprint)
+        prior = await offer_replay(tx, p, key, fingerprint)
         if prior:
             return prior
         now = await tx.fetchval('SELECT clock_timestamp()')
@@ -95,7 +132,7 @@ async def make(body: MakeOffer, request: Request, p=Depends(peers.principal), ke
         if (not q['reviewed_at'] or q['expires_at'] <= now or quote['purpose'] != 'offer'
                 or quote['subject_id'] != str(body.listing_id) or quote['subject_revision'] != body.listing_revision
                 or quote['price_minor'] != body.amount_minor or quote['currency'] != body.currency
-                or quote['schedule_id'] != body.schedule_id or quote['policy'].get('revision') != 2):
+                or quote['schedule_id'] != body.schedule_id or not is_current(quote)):
             raise PublicError('fee_review_required', 'Review the exact current offer and fees first.', status=409)
         row_scope = {'seller_id': source['seller_id'], 'seller_organization_id': source['organization_id'], 'buyer_id': p.actor.subject_id}
         await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'offer-listing:' + str(body.listing_id))
@@ -120,9 +157,10 @@ async def listing(request: Request, p=Depends(peers.principal)):
         from bt_runtime.principal import require_scope
         require_scope(p, 'identity.listings.publish', org)
     async with request.app.state.pool.acquire() as tx:
-        rows = await tx.fetch('''SELECT * FROM l14_offers WHERE
+        rows = await tx.fetch(f'''SELECT * FROM l14_offers WHERE
             (($2::uuid IS NULL AND (buyer_id=$1 OR (seller_id=$1 AND seller_organization_id IS NULL)))
-            OR ($2::uuid IS NOT NULL AND seller_organization_id=$2)) AND snapshot->>'currency'='USD' ORDER BY created_at DESC,id DESC LIMIT 50''',
+            OR ($2::uuid IS NOT NULL AND seller_organization_id=$2)) AND {CURRENT_TERMS}
+            ORDER BY created_at DESC,id DESC LIMIT 50''',
             p.actor.subject_id, org)
     for row in rows:
         party(row, p)
@@ -150,6 +188,7 @@ async def reconcile_intent(request, offer_id):
     # worker for an already authorized, immutable durable acceptance intent.
     async with request.app.state.pool.acquire() as tx:
         row = await load(tx, offer_id)
+    current_terms(row)
     if row['state'] != 'acceptance_pending':
         return {'status': 'succeeded' if row['state'] == 'accepted' else 'denied', 'offer': project(row)}
     command = decoded(row['orders_command'])
@@ -174,13 +213,14 @@ async def reconcile_intent(request, offer_id):
             return {'status': 'pending', 'code': 'reservation_unknown', 'offer': project(row)}
     async with unit_of_work(request.app.state.pool, lock_key='offer-listing:' + str(row['listing_id'])) as tx:
         row = await load(tx, offer_id)
+        current_terms(row)
         if row['state'] == 'acceptance_pending':
             state = 'accepted' if remote['status'] == 'succeeded' else 'lost'
             row = await tx.fetchrow('UPDATE l14_offers SET state=$2,orders_result=$3::jsonb,revision=revision+1 WHERE id=$1 RETURNING *',
                                      offer_id, state, json.dumps(remote))
             await notice(tx, request, row, state)
             if state == 'accepted':
-                others = await tx.fetch("UPDATE l14_offers SET state='closed',revision=revision+1 WHERE listing_id=$1 AND id<>$2 AND state='open' RETURNING *",
+                others = await tx.fetch(f"UPDATE l14_offers SET state='closed',revision=revision+1 WHERE listing_id=$1 AND id<>$2 AND state='open' AND {CURRENT_TERMS} RETURNING *",
                                          row['listing_id'], offer_id)
                 for other in others:
                     await notice(tx, request, other, 'closed')
@@ -194,10 +234,11 @@ async def reconcile_intent(request, offer_id):
 async def answer(offer_id: UUID, body: AnswerOffer, request: Request, p=Depends(peers.principal), key=Depends(idempotency)):
     fingerprint = digest(['answer', str(offer_id), body.model_dump(mode='json')])
     async with unit_of_work(request.app.state.pool) as tx:
-        prior = await replay(tx, p, key, fingerprint)
         before = await load(tx, offer_id)
         if party(before, p) != 'seller':
             raise AccessDenied('Only the actual seller answers')
+        current_terms(before)
+        prior = await offer_replay(tx, p, key, fingerprint)
     if prior:
         if prior['status'] == 'pending':
             await reconcile(request, offer_id, p)
@@ -212,12 +253,13 @@ async def answer(offer_id: UUID, body: AnswerOffer, request: Request, p=Depends(
         if remote.get('watch_id') != str(before['watch_id']) or remote.get('listing_id') != str(before['listing_id']):
             raise PublicError('dependency_unavailable', 'The watch commitment cannot be verified.', status=503)
     async with unit_of_work(request.app.state.pool) as tx:
-        prior = await replay(tx, p, key, fingerprint)
+        prior = await offer_replay(tx, p, key, fingerprint)
         if prior:
             return prior
         await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'offer-listing:' + str(before['listing_id']))
         row = await load(tx, offer_id, for_update=True)
         party(row, p)
+        quote = current_terms(row)
         await blocked(tx, row)
         now = await tx.fetchval('SELECT clock_timestamp()')
         if row['state'] != 'open' or row['revision'] != body.expected_revision or row['expires_at'] <= now:
@@ -226,8 +268,6 @@ async def answer(offer_id: UUID, body: AnswerOffer, request: Request, p=Depends(
             row = await tx.fetchrow("UPDATE l14_offers SET state='rejected',revision=revision+1 WHERE id=$1 RETURNING *", offer_id)
             await notice(tx, request, row, 'rejected')
             return await remember(tx, p, key, fingerprint, {'status': 'succeeded', 'offer': project(row)})
-        quote = decoded(row['snapshot'])
-        require_usd(quote)
         command = {'operation_key': 'offer:' + str(offer_id), 'watch_id': str(row['watch_id']),
                    'listing_id': str(row['listing_id']), 'listing_revision': row['listing_revision'],
                    'expected_revision': remote['revision'], 'source_id': str(offer_id), 'kind': 'offer',

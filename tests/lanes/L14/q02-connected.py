@@ -115,7 +115,7 @@ def main():
                 cwd=ROOT / 'web', env=env, stdout=web_log, stderr=subprocess.STDOUT)
             ready(ORIGIN + '/en/offers')
             run('bash', 'tests/lanes/L14/offers-browser.sh', env={**env, 'BT_L14_BROWSER_CONTEXT': json.dumps(browser)})
-        print('Q02 actual API proof passed: native sample accounts/review/publication, exact fee review, three-way offer/Buy Now contention -> one reservation, self/expired/stale/blocked denials. No payment invoked.')
+        print('Q02 isolated API checks passed: exactly one reservation in contention; self, client deadline, stale and blocked requests denied. Durable payment-notice transition withheld: Communications is not in this stack. No payment invoked.')
     finally:
         if web:
             web.terminate()
