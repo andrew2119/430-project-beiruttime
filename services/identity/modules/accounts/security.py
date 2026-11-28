@@ -13,6 +13,7 @@ from fastapi import HTTPException, Request
 from bt_contracts_core.models import Actor, EventEnvelope
 from bt_contracts_core.errors import PublicError
 from bt_events import enqueue
+from bt_runtime import demo_seed
 from service_app.identity import live_actor as live_actor
 from bt_runtime.principal import CurrentPrincipal, OrganizationGrant
 
@@ -108,6 +109,13 @@ async def limit(tx, scope: str, *, maximum=12, seconds=900):
         RETURNING attempts''', digest(scope), seconds)
     if count > maximum:
         raise PublicError('try_later', 'Try again later.', status=429)
+
+
+async def seed_only(tx, account_id) -> bool:
+    """Whether the deploy demo seed created this account: it has no password, so password sign-in,
+    recovery and reset are refused for it, and its sample sign-in link is the only way in. By key alone, so it
+    fails closed: an id the seed's record still holds never gets a password path."""
+    return await demo_seed.recorded(tx, 'identity_accounts', {'id': account_id})
 
 
 async def audit(tx, request, actor, resource, action, outcome):
