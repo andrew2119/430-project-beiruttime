@@ -40,6 +40,169 @@ export async function navigate(page, path, {origin, cell}, call) {
   throw new Error('Navigation timed out');
 }
 
+// One click records evidence: the desktop rail's link to the public About page, the click a hosted run has
+// seen reach the wrong page. Every other click is the plain press and release, exactly as before.
+// For that click the page call that reads the target's box also arms window listeners that note every
+// pointerdown, pointerup and click in arrival order, with allowlisted facts only: never an id, a class, a link
+// or any text. The record is read back after the release and must carry the nonce the client end made for this
+// call. The press, release and click count as this click only when they link up as one mouse click (linkClick);
+// a linked press outside the target fails with the line, and every other outcome returns it.
+const CLICK_MISS = 'Click landed outside the target', CLICK_EVIDENCE = 'Click evidence';
+const CLICK_PROBE = /^\.bt-shell-rail \.bt-shell-navigation a\[href="\/(?:en|ar)\/about"\]$/;
+const CLICK_NONCE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const CLICK_PAGE = {tags:['a','aside','body','button','div','header','html','img','li','main','nav','path','span','svg','ul'],pointers:['mouse','touch','pen'],limit:8};
+const CLICK_RELATIONS = ['target','inside target','target copy','outside','none'];
+const clickProbe = (selector,nonce) => typeof selector==='string' && CLICK_PROBE.test(selector) && typeof nonce==='string' && CLICK_NONCE.test(nonce);
+function armClick(selector, nonce, {tags, pointers, limit}) {
+  const el=document.querySelector(selector);if(!el)throw Error();
+  el.scrollIntoView({block:'center'});
+  const page=document.scrollingElement??document.documentElement;
+  // The nearest ancestor styled to scroll (the rail on desktop), else the page.
+  const scroller=node=>{let at=node.parentElement;while(at && !/auto|scroll|overlay/.test(`${getComputedStyle(at).overflowY} ${getComputedStyle(at).overflowX}`))at=at.parentElement;return at??page;};
+  const container=scroller(el);
+  const classed=(node,name)=>(node?.getAttribute?.('class')??'').split(/\s+/).includes(name);
+  const inRail=node=>{for(let at=node;at;at=at.parentElement)if(classed(at,'bt-shell-rail'))return true;return false;};
+  const box=node=>{const r=node.getBoundingClientRect();return {left:r.left,top:r.top,width:r.width,height:r.height};};
+  const scroll=()=>({top:container.scrollTop,left:container.scrollLeft,pageX:scrollX,pageY:scrollY});
+  const read=box(el),point={x:read.left+read.width/2,y:read.top+read.height/2};
+  // The target as the press finds it: the original, else the same-selector copy that was hit or now stands in its place.
+  const targetAt=hit=>el.contains(hit) ? el : hit?.closest?.(selector) ?? (el.isConnected ? el : document.querySelector(selector));
+  const relation=node=>!node ? 'none' : node===el ? 'target' : el.contains(node) ? 'inside target' : node.closest?.(selector) ? 'target copy' : 'outside';
+  // The control a node belongs to, so a hit on a link's label and a hit on the link itself count as the same.
+  const owner=node=>{for(let at=node;at;at=at.parentElement){const tag=at.tagName;
+    if(['BUTTON','INPUT','LABEL','SELECT','SUMMARY','TEXTAREA'].includes(tag) || tag==='A' && at.getAttribute('href')!==null || at.getAttribute?.('role')==='button')return at;}return null;};
+  // A node as allowlisted facts: its tag from a fixed list, whether it is in the rail, and its rail row counted from the target's.
+  const place=(node,target)=>{const tag=String(node.tagName??'').toLowerCase(),rows=[...document.querySelectorAll('.bt-shell-navigation a')],own=owner(node);
+    return {tag:tags.includes(tag)?tag:'other',rail:inRail(node),row:own && target && rows.includes(own) && rows.includes(target) ? rows.indexOf(own)-rows.indexOf(target) : null};};
+  // What the press found: the page's own hit test at the point the press arrived at, and the target's box and scroll.
+  const snapshot=(event,at)=>{
+    const hit=event.target,under=document.elementFromPoint(at.x,at.y),target=targetAt(hit),now=target?box(target):null,own=owner(hit);
+    return {hit:place(hit,target),under:under?{relation:relation(under),...place(under,target)}:null,
+      same:!under ? null : under===hit ? 'node' : own && owner(under)===own ? 'owner' : 'neither',
+      target:!target?'none':target===el?'original':'fresh copy',
+      container:!container.isConnected || target && target!==el && scroller(target)!==container ? 'replaced' : 'same',box:now,scroll:scroll(),
+      inside_box:now ? at.x>=now.left && at.x<=now.left+now.width && at.y>=now.top && at.y<=now.top+now.height : null};
+  };
+  const probe={selector,nonce,container:classed(container,'bt-shell-rail')?'rail':container===page?'page':'other',read:{box:read,scroll:scroll()},events:[],more:0},seen=[];
+  const whole=value=>Number.isInteger(value)?value:null;
+  const note=event=>{
+    if(probe.events.length>=limit){probe.more++;return;}
+    const at=Number.isFinite(event.clientX) && Number.isFinite(event.clientY) ? {x:event.clientX,y:event.clientY} : null;
+    const item={type:event.type,trusted:event.isTrusted===true,pointer:pointers.includes(event.pointerType)?event.pointerType:event.pointerType===undefined?null:'other',
+      id:whole(event.pointerId),button:whole(event.button),detail:whole(event.detail),point:at,relation:relation(event.target)};
+    // Only a trusted primary mouse press near the point sent can be the dispatched one, so only such a press is measured.
+    if(item.type==='pointerdown')item.snapshot=item.trusted && item.pointer==='mouse' && item.button===0 && at && Math.abs(at.x-point.x)<=1 && Math.abs(at.y-point.y)<=1 ? snapshot(event,at) : null;
+    if(item.type==='click')item.prevented=null;
+    probe.events.push(item);seen.push(event);
+  };
+  // A click that reaches the window says whether a page handler on its way took it over.
+  const settle=event=>{const at=seen.lastIndexOf(event);if(at>=0 && probe.events[at].type==='click')probe.events[at].prevented=event.defaultPrevented===true;};
+  const types=['pointerdown','pointerup','click'];
+  window.btClickProbe?.stop();
+  for(const type of types)addEventListener(type,note,true);
+  addEventListener('click',settle,false);
+  probe.stop=()=>{for(const type of types)removeEventListener(type,note,true);removeEventListener('click',settle,false);};
+  window.btClickProbe=probe;
+  return point;
+}
+function readClick() {
+  const probe=window.btClickProbe;if(!probe)return null;
+  probe.stop();delete window.btClickProbe;
+  const {selector,nonce,container,read,events,more}=probe;
+  return {selector,nonce,container,read,events,more};
+}
+const near = (a,b) => Object.keys(b).every(name=>Math.abs(a[name]-b[name])<=0.5);
+// The press, release and click count as the dispatched click only when they are the only trusted mouse input the
+// page saw, in that order, from one pointer, with the primary button, within 1 px of the point sent, and the click
+// is a single click. Anything else leaves the press unlinked, which never fails a click.
+function linkClick(events, more, sent) {
+  const none = {press:null,release:null,click:null};
+  if (more>0) return none;
+  const [p,r,c,...rest] = events.flatMap((item,index)=>item.trusted && item.pointer==='mouse' ? [index] : []);
+  const ours = (index,type) => index!==undefined && events[index].type===type && events[index].button===0 && events[index].id===events[p].id
+    && !!events[index].point && Math.abs(events[index].point.x-sent.x)<=1 && Math.abs(events[index].point.y-sent.y)<=1;
+  if (rest.length || !ours(p,'pointerdown') || events[p].id===null || !events[p].snapshot) return none;
+  if (r===undefined) return {...none,press:p};
+  if (!ours(r,'pointerup')) return none;
+  if (c===undefined) return {...none,press:p,release:r};
+  return ours(c,'click') && events[c].detail===1 ? {press:p,release:r,click:c} : none;
+}
+// Layout compares the target's box and scroll at the linked press with the read, and is unavailable when the target
+// or its scrolling container was replaced; the hit test says whether the page's own hit test at the point the press
+// arrived at found the same element or the same control.
+function clickEvidence(probe, nonce, sent, record, raw) {
+  const events = raw?.events ?? [], linked = raw ? linkClick(events,raw.more,sent) : null;
+  const state = at => at==null ? 'not linked' : ['target','inside target','target copy'].includes(events[at].relation) ? 'on target' : 'outside the target';
+  const press = linked?.press==null ? null : events[linked.press].snapshot, click = linked?.click==null ? null : events[linked.click];
+  return {probe, nonce, sent, record, press:state(linked?.press), release:state(linked?.release), click:state(linked?.click),
+    layout:!press || press.target==='none' || press.container==='replaced' ? 'unavailable' : near(press.box,raw.read.box) && near(press.scroll,raw.read.scroll) ? 'unchanged' : 'changed',
+    hit_test:!press?.under ? 'unavailable' : press.same==='neither' ? 'differs' : 'agrees',
+    activation:click?.prevented===true ? 'default prevented' : click?.prevented===false ? 'not prevented' : 'not observed',
+    linked, container:raw?.container ?? null, read:raw?.read ?? null, events:raw ? events : null, more:raw?.more ?? null};
+}
+// A miss names a cause only when its measurements back it: the layout changed, the point left the target's box and
+// the page's hit test agrees with the press; or the layout held and the hit test disagrees. Otherwise the cause is not
+// determined. No head claims more than the linked events show.
+function clickLine(evidence) {
+  const {record,press,release,click,layout,hit_test,linked,events} = evidence;
+  const inside = linked?.press==null ? null : events[linked.press].snapshot.inside_box;
+  const head = record!=='read' ? `${CLICK_EVIDENCE}: unavailable` : press==='not linked' ? `${CLICK_EVIDENCE}: not linked`
+    : press==='outside the target' ? `${CLICK_MISS}: ${layout==='changed' && hit_test==='agrees' && inside===false ? 'layout changed before the press'
+      : layout==='unchanged' && hit_test==='differs' ? 'press target differs from the page hit test' : 'cause not determined'}`
+    : release==='on target' && click==='on target' ? `${CLICK_EVIDENCE}: linked on target` : `${CLICK_EVIDENCE}: press linked on target, release or click not`;
+  return `${head}; evidence ${JSON.stringify(evidence)}`;
+}
+const keyed = (value,keys) => !!value && typeof value==='object' && !Array.isArray(value) && Object.keys(value).join()===keys;
+const numbers = (value,keys) => keyed(value,keys) && Object.values(value).every(Number.isFinite);
+const whole = value => value===null || Number.isInteger(value);
+const placeShape = (value,keys='tag,rail,row') => keyed(value,keys) && (CLICK_PAGE.tags.includes(value.tag) || value.tag==='other') && typeof value.rail==='boolean' && whole(value.row);
+const snapshotShape = value => value===null || keyed(value,'hit,under,same,target,container,box,scroll,inside_box') && placeShape(value.hit)
+  && (value.under===null ? value.same===null : placeShape(value.under,'relation,tag,rail,row') && CLICK_RELATIONS.includes(value.under.relation) && ['node','owner','neither'].includes(value.same))
+  && ['original','fresh copy','none'].includes(value.target) && ['same','replaced'].includes(value.container)
+  && (value.target==='none' ? value.box===null && value.inside_box===null : numbers(value.box,'left,top,width,height') && typeof value.inside_box==='boolean')
+  && numbers(value.scroll,'top,left,pageX,pageY');
+const eventShape = item => keyed(item,`type,trusted,pointer,id,button,detail,point,relation${item?.type==='pointerdown' ? ',snapshot' : item?.type==='click' ? ',prevented' : ''}`)
+  && ['pointerdown','pointerup','click'].includes(item.type) && typeof item.trusted==='boolean' && (item.pointer===null || item.pointer==='other' || CLICK_PAGE.pointers.includes(item.pointer))
+  && whole(item.id) && whole(item.button) && whole(item.detail) && (item.point===null || numbers(item.point,'x,y')) && CLICK_RELATIONS.includes(item.relation)
+  && (item.type!=='pointerdown' || snapshotShape(item.snapshot)) && (item.type!=='click' || [null,true,false].includes(item.prevented));
+const rawShape = raw => keyed(raw,'container,read,events,more') && ['rail','page','other'].includes(raw.container) && keyed(raw.read,'box,scroll')
+  && numbers(raw.read.box,'left,top,width,height') && numbers(raw.read.scroll,'top,left,pageX,pageY')
+  && Array.isArray(raw.events) && raw.events.length<=CLICK_PAGE.limit && raw.events.every(eventShape) && Number.isInteger(raw.more) && raw.more>=0;
+/** Whether a message is exactly a click line under this head for the pending click `args` (the probe and its nonce): evidence of the expected shape that renders back to the same text. */
+function clickReported(message, head, args) {
+  const match = typeof message==='string' && message.startsWith(`${head}: `) && /; evidence (\{.*\})$/s.exec(message);
+  if (!match || !Array.isArray(args) || args.length!==2 || !clickProbe(...args)) return false;
+  try {
+    const {probe,nonce,sent,record,container,read,events,more} = JSON.parse(match[1]), raw = {container,read,events,more};
+    if (probe!==args[0] || nonce!==args[1] || !numbers(sent,'x,y')) return false;
+    const valid = record==='read' ? rawShape(raw) : ['none in the page','read-back failed','not this click'].includes(record);
+    return valid && clickLine(clickEvidence(probe,nonce,sent,record,record==='read' ? raw : null))===message;
+  } catch {return false;}
+}
+const rounded = value => JSON.parse(JSON.stringify(value,(name,item)=>typeof item==='number' ? Math.round(item*100)/100 : item));
+/** Presses and releases the left button on the target's center with real pointer input. For the About probe with its nonce it then returns the click's evidence line, or fails with it when the linked press hit outside the target. */
+export async function clickTarget(evaluate, call, selector, nonce) {
+  if (!clickProbe(selector,nonce)) {
+    const point=await evaluate(selector=>{const el=document.querySelector(selector);if(!el)throw Error();el.scrollIntoView({block:'center'});const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};},selector);
+    await call('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});await call('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});
+    return;
+  }
+  const point = await evaluate(armClick,selector,nonce,CLICK_PAGE);
+  await call('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});
+  await call('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});
+  // A press that loaded a new page leaves no record and may fail the read; the line then says so, and the caller's own checks judge it.
+  let raw = null, record = 'read';
+  try {
+    const found = await evaluate(readClick);
+    if (!found) record = 'none in the page';
+    else if (found.selector!==selector || found.nonce!==nonce) record = 'not this click';
+    else {const {container,read,events,more} = rounded(found); raw = {container,read,events,more}; if (!rawShape(raw)) {raw = null; record = 'read-back failed';}}
+  } catch {raw = null; record = 'read-back failed';}
+  const line = clickLine(clickEvidence(selector, nonce, rounded(point), record, raw));
+  if (line.startsWith(`${CLICK_MISS}: `)) throw new Error(line);
+  return line;
+}
+
 async function localBrowser({browserPath, origin, cell, signal}) {
   if (!browserPath || !isAbsolute(browserPath) || signal?.aborted) throw new Error('Installed browser required');
   await access(browserPath,constants.X_OK);
@@ -99,7 +262,7 @@ async function localBrowser({browserPath, origin, cell, signal}) {
         return result.result.value;
       },
       goto:path=>navigate(page,path,{origin,cell},call),
-      async click(selector) {const point=await page.evaluate(selector=>{const el=document.querySelector(selector);if(!el)throw Error();el.scrollIntoView({block:'center'});const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};},selector);await call('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});await call('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});},
+      click:(selector,nonce)=>clickTarget(page.evaluate,call,selector,nonce),
       async fill(selector,value) {await page.evaluate((selector,value)=>{const el=document.querySelector(selector);if(!el)throw Error();el.focus();const setter=Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set;setter.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));},selector,value);},
       async select(selector,value) {await page.evaluate((selector,value)=>{const el=document.querySelector(selector);if(!el)throw Error();el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));},selector,value);},
       async press(key) {const keys={Tab:9,Enter:13,Escape:27};if(!keys[key])throw new Error('Unsupported key');await call('Input.dispatchKeyEvent',{type:'keyDown',key,code:key,windowsVirtualKeyCode:keys[key]});await call('Input.dispatchKeyEvent',{type:'keyUp',key,code:key,windowsVirtualKeyCode:keys[key]});},
@@ -182,7 +345,9 @@ export function context({page,origin,cell,revision}) {
   };
 }
 
-export async function connectSession(socket, {signal,connect=createConnection}={}) {
+// The client passes a page error on only when it is listed, or when it is a click miss line for the pending About probe;
+// that probe's evidence line goes to the report, so the hosted output shows it whether the click passes or fails.
+export async function connectSession(socket, {signal,connect=createConnection,report=line=>console.log(line)}={}) {
   if(typeof socket!=='string' || !isAbsolute(socket))throw new Error('Prepared session unavailable');
   const connection=connect(socket);
   await new Promise((done,reject)=>{connection.once('connect',done);connection.once('error',reject);});
@@ -195,15 +360,21 @@ export async function connectSession(socket, {signal,connect=createConnection}={
     while((end=buffer.indexOf('\n'))>=0) {
       const message=JSON.parse(buffer.slice(0,end));buffer=buffer.slice(end+1);
       const item=pending.get(message.id);if(!item)continue;pending.delete(message.id);
-      message.error?item.reject(new Error(typeof message.error==='string' && ['Navigation failed','Navigation timed out','Page must use configured origin','Browser closed','Browser command timed out','Session cleanup failed'].includes(message.error) ? message.error : 'Prepared page command failed')):item.resolve(message.value);
+      message.error?item.reject(new Error(typeof message.error==='string' && (['Navigation failed','Navigation timed out','Page must use configured origin','Browser closed','Browser command timed out','Session cleanup failed'].includes(message.error) || item.method==='click' && clickReported(message.error,CLICK_MISS,item.args)) ? message.error : 'Prepared page command failed')):item.resolve(message.value);
     }
   });
   function call(method,args=[],closing=false) {
     if(!closing)signal?.throwIfAborted();
     if(connection.destroyed)return Promise.reject(new Error('Prepared session closed'));
-    return new Promise((resolve,reject)=>{const id=++next;pending.set(id,{resolve,reject});connection.write(JSON.stringify({id,method,args})+'\n');});
+    return new Promise((resolve,reject)=>{const id=++next;pending.set(id,{method,args,resolve,reject});connection.write(JSON.stringify({id,method,args})+'\n');});
   }
   const page=Object.fromEntries(['goto','click','fill','select','press','text','exists','waitFor','url','reload'].map(method=>[method,(...args)=>call(method,args)]));
+  // Only the About probe gets a fresh nonce, which ties the line the session returns to this one call.
+  page.click=async(...args)=>{
+    if(args.length!==1 || typeof args[0]!=='string' || !CLICK_PROBE.test(args[0]))return call('click',args);
+    const bound=[args[0],randomUUID()],value=await call('click',bound);
+    report(clickReported(value,CLICK_EVIDENCE,bound) ? value : 'Click evidence unavailable: the session returned no valid record');
+  };
   page.evaluate=(fn,...args)=>call('evaluate',[fn.toString(),...args]);
   return {page,socket,screenshot:path=>call('screenshot',[path]),
     async detach(){await call('detach');detached=true;connection.end();},
@@ -253,10 +424,14 @@ export async function serveSession({config,socket,directory}, launch=localBrowse
               else if(method==='close'){await stop();connection.end(JSON.stringify({id:message.id})+'\n');return;}
               else if(method==='screenshot')value=await session.screenshot(...args);
               else if(method==='evaluate')value=await session.page.evaluate(Function('return ('+args[0]+')')(),...args.slice(1));
-              else if(['goto','click','fill','select','press','text','exists','waitFor','url','reload'].includes(method))value=await session.page[method](...args);
+              else if(['goto','click','fill','select','press','text','exists','waitFor','url','reload'].includes(method)) {
+                value=await session.page[method](...args);
+                // A click returns only its own probe's line, never one for another call.
+                if(method==='click' && !clickReported(value,CLICK_EVIDENCE,args))value=undefined;
+              }
               else throw new Error('Unknown page command');
               connection.write(JSON.stringify({id:message.id,value})+'\n');
-            }catch(error){connection.write(JSON.stringify({id:message?.id,error:['Navigation failed','Navigation timed out','Page must use configured origin','Browser closed','Browser command timed out'].includes(error.message) ? error.message : message?.method==='close' ? 'Session cleanup failed' : true})+'\n');}
+            }catch(error){connection.write(JSON.stringify({id:message?.id,error:['Navigation failed','Navigation timed out','Page must use configured origin','Browser closed','Browser command timed out'].includes(error.message) || message?.method==='click' && clickReported(error.message,CLICK_MISS,message.args) ? error.message : message?.method==='close' ? 'Session cleanup failed' : true})+'\n');}
           });
         }
       });
