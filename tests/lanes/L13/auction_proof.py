@@ -42,7 +42,7 @@ def run(
         "source": "sample",
         "currency": "USD",
         "price_minor": 500000,
-        "schedule_id": "sample-v1",
+        "schedule_id": "usd-v2",
     }
     q = call(
         "pricing",

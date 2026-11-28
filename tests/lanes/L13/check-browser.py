@@ -342,9 +342,9 @@ try:
             {
                 "subject_id": row["id"],
                 "subject_revision": row["revision"],
-                "purpose": "business_quote",
+                "purpose": "purchase",
                 "source": "sample",
-                "schedule_id": "sample-v1",
+                "schedule_id": "usd-v2",
                 "price_minor": 500000,
                 "currency": "USD",
             },
@@ -357,7 +357,7 @@ try:
             "catalog",
             "POST",
             "/v1/seller/listings/" + row["id"] + "/publish",
-            {"fee_quote_id": quote["id"], "rules_version": "sample-v1"},
+            {"fee_quote_id": quote["id"], "rules_version": "usd-v2"},
             seller,
             headers={
                 "Idempotency-Key": "publish-" + str(index) + "-" + suffix,

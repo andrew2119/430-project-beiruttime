@@ -9,10 +9,25 @@ from bt_runtime.principal import current_principal, CurrentPrincipal
 from bt_contracts.orders.allocation import ValidatedQuote
 
 
+class CommunicationsClient(DependencyClient):
+    """Route required payment notices to their scoped receiver."""
+
+    async def request(self, method, path, **options):
+        event = options.get("json")
+        if (
+            method == "POST"
+            and path == "/internal/v1/inbox/events"
+            and isinstance(event, dict)
+            and event.get("type") == "orders.payment-action-required.v3"
+        ):
+            path = "/internal/v3/payment-events"
+        return await super().request(method, path, **options)
+
+
 def clients(app):
     if not hasattr(app.state, "allocation_clients"):
         app.state.allocation_clients = {
-            name: DependencyClient(
+            name: (CommunicationsClient if name == "communications" else DependencyClient)(
                 name,
                 os.environ.get("BT_" + name.upper() + "_URL", "http://" + name + ":8000"),
                 timeout=1.2,

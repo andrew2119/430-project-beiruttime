@@ -170,10 +170,10 @@ async def catalog(database_url, monkeypatch):
         "revision": 1,
         "subject_id": str(listing),
         "subject_revision": current["revision"],
-        "purpose": "business_quote",
+        "purpose": "purchase",
         "source": "sample",
         "source_verified": False,
-        "schedule_id": "sample-v1",
+        "schedule_id": "usd-v2",
         "currency": "USD",
         "price_minor": 500000,
         "minor_unit_exponent": 2,
@@ -188,6 +188,7 @@ async def catalog(database_url, monkeypatch):
         "fx": None,
         "commission_basis": "price_excluding_buyer_fee_shipping_tax",
         "policy": {
+            "revision": 2,
             "buyer_fee_bps": 300,
             "seller_commission_bps": 500,
             "shipping": "sample_zero",
@@ -205,7 +206,7 @@ async def catalog(database_url, monkeypatch):
             "Idempotency-Key": "publish-fixture",
             "If-Match": str(current["revision"]),
         },
-        json={"fee_quote_id": quote_id, "rules_version": "sample-v1"},
+        json={"fee_quote_id": quote_id, "rules_version": "usd-v2"},
     )
     assert published.status_code == 200, published.text
     revision = published.json()["revision"]

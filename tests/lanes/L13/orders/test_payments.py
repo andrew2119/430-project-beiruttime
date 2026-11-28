@@ -31,10 +31,10 @@ async def payable(market, route="card", seller_type="private"):
     )
     assert reserved.status_code == 200, reserved.text
     assert reserved.json()["status"] == "succeeded", reserved.text
-    order = reserved.json()["order"]
+    order = await app.state.l13_acknowledge_notice(reserved.json()["order"])
     started = await c.post(
         f"/v1/orders/{order['id']}/payment-attempts",
-        json={"route": route, "expected_revision": 1},
+        json={"route": route, "expected_revision": order["revision"]},
         headers={**auth, "Idempotency-Key": "start"},
     )
     assert started.status_code == 200, started.text
@@ -128,6 +128,7 @@ async def test_exact_5150_posts_once_restart_replay_and_balanced(market, route):
     timeline = await c.get("/v1/orders/" + order["id"], headers=auth)
     assert [entry["action"] for entry in timeline.json()["history"]] == [
         "reserve",
+        "payment-notified",
         "payment-attempt",
         "payment-confirmed",
     ]
@@ -219,13 +220,14 @@ async def test_manual_unknown_hold_never_starts_a_competing_attempt(market):
         headers={**auth, "Idempotency-Key": "reserve-held"},
         json={"watch_id": watch["watch_id"], "quote_id": quote, "expected_revision": 1},
     )
-    order = reserved.json()["order"]
+    assert reserved.status_code == 200 and reserved.json()["status"] == "succeeded", reserved.text
+    order = await app.state.l13_acknowledge_notice(reserved.json()["order"])
     manager, manager_auth = user(permissions=["orders.manage"])
     held = await c.post(
         "/v1/orders/" + order["id"] + "/transitions",
         headers={**manager_auth, "Idempotency-Key": "unknown-hold"},
         json={
-            "expected_revision": 1,
+            "expected_revision": order["revision"],
             "state": "payment_unknown",
             "reason": "Unknown financial result requires reconciliation",
         },

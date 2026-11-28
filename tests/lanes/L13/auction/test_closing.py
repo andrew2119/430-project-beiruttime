@@ -154,7 +154,7 @@ async def auction(database_url):
             "shipping_minor": 0,
             "tax_minor": 0,
             "payable_minor": amount + amount * 3 // 100,
-            "schedule_id": "sample-v1",
+            "schedule_id": "usd-v2",
             "source": "sample",
             "source_verified": False,
             "sample": True,

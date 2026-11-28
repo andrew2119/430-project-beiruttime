@@ -1,5 +1,5 @@
 from datetime import datetime, timezone, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 import httpx
 import jwt
 import pytest_asyncio
@@ -11,6 +11,40 @@ from bt_runtime.app.settings import Settings
 from bt_runtime.app import db
 
 pytest_plugins = []
+
+
+def committed_quote(watch, buyer, quote_id, source_id, *, kind="offer", source_revision=2):
+    return {
+        "quote_id": quote_id, "quote_revision": 1, "buyer_id": str(buyer),
+        "source_id": str(source_id), "source_revision": source_revision,
+        "listing_id": watch["listing_id"], "listing_revision": watch["listing_revision"],
+        "kind": kind, "currency": "USD", "total_minor": 515000,
+        "expires_at": None, "accepted_at": datetime.now(timezone.utc).isoformat(),
+        "economics": "committed", "execution_authority": "not_granted", "status": "valid",
+        "schedule_id": "usd-v2", "policy_revision": 2, "rounding": "half_up",
+    }
+
+
+async def acknowledge_notice(app, client, service, order):
+    assert order["state"] == "awaiting_notification"
+    assert order["notified_at"] is None and order["deadline"] is None
+    intent = await app.state.pool.fetchrow(
+        "SELECT * FROM l13_payment_notices WHERE order_id=$1", UUID(order["id"])
+    )
+    assert intent and intent["notified_at"] is None and str(intent["buyer_id"]) == order["buyer_id"]
+    receipt = {
+        "event_id": str(intent["event_id"]), "notice_id": str(uuid4()),
+        "order_id": order["id"], "buyer_id": order["buyer_id"],
+        "notified_at": intent["created_at"].isoformat(), "verified_delivery_recorded": True,
+    }
+    response = await client.post("/internal/v3/payment-notices", headers=service("communications"), json=receipt)
+    assert response.status_code == 200 and response.json()["status"] == "succeeded", response.text
+    notified = response.json()["order"]
+    assert notified["state"] == "awaiting_payment" and notified["revision"] == order["revision"] + 1
+    notified_at = datetime.fromisoformat(notified["notified_at"])
+    assert notified_at == intent["created_at"]
+    assert datetime.fromisoformat(notified["deadline"]) == notified_at + timedelta(hours=48)
+    return notified
 
 
 @pytest_asyncio.fixture
@@ -32,6 +66,7 @@ async def market(database_url, monkeypatch):
         .decode()
     )
     monkeypatch.setenv("BT_SERVICE_AUTH_PRIVATE_KEY", private)
+    monkeypatch.setenv("BT_AUTH_ISSUER", "beirut-time-identity")
     app = create_app(
         Settings(
             database_url=database_url,
@@ -45,6 +80,7 @@ async def market(database_url, monkeypatch):
     listings = {}
     validations = {}
     app.state.l13_retained_overrides = {}
+    app.state.l13_pricing_reads = []
 
     def upstream(request):
         if request.url.host == "identity":
@@ -61,18 +97,24 @@ async def market(database_url, monkeypatch):
                 if id in listings
                 else httpx.Response(404)
             )
-        id = (
-            request.url.path.split("/")[-2]
-            if request.url.path.endswith(("/validation", "/retained"))
-            else request.url.path.split("/")[-1]
-        )
-        if "/internal/v2/" in request.url.path and request.url.params.get(
-            "buyer_id"
-        ) != validations.get(id, {}).get("buyer_id"):
+        path = request.url.path
+        if request.method == "GET" and path.startswith("/v1/quotes/"):
+            snapshot = quotes.get(path.rsplit("/", 1)[-1])
+            return httpx.Response(200, json=snapshot) if snapshot else httpx.Response(404)
+        if request.method != "GET" or not path.startswith("/internal/v3/quotes/"):
+            return httpx.Response(404)
+        _, id, action = path.rsplit("/", 2)
+        if action not in ("validation", "retained"):
+            return httpx.Response(404)
+        token = request.headers.get("Authorization", "").removeprefix("Bearer ")
+        claims = jwt.decode(token, public, algorithms=["RS256"], audience="pricing", issuer="beirut-time-identity")
+        assert claims["sub"] == "orders" and claims["type"] == "service"
+        app.state.l13_pricing_reads.append((action, id))
+        if id not in validations or id not in quotes:
+            return httpx.Response(404)
+        if request.url.params.get("buyer_id") != validations[id]["buyer_id"]:
             return httpx.Response(403)
-        if request.url.path.endswith("/retained"):
-            if id not in quotes:
-                return httpx.Response(404)
+        if action == "retained":
             q, current = quotes[id], validations[id]
             financial = {
                 field: q[field]
@@ -113,7 +155,8 @@ async def market(database_url, monkeypatch):
                 )
             financial.update(
                 {
-                    "policy_revision": 1,
+                    "policy_revision": 2,
+                    "expires_at": current["expires_at"],
                     "authority": "retained_read_only",
                     "selected_line_ids": current.get("selected_line_ids", []),
                     "terms_digest": current.get("terms_digest"),
@@ -121,12 +164,7 @@ async def market(database_url, monkeypatch):
             )
             financial.update(app.state.l13_retained_overrides.get(id, {}))
             return httpx.Response(200, json=financial)
-        source = validations if "/internal/v2/" in request.url.path else quotes
-        return (
-            httpx.Response(200, json=source[id])
-            if id in source
-            else httpx.Response(404)
-        )
+        return httpx.Response(200, json=validations[id])
 
     app.state.allocation_clients = {
         n: DependencyClient(n, "http://" + n, transport=httpx.MockTransport(upstream))
@@ -220,17 +258,22 @@ async def market(database_url, monkeypatch):
             "seller_net_minor": 475000,
             "rounding": "half_up",
             "minor_unit_exponent": 2,
-            "policy": {"schedule_id": "sample-v1"},
+            "policy": {"schedule_id": "usd-v2", "revision": 2, "buyer_fee_bps": 300, "seller_commission_bps": 500},
             "shipping_minor": 0,
             "tax_minor": 0,
             "payable_minor": 515000,
-            "schedule_id": "sample-v1",
+            "schedule_id": "usd-v2",
             "reviewed_at": now.isoformat(),
             "expires_at": (now + timedelta(minutes=15)).isoformat(),
             "sample": True,
         }
         return id
 
+    async def acknowledge(order):
+        return await acknowledge_notice(app, client, service, order)
+
+    app.state.l13_acknowledge_notice = acknowledge
+    app.state.l13_committed_quote = committed_quote
     yield app, client, user, service, stock, exact, quotes, validations
     await client.aclose()
     for c in app.state.allocation_clients.values():
