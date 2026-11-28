@@ -1,1 +1,1 @@
-{"version":1,"id":"L02.membership","dependencies":["fastapi","asyncpg","httpx"],"routes":["routes.py:router"],"migrations":["migrations/L02_0001_membership.sql","migrations/L02_0002_membership_snapshots.sql"]}
+{"version":1,"id":"L02.membership","dependencies":["fastapi","asyncpg","httpx"],"routes":["routes.py:router"],"migrations":["migrations/L02_0001_membership.sql","migrations/L02_0002_membership_snapshots.sql"],"fixtures":{"deploy-seed":"deploy_seed.py:apply","deploy-remove":"deploy_seed.py:withdraw"}}

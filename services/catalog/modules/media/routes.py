@@ -11,7 +11,7 @@ from bt_contracts_core.errors import PublicError
 from bt_runtime.app.db import unit_of_work
 from service_app.catalog_dependencies import principal, seller_scope, assert_owner
 from modules.listings.repository import dto, revision, command_key, check_revision, replay, remember, emit
-from .images import normalize, MAX_BYTES, attribution_matches
+from .images import normalize, MAX_BYTES, attribution_matches, embed_attribution
 
 router = APIRouter()
 
@@ -125,25 +125,8 @@ async def upload(listing_id: UUID, request: Request):
                 status=422,
                 details={"asset": demo_asset},
             )
-        # Exported derivatives retain deliberately authored attribution, not any
-        # source EXIF/serial metadata. JPEG COM does not alter decoded pixels.
         if variants:
-            text = (
-                "Author: "
-                + credit["author"]
-                + "\n"
-                + credit["credit"]
-                + "\nSource: "
-                + credit["source_url"]
-                + "\nLicense: "
-                + credit["license_url"]
-                + "\nLicense name: "
-                + credit["license"]
-                + "\nChanges: oriented, metadata removed, resized and re-encoded."
-            ).encode("utf-8")
-            for variant in variants.values():
-                pixels = variant["content"]
-                variant["content"] = pixels[:2] + b"\xff\xfe" + (len(text) + 2).to_bytes(2, "big") + text + pixels[2:]
+            embed_attribution(variants, credit)
     scope = f"media:{listing_id}:{person.actor.subject_id}"
     payload = {
         "revision": expected,

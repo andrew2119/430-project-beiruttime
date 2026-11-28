@@ -6,6 +6,8 @@ from pydantic import Field, StrictInt, ValidationError
 from bt_contracts_core.models import Contract
 from bt_contracts_core.errors import PublicError
 from bt_runtime.event_http import build_event_router
+from bt_runtime.demo_seed import HANDOFF_TYPE
+from .handoff import receive as receive_handoff
 
 
 class ModerationDecision(Contract):
@@ -56,4 +58,8 @@ async def apply(tx, event):
     )
 
 
-router = build_event_router("catalog.moderation.v1", {"trust.moderation.decided.v1": ("trust", apply)})
+# Catalog's one event route: Identity's demo seed handoff is registered here too, under the same consumer.
+router = build_event_router(
+    "catalog.moderation.v1",
+    {"trust.moderation.decided.v1": ("trust", apply), HANDOFF_TYPE: ("identity", receive_handoff)},
+)
