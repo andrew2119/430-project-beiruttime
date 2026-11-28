@@ -30,11 +30,15 @@ it('a committed new route suppresses the old drawer trigger restoration',()=>{
 });
 it('unmodified navigation closes the real drawer and leaves destination focus to routing',()=>{
   class Anchor {closest(){return this;}}vi.stubGlobal('Element',Anchor);change(draw(),true);const container=elements(draw()).find(node=>node.props.className === 'bt-shell-drawer-content')!;
-  (container.props.onClickCapture as (event:unknown)=>void)({target:new Anchor(),button:0,metaKey:false,ctrlKey:false,shiftKey:false,altKey:false});expect(sheet(draw()).props.open).toBe(false);expect(closeFocus(draw()).preventDefault).toHaveBeenCalledOnce();
+  (container.props.onClick as (event:unknown)=>void)({target:new Anchor(),button:0,metaKey:false,ctrlKey:false,shiftKey:false,altKey:false});expect(sheet(draw()).props.open).toBe(false);expect(closeFocus(draw()).preventDefault).toHaveBeenCalledOnce();
+});
+it('phone menu links close the drawer in the bubble phase, after the link has handled the click',()=>{
+  change(draw(),true);const container=elements(draw()).find(node=>node.props.className === 'bt-shell-drawer-content')!;
+  expect(container.props.onClickCapture).toBeUndefined();expect(container.props.onClick).toBeTypeOf('function');expect(container.props.role).toBe('presentation');
 });
 it('modified/new-tab navigation leaves the drawer open',()=>{
   class Anchor {closest(){return this;}}vi.stubGlobal('Element',Anchor);change(draw(),true);const container=elements(draw()).find(node=>node.props.className === 'bt-shell-drawer-content')!;
-  (container.props.onClickCapture as (event:unknown)=>void)({target:new Anchor(),button:0,metaKey:true});expect(sheet(draw()).props.open).toBe(true);
+  (container.props.onClick as (event:unknown)=>void)({target:new Anchor(),button:0,metaKey:true});expect(sheet(draw()).props.open).toBe(true);
 });
 it('identity-scoped page replacement never remounts profile revocation state or shell chrome',()=>{
   const view=draw(), scope=elements(view).find(node=>node.type === PageReadProvider)!;expect(scope).toBeDefined();expect(elements(scope).some(node=>node.type === ShellProfile)).toBe(false);expect(elements(scope).some(node=>node.type === 'main')).toBe(true);expect(elements(scope).some(node=>node.props.className === 'bt-shell')).toBe(false);

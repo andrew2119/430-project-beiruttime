@@ -9,6 +9,15 @@ import {randomUUID} from 'node:crypto';
 import {constants} from 'node:fs';
 
 const pause = ms => new Promise(done => setTimeout(done, ms));
+// Chrome's helper processes can still write into the profile for a moment after the main process exits.
+const REMOVE = {recursive:true, force:true, maxRetries:10, retryDelay:100};
+const LAUNCH_ERRORS = ['Installed browser required','Browser closed','Browser command failed','Browser command timed out'];
+/** A browser start failure the session can report without leaking paths: a known message or error code, and the failed command. */
+export function launchReason(error) {
+  const reason = LAUNCH_ERRORS.includes(error?.message) ? error.message
+    : typeof error?.code === 'string' && /^E[A-Z]+$/.test(error.code) ? error.code : 'unexpected error';
+  return typeof error?.method === 'string' && /^[A-Z][A-Za-z]*\.[a-z][A-Za-z]*$/.test(error.method) ? `${reason} in ${error.method}` : reason;
+}
 export function navigationMatches(actual, expected) {
   const current = new URL(actual), target = new URL(expected);
   const canonical = path => /^\/(en|ar)\/$/.test(path) ? path.slice(0,-1) : path;
@@ -40,7 +49,7 @@ async function localBrowser({browserPath, origin, cell, signal}) {
     '--remote-debugging-pipe', `--user-data-dir=${profile}`, 'about:blank'],
   {stdio:['ignore','ignore','ignore','pipe','pipe']});
   const pending = new Map(); let sequence = 0, buffer = '', sessionId, closed = false, closing;
-  const rejectPending = () => { for (const item of pending.values()) item.reject(new Error('Browser closed')); pending.clear(); };
+  const rejectPending = () => { for (const item of pending.values()) item.reject(Object.assign(new Error('Browser closed'),{method:item.method})); pending.clear(); };
   const exited = new Promise(done => {child.once('exit', done); child.once('error', done);});
   child.once('error', rejectPending); child.once('exit', rejectPending);
   child.stdio[4].on('data', chunk => {
@@ -48,15 +57,15 @@ async function localBrowser({browserPath, origin, cell, signal}) {
     while ((end = buffer.indexOf('\0')) >= 0) {
       const message = JSON.parse(buffer.slice(0,end)); buffer = buffer.slice(end+1);
       const item = pending.get(message.id);
-      if (item) {pending.delete(message.id); message.error ? item.reject(new Error('Browser command failed')) : item.resolve(message.result);}
+      if (item) {pending.delete(message.id); message.error ? item.reject(Object.assign(new Error('Browser command failed'),{method:item.method})) : item.resolve(message.result);}
     }
   });
   async function call(method, params = {}, target = sessionId) {
     if (closed || signal?.aborted) throw new Error('Browser closed');
     const id = ++sequence;
     return new Promise((resolveCall,reject) => {
-      const timer = setTimeout(() => {pending.delete(id); reject(new Error('Browser command timed out'));}, 12000);
-      pending.set(id, {resolve:value=>{clearTimeout(timer);resolveCall(value);}, reject:error=>{clearTimeout(timer);reject(error);}});
+      const timer = setTimeout(() => {pending.delete(id); reject(Object.assign(new Error('Browser command timed out'),{method}));}, 12000);
+      pending.set(id, {method, resolve:value=>{clearTimeout(timer);resolveCall(value);}, reject:error=>{clearTimeout(timer);reject(error);}});
       child.stdio[3].write(JSON.stringify({id,method,params,...(target ? {sessionId:target} : {})})+'\0');
     });
   }
@@ -66,12 +75,12 @@ async function localBrowser({browserPath, origin, cell, signal}) {
     closing=(async()=>{
       child.kill('SIGTERM');
       const timer = setTimeout(()=>child.kill('SIGKILL'),1000);
-      await exited; clearTimeout(timer); await rm(profile,{recursive:true,force:true});
+      await exited; clearTimeout(timer); await rm(profile,REMOVE);
       signal?.removeEventListener('abort', abort);
     })();
     return closing;
   }
-  const abort = () => {void close();}; signal?.addEventListener('abort',abort,{once:true});
+  const abort = () => {close().catch(()=>{});}; signal?.addEventListener('abort',abort,{once:true});
   try {
     const {targetId} = await call('Target.createTarget',{url:'about:blank'},null);
     ({sessionId} = await call('Target.attachToTarget',{targetId,flatten:true},null));
@@ -208,7 +217,7 @@ export async function browser(config) {
   try {
     await new Promise((done,reject)=>{
       const timer=setTimeout(()=>reject(new Error('Prepared session timed out')),15000);
-      child.once('message',message=>{clearTimeout(timer);message.ready?done():reject(new Error('Prepared session unavailable'));});
+      child.once('message',message=>{clearTimeout(timer);message.ready?done():reject(new Error(typeof message.reason==='string' ? `Prepared session unavailable: ${message.reason.slice(0,160)}` : 'Prepared session unavailable'));});
       child.once('error',error=>{clearTimeout(timer);reject(error);});
       child.once('exit',()=>{clearTimeout(timer);reject(new Error('Prepared session closed'));});
       child.send({config:{browserPath:config.browserPath,origin:config.origin,cell:config.cell},socket,directory});
@@ -218,18 +227,20 @@ export async function browser(config) {
   }catch(error){child.kill();await rm(directory,{recursive:true,force:true});throw error;}
 }
 export async function serveSession({config,socket,directory}, launch=localBrowser,{listen=createServer,secure=chmod}={}) {
-  let session,server,timer,stopping=false;
-  const stop=async()=>{
-    if(stopping)return;stopping=true;clearTimeout(timer);
-    server?.close();await session?.close();await rm(directory,{recursive:true,force:true});
-  };
-  process.once('SIGTERM',()=>{void stop();});
+  let session,server,timer,stopping;
+  // Every caller shares one stop, and the session folder goes even when closing the browser fails.
+  const stop=()=>stopping??=(async()=>{
+    clearTimeout(timer);server?.close();
+    try{await session?.close();}finally{await rm(directory,REMOVE);}
+  })();
+  const stopQuietly=()=>{stop().catch(()=>{});};
+  process.once('SIGTERM',stopQuietly);
   try {
     session=await launch(config);
     server=listen(connection=>{
       let buffer='',detached=false,queue=Promise.resolve();
       connection.on('error',()=>{});
-      connection.on('close',()=>{if(!detached)void stop();});
+      connection.on('close',()=>{if(!detached)stopQuietly();});
       connection.on('data',chunk=>{
         buffer+=chunk;let end;
         while((end=buffer.indexOf('\n'))>=0) {
@@ -252,9 +263,9 @@ export async function serveSession({config,socket,directory}, launch=localBrowse
     });
     await new Promise((done,reject)=>{server.once('error',reject);server.listen(socket,done);});
     await secure(socket,0o600);
-    timer=setTimeout(()=>{void stop();},30*60*1000);
+    timer=setTimeout(stopQuietly,30*60*1000);
     process.send?.({ready:true});
     return {close:stop};
-  }catch(error){process.send?.({ready:false});await stop();if(!process.send)throw error;}
+  }catch(error){process.send?.({ready:false,reason:launchReason(error)});await stop().catch(()=>{});if(!process.send)throw error;}
 }
 if(process.argv[2]==='--session' && process.send)process.once('message',message=>{void serveSession(message);});
