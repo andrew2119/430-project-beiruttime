@@ -1,9 +1,8 @@
-"""Auction is the only commit owner. Commands and event intent share one transaction."""
+"""Auction is the only bid transaction and serialized admission owner."""
 import hashlib
 import json
-import os
 import re
-from uuid import UUID, NAMESPACE_URL, uuid4, uuid5
+from uuid import UUID, uuid4
 from fastapi import Request
 from bt_contracts.auction.core.models import MAX_MINOR, next_minimum, step_at
 from bt_contracts_core.errors import AccessDenied, PublicError
@@ -11,7 +10,24 @@ from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from bt_runtime.principal import require_scope
+from .auction_start import start
 from .dependencies import Dependencies
+from .kernel import lock_lot, require_bidding
+from .proxy_validation import validate_result, expected_result
+
+SUSPENDED_ACTIVITY = 'marketplace.activity.suspended'
+TERMINAL_BID_DENIALS = frozenset({
+    'stale_revision', 'not_started', 'auction_ended', 'auction_committed',
+    'auction_window_or_fee_expired', 'fee_preview_required', 'fee_review_required',
+    'bid_too_low', 'bid_amount_limit', 'maximum_must_increase', 'verified_contact_required',
+    'listing_changed', 'listing_not_ready', 'sale_mode_denied', 'legacy_reconciliation', 'self_bid',
+    'bid_permission_required', 'sale_mode_pending',
+})
+
+
+def require_bid_permission(principal):
+    if SUSPENDED_ACTIVITY in principal.permissions:
+        raise PublicError('bid_permission_required', 'Current access does not permit new bids.', status=403)
 
 
 def decoded(value):
@@ -30,9 +46,11 @@ def fingerprint(kind, resource, command):
         sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
-def public_lot(lot, now):
+def public_lot(lot, now, *, version=1):
+    if lot['currency'] != 'USD':
+        raise PublicError('legacy_reconciliation', 'Historic currency is restricted to reconciliation.', status=409)
     bands = decoded(lot['increment_bands'])
-    return {'id': str(lot['id']), 'listing_id': str(lot['listing_id']), 'currency': lot['currency'],
+    result = {'id': str(lot['id']), 'listing_id': str(lot['listing_id']), 'currency': lot['currency'],
         'opening_minor': lot['opening_minor'], 'current_minor': lot['current_minor'],
         'next_minimum_minor': next_minimum(lot, bands), 'increment_bands': bands,
         'starts_at': lot['starts_at'].isoformat(), 'ends_at': lot['ends_at'].isoformat(),
@@ -42,9 +60,17 @@ def public_lot(lot, now):
         'reserve_set': lot['reserve_minor'] is not None,
         'leader': mask(lot['id'], lot['leader_id']) if lot['leader_id'] else None,
         'status': 'scheduled' if now < lot['starts_at'] else 'ended' if now >= lot['ends_at'] else 'live'}
+    if version == 2:
+        result.update(end_version=lot['end_version'], close_version=lot['close_version'], mode=lot['mode'],
+                      bidding_version=lot.get('private_state_version', 'ordinary.v1'),
+                      first_bid_committed=lot['first_bid_confirmed'],
+                      listing_revision=lot['listing_revision'], scheduled_ends_at=lot['scheduled_ends_at'].isoformat())
+    return result
 
 
 def time_denial(lot, now):
+    if lot.get('mode', 'bidding') != 'bidding':
+        return 'sale_mode_pending' if lot['mode'] in ('prebid_pending', 'first_bid_pending', 'listing_edit_pending') else 'auction_committed'
     if now < lot['starts_at']:
         return 'not_started'
     if now >= lot['ends_at']:
@@ -57,6 +83,8 @@ def mask(auction_id, bidder_id):
 
 
 class AuctionEngine:
+    bid_admission_version = 'auction.proxy.v2'
+
     def __init__(self, dependencies=None):
         self.dependencies = dependencies or Dependencies()
 
@@ -70,59 +98,33 @@ class AuctionEngine:
                 raise PublicError('idempotency_conflict', 'This key belongs to a different request.', status=409)
             return decoded(row['outcome'])
 
-    async def store(self, tx, principal, key, digest, outcome, auction_id):
-        await tx.execute('''INSERT INTO auction_operations
-            (id,subject_id,organization_id,operation_key,request_hash,auction_id,outcome)
-            VALUES($1,$2,$3,$4,$5,$6,$7::jsonb)''', UUID(outcome['operation_id']),
-            principal.actor.subject_id, principal.actor.organization_id, key, digest, auction_id,
-            json.dumps(outcome))
+    async def store(self, tx, principal, key, digest, outcome, auction_id, *, maximum_binding=None):
+        prior = await tx.fetchrow('SELECT * FROM auction_operations WHERE subject_id=$1 AND operation_key=$2',
+                                  principal.actor.subject_id, key)
+        if prior:
+            if prior['request_hash'] != digest or prior['organization_id'] != principal.actor.organization_id:
+                raise PublicError('idempotency_conflict', 'This key belongs to a different request.', status=409)
+            saved = decoded(prior['outcome'])
+            if saved['status'] != 'pending':
+                return saved
+            outcome['operation_id'] = str(prior['id'])
+            await tx.execute('UPDATE auction_operations SET outcome=$2::jsonb WHERE id=$1', prior['id'], json.dumps(outcome))
+            return outcome
+        values = (UUID(outcome['operation_id']), principal.actor.subject_id,
+                  principal.actor.organization_id, key, digest, auction_id, json.dumps(outcome))
+        if maximum_binding is None:
+            await tx.execute('''INSERT INTO auction_operations
+                (id,subject_id,organization_id,operation_key,request_hash,auction_id,outcome)
+                VALUES($1,$2,$3,$4,$5,$6,$7::jsonb)''', *values)
+        else:
+            await tx.execute('''INSERT INTO auction_operations
+                (id,subject_id,organization_id,operation_key,request_hash,auction_id,outcome,private_maximum_binding)
+                VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb)''', *values, json.dumps(maximum_binding))
         return outcome
 
     async def create(self, request, command):
-        principal = await self.dependencies.principal(request)
-        require_scope(principal, 'identity.listings.publish', principal.actor.organization_id)
-        key = key_for(request)
-        digest = fingerprint('create', command.listing_id, command)
-        auction_id = uuid5(NAMESPACE_URL, f'auction:{principal.actor.subject_id}:{key}')
-        pool = request.app.state.pool
-        async with unit_of_work(pool) as tx:
-            replay = await self.operation(tx, principal, key, digest)
-            if replay:
-                return replay
-            await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'listing:' + str(command.listing_id))
-            existing = await tx.fetchrow('SELECT * FROM auction_lots WHERE listing_id=$1', command.listing_id)
-            if existing:
-                self.owner(existing, principal)
-                now = await tx.fetchval('SELECT clock_timestamp()')
-                result = {'operation_id': str(uuid4()), 'status': 'succeeded', 'code': 'already_opened',
-                    'auction_id': str(existing['id']), 'auction': public_lot(existing, now)}
-                return await self.store(tx, principal, key, digest, result, existing['id'])
-            now = await tx.fetchval('SELECT clock_timestamp()')
-            if command.ends_at <= now:
-                raise PublicError('invalid_schedule', 'The auction must end in the future.', status=409)
-            listing = await self.dependencies.listing(request, command.listing_id)
-            self.published(listing, command.listing_id, principal)
-            commitment = await self.dependencies.fence(request, listing, auction_id, key)
-            now = await tx.fetchval('SELECT clock_timestamp()')
-            if command.ends_at <= now:
-                raise PublicError('invalid_schedule', 'The auction must end in the future.', status=409)
-            defaults = {'USD': '1000000', 'LBP': '89500000000'}
-            high_value = int(os.environ.get('AUCTION_HIGH_VALUE_' + command.currency + '_MINOR', defaults[command.currency]))
-            if not 1 <= high_value <= MAX_MINOR:
-                raise PublicError('rules_unavailable', 'The auction rules are unavailable.', status=503)
-            lot = await tx.fetchrow('''INSERT INTO auction_lots
-                (id,listing_id,watch_id,seller_id,seller_organization_id,currency,opening_minor,
-                 reserve_minor,increment_bands,starts_at,ends_at,commitment_id,high_value_minor)
-                VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13) RETURNING *''',
-                auction_id, command.listing_id, UUID(listing['watch_id']), UUID(listing['seller_id']),
-                principal.actor.organization_id, command.currency, command.opening_minor, command.reserve_minor,
-                json.dumps([b.model_dump() for b in command.increment_bands]), command.starts_at,
-                command.ends_at, commitment, high_value)
-            outcome = {'operation_id': str(uuid4()), 'status': 'succeeded', 'code': 'auction_opened',
-                'auction_id': str(auction_id), 'auction': public_lot(lot, now)}
-            await enqueue(tx, EventEnvelope(type='auction.opened.v1', source='auction', subject=str(auction_id), time=now,
-                request_id=request.state.request_id, data=public_lot(lot, now)), ['catalog'])
-            return await self.store(tx, principal, key, digest, outcome, auction_id)
+        return await start(self, request, command, key_for=key_for, fingerprint=fingerprint,
+                           public_lot=public_lot, suspended=SUSPENDED_ACTIVITY, max_minor=MAX_MINOR)
 
     @staticmethod
     def owner(lot, principal):
@@ -157,26 +159,51 @@ class AuctionEngine:
         if not revision.isdecimal() or len(revision) > 15:
             raise PublicError('revision_required', 'Supply the current revision.', status=422)
         digest = fingerprint('rules:' + revision, auction_id, command)
+        async with request.app.state.pool.acquire() as tx:
+            prior = await tx.fetchrow('SELECT * FROM auction_operations WHERE subject_id=$1 AND operation_key=$2',
+                                      principal.actor.subject_id, key)
+            preflight = await tx.fetchrow('SELECT * FROM auction_lots WHERE id=$1', auction_id)
+        if prior:
+            if prior['request_hash'] != digest or prior['organization_id'] != principal.actor.organization_id:
+                raise PublicError('idempotency_conflict', 'This key belongs to a different request.', status=409)
+            return decoded(prior['outcome'])
+        if not preflight:
+            raise PublicError('not_found', 'Auction not found.', status=404)
+        self.owner(preflight, principal)
+        require_bidding(preflight)
+        if preflight['accepted_sequence']:
+            raise PublicError('rules_frozen', 'Economic settings are frozen after the first bid.', status=409)
+        if preflight['revision'] != int(revision):
+            raise PublicError('stale_revision', 'Reload the current auction.', status=409)
+        listing = await self.dependencies.listing(request, preflight['listing_id'])
+        self.published(listing, preflight['listing_id'], principal)
+        if listing['revision'] != preflight['listing_revision']:
+            raise PublicError('listing_changed', 'Reconcile the current listing revision first.', status=409)
+        await self.dependencies.check_fence(request, preflight)
         async with unit_of_work(request.app.state.pool) as tx:
             replay = await self.operation(tx, principal, key, digest)
             if replay:
                 return replay
+            await self.lock_publication(tx, preflight['listing_id'], listing['revision'])
             await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'auction:' + str(auction_id))
             lot = await tx.fetchrow('SELECT * FROM auction_lots WHERE id=$1 FOR UPDATE', auction_id)
             if not lot:
                 raise PublicError('not_found', 'Auction not found.', status=404)
             self.owner(lot, principal)
+            require_bidding(lot)
             if lot['accepted_sequence']:
                 raise PublicError('rules_frozen', 'Economic settings are frozen after the first bid.', status=409)
             if lot['revision'] != int(revision):
                 raise PublicError('stale_revision', 'Reload the current auction.', status=409)
-            self.published(await self.dependencies.listing(request, lot['listing_id']), lot['listing_id'], principal)
-            await self.dependencies.check_fence(request, lot)
+            # The locked revision/mode still matches the bounded preflight;
+            # no peer request waits while holding this aggregate lock.
             now = await tx.fetchval('SELECT clock_timestamp()')
             if command.ends_at <= now or lot['ends_at'] <= now:
                 raise PublicError('invalid_schedule', 'The auction must end in the future.', status=409)
             lot = await tx.fetchrow('''UPDATE auction_lots SET currency=$2,opening_minor=$3,reserve_minor=$4,
-                increment_bands=$5::jsonb,starts_at=$6,ends_at=$7,revision=revision+1 WHERE id=$1 RETURNING *''',
+                increment_bands=$5::jsonb,starts_at=$6,ends_at=$7,scheduled_ends_at=$7,
+                end_version=end_version+CASE WHEN ends_at<>$7 THEN 1 ELSE 0 END,
+                revision=revision+1 WHERE id=$1 RETURNING *''',
                 auction_id, command.currency, command.opening_minor, command.reserve_minor,
                 json.dumps([b.model_dump() for b in command.increment_bands]), command.starts_at, command.ends_at)
             result = {'operation_id': str(uuid4()), 'status': 'succeeded', 'code': 'rules_updated',
@@ -185,7 +212,8 @@ class AuctionEngine:
                 request_id=request.state.request_id, data=public_lot(lot, now)), ['catalog'])
             return await self.store(tx, principal, key, digest, result, auction_id)
 
-    async def submit(self, request: Request, auction_id: UUID, command, *, kind='manual'):
+    async def submit(self, request: Request, auction_id: UUID, command, *, kind='manual',
+                     maximum_binding=None, quote_expires_at=None, recovery_only=False):
         if kind not in ('manual', 'maximum'):
             raise ValueError('Unknown bid kind')
         principal = await self.dependencies.principal(request)
@@ -195,17 +223,112 @@ class AuctionEngine:
         if principal.actor.organization_id is not None:
             raise AccessDenied('Bid as an individual buyer')
         key = key_for(request)
-        digest = fingerprint(kind, auction_id, command)
+        try:
+            return await self._submit(request, auction_id, command, principal, key, kind=kind,
+                                      maximum_binding=maximum_binding, quote_expires_at=quote_expires_at,
+                                      recovery_only=recovery_only)
+        except PublicError as error:
+            if kind != 'manual' or error.status >= 500 or error.code not in TERMINAL_BID_DENIALS:
+                raise
+            return await self.manual_denial(request, auction_id, command, principal, key, error.code)
+
+    async def manual_denial(self, request, auction_id, command, principal, key, code):
+        digest = fingerprint('manual', auction_id, command)
+        async with unit_of_work(request.app.state.pool) as tx:
+            existing = await self.operation(tx, principal, key, digest)
+            if existing and (existing['status'] != 'pending' or existing.get('commitment_status') != 'succeeded'):
+                return existing
+            lot = await lock_lot(tx, auction_id)
+            outcome = dict(operation_id=existing['operation_id'] if existing else str(uuid4()),
+                           auction_id=str(auction_id), status='denied', code=code, revision=lot['revision'])
+            return await self.store(tx, principal, key, digest, outcome, auction_id)
+
+    async def _submit(self, request, auction_id, command, principal, key, *, kind, maximum_binding,
+                      quote_expires_at, recovery_only):
+        if maximum_binding is not None:
+            if (kind != 'maximum' or maximum_binding['actor_id'] != str(principal.actor.subject_id)
+                    or str(UUID(key)) != maximum_binding['operation_id']):
+                raise AccessDenied('Current maximum access denied')
+            key = maximum_binding['operation_id']
+        digest = fingerprint('maximum-v2' if maximum_binding is not None else kind, auction_id, command)
+        # Bounded prerequisite reads precede the aggregate lock. The
+        # locked row must still match this version and database time at admission.
+        async with request.app.state.pool.acquire() as tx:
+            prior = await tx.fetchrow('SELECT * FROM auction_operations WHERE subject_id=$1 AND operation_key=$2',
+                principal.actor.subject_id, key)
+            preflight = await tx.fetchrow('SELECT * FROM auction_lots WHERE id=$1', auction_id)
+        if recovery_only and prior is None:
+            raise PublicError('not_found', 'Operation not found.', status=404)
+        if prior:
+            if prior['request_hash'] != digest or prior['organization_id'] != principal.actor.organization_id:
+                raise PublicError('idempotency_conflict', 'This key belongs to a different request.', status=409)
+            saved = decoded(prior['outcome'])
+            if saved['status'] != 'pending':
+                return saved
+            # Reconcile the existing authorized intent BEFORE a fresh fee read.
+            # Expiry cannot strand a committed remote fence or imply a bid won.
+            from .first_bid import prepare
+            await prepare(request, self.dependencies, auction_id, principal, key, digest)
+            async with request.app.state.pool.acquire() as tx:
+                preflight = await tx.fetchrow('SELECT * FROM auction_lots WHERE id=$1', auction_id)
+                saved = decoded(await tx.fetchval('SELECT outcome FROM auction_operations WHERE id=$1', prior['id']))
+            if saved['status'] != 'pending':
+                return saved
+        require_bid_permission(principal)
+        if preflight is None:
+            raise PublicError('not_found', 'Auction not found.', status=404)
+        require_bidding(preflight)
+        if preflight['currency'] != 'USD':
+            raise PublicError('legacy_reconciliation', 'Historic currency is read-only pending reconciliation.', status=409)
+        if principal.actor.subject_id == preflight['seller_id'] or preflight['seller_organization_id'] in principal.organizations:
+            raise PublicError('self_bid', 'A seller cannot bid on their own watch.', status=409)
+        if command.expected_revision != preflight['revision']:
+            raise PublicError('stale_revision', 'Review the current auction and fee preview.', status=409)
+        listing = await self.dependencies.listing(request, preflight['listing_id'])
+        self.published(listing, preflight['listing_id'])
+        if (listing['revision'] != preflight['listing_revision'] or UUID(listing['seller_id']) != preflight['seller_id']
+                or UUID(listing['watch_id']) != preflight['watch_id']
+                or listing.get('seller_organization_id') != (str(preflight['seller_organization_id']) if preflight['seller_organization_id'] else None)):
+            raise PublicError('listing_changed', 'The listing seller has changed.', status=409)
+        async with request.app.state.pool.acquire() as tx:
+            await self.require_current_publication(tx, preflight['listing_id'], listing['revision'])
+        await self.dependencies.check_fence(request, preflight)
+        from datetime import datetime, timezone
+        if maximum_binding is not None and quote_expires_at is not None:
+            fee_expires_at = quote_expires_at
+        else:
+            options = {'maximum_binding': maximum_binding} if maximum_binding is not None else {}
+            fee_expires_at = await self.dependencies.fee(request, command, preflight, principal, datetime.now(timezone.utc), **options)
+        if command.amount_minor >= preflight['high_value_minor']:
+            await self.dependencies.contact(request)
+        now = datetime.now(timezone.utc)
+        if now < preflight['starts_at'] or now >= preflight['ends_at'] or fee_expires_at <= now:
+            raise PublicError('auction_window_or_fee_expired', 'Review the current auction and fees.', status=409)
+        minimum = (preflight['current_minor'] if kind == 'maximum' and preflight['leader_id'] == principal.actor.subject_id
+                   else next_minimum(preflight, decoded(preflight['increment_bands'])))
+        if command.amount_minor < minimum:
+            raise PublicError('bid_too_low', 'Use the current minimum bid.', status=409)
+        if kind == 'manual' and command.amount_minor + step_at(decoded(preflight['increment_bands']), command.amount_minor) > MAX_MINOR:
+            raise PublicError('bid_amount_limit', 'The next increment exceeds the supported monetary range.', status=409)
+        if kind == 'maximum' and request.app.state.hooks.get('auction.proxy.v2') is None:
+            raise PublicError('proxy_unavailable', 'Private maximum admission is unavailable.', status=503)
+        await self.recheck_bid_permission(request, principal)
+        if not preflight['first_bid_confirmed'] and not preflight['accepted_sequence']:
+            from .first_bid import prepare
+            await prepare(request, self.dependencies, auction_id, principal, key, digest,
+                          fee_expires_at=fee_expires_at, maximum_binding=maximum_binding)
+            await self.recheck_bid_permission(request, principal)
         async with unit_of_work(request.app.state.pool) as tx:
             replay = await self.operation(tx, principal, key, digest)
-            if replay:
+            if replay and replay['status'] != 'pending':
                 return replay
+            await self.lock_publication(tx, preflight['listing_id'], listing['revision'])
             await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'auction:' + str(auction_id))
             lot = await tx.fetchrow('SELECT * FROM auction_lots WHERE id=$1 FOR UPDATE', auction_id)
             if not lot:
                 raise PublicError('not_found', 'Auction not found.', status=404)
             now = await tx.fetchval('SELECT clock_timestamp()')
-            outcome = {'operation_id': str(uuid4()), 'auction_id': str(auction_id), 'status': 'denied',
+            outcome = {'operation_id': replay['operation_id'] if replay else str(uuid4()), 'auction_id': str(auction_id), 'status': 'denied',
                 'code': 'not_confirmed', 'revision': lot['revision'], 'accepted_sequence': lot['accepted_sequence'],
                 'current_minor': lot['current_minor'],
                 'next_minimum_minor': next_minimum(lot, decoded(lot['increment_bands'])), 'server_time': now.isoformat()}
@@ -217,7 +340,8 @@ class AuctionEngine:
                 window_error = time_denial(lot, now)
                 if window_error:
                     raise PublicError(window_error, 'Bidding is outside the auction window.', status=409)
-                if command.expected_revision != lot['revision']:
+                if command.expected_revision != lot['revision'] or (maximum_binding is not None
+                        and maximum_binding['watch_id'] != str(lot['watch_id'])):
                     raise PublicError('stale_revision', 'Review the current auction and fee preview.', status=409)
                 minimum = (lot['current_minor'] if kind == 'maximum' and lot['leader_id'] == principal.actor.subject_id
                     else outcome['next_minimum_minor'])
@@ -225,23 +349,17 @@ class AuctionEngine:
                     raise PublicError('bid_too_low', 'Use at least the current minimum bid.', status=409)
                 if kind == 'manual' and command.amount_minor + step_at(decoded(lot['increment_bands']), command.amount_minor) > MAX_MINOR:
                     raise PublicError('bid_amount_limit', 'The next increment exceeds the supported monetary range.', status=409)
-                listing = await self.dependencies.listing(request, lot['listing_id'])
-                self.published(listing, lot['listing_id'])
-                if (UUID(listing['seller_id']) != lot['seller_id']
-                        or listing.get('seller_organization_id') != (str(lot['seller_organization_id']) if lot['seller_organization_id'] else None)):
-                    raise PublicError('listing_changed', 'The listing seller has changed.', status=409)
-                await self.dependencies.check_fence(request, lot)
-                fee_expires_at = await self.dependencies.fee(request, command, lot, principal, now)
-                if command.amount_minor >= lot['high_value_minor']:
-                    await self.dependencies.contact(request)
-                # Recheck authoritative time after bounded prerequisite calls; no late commit.
+                # Identity holds its own sanction decision only. This call does
+                # not send lot data or call back into Auction while it is locked.
+                await self.dependencies.bid_admission(request, tx, principal)
                 now = await tx.fetchval('SELECT clock_timestamp()')
                 if now >= lot['ends_at']:
                     raise PublicError('auction_ended', 'The auction has ended.', status=409)
                 if fee_expires_at <= now:
                     raise PublicError('fee_preview_required', 'Review a current fee preview for this amount.', status=409)
                 maxima = [dict(row) for row in await tx.fetch(
-                    'SELECT bidder_id,amount_minor,sequence FROM auction_maxima WHERE auction_id=$1', auction_id)]
+                    '''SELECT bidder_id,amount_minor,sequence,active FROM auction_maxima
+                       WHERE auction_id=$1 AND verified_ceiling ORDER BY sequence LIMIT 10001''', auction_id)]
                 for maximum in maxima:
                     maximum['bidder_id'] = str(maximum['bidder_id'])
                 bidder_id = str(principal.actor.subject_id)
@@ -254,12 +372,15 @@ class AuctionEngine:
                     'sequence': lot['accepted_sequence'], 'increment_bands': decoded(lot['increment_bands']), 'maxima': maxima}
                 incoming = {'kind': kind, 'bidder_id': bidder_id, 'amount_minor': command.amount_minor,
                     'sequence': lot['accepted_sequence'] + 1}
-                hook = request.app.state.hooks.get('auction.proxy.v1')
-                active_ceiling = any(maximum['amount_minor'] > lot['current_minor'] for maximum in maxima)
+                hook = request.app.state.hooks.get('auction.proxy.v2')
+                active_ceiling = any(maximum['active'] and maximum['amount_minor'] > lot['current_minor'] for maximum in maxima)
                 if (kind == 'maximum' or active_ceiling) and hook is None:
                     raise PublicError('proxy_unavailable', 'Private maximum admission is unavailable.', status=503)
                 try:
                     result = hook(json.loads(json.dumps(state)), dict(incoming)) if hook else self.manual_result(state, incoming)
+                    validate_hook = request.app.state.hooks.get('auction.proxy.validate.v2')
+                    if validate_hook is not None:
+                        validate_hook(state, incoming, result)
                     self.validate_result(state, incoming, result)
                     if result['current_minor'] + step_at(state['increment_bands'], result['current_minor']) > MAX_MINOR:
                         raise PublicError('bid_amount_limit', 'The next increment exceeds the supported monetary range.', status=409)
@@ -271,111 +392,76 @@ class AuctionEngine:
                 if exc.status >= 500:
                     raise
                 outcome.update(code=exc.code, server_time=now.isoformat())
-                return await self.store(tx, principal, key, digest, outcome, auction_id)
+                return await self.store(tx, principal, key, digest, outcome, auction_id, maximum_binding=maximum_binding)
+            ends_at, end_version = lot['scheduled_ends_at'], lot['end_version']
             sequence = lot['accepted_sequence']
             operation_id = UUID(outcome['operation_id'])
             for bid in result['bids']:
                 sequence += 1
                 await tx.execute('''INSERT INTO auction_bids
-                    (auction_id,sequence,operation_id,bidder_id,amount_minor,automatic,received_at)
-                    VALUES($1,$2,$3,$4,$5,$6,$7)''', auction_id, sequence, operation_id,
+                    (auction_id,sequence,operation_id,bidder_id,amount_minor,automatic,received_at,public_rule_version)
+                    VALUES($1,$2,$3,$4,$5,$6,$7,'full-step.v2')''', auction_id, sequence, operation_id,
                     UUID(bid['bidder_id']), bid['amount_minor'], bid['automatic'], now)
             # A maximum raise with no public price change still advances canonical receipt order.
             if sequence == lot['accepted_sequence']:
                 sequence += 1
+            await tx.execute('UPDATE auction_maxima SET active=false WHERE auction_id=$1', auction_id)
             for maximum in result['maxima']:
-                await tx.execute('''INSERT INTO auction_maxima(auction_id,bidder_id,amount_minor,sequence)
-                    VALUES($1,$2,$3,$4) ON CONFLICT(auction_id,bidder_id) DO UPDATE SET
-                    amount_minor=excluded.amount_minor,sequence=excluded.sequence''', auction_id,
-                    UUID(maximum['bidder_id']), maximum['amount_minor'], maximum['sequence'])
+                await tx.execute('''INSERT INTO auction_maxima(auction_id,bidder_id,amount_minor,sequence,active,verified_ceiling)
+                    VALUES($1,$2,$3,$4,$5,true) ON CONFLICT(auction_id,bidder_id) DO UPDATE SET
+                    amount_minor=excluded.amount_minor,sequence=excluded.sequence,active=excluded.active,verified_ceiling=true''', auction_id,
+                    UUID(maximum['bidder_id']), maximum['amount_minor'], maximum['sequence'], maximum['active'])
             updated = await tx.fetchrow('''UPDATE auction_lots SET current_minor=$2,leader_id=$3,
-                accepted_sequence=$4,revision=revision+1 WHERE id=$1 RETURNING *''', auction_id,
-                result['current_minor'], UUID(result['leader_id']), sequence)
+                accepted_sequence=$4,ends_at=$5,end_version=$6,revision=revision+1 WHERE id=$1 RETURNING *''', auction_id,
+                result['current_minor'], UUID(result['leader_id']), sequence, ends_at, end_version)
             outcome.update(status='succeeded', code='bid_accepted', revision=updated['revision'],
                 accepted_sequence=sequence, current_minor=updated['current_minor'],
-                next_minimum_minor=next_minimum(updated, state['increment_bands']), server_time=now.isoformat())
-            await self.store(tx, principal, key, digest, outcome, auction_id)
+                next_minimum_minor=next_minimum(updated, state['increment_bands']), server_time=now.isoformat(),
+                ends_at=updated['ends_at'].isoformat(), end_version=updated['end_version'], mode=updated['mode'])
+            await self.store(tx, principal, key, digest, outcome, auction_id, maximum_binding=maximum_binding)
             data = {'auction_id': str(auction_id), 'listing_id': str(lot['listing_id']), 'sequence': sequence,
                 'revision': updated['revision'], 'current_minor': updated['current_minor'], 'currency': lot['currency'],
-                'ends_at': lot['ends_at'].isoformat(), 'bidder_id': bidder_id,
+                'ends_at': updated['ends_at'].isoformat(), 'bidder_id': bidder_id,
                 'previous_leader_id': str(lot['leader_id']) if lot['leader_id'] else None,
                 'leader_id': result['leader_id']}
             await enqueue(tx, EventEnvelope(type='auction.bid-accepted.v1', source='auction', subject=str(auction_id), time=now,
                 request_id=request.state.request_id, data=data), ['communications'])
+            if result['leader_id'] != bidder_id:
+                await enqueue(tx, EventEnvelope(type='auction.bid-outbid.v2', source='auction', subject=str(auction_id),
+                    time=now, request_id=request.state.request_id,
+                    data={'auction_id': str(auction_id), 'listing_id': str(lot['listing_id']),
+                          'sequence': sequence, 'revision': updated['revision'], 'bidder_id': bidder_id,
+                          'current_minor': updated['current_minor'], 'currency': lot['currency']}), ['bid-notices-v2'])
+            await enqueue(tx, EventEnvelope(type='auction.timing-updated.v2', source='auction', subject=str(auction_id),
+                time=now, request_id=request.state.request_id,
+                data={'auction_id': str(auction_id), 'listing_id': str(lot['listing_id']),
+                      'revision': updated['revision'], 'end_version': updated['end_version'],
+                      'ends_at': updated['ends_at'].isoformat(), 'mode': updated['mode']}), ['auction-timing-v2'])
             return outcome
+
+    async def recheck_bid_permission(self, request, previous):
+        current = await self.dependencies.principal(request)
+        if ('buyer' not in current.roles or current.actor.organization_id is not None
+                or current.actor.subject_id != previous.actor.subject_id
+                or set(current.organizations) != set(previous.organizations)):
+            raise AccessDenied('Current buyer scope changed')
+        require_bid_permission(current)
+
+    async def lock_publication(self, tx, listing_id, revision):
+        # Use the receiver's listing lock even before a watermark row exists.
+        # Acquire it before the auction lock, in the same order as listing edits.
+        await tx.execute('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', 'listing:' + str(listing_id))
+        await self.require_current_publication(tx, listing_id, revision)
+
+    @staticmethod
+    async def require_current_publication(tx, listing_id, revision):
+        published_revision = await tx.fetchval(
+            'SELECT revision FROM auction_publication_watermarks WHERE listing_id=$1', listing_id)
+        if published_revision is not None and revision < published_revision:
+            raise PublicError('listing_changed', 'Reload the current listing publication.', status=409)
 
     @staticmethod
     def manual_result(state, command):
-        # Preserve manual caps too: installing the pure proxy hook never invents historical state.
-        maxima = [dict(maximum) for maximum in state['maxima'] if maximum['bidder_id'] != command['bidder_id']]
-        maxima.append({'bidder_id': command['bidder_id'], 'amount_minor': command['amount_minor'],
-            'sequence': command['sequence']})
-        return {'leader_id': command['bidder_id'], 'current_minor': command['amount_minor'], 'maxima': maxima,
-            'bids': [{'bidder_id': command['bidder_id'], 'amount_minor': command['amount_minor'], 'automatic': False}]}
+        return expected_result(state, command)
 
-    @staticmethod
-    def validate_result(state, command, result):
-        # Frozen seam is private, but malformed implementations cannot corrupt the canonical engine.
-        def invalid():
-            raise PublicError('proxy_unavailable', 'Private maximum admission is unavailable.', status=503)
-        try:
-            if set(result) != {'leader_id', 'current_minor', 'maxima', 'bids'}:
-                invalid()
-            UUID(result['leader_id'])
-            price = result['current_minor']
-            if type(price) is not int or not max(state['current_minor'], state['opening_minor']) <= price <= MAX_MINOR:
-                invalid()
-            if len(result['maxima']) > 10000 or len(result['bids']) > 8:
-                invalid()
-            old = {m['bidder_id']: m for m in state['maxima']}
-            new = {m['bidder_id']: m for m in result['maxima']}
-            if not new or len(new) != len(result['maxima']) or not set(old) <= set(new):
-                invalid()
-            if len({maximum['sequence'] for maximum in new.values()}) != len(new):
-                invalid()
-            for bidder, maximum in new.items():
-                UUID(bidder)
-                if set(maximum) != {'bidder_id', 'amount_minor', 'sequence'}:
-                    invalid()
-                if type(maximum['amount_minor']) is not int or not state['opening_minor'] <= maximum['amount_minor'] <= MAX_MINOR:
-                    invalid()
-                if type(maximum['sequence']) is not int or not 1 <= maximum['sequence'] <= command['sequence']:
-                    invalid()
-                if bidder != command['bidder_id'] and maximum != old.get(bidder):
-                    invalid()
-                if bidder == command['bidder_id'] and maximum != old.get(bidder):
-                    if maximum['amount_minor'] > command['amount_minor'] or maximum['sequence'] != command['sequence']:
-                        invalid()
-                    if bidder in old and maximum['amount_minor'] <= old[bidder]['amount_minor']:
-                        invalid()
-            winner = min(new.values(), key=lambda maximum: (-maximum['amount_minor'], maximum['sequence']))
-            if result['leader_id'] != winner['bidder_id']:
-                invalid()
-            previous = state['current_minor'] if state['sequence'] else 0
-            allowed = {command['bidder_id'], *old}
-            if result['leader_id'] not in allowed:
-                invalid()
-            for bid in result['bids']:
-                if set(bid) != {'bidder_id', 'amount_minor', 'automatic'} or bid['bidder_id'] not in allowed:
-                    invalid()
-                if (bid['automatic'] and bid['bidder_id'] != result['leader_id']) or (not bid['automatic']
-                        and (command['kind'] != 'manual' or bid['bidder_id'] != command['bidder_id']
-                             or bid['amount_minor'] != command['amount_minor'])):
-                    invalid()
-                cap = command['amount_minor'] if bid['bidder_id'] == command['bidder_id'] else old[bid['bidder_id']]['amount_minor']
-                minimum = state['opening_minor'] if previous == 0 else previous + step_at(state['increment_bands'], previous)
-                capped_response = (bid['automatic'] is True and bid['bidder_id'] == result['leader_id']
-                    and bid['amount_minor'] == cap and cap >= previous)
-                earlier_tie = (cap == previous and bid['bidder_id'] in old
-                    and old[bid['bidder_id']]['sequence'] < command['sequence'])
-                if (type(bid['amount_minor']) is not int or type(bid['automatic']) is not bool
-                        or bid['amount_minor'] > cap or (bid['amount_minor'] < minimum and not capped_response)
-                        or (bid['amount_minor'] <= previous and not (capped_response and earlier_tie))):
-                    invalid()
-                previous = bid['amount_minor']
-            if result['bids'] and (previous != price or result['bids'][-1]['bidder_id'] != result['leader_id']):
-                invalid()
-            if not result['bids'] and (price != state['current_minor'] or result['leader_id'] != state['leader_id']):
-                invalid()
-        except (KeyError, TypeError, ValueError):
-            invalid()
+    validate_result = staticmethod(validate_result)

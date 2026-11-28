@@ -11,7 +11,7 @@ from bt_runtime.app.settings import Settings
 from service_app.main import create_app
 
 ALICE, BOB = uuid4(), uuid4()
-BODY = {'subject_id': str(uuid4()), 'subject_revision': 1, 'purpose': 'purchase', 'currency': 'USD', 'price_minor': 500000, 'schedule_id': 'sample-v1'}
+BODY = {'subject_id': str(uuid4()), 'subject_revision': 1, 'purpose': 'purchase', 'currency': 'USD', 'price_minor': 500000, 'schedule_id': 'usd-v2'}
 PUBLICATION = {'id': BODY['subject_id'], 'revision': 1, 'status': 'published', 'physical_watch_id': str(uuid4()), 'seller_id': str(uuid4()),
     'facts': {'currency': 'USD', 'price_minor': 500000, 'sale_mode': 'fixed_price'}}
 
@@ -85,8 +85,9 @@ async def test_review_all_bindings_and_replay(api):
     q = (await client.post('/v1/quotes', json=BODY, headers=headers())).json()
     review = {**BODY, 'quote_revision': 1, 'payable_minor': 515000}
     path = '/v1/quotes/' + q['id'] + '/review'
-    for field, value in [('subject_id', str(uuid4())), ('subject_revision', 2), ('currency', 'LBP'), ('purpose', 'offer'), ('price_minor', 500001), ('quote_revision', 2), ('payable_minor', 515001)]:
+    for field, value in [('subject_id', str(uuid4())), ('subject_revision', 2), ('purpose', 'offer'), ('price_minor', 500001), ('quote_revision', 2), ('payable_minor', 515001)]:
         assert (await client.post(path, json={**review, field: value}, headers=headers('review-' + field))).status_code == 409
+    assert (await client.post(path, json={**review, 'currency': 'LBP'}, headers=headers('review-currency'))).status_code == 422
     accepted = await client.post(path, json=review, headers=headers('review-once'))
     assert accepted.status_code == 200 and accepted.json()['reviewed_at']
     assert (await client.post(path, json=review, headers=headers('review-once'))).json() == accepted.json()

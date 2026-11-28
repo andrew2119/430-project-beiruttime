@@ -139,6 +139,48 @@ export default {
     },
     {
       service: "identity",
+      path: "/v1/listing-reviews/:id",
+      methods: ["GET"],
+      roles: ["private_seller", "dealer", "brand"],
+    },
+    {
+      service: "identity",
+      path: "/v1/listing-reviews/:id/challenges",
+      methods: ["POST"],
+      roles: ["private_seller", "dealer", "brand"],
+    },
+    {
+      service: "identity",
+      path: "/v1/listing-reviews/:id/submissions",
+      methods: ["POST"],
+      roles: ["private_seller", "dealer", "brand"],
+    },
+    {
+      service: "identity",
+      path: "/v1/listing-reviews/:id/assignment",
+      methods: ["POST"],
+      roles: ["operator"],
+    },
+    {
+      service: "identity",
+      path: "/v1/listing-reviews/:id/decision",
+      methods: ["POST"],
+      roles: ["operator"],
+    },
+    {
+      service: "identity",
+      path: "/v1/listing-reviews/:id/photo",
+      methods: ["GET"],
+      roles: ["operator"],
+    },
+    {
+      service: "identity",
+      path: "/v1/listing-reviews/:id/stock-decision",
+      methods: ["POST"],
+      roles: ["operator"],
+    },
+    {
+      service: "identity",
       path: "/v1/private-reviews/:id/files/:file",
       methods: ["GET"],
       roles: ["operator"],

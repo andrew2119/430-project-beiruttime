@@ -8,7 +8,7 @@ from uuid import uuid4
 
 ORIGIN = os.environ.get('BT_BROWSER_ORIGIN', 'http://127.0.0.1:3177')
 BODY = {'subject_id': '00000000-0000-4000-8000-000000005000', 'subject_revision': 1,
-        'purpose': 'purchase', 'currency': 'USD', 'price_minor': 500000, 'schedule_id': 'sample-v1'}
+        'purpose': 'purchase', 'currency': 'USD', 'price_minor': 500000, 'schedule_id': 'usd-v2'}
 
 
 def request(port, path, token=None, body=None, key=None):

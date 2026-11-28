@@ -1,0 +1,83 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "maximum": 2,
+      "minimum": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "auction_id": {
+      "format": "uuid",
+      "title": "Auction Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "amount_minor": {
+      "anyOf": [
+        {
+          "maximum": 9000000000000000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Amount Minor"
+    },
+    "active": {
+      "title": "Active",
+      "type": "boolean"
+    },
+    "standing": {
+      "enum": [
+        "leading",
+        "outbid",
+        null
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "auction_id",
+    "actor_id",
+    "watch_id",
+    "amount_minor",
+    "revision",
+    "active",
+    "standing"
+  ],
+  "title": "OwnMaximum",
+  "type": "object",
+  "if": {
+    "properties": {
+      "active": {
+        "const": true
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "amount_minor": {
+        "type": "integer"
+      },
+      "standing": {
+        "const": "leading"
+      }
+    }
+  }
+}

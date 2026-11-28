@@ -1,5 +1,7 @@
 /* Shared detail, form and activity recipes. No feature-owned paint. */
-.checkout-page { display:flex; flex-direction:column; gap:var(--ds-gap-content); container-type:inline-size; }
+.checkout-page { display:flex; flex-direction:column; container-type:inline-size; }
+/* PageHeader owns its gap; only subsequent feature blocks add their own rhythm. */
+.checkout-page > :not(.hx-onpage) + :not(.hx-onpage) { margin-block-start:var(--ds-gap-content); }
 .checkout-page bdi { overflow-wrap:anywhere; }
 .checkout-grid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:var(--ds-space-4); align-items:start; }
 .checkout-grid > * { min-inline-size:0; }

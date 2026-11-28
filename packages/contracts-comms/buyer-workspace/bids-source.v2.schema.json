@@ -1,0 +1,163 @@
+{
+  "$defs": {
+    "CurrentBid": {
+      "additionalProperties": false,
+      "properties": {
+        "is_demo": {
+          "title": "Is Demo",
+          "type": "boolean"
+        },
+        "auction_id": {
+          "format": "uuid",
+          "title": "Auction Id",
+          "type": "string"
+        },
+        "listing_title": {
+          "anyOf": [
+            {"type": "string", "minLength": 1, "maxLength": 240},
+            {"type": "null"}
+          ]
+        },
+        "listing_id": {
+          "format": "uuid",
+          "title": "Listing Id",
+          "type": "string"
+        },
+        "buyer_id": {
+          "format": "uuid",
+          "title": "Buyer Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "leading",
+            "outbid",
+            null
+          ],
+          "title": "Status"
+        },
+        "lifecycle": {
+          "enum": [
+            "scheduled",
+            "live"
+          ],
+          "title": "Lifecycle",
+          "type": "string"
+        },
+        "current_price_minor": {
+          "maximum": 9000000000000000,
+          "minimum": 0,
+          "title": "Current Price Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "const": "USD",
+          "title": "Currency",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "starts_at": {
+          "format": "date-time",
+          "title": "Starts At",
+          "type": "string"
+        },
+        "ends_at": {
+          "format": "date-time",
+          "title": "Ends At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "is_demo",
+        "auction_id",
+        "listing_id",
+        "buyer_id",
+        "status",
+        "lifecycle",
+        "current_price_minor",
+        "currency",
+        "revision",
+        "starts_at",
+        "ends_at"
+      ],
+      "title": "CurrentBid",
+      "type": "object",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "lifecycle": {
+                "const": "scheduled"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "status": {
+                "const": null
+              },
+              "current_price_minor": {
+                "const": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "current_price_minor": {
+                "const": 0
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "status": {
+                "const": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "#/$defs/CurrentBid"
+      },
+      "maxItems": 100,
+      "title": "Items",
+      "type": "array"
+    },
+    "total": {
+      "minimum": 0,
+      "title": "Total",
+      "type": "integer"
+    },
+    "next_cursor": {
+      "anyOf": [
+        {
+          "maxLength": 200,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Next Cursor"
+    }
+  },
+  "required": [
+    "items",
+    "total"
+  ],
+  "title": "CurrentBids",
+  "type": "object"
+}

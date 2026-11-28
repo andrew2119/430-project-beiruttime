@@ -221,7 +221,8 @@ async def test_l05_bridge_authenticated_durable_dedupe_and_canonical_destination
 async def test_actual_order_wrapper_exact_quote_binding_and_buyer_scope(api):
     app, client, _ = api
     snapshot = json.loads((Path(quote_models.__file__).parent / 'fixtures/sample-quote.v1.json').read_text())
-    snapshot.update(id=str(uuid4()), owner_id=str(ALICE), source='listing', source_verified=True)
+    snapshot.update(id=str(uuid4()), owner_id=str(ALICE), source='listing', source_verified=True,
+                    schedule_id='usd-v2', policy={**snapshot['policy'], 'revision': 2})
     order = {'id': str(uuid4()), 'buyer_id': str(ALICE), 'state': 'awaiting_payment', 'quote_id': snapshot['id'],
         'currency': 'USD', 'total_minor': 515000, 'revision': 1, 'deadline': snapshot['expires_at'], 'payment_authority': False}
     await app.state.orders.aclose()

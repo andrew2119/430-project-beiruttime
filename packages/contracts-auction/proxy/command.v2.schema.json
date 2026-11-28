@@ -1,0 +1,48 @@
+{
+  "title": "MaximumCommandV2",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 1,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Policy Revision",
+      "type": "string"
+    },
+    "fee_quote_id": {
+      "format": "uuid",
+      "title": "Fee Quote Id",
+      "type": "string"
+    },
+    "amount_minor": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9000000000000000
+    }
+  },
+  "required": [
+    "expected_revision",
+    "fee_quote_id",
+    "amount_minor"
+  ],
+  "dependentRequired": {
+    "watch_id": ["quote_revision", "policy_revision"],
+    "quote_revision": ["watch_id", "policy_revision"],
+    "policy_revision": ["watch_id", "quote_revision"]
+  }
+}

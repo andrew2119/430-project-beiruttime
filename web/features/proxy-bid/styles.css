@@ -12,7 +12,7 @@
 .buyer-activity dt { color:var(--muted-foreground); }
 .buyer-activity dd { margin:0; min-inline-size:0; }
 .buyer-note { color:var(--muted-foreground); font-size:.75rem; line-height:1.5; }
-.buyer-columns > .ui-card > .buyer-note { margin-block:var(--ds-space-3); }
+.buyer-columns > .bt-card > .buyer-note { margin-block:var(--ds-space-3); }
 .buyer-foot { display:flex; align-items:center; flex-wrap:wrap; gap:var(--ds-space-3); color:var(--muted-foreground); font-size:.75rem; }
 .buyer-foot > p { flex:1 1 24rem; }
 .proxy-panel { min-inline-size:0; display:grid; gap:var(--ds-space-4); }
@@ -20,7 +20,7 @@
 .proxy-panel > p { color:var(--muted-foreground); font-size:.8125rem; }
 .proxy-panel form { display:grid; gap:var(--ds-space-3); }
 .proxy-panel label { font-size:.8125rem; font-weight:var(--ds-weight-strong); }
-.proxy-panel .ui-input { inline-size:100%; min-inline-size:0; }
+.proxy-panel .bt-input { inline-size:100%; min-inline-size:0; }
 .proxy-actions { display:flex; gap:var(--ds-space-2); flex-wrap:wrap; }
 .proxy-quote { padding:var(--ds-space-3) var(--ds-space-4); background:var(--muted); border-radius:var(--radius-lg); font-size:.75rem; }
 .proxy-quote > p { color:var(--muted-foreground); }
@@ -28,4 +28,4 @@
 .proxy-quote dl > div { display:flex; justify-content:space-between; flex-wrap:wrap; gap:var(--ds-space-1) var(--ds-space-4); }
 .proxy-quote dd { margin:0; min-inline-size:0; overflow-wrap:anywhere; font-weight:var(--ds-weight-strong); }
 @container(max-width:44rem) { .buyer-columns { grid-template-columns:minmax(0,1fr); } }
-@media(max-width:850px) { .proxy-panel .ui-input { font-size:1rem; } }
+@media(max-width:850px) { .proxy-panel .bt-input { font-size:1rem; } }

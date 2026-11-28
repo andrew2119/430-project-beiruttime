@@ -1,0 +1,4 @@
+services:
+  orders:
+    environment:
+      BT_SIMULATED_PAYMENT_SECRET: ${BT_SIMULATED_PAYMENT_SECRET:-}

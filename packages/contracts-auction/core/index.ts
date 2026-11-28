@@ -12,7 +12,7 @@ export type AuctionSnapshot = {
 export type SellerAuctionSnapshot = AuctionSnapshot & {reserve_minor:number|null};
 export type BidCommand = { amount_minor:number;fee_quote_id:string;expected_revision:number };
 export type AuctionOutcome = {
-  operation_id:string;status:'succeeded'|'denied';code:string;auction_id:string;
+  operation_id:string;status:'succeeded'|'denied'|'pending';code:string;auction_id:string;
   revision?:number;accepted_sequence?:number;current_minor?:number;next_minimum_minor?:number;
   server_time?:string;auction?:AuctionSnapshot;
 };
@@ -24,3 +24,5 @@ export type BidAcceptedEventData = {
   auction_id:string;listing_id:string;sequence:number;revision:number;current_minor:number;
   currency:Currency;ends_at:string;bidder_id:string;previous_leader_id:string|null;leader_id:string;
 };
+export type { KernelModeV4, KernelCommandV4, KernelReceiptV4, KernelCurrentStateV4 } from './kernel-v4';
+export type BidSourceReceipt = {event_id:string;auction_id:string;sequence:number};

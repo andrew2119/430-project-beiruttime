@@ -1,0 +1,32 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "terms_digest": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Terms Digest",
+      "type": "string"
+    },
+    "accept_assessment_fee": {
+      "default": false,
+      "title": "Accept Assessment Fee",
+      "type": "boolean"
+    },
+    "accept_return_fee": {
+      "default": false,
+      "title": "Accept Return Fee",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "quote_revision",
+    "terms_digest"
+  ],
+  "title": "DeclineQuote",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

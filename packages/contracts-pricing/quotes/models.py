@@ -9,11 +9,11 @@ MAX_MINOR = 9_000_000_000_000
 class QuoteRequest(Contract):
     subject_id: UUID
     subject_revision: StrictInt = Field(ge=1)
-    purpose: Literal['bid', 'offer', 'purchase', 'business_quote']
-    currency: Literal['USD', 'LBP']
+    purpose: Literal['bid', 'offer', 'purchase']
+    currency: Literal['USD']
     price_minor: StrictInt = Field(gt=0, le=MAX_MINOR)
-    # No real commercial schedule has been approved. This opt-in is always labeled sample.
-    schedule_id: Literal['sample-v1']
+    # Confirmed rates; collection remains simulated.
+    schedule_id: Literal['usd-v2']
     source: Literal['sample', 'listing'] = 'sample'
 
     @model_validator(mode='after')
@@ -32,6 +32,7 @@ class CurrencyExponents(Contract):
 
 
 class SamplePolicy(Contract):
+    revision: Literal[2] = 2
     buyer_fee_bps: Literal[300]
     seller_commission_bps: Literal[500]
     shipping: Literal['sample_zero']
@@ -88,7 +89,7 @@ class ValidatedReservationQuote(Contract):
 class OfferDraftRequest(Contract):
     subject_id: UUID
     subject_revision: StrictInt = Field(ge=1)
-    currency: Literal['USD', 'LBP']
+    currency: Literal['USD']
     amount_minor: StrictInt = Field(gt=0, le=MAX_MINOR)
 
 class OfferDraftUpdate(OfferDraftRequest):

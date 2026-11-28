@@ -20,6 +20,17 @@ describe('brand options V1 transport', () => {
     expect(Object.keys(ar).sort()).toEqual(Object.keys(en).sort());
     expect(Object.values(ar).every(value => value.trim().length > 0)).toBe(true);
   });
+  it('maintains scoped offerings with exact versions and the same retry reference', async () => {
+    const body={expected_revision:3,component:'case' as const,label:{en:'Blue',ar:'أزرق'},base_models:['base'],calibers:['caliber'],available:false,
+      details:{color:{en:'Blue',ar:'أزرق'},finish:{en:'Matte',ar:'مطفي'},coating:null,swatch:'#204060'}};
+    await optionsApi.publish('brand/scope','color','option/id',body,'same-operation');
+    await optionsApi.publish('brand/scope','color','option/id',body,'same-operation');
+    expect(authenticated.mock.calls[0]).toEqual(authenticated.mock.calls[1]);
+    const [path,options]=authenticated.mock.calls[0];
+    expect(path).toBe('/api/web/v1/catalog/v1/brand-options/brands/brand%2Fscope/color/option%2Fid');
+    expect(options.headers['Idempotency-Key']).toBe('same-operation');
+    expect(JSON.parse(options.body)).toEqual(body);
+  });
   it('saves exact bindings through Identity with a stable caller operation key', async () => {
     const body = {brand_id:'brand',base_model:'atelier-38',caliber:'manual-01',option_id:'option',option_revision:3,expected_revision:7,component:'case' as const,reference_ids:[]};
     await optionsApi.save('configuration','material',body,'stable-operation');

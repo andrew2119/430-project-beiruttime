@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Held auction result support facts",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "auction_id", "listing_id", "watch_id", "buyer_id", "order_id", "result_revision", "financial_revision", "reason", "held_since"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "auction_id": {"type": "string", "format": "uuid"},
+    "listing_id": {"type": "string", "format": "uuid"},
+    "watch_id": {"type": "string", "format": "uuid"},
+    "buyer_id": {"type": "string", "format": "uuid"},
+    "order_id": {"type": ["string", "null"], "format": "uuid"},
+    "result_revision": {"type": "integer", "minimum": 1},
+    "financial_revision": {"type": ["integer", "null"], "minimum": 1},
+    "reason": {"enum": ["allocation_pending", "allocation_denied", "payment_unknown", null]},
+    "held_since": {"type": "string", "format": "date-time", "pattern": "Z$"}
+  },
+  "if": {"properties": {"reason": {"enum": ["allocation_pending", "allocation_denied"]}}},
+  "then": {"properties": {"order_id": {"const": null}, "financial_revision": {"const": null}}},
+  "else": {"properties": {"order_id": {"type": "string"}, "financial_revision": {"type": "integer"}}}
+}

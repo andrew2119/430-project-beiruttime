@@ -220,18 +220,6 @@
       "bt-title-absent": 1
     }
   },
-  "web/app/(buyer)/buyer/auctions/[listingId]/page.tsx": {
-    "sha256": "2164f43e4ccf601147cd38f936119caec704ff1d7bb40a680bb472ae779633ce",
-    "counts": {
-      "bt-title-absent": 1
-    }
-  },
-  "web/app/(buyer)/buyer/page.tsx": {
-    "sha256": "96a497b65ae11c539b0d0555a41f1acbca1cbf358b475e0b19ba3e6acdec8974",
-    "counts": {
-      "bt-title-absent": 1
-    }
-  },
   "web/app/(buying-readiness)/buying/page.tsx": {
     "sha256": "d6174e4aea4d96b176309a4b8ea876cd302123d80ca76135ad313d2ca68b8522",
     "counts": {
@@ -412,12 +400,6 @@
   },
   "web/features/pricing/buying.tsx": {
     "sha256": "a091bd0a9f07560906886da07597d9c3f5e0f78aee78c4cb5de89ace4fd996ab",
-    "counts": {
-      "bt-style-opaque": 1
-    }
-  },
-  "web/features/proxy-bid/proxy-bid.tsx": {
-    "sha256": "8d624a0da578479406087d693629f6a8721766622e17d6affa082969ef777ef2",
     "counts": {
       "bt-style-opaque": 1
     }

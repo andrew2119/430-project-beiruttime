@@ -3,6 +3,7 @@ import importlib.util
 import json
 from pathlib import Path
 import stat
+import sys
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
@@ -41,12 +42,21 @@ class NativeWalkthroughTests(unittest.TestCase):
 
 
     def test_publication_plan_and_real_result_checks(self):
-        rows = [{'id': str(number), 'is_demo': True, 'status': 'published'}
-                for number in range(6)]
+        private = {'DEMO-WATCH-01', 'DEMO-WATCH-03', 'DEMO-WATCH-05'}
+        references = [*sorted(private), 'DEMO-WATCH-02', 'DEMO-WATCH-04', 'DEMO-WATCH-06']
+        rows = [{'id': str(number), 'is_demo': True, 'status': 'published', 'revision': 3,
+                 'physical_watch_id': f'watch-{number}', 'facts': {'reference': ref},
+                 'seller_type': 'private' if ref in private else 'dealer'}
+                for number, ref in enumerate(references)]
+        self.walk.state['listing_proofs'] = {row['facts']['reference']: {
+            'binding': {'id': row['id'], 'watch_id': row['physical_watch_id'], 'revision': 2},
+            'commands': {'decide': {'result': {'state': 'approved'}}},
+        } for row in rows[:3]}
         with patch.object(self.walk, 'login'), patch.object(self.walk, 'call', side_effect=[
             {'items': rows[:3]}, {'items': rows[3:]}, {'items': [{'demo': True}]}]), \
-                patch.object(module.subprocess, 'run', return_value=Mock(returncode=0)) as process:
+                patch.object(module, 'run_publication_child', return_value=(0, b'')) as process:
             self.walk.publication()
+        self.assertFalse(list(self.run.glob('publication-child-*.json')))
         args, kwargs = process.call_args
         command = args[0]
         self.assertEqual(command[1:], ['-m', 'bt_runtime.fixtures', 'L03.listings', 'demo'])
@@ -56,6 +66,7 @@ class NativeWalkthroughTests(unittest.TestCase):
         env = kwargs['env']
         self.assertEqual(env['BT_DEMO_PRIVATE_TOKEN'], 'seller-private-token')
         self.assertEqual(env['BT_DEMO_IMPORT_ACK'], 'illustrative-stock-only')
+        self.assertEqual(env['BT_DEMO_PRIVATE_DIAGNOSTICS'], '1')
         self.assertEqual(env['BT_MODULES_PATH'], str(module.ROOT / 'services/catalog/modules'))
         self.assertIn(str(self.run / 'domain-contracts'), env['PYTHONPATH'])
         self.assertEqual(env['BT_DEMO_ROOT'], str(self.run / 'demo'))
@@ -67,9 +78,42 @@ class NativeWalkthroughTests(unittest.TestCase):
 
     def test_incomplete_publication_is_rejected(self):
         with patch.object(self.walk, 'login'), patch.object(self.walk, 'call', return_value={'items': []}), \
-                patch.object(module.subprocess, 'run', return_value=Mock(returncode=0)):
+                patch.object(module, 'run_publication_child', return_value=(0, b'')):
             with self.assertRaises(AssertionError):
                 self.walk.publication()
+
+    def test_publication_failure_and_timeout_write_only_allowlisted_fields(self):
+        arbitrary = (b'{\n  "refresh_token":\n    "unknown-refresh-secret"\n}\n'
+                     b'Unstructured traceback with absent-from-env-token\n')
+        tag = module.PUBLICATION_FAILURE_PREFIX
+        good = tag + b'{"category":"publication_review_pending","http_status":503,"upstream":"identity"}\n'
+        extra_key = tag + b'{"category":"upstream","http_status":429,"upstream":null,"other":"extra-secret"}\n'
+        bad_type = tag + b'{"category":"upstream","http_status":true,"upstream":"identity"}\n'
+        bad_value = tag + b'{"category":"unexpected-category","http_status":503,"upstream":"other-secret"}\n'
+        bad_json = tag + b'{not a record with malformed-secret}\n'
+        failures = [(1, arbitrary + good + extra_key + bad_type + bad_value + bad_json),
+                    (None, arbitrary + extra_key + bad_type + bad_value + bad_json)]
+        with patch.object(self.walk, 'login'), patch.object(self.walk, 'call') as http, \
+                patch('builtins.print') as printed, patch.object(module, 'run_publication_child', side_effect=failures):
+            for reason in ('failed', 'timed out'):
+                with self.assertRaisesRegex(RuntimeError, f'^Local command {reason};') as caught:
+                    self.walk.publication()
+                self.assertIsNone(caught.exception.__cause__)
+        http.assert_not_called()
+        printed.assert_not_called()
+        self.assertEqual(self.walk.evidence, [{'transport': 'native', 'status': 1},
+                                              {'transport': 'native', 'status': 'timeout'}])
+        records = {}
+        for path in self.run.glob('publication-child-*.json'):
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+            data = json.loads(path.read_text())
+            records[data['timed_out']] = data
+        self.assertEqual(records, {
+            False: {'exit_code': 1, 'timed_out': False, 'exception_type': 'PublicationUnavailable',
+                    'failure_category': 'publication_review_pending', 'http_status': 503, 'upstream': 'identity'},
+            True: {'exit_code': None, 'timed_out': True, 'exception_type': 'TimeoutExpired',
+                   'failure_category': 'timeout', 'http_status': None, 'upstream': None},
+        })
 
     def test_bootstrap_fresh_login_and_checkpoint(self):
         events = []
@@ -160,14 +204,14 @@ class NativeWalkthroughTests(unittest.TestCase):
     def test_competition_rejects_wrong_leader_and_public_ceiling_raise(self):
         # Mocked answers; test_bid_phase_follows_the_registered_proxy_rule checks the real rule.
         self.walk.state['auctions'] = {'DEMO-WATCH-01': {'auction_id': 'lot'}}
-        prices = [10000, 11000, 12000, 16000, 20000, 21000, 21000]
-        leaders = ['buyer-a', 'buyer-b', 'buyer-a', 'buyer-a', 'buyer-a', 'buyer-b', 'buyer-b']
+        prices = [10000, 11000, 12000, 16000, 20000, 20000, 20000]
+        leaders = ['buyer-a', 'buyer-b', 'buyer-a', 'buyer-a', 'buyer-b', 'buyer-b', 'buyer-b']
         for wrong_leader, extra_bid in ((False, False), (True, False), (False, True)):
             index = -1
             def call(service, method, route, actor=None, body=None):
                 nonlocal index
                 if route.endswith('/history'):
-                    return {'items': [{'amount_minor': 21000}] if extra_bid and index == 6 else [],
+                    return {'items': [{'amount_minor': 20000}] if extra_bid and index == 6 else [],
                             'has_more': False}
                 if method == 'POST':
                     index += 1
@@ -191,14 +235,20 @@ class NativeWalkthroughTests(unittest.TestCase):
                     self.walk.bids()
 
     def test_bid_phase_follows_the_registered_proxy_rule(self):
-        # Prices and leaders come from the auction's own registered auction.proxy.v1 hook,
+        # Prices and leaders come from the auction.proxy.v2 hook the auction service installs,
         # so the walkthrough's expectations cannot drift from the rule the service runs.
-        folder = module.ROOT / 'services/auction/modules/proxy'
-        source, name = json.loads((folder / 'module.json').read_text())['hooks']['auction.proxy.v1'].split(':')
-        spec = importlib.util.spec_from_file_location('registered_auction_proxy', folder / source)
-        proxy = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(proxy)
-        calculate = getattr(proxy, name)
+        folder = module.ROOT / 'services/auction/runtime/service_app'
+        self.assertIn("setdefault('auction.proxy.v2', calculate)", (folder / 'main.py').read_text())
+        spec = importlib.util.spec_from_file_location('registered_auction_app', folder / '__init__.py',
+                                                      submodule_search_locations=[str(folder)])
+        package = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = package
+        self.addCleanup(lambda: [sys.modules.pop(name, None) for name in list(sys.modules)
+                                 if name.split('.')[0] == spec.name])
+        spec.loader.exec_module(package)
+        calculate = importlib.import_module(spec.name + '.proxy_v2').calculate
+        # The hook takes account ids, which are UUIDs.
+        ids = {'buyer-a': '00000000-0000-4000-8000-00000000000a', 'buyer-b': '00000000-0000-4000-8000-00000000000b'}
         opening, bands = 10000, [{'from_minor': 0, 'step_minor': 1000}]
         lot = {'current_minor': 0, 'leader_id': None, 'accepted_sequence': 0, 'revision': 1}
         maxima, public, bidders, posts = {}, [], set(), []
@@ -213,7 +263,7 @@ class NativeWalkthroughTests(unittest.TestCase):
                 state = {'current_minor': max(lot['current_minor'], opening), 'opening_minor': opening,
                          'leader_id': lot['leader_id'], 'sequence': lot['accepted_sequence'],
                          'increment_bands': bands, 'maxima': [dict(entry) for entry in maxima.values()]}
-                incoming = {'kind': kind, 'bidder_id': actor, 'amount_minor': body['amount_minor'],
+                incoming = {'kind': kind, 'bidder_id': ids[actor], 'amount_minor': body['amount_minor'],
                             'sequence': lot['accepted_sequence'] + 1}
                 posts.append(incoming)
                 try:
@@ -227,6 +277,8 @@ class NativeWalkthroughTests(unittest.TestCase):
                                    'automatic': bid['automatic']})
                 if sequence == lot['accepted_sequence']:
                     sequence += 1
+                for entry in maxima.values():
+                    entry['active'] = False
                 maxima.update((entry['bidder_id'], dict(entry)) for entry in result['maxima'])
                 lot.update(current_minor=result['current_minor'], leader_id=result['leader_id'],
                            accepted_sequence=sequence, revision=lot['revision'] + 1)
@@ -236,7 +288,7 @@ class NativeWalkthroughTests(unittest.TestCase):
                 return {'items': [dict(item) for item in public], 'has_more': False}
             if route == '/v1/my-bids':
                 # The status rule of services/auction/modules/bid-admission/routes.py.
-                status = 'leading' if lot['leader_id'] == actor else 'outbid'
+                status = 'leading' if lot['leader_id'] == ids[actor] else 'outbid'
                 return {'items': [{'auction_id': 'lot', 'my_status': status}] if actor in bidders else []}
             self.assertEqual((method, route), ('GET', '/v1/auctions/lot'))
             return {'revision': lot['revision'], 'current_minor': lot['current_minor']}
@@ -386,6 +438,109 @@ class NativeWalkthroughTests(unittest.TestCase):
         self.client.request.assert_called_once()
         self.assertEqual(self.walk.state['call_journal'][key]['status'], 200)
 
+    def test_listing_review_uses_owning_requests_and_resumes_exact_publication_binding(self):
+        ref = 'DEMO-WATCH-01'
+        listing_id = '00000000-0000-4000-8000-000000000011'
+        path = '/v1/listing-reviews/' + listing_id
+        row = dict(id=listing_id, is_demo=True, status='draft', revision=8, seller_type='private',
+                   physical_watch_id='00000000-0000-4000-8000-000000000012', facts={'reference': ref})
+        current = {'state': 'required', 'revision': 0, 'assignment_revision': 0}
+        sessions = {name: {'account': {'id': name + '-subject'}, 'access_token': name + '-private-token',
+                          'principal': {'permissions': permissions}} for name, permissions in {
+            'seller': [], 'operator': ['identity.private-seller.assign'],
+            'reviewer': ['identity.private-seller.review'],
+        }.items()}
+        code_file, photo_file, inspected_file, verdict_file = [self.run / name for name in (
+            'code.json', 'possession.png', 'reviewer-copy.png', 'verdict.json')]
+        photo = module.PNG_SIGNATURE + b'unit-response-not-proof'
+        photo_file.touch(mode=0o600)
+        photo_file.write_bytes(photo)
+        verdict_file.touch(mode=0o600)
+        verdict_file.write_text(json.dumps({'verdict': 'approved', 'reason': 'Reviewed the supplied evidence'}))
+        calls = []
+        challenge_key = None
+
+        def request(service, method, route, actor=None, body=None, **kwargs):
+            nonlocal challenge_key
+            if service == 'catalog':
+                self.assertEqual((method, route, actor), ('GET', '/v1/seller/listings?limit=50', 'seller'))
+                return {'items': [row]}
+            self.assertEqual(service, 'identity')
+            if route == path:
+                self.assertEqual((method, actor), ('GET', 'seller'))
+                return dict(current)
+            action = route.removeprefix(path + '/')
+            headers = kwargs['headers']
+            role = {'challenges': 'seller', 'submissions': 'seller', 'assignment': 'operator',
+                    'photo': 'reviewer', 'decision': 'reviewer'}[action]
+            self.assertEqual(headers['Authorization'], 'Bearer ' + sessions[role]['access_token'])
+            calls.append(action)
+            if action == 'challenges':
+                self.assertEqual(body, {'revision': 0})
+                if challenge_key is None:
+                    challenge_key = headers['Idempotency-Key']
+                    current.update(state='issued', revision=1)
+                    raise TimeoutError('Lost acknowledgement after issuing')
+                self.assertEqual(headers['Idempotency-Key'], challenge_key)
+                return {**current, 'challenge_id': 'owning-challenge', 'code': '654321'}
+            if action == 'submissions':
+                self.assertEqual(body, {'revision': 1, 'code': '654321', 'challenge_id': 'owning-challenge',
+                                        'photo_base64': module.base64.b64encode(photo).decode()})
+                current.update(state='pending', revision=2)
+            elif action == 'assignment':
+                self.assertEqual(body, {'revision': 2, 'reviewer_id': 'reviewer-subject'})
+                current.update(revision=3, assignment_revision=1)
+            elif action == 'photo':
+                self.assertTrue(kwargs['raw'])
+                return Mock(content=photo, headers={'content-type': 'image/png'})
+            elif action == 'decision':
+                self.assertEqual(body, {'revision': 3, 'assignment_revision': 1,
+                                        'verdict': 'approved', 'reason': 'Reviewed the supplied evidence'})
+                current.update(state='approved', revision=4)
+            return dict(current)
+
+        with patch.object(self.walk, 'private_demo_references', return_value={ref}), \
+                patch.object(self.walk, 'login', side_effect=sessions.__getitem__), \
+                patch.object(self.walk, 'listing_reviewer', return_value=sessions['reviewer']), \
+                patch.object(self.walk, 'call', side_effect=request), patch('builtins.print') as printed:
+            with self.assertRaises(TimeoutError):
+                self.walk.listing_review(ref, 'challenge', code_file)
+            self.walk.listing_review(ref, 'challenge', code_file)
+            self.assertEqual(json.loads(code_file.read_text())['code'], '654321')
+            self.assertEqual(stat.S_IMODE(code_file.stat().st_mode), 0o600)
+            row['revision'] += 1
+            with self.assertRaisesRegex(RuntimeError, 'exact draft'):
+                self.walk.listing_review(ref, 'submit', photo_file)
+            row['revision'] -= 1
+            self.walk.listing_review(ref, 'submit', photo_file)
+            self.walk.listing_review(ref, 'assign', None)
+            with self.assertRaisesRegex(RuntimeError, 'must read'):
+                self.walk.listing_review(ref, 'decide', verdict_file)
+            self.walk.listing_review(ref, 'inspect', inspected_file)
+            self.assertEqual(inspected_file.read_bytes(), photo)
+            self.assertEqual(stat.S_IMODE(inspected_file.stat().st_mode), 0o600)
+            self.walk.listing_review(ref, 'decide', verdict_file)
+            published = {**row, 'status': 'published', 'revision': 9}
+            self.walk.verify_reviewed_publication([published])
+            with self.assertRaisesRegex(RuntimeError, 'does not match'):
+                self.walk.verify_reviewed_publication([{**published, 'id': 'different-listing'}])
+        self.assertEqual(calls, ['challenges', 'challenges', 'submissions', 'assignment', 'photo', 'decision'])
+        persisted = self.walk.path.read_text()
+        for private in ('654321', module.base64.b64encode(photo).decode(), 'Reviewed the supplied evidence'):
+            self.assertNotIn(private, persisted)
+            self.assertNotIn(private, str(printed.call_args_list))
+
+    def test_listing_review_refuses_a_preapproved_record(self):
+        row = dict(id='00000000-0000-4000-8000-000000000011', is_demo=True, status='draft', revision=8,
+                   seller_type='private', physical_watch_id='watch', facts={'reference': 'DEMO-WATCH-01'})
+        with patch.object(self.walk, 'private_demo_references', return_value={'DEMO-WATCH-01'}), \
+                patch.object(self.walk, 'login', return_value={'account': {'id': 'seller'}}), \
+                patch.object(self.walk, 'call', side_effect=[{'items': [row]}, {'state': 'approved', 'revision': 4}]) as call:
+            with self.assertRaisesRegex(RuntimeError, 'existing approvals cannot count'):
+                self.walk.listing_review('DEMO-WATCH-01', 'challenge', self.run / 'challenge.json')
+        self.assertEqual(call.call_count, 2)
+        self.assertNotIn('DEMO-WATCH-01', self.walk.state['listing_proofs'])
+
     def test_completed_contacts_reject_current_unverified_state(self):
         self.walk.state['completed_phases'] = ['contacts']
         with patch.object(self.walk, 'login'), patch.object(
@@ -403,8 +558,8 @@ class NativeWalkthroughTests(unittest.TestCase):
 
     def test_bid_phase_recovers_lost_second_response(self):
         self.walk.state['auctions'] = {'DEMO-WATCH-01': {'auction_id': 'lot'}}
-        prices = [10000, 11000, 12000, 16000, 20000, 21000, 21000]
-        leaders = ['buyer-a', 'buyer-b', 'buyer-a', 'buyer-a', 'buyer-a', 'buyer-b', 'buyer-b']
+        prices = [10000, 11000, 12000, 16000, 20000, 20000, 20000]
+        leaders = ['buyer-a', 'buyer-b', 'buyer-a', 'buyer-a', 'buyer-b', 'buyer-b', 'buyer-b']
         committed = {}
         index = -1
         lost = False

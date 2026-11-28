@@ -13,8 +13,6 @@
     {"file":"web/app/(business)/business/review-history/page.tsx","route":"/business/review-history","sha256":"82dea774a25c79823eedab837e44194577cb904759dba8b864874a835ec132e7"},
     {"file":"web/app/(buy-now)/checkout/[id]/page.tsx","route":"/checkout/[id]","sha256":"cb4f8dafae03ccd0566ab4faa74229ac0b31061290a433d31ef19472b3be6fd6"},
     {"file":"web/app/(buy-now)/checkout/page.tsx","route":"/checkout","sha256":"7e19b7a22a9f0228032ee632b64c0b83cb568206998cfbe7eacbb9eddd12d987"},
-    {"file":"web/app/(buyer)/buyer/auctions/[listingId]/page.tsx","route":"/buyer/auctions/[listingId]","sha256":"2164f43e4ccf601147cd38f936119caec704ff1d7bb40a680bb472ae779633ce"},
-    {"file":"web/app/(buyer)/buyer/page.tsx","route":"/buyer","sha256":"96a497b65ae11c539b0d0555a41f1acbca1cbf358b475e0b19ba3e6acdec8974"},
     {"file":"web/app/(buying-readiness)/buying/page.tsx","route":"/buying","sha256":"d6174e4aea4d96b176309a4b8ea876cd302123d80ca76135ad313d2ca68b8522"},
     {"file":"web/app/(consent)/consent/page.tsx","route":"/consent","sha256":"1fe247651f6401fbd67f5027563b1edc4fb752f855658e459d051cfa1463246d"},
     {"file":"web/app/(home)/about/page.tsx","route":"/about","sha256":"ef569409714e32cf5658268fc6daa5effc2fe75c780168f75e035f7036619758"},

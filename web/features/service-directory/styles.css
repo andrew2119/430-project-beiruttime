@@ -1,11 +1,9 @@
 /* Shared page header, settings section cards and list/detail layout. No feature palette. */
-.directory-tabs .pg-toggle{max-inline-size:100%;flex-wrap:wrap}
-.directory-notice{padding:var(--ds-space-3) var(--ds-space-4);font-size:0.75rem;color:var(--muted-foreground)}
 .directory-restored{padding-block:var(--ds-space-3);font-size:0.8125rem}
 .directory-columns{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:var(--ds-space-4);margin-block-start:var(--ds-gap-content);align-items:start}
 .directory-list,.directory-detail{display:grid;gap:var(--ds-space-4);min-inline-size:0}
 .directory-list-heading{display:flex;align-items:center;justify-content:space-between;gap:var(--ds-space-3);color:var(--muted-foreground);font-size:0.75rem}
-.directory-business{display:grid;gap:var(--ds-space-3);margin-block-end:var(--ds-space-4);transition:box-shadow var(--ds-motion-popover) var(--ease-standard)}
+.directory-business{display:grid;gap:var(--ds-space-3);margin-block-end:var(--ds-space-4);transition:box-shadow var(--bt-motion-popover) var(--bt-ease-out)}
 .directory-business.is-selected{box-shadow:0 0 0 0.125rem var(--primary-ink),var(--ds-shadow-medium)}
 .directory-business h2,.directory-detail h2{overflow-wrap:anywhere}
 .directory-business-type{display:flex;align-items:center;gap:var(--ds-space-3)}
@@ -14,10 +12,10 @@
 .directory-demo{background:var(--muted);color:var(--muted-foreground);padding:var(--ds-space-1) var(--ds-space-2);font-size:0.6875rem;border-radius:var(--radius-lg);inline-size:fit-content}
 .directory-muted{color:var(--muted-foreground);font-size:0.75rem;line-height:1.625}
 .directory-capabilities{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:var(--ds-space-2)}
-.directory-business>.ui-btn{justify-self:start}
 .directory-detail h3{font-size:0.875rem;font-weight:var(--ds-weight-strong)}
 .directory-detail p{font-size:0.8125rem;overflow-wrap:anywhere}
 .directory-detail form{border-block-start:0.0625rem solid var(--border);padding-block-start:var(--ds-space-4)}
-.directory-detail .pg-face{padding:0;min-block-size:20rem}
-.directory-detail .pg-face-title{font-size:1.25rem}
-@container(max-width:48rem){.directory-columns{grid-template-columns:minmax(0,1fr)}.directory-detail .pg-face{min-block-size:10rem}}
+
+@media(max-width:850px){.directory-columns{grid-template-columns:minmax(0,1fr)}}
+.directory-detail form,.directory-maintenance form{display:grid;gap:var(--ds-space-4)}
+.directory-maintenance{min-inline-size:0;overflow-wrap:anywhere}

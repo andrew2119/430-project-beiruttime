@@ -1,6 +1,5 @@
 import json
-import os
-from datetime import timedelta
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Query
 from bt_contracts.orders.allocation import RegisterWatch, ReserveWatch, FenceWatch, CustodyFact, Transition
@@ -9,7 +8,7 @@ from bt_runtime.principal import require_scope
 from bt_runtime.app.db import unit_of_work
 from .dependencies import principal, service, quote, organization_principal
 from .repository import command, audit, event, denied, order_view, watch_view
-from .communications import reservation_notice
+from .communications import reservation_notice, payment_notice
 
 router = APIRouter(tags=["allocation-v1"])
 
@@ -23,8 +22,12 @@ def scoped(actor, row, permission):
 
 
 def readable(actor, row):
-    if actor.actor.subject_id not in (row["buyer_id"], row["seller_id"]):
-        scoped(actor, row, "orders.read")
+    if actor.actor.organization_id is None and (
+        actor.actor.subject_id == row["buyer_id"]
+        or (row["organization_id"] is None and actor.actor.subject_id == row["seller_id"])
+    ):
+        return
+    scoped(actor, row, "orders.read")
 
 
 @router.post("/internal/v1/watches/register")
@@ -108,16 +111,20 @@ async def service_operation(operation_id: UUID, request: Request):
 async def reserve(
     body: ReserveWatch, request: Request, actor=Depends(principal), idempotency_key: str = Header(default="")
 ):
-    if "buyer" not in actor.roles:
-        raise AccessDenied("Buyer permission required")
+    if "buyer" not in actor.roles or actor.actor.organization_id is not None:
+        raise AccessDenied("Individual buyer permission required")
     actor_key = user_key(actor)
+    # Known outcomes reconcile before bounded preflight; no remote call holds a watch lock.
+    known = await request.app.state.pool.fetchval(
+        "SELECT 1 FROM l08_operations WHERE actor_key=$1 AND idempotency_key=$2", actor_key, idempotency_key
+    )
+    validated = None if known else await quote(request, body.quote_id)
 
     async def apply(tx):
-        validated = await quote(request, body.quote_id)
         row = await tx.fetchrow("SELECT * FROM l08_watches WHERE id=$1 FOR UPDATE", body.watch_id)
         if not row:
             return denied("watch_unknown")
-        if row["seller_id"] == actor.actor.subject_id:
+        if row["seller_id"] == actor.actor.subject_id or row["organization_id"] in actor.organizations:
             return denied("self_purchase")
         if row["status"] != "available":
             return denied("watch_unavailable")
@@ -133,14 +140,17 @@ async def reserve(
             or validated.listing_revision != row["listing_revision"]
         ):
             return denied("quote_mismatch")
-        if now >= validated.expires_at:
+        # Refuse expiry on either server clock: a slightly lagging database
+        # host must not extend a Pricing UTC deadline already elapsed here.
+        if max(now, datetime.now(timezone.utc)) >= validated.expires_at:
             return denied("quote_expired")
-        ttl = max(60, min(86400, int(os.environ.get("BT_UNPAID_FIXED_SECONDS", "900"))))
-        deadline = min(validated.expires_at, now + timedelta(seconds=ttl))
+        if validated.currency != "USD":
+            return denied("legacy_currency_reconciliation_required")
+        deadline = None
         order_id = uuid4()
         order = await tx.fetchrow(
             """INSERT INTO l08_orders(id,watch_id,buyer_id,seller_id,organization_id,quote_id,
-            state,currency,total_minor,deadline,listing_id,is_demo) VALUES($1,$2,$3,$4,$5,$6,'awaiting_payment',$7,$8,$9,$10,$11) RETURNING *""",
+            state,currency,total_minor,deadline,listing_id,is_demo) VALUES($1,$2,$3,$4,$5,$6,'awaiting_notification',$7,$8,$9,$10,$11) RETURNING *""",
             order_id,
             body.watch_id,
             actor.actor.subject_id,
@@ -162,6 +172,7 @@ async def reserve(
         await audit(tx, body.watch_id, actor_key, "reserve", "Exclusive physical commitment", row["revision"] + 1)
         await event(tx, request, "reserved", order_id, 1)
         await reservation_notice(tx, request, order)
+        await payment_notice(tx, request, order)
         return {"status": "succeeded", "resource_id": str(order_id), "order": order_view(order)}
 
     return await command(
@@ -235,7 +246,7 @@ async def buyer_reservations(
     ):
         raise PublicError("invalid_cursor", "Reload the first reservations page.", status=422)
     rows = await request.app.state.pool.fetch(
-        """SELECT * FROM l08_orders o WHERE buyer_id=$1 AND state='awaiting_payment' AND deadline>clock_timestamp()
+        """SELECT * FROM l08_orders o WHERE buyer_id=$1 AND currency='USD' AND (state='awaiting_notification' OR (state IN ('awaiting_payment','payment_unknown') AND deadline>clock_timestamp()))
         AND ($2::uuid IS NULL OR (o.created_at,o.id)<(SELECT created_at,id FROM l08_orders WHERE id=$2 AND buyer_id=$1))
         ORDER BY created_at DESC,id DESC LIMIT $3""",
         actor.actor.subject_id,
@@ -251,7 +262,7 @@ async def buyer_reservations(
             "total_minor": row["total_minor"],
             "currency": row["currency"],
             "revision": row["revision"],
-            "expires_at": row["deadline"].isoformat(),
+            "expires_at": row["deadline"].isoformat() if row["deadline"] else None,
             "is_demo": row["is_demo"],
         }
         for row in rows[:limit]
@@ -261,11 +272,17 @@ async def buyer_reservations(
 
 @router.get("/v1/orders")
 async def orders(request: Request, actor=Depends(principal)):
-    # Only own buyer/seller records. Operator access is resource-scoped, never a global bypass.
+    # Current selected organization is verified, never inferred from an old seller id.
+    selected = actor.actor.organization_id
+    if selected is not None:
+        require_scope(actor, "orders.read", selected)
     rows = await request.app.state.pool.fetch(
-        """SELECT * FROM l08_orders WHERE buyer_id=$1 OR seller_id=$1
+        """SELECT * FROM l08_orders WHERE currency='USD' AND (
+        ($2::uuid IS NULL AND (buyer_id=$1 OR (seller_id=$1 AND organization_id IS NULL)))
+        OR ($2::uuid IS NOT NULL AND organization_id=$2))
         ORDER BY created_at DESC,id LIMIT 100""",
         actor.actor.subject_id,
+        selected,
     )
     return {"items": [order_view(row) for row in rows]}
 
@@ -276,8 +293,10 @@ async def order(order_id: UUID, request: Request, actor=Depends(principal)):
     if not row:
         raise HTTPException(404)
     readable(actor, row)
+    if row["currency"] != "USD":
+        raise PublicError("legacy_currency_reconciliation_required", "This archived order needs recorded reconciliation.", status=409)
     records = await request.app.state.pool.fetch(
-        "SELECT action,reason,revision,occurred_at FROM l08_audit WHERE resource_id=$1 AND action IN ('reserve','payment-hold','expiry-fence','pre-release-intake') ORDER BY id",
+        "SELECT action,reason,revision,occurred_at FROM l08_audit WHERE resource_id=$1 AND action IN ('reserve','allocate','payment-attempt','payment-confirmed','payment-notified','payment-hold','expiry-fence','expiry-release','pre-release-intake') ORDER BY id",
         order_id,
     )
     return {"order": order_view(row), "history": [dict(r) for r in records]}

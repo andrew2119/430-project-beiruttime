@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "operations": {
+    "validate": {"method": "POST", "path": "/v2/configurations/{id}/validate", "authority": "current_personal_buyer_owner", "retry": "repeat_exact_source_revisions", "writes": false, "missing_or_stale": "configuration_incomplete", "unavailable": "retry_without_feasibility_claim"},
+    "rules": {"method": "GET", "path": "/v2/brands/{brand_id}/compatibility", "limit": 200},
+    "publish_rule": {"method": "PUT", "path": "/v2/brands/{brand_id}/compatibility/{rule_id}", "authority": "business.jobs.write", "retry": "same_actor_rule_id_expected_revision_and_payload", "conflict": "stale_revision"},
+    "maintain_offering": {"method": "PUT", "path": "/v1/brand-options/brands/{brand_id}/{kind}/{option_id}", "authority": "business.jobs.write", "retry": "same_idempotency_key_and_payload", "conflict": "idempotency_conflict"}
+  },
+  "validation_states": ["valid", "incompatible", "parts_unavailable", "manual_assessment"],
+  "no_matching_rule": "manual_assessment",
+  "price_acceptance": false,
+  "physical_feasibility_pass": false
+}

@@ -1,8 +1,18 @@
 {
   "version": 1,
   "id": "L06.proxy",
-  "dependencies": ["fastapi", "pydantic"],
-  "routes": ["routes.py:router"],
-  "migrations": [],
-  "hooks": {"auction.proxy.v1": "proxy.py:calculate"}
+  "dependencies": [
+    "fastapi",
+    "pydantic"
+  ],
+  "routes": [
+    "routes.py:router",
+    "private.py:router"
+  ],
+  "migrations": ["migrations/L06_0001_private_maximum.sql"],
+  "hooks": {
+    "auction.proxy.v1": "proxy.py:calculate",
+    "auction.proxy.v2": "proxy.py:calculate_v2",
+    "auction.proxy.validate.v2": "proxy.py:validate_v2_result"
+  }
 }

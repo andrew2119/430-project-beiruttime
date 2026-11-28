@@ -3,6 +3,7 @@
 .request-grid>div,.request-grid>aside{display:grid;gap:var(--ds-space-4);min-inline-size:0}
 .request-form small,.request-support{color:var(--muted-foreground);font-size:0.75rem;line-height:1.625;overflow-wrap:anywhere}
 .request-form .ui-textarea{min-block-size:7rem;resize:vertical}
+.request-snapshot{margin:0}.request-snapshot dd{margin:0;color:var(--muted-foreground)}.request-snapshot dt{font-weight:var(--ds-weight-strong)}
 .request-option-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ds-space-3)}
 .request-readiness{list-style:none;display:grid;gap:0;padding:0;margin:0}
 .request-readiness li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--ds-space-3);border-block-start:0.0625rem solid var(--border);padding-block:var(--ds-space-3);font-size:0.8125rem}
@@ -16,7 +17,11 @@
 .request-notice[role=alert]{color:var(--destructive-ink)}
 .request-tools{display:flex;gap:var(--ds-space-2);flex-wrap:wrap}
 .request-form fieldset{border:0;border-block-start:0.0625rem solid var(--border);padding:var(--ds-space-4) 0 0;min-inline-size:0}
+.request-form .request-submission-fence{border:0;padding:0;margin:0;display:grid;gap:var(--ds-space-4)}
 .request-form legend{font-size:0.875rem;font-weight:var(--ds-weight-strong)}
 .request-form fieldset p{font-size:0.75rem;color:var(--muted-foreground);margin-block-end:var(--ds-space-3)}
 @container(max-width:48rem){.request-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:850px){.request-option-grid{grid-template-columns:minmax(0,1fr)}.request-tools .ui-btn{flex:1 1 auto}}
+
+.request-history-row{border-block-start:0.0625rem solid var(--border);padding-block:var(--ds-space-3);min-inline-size:0;overflow-wrap:anywhere}
+.request-history-row time{font-size:0.75rem;color:var(--muted-foreground)}

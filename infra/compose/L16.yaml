@@ -1,0 +1,18 @@
+# Extend the existing service processes; module discovery owns their routes.
+# Destination credentials remain with each runtime's existing configuration.
+services:
+  catalog:
+    environment:
+      IDENTITY_API_URL: http://identity:8000
+      SERVICE_OPERATIONS_API_URL: http://service-operations:8000
+      COMMUNICATIONS_API_URL: http://communications:8000
+  service-operations:
+    environment:
+      BT_IDENTITY_URL: http://identity:8000
+      BT_ORDERS_URL: http://orders:8000
+      BT_SERVICE_OPERATIONS_URL: http://service-operations:8000
+      BT_COMMUNICATIONS_URL: http://communications:8000
+  communications:
+    environment:
+      BT_IDENTITY_URL: http://identity:8000
+      BT_TRUST_URL: http://trust:8000

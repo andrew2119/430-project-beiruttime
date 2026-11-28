@@ -15,3 +15,16 @@ describe('private maximum exact input',()=>{
     expect(formatMinor(-1,'USD','ar')).toBe('—');
   });
 });
+
+it.each([
+  ['en','latn','90,071,992,547,409.91 USD','0.01 USD'],
+  ['ar','arab','٩٠٬٠٧١٬٩٩٢٬٥٤٧٬٤٠٩٫٩١ USD','٠٫٠١ USD'],
+] as const)('formats exact cents and Beirut civil dates with %s digits',async(locale,numberingSystem,large,cent)=>{
+  expect(formatMinor(Number.MAX_SAFE_INTEGER,'USD',locale)).toBe(large);
+  expect(formatMinor(1,'USD',locale)).toBe(cent);
+  const {buyerDateFormatter}=await import('./buyer-date');
+  const formatter=buyerDateFormatter(locale);
+  expect(formatter.resolvedOptions()).toMatchObject({numberingSystem,timeZone:'Asia/Beirut'});
+  const parts=formatter.formatToParts(new Date('2030-01-01T10:45:00Z'));
+  expect(parts.find(part=>part.type==='minute')?.value).toBe(locale==='ar'?'٤٥':'45');
+});

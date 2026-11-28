@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "id": "L16.my-results",
+  "dependencies": [],
+  "routes": [],
+  "migrations": [],
+  "hooks": {"auction.my-results.project.v2": "projection.py:project"}
+}

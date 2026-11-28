@@ -11,7 +11,7 @@ export async function businessRequest<T>(
   authenticated = true,
 ): Promise<T> {
   const headers = new Headers(options.headers);
-  if (options.body) headers.set("Content-Type", "application/json");
+  if (options.body && !(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
   const invoke = authenticated ? authenticatedRequest : request;
   return invoke<T>(`/api/web/v1/identity${path}`, { ...options, headers });
 }

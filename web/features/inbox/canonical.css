@@ -1,0 +1,4 @@
+.l22-inbox, .l22-inbox-notice { display:grid; gap:var(--bt-gap-block); min-inline-size:0; }
+.l22-inbox .bt-live-list { display:grid; gap:var(--bt-gap-row); }
+.l22-inbox-actions { display:flex; flex-wrap:wrap; align-items:center; gap:var(--bt-gap-cluster); }
+.l22-inbox-notice .bt-text { overflow-wrap:anywhere; }

@@ -10,7 +10,7 @@ Current `identity.listings.publish` plus a visible published record is the selle
 
 ## Integrated Pricing quotes v1 (L07)
 
-Buyer Bearer commands create `POST /v1/quotes` with `{subject_id:auction_id,subject_revision:auction_revision,purpose:'bid',currency,price_minor,schedule_id:'sample-v1',source:'sample'}` and a stable UUID operation key. This policy is explicitly labeled sample, not a production tariff. The current Pricing limit is 9,000,000,000,000 base minor units, below Auction's integer storage bound.
+Buyer Bearer commands create `POST /v1/quotes` with `{subject_id:auction_id,subject_revision:auction_revision,purpose:'bid',currency:'USD',price_minor,schedule_id:'usd-v2',source:'sample'}` and a stable UUID operation key. The quote is labeled sample because collection is simulated. The current Pricing limit is 9,000,000,000,000 base minor units, below Auction's integer storage bound.
 
 After displaying exact buyer fee, shipping, tax and payable minor units, explicit confirmation calls `POST /v1/quotes/{id}/review` with the same request plus `quote_revision` and `payable_minor`, retaining its own UUID key through uncertainty. This review is not payment. The subsequent bid retains a separate key and exact body. A lost bid response reconciles through the owner-private Auction operation read; nothing is optimistically accepted.
 
