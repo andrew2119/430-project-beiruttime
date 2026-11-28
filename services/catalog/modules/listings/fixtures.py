@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import sys
 import time
 from pathlib import Path
 from bt_bulkheads import DependencyClient, Unavailable
@@ -12,6 +13,50 @@ def quote_operation(demo_key, revision, now=None):
     # Preview receipts expire after fifteen minutes. A ten-minute window and
     # draft revision bound replay without permanently pinning an expired quote.
     return f"{demo_key}-quote-r{revision}-w{int(time.time() if now is None else now) // 600}"
+
+
+def publication_quote_request(row):
+    return {
+        "subject_id": row["id"],
+        "subject_revision": row["revision"],
+        "purpose": "purchase",
+        "source": "sample",
+        "schedule_id": "usd-v2",
+        "price_minor": row["facts"]["price_minor"],
+        "currency": "USD",
+    }
+
+
+PUBLICATION_FAILURE_PREFIX = "BT_PUBLICATION_FAILURE_V1 "
+PUBLICATION_UPSTREAMS = {
+    "identity_unavailable": "identity",
+    "publication_review_pending": "identity",
+    "pricing_unavailable": "pricing",
+    "orders_unavailable": "orders",
+    "registration_pending": None,  # Could be an Orders result or a local retained-operation check.
+}
+
+
+class PublicationUnavailable(RuntimeError):
+    def __init__(self, result, code):
+        self.category = code if code in PUBLICATION_UPSTREAMS else result.reason
+        self.upstream = PUBLICATION_UPSTREAMS.get(code)
+        self.status = result.status_code
+        super().__init__("Catalog publication unavailable; consult private diagnostics")
+
+    def emit_private_record(self):
+        if os.getenv("BT_DEMO_PRIVATE_DIAGNOSTICS") == "1":
+            record = {"category": self.category, "http_status": self.status, "upstream": self.upstream}
+            print(PUBLICATION_FAILURE_PREFIX + json.dumps(record), file=sys.stderr, flush=True)
+
+
+def catalog_publication_error_code(response):
+    try:
+        error = response.json()["error"]
+        code = error["code"]
+    except (ValueError, KeyError, TypeError, RecursionError):
+        return None
+    return code if isinstance(code, str) and code in PUBLICATION_UPSTREAMS else None
 
 
 async def seed(settings):
@@ -78,10 +123,18 @@ async def seed(settings):
                 "price_minor": item["price_minor"],
             }
 
-            async def command(method, path, payload=None, operation="", revision=None, content=None, extra=None):
+            async def command(method, path, payload=None, operation="", revision=None, content=None, extra=None,
+                              *, publication=False):
+                code = None
+
+                def observe_failure(response):
+                    nonlocal code
+                    code = catalog_publication_error_code(response)
+
                 response = await catalog.request(
                     method,
                     path,
+                    **({"observe_failure": observe_failure} if publication else {}),
                     params=selected,
                     json=payload,
                     content=content,
@@ -93,6 +146,10 @@ async def seed(settings):
                     },
                 )
                 if isinstance(response, Unavailable):
+                    if publication:
+                        error = PublicationUnavailable(response, code)
+                        error.emit_private_record()
+                        raise error
                     raise RuntimeError("Catalog is temporarily unavailable; retry the guarded import")
                 response.raise_for_status()
                 return response.json()
@@ -128,15 +185,7 @@ async def seed(settings):
                     "POST",
                     "/v1/quotes",
                     headers={**headers, "Idempotency-Key": quote_operation(item["id"], row["revision"])},
-                    json={
-                        "subject_id": row["id"],
-                        "subject_revision": row["revision"],
-                        "purpose": "business_quote",
-                        "source": "sample",
-                        "schedule_id": "sample-v1",
-                        "price_minor": row["facts"]["price_minor"],
-                        "currency": "USD",
-                    },
+                    json=publication_quote_request(row),
                 )
                 if isinstance(response, Unavailable):
                     raise RuntimeError("Pricing is temporarily unavailable; retry the guarded import")
@@ -148,6 +197,7 @@ async def seed(settings):
                 {"fee_quote_id": quote["id"], "rules_version": quote["schedule_id"]},
                 item["id"] + ":publish",
                 row["revision"],
+                publication=True,
             )
             results.append(result["id"])
     finally:

@@ -1,0 +1,115 @@
+{
+  "schema_version": 3,
+  "cases": [
+    {
+      "name": "success",
+      "result": {
+        "schema_version": 3,
+        "auction_id": "00000000-0000-4000-8000-000000000001",
+        "operation_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 2,
+        "end_version": 1,
+        "close_version": 1,
+        "status": "closed",
+        "winner": "Bidder 01234567",
+        "closing_minor": 500000,
+        "currency": "USD",
+        "order_available": true,
+        "allocation_operation": "close:00000000-0000-4000-8000-000000000001",
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null,
+        "responsible_operator_id": null,
+        "next_action": null,
+        "response_due_at": null,
+        "escalation_due_at": null,
+        "escalated_at": null
+      }
+    },
+    {
+      "name": "denied",
+      "result": {
+        "schema_version": 3,
+        "auction_id": "00000000-0000-4000-8000-000000000001",
+        "operation_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 2,
+        "end_version": 1,
+        "close_version": 1,
+        "status": "allocation_denied",
+        "winner": "Bidder 01234567",
+        "closing_minor": 500000,
+        "currency": "USD",
+        "order_available": false,
+        "allocation_operation": "close:00000000-0000-4000-8000-000000000001",
+        "pending_reason": null,
+        "next_actor": "operator",
+        "next_review_at": "2026-11-17T12:00:00Z",
+        "reason": "current_authority_denied",
+        "responsible_operator_id": "00000000-0000-4000-8000-000000000003",
+        "next_action": "review_allocation_denial",
+        "response_due_at": "2026-11-17T12:00:00Z",
+        "escalation_due_at": "2026-11-18T12:00:00Z",
+        "escalated_at": null
+      }
+    },
+    {
+      "name": "lost_response",
+      "result": {
+        "schema_version": 3,
+        "auction_id": "00000000-0000-4000-8000-000000000001",
+        "operation_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 1,
+        "end_version": 1,
+        "close_version": 1,
+        "status": "allocation_pending",
+        "winner": "Bidder 01234567",
+        "closing_minor": 500000,
+        "currency": "USD",
+        "order_available": false,
+        "allocation_operation": "close:00000000-0000-4000-8000-000000000001",
+        "pending_reason": "allocation_reconciliation",
+        "next_actor": "auction",
+        "next_review_at": "2026-11-17T12:00:00Z",
+        "responsible_operator_id": "00000000-0000-4000-8000-000000000003",
+        "next_action": "reconcile_allocation",
+        "response_due_at": "2026-11-17T12:00:00Z",
+        "escalation_due_at": "2026-11-18T12:00:00Z",
+        "escalated_at": null
+      }
+    },
+    {
+      "name": "stale",
+      "expected_end_version": 2,
+      "current_end_version": 3,
+      "error": {
+        "code": "stale_end_version",
+        "status": 409
+      }
+    },
+    {
+      "name": "legacy_hold",
+      "result": {
+        "schema_version": 3,
+        "auction_id": "00000000-0000-4000-8000-000000000001",
+        "operation_id": "00000000-0000-4000-8000-000000000002",
+        "revision": 1,
+        "end_version": 1,
+        "close_version": 0,
+        "status": "ended_legacy_review",
+        "winner": null,
+        "closing_minor": 500000,
+        "currency": "USD",
+        "order_available": false,
+        "allocation_operation": null,
+        "pending_reason": "legacy_reconciliation",
+        "next_actor": "operator",
+        "next_review_at": "2026-11-17T12:00:00Z",
+        "responsible_operator_id": "00000000-0000-4000-8000-000000000003",
+        "next_action": "reconcile_legacy_purchase",
+        "response_due_at": "2026-11-17T12:00:00Z",
+        "escalation_due_at": "2026-11-18T12:00:00Z",
+        "escalated_at": null
+      }
+    }
+  ]
+}

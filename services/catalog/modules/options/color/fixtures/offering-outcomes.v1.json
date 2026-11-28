@@ -1,0 +1,127 @@
+{
+  "synthetic": true,
+  "schema_version": "catalog.offering-outcomes.v1",
+  "cases": [
+    {
+      "name": "success",
+      "http_status": 200,
+      "response": {
+        "expected_revision": 0,
+        "component": "case",
+        "label": {
+          "en": "Sample finish",
+          "ar": "تشطيب نموذجي"
+        },
+        "base_models": [
+          "sample-base"
+        ],
+        "calibers": [
+          "sample-caliber"
+        ],
+        "available": true,
+        "details": {
+          "color": {
+            "en": "Sample finish",
+            "ar": "تشطيب نموذجي"
+          },
+          "finish": {
+            "en": "Sample finish",
+            "ar": "تشطيب نموذجي"
+          },
+          "swatch": "#123456",
+          "coating": null
+        },
+        "schema_version": "catalog.offering-receipt.v1",
+        "operation_id": "sample-operation-1",
+        "subject_id": "00000000-0000-0000-0000-000000000004",
+        "watch_id": null,
+        "actor_id": "00000000-0000-0000-0000-000000000003",
+        "organization_id": "00000000-0000-0000-0000-000000000001",
+        "state": "saved",
+        "revision": 1,
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null,
+        "brand_id": "00000000-0000-0000-0000-000000000001",
+        "kind": "color",
+        "id": "00000000-0000-0000-0000-000000000004"
+      }
+    },
+    {
+      "name": "denied",
+      "http_status": 403,
+      "response": {
+        "error": {
+          "code": "offering_denied",
+          "message": "Current business permission is required. Ask your business administrator for access.",
+          "request_id": "sample-request",
+          "details": {
+            "message_ar": "يلزم إذن حالي للمنشأة. اطلب صلاحية الوصول من مسؤول المنشأة."
+          }
+        }
+      }
+    },
+    {
+      "name": "stale",
+      "http_status": 409,
+      "response": {
+        "error": {
+          "code": "stale_option",
+          "message": "Reload the current option revision.",
+          "request_id": "sample-request",
+          "details": {
+            "message_ar": "أعد التحميل واختر إصداراً حالياً تدعمه العلامة."
+          }
+        }
+      }
+    },
+    {
+      "name": "lost_response",
+      "http_status": null,
+      "response": null,
+      "operation_id": "sample-operation-1",
+      "next_action": "lookup_then_retry_same_operation",
+      "recovered_response": {
+        "expected_revision": 0,
+        "component": "case",
+        "label": {
+          "en": "Sample finish",
+          "ar": "تشطيب نموذجي"
+        },
+        "base_models": [
+          "sample-base"
+        ],
+        "calibers": [
+          "sample-caliber"
+        ],
+        "available": true,
+        "details": {
+          "color": {
+            "en": "Sample finish",
+            "ar": "تشطيب نموذجي"
+          },
+          "finish": {
+            "en": "Sample finish",
+            "ar": "تشطيب نموذجي"
+          },
+          "swatch": "#123456",
+          "coating": null
+        },
+        "schema_version": "catalog.offering-receipt.v1",
+        "operation_id": "sample-operation-1",
+        "subject_id": "00000000-0000-0000-0000-000000000004",
+        "watch_id": null,
+        "actor_id": "00000000-0000-0000-0000-000000000003",
+        "organization_id": "00000000-0000-0000-0000-000000000001",
+        "state": "saved",
+        "revision": 1,
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null,
+        "brand_id": "00000000-0000-0000-0000-000000000001",
+        "kind": "color",
+        "id": "00000000-0000-0000-0000-000000000004"
+      }
+    }
+  ]
+}

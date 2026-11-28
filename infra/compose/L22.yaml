@@ -1,0 +1,5 @@
+services:
+  communications:
+    environment:
+      AUCTION_API_URL: http://auction:8000
+      TRUST_API_URL: http://trust:8000

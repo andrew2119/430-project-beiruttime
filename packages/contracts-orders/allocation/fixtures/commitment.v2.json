@@ -1,0 +1,6 @@
+{
+  "kind": "withdraw",
+  "race_first_bid": "one_winner",
+  "lost_reply": "same_operation_key",
+  "timeout_release": false
+}

@@ -1,0 +1,1 @@
+{"version":1,"id":"L15.listing-revisions","dependencies":["fastapi","asyncpg","pydantic"],"routes":["routes.py:router"],"migrations":["migrations/L15_0001_listing_revisions.sql","migrations/L15_0002_listing_edit_protocol.sql","migrations/L15_0003_publication_abort.sql"]}

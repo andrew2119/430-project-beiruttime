@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "clock": "2026-11-05T10:00:00Z",
+  "issue": {
+    "source_id": "00000000-0000-4000-8000-000000000006",
+    "source_revision": 4,
+    "assessment_id": "00000000-0000-4000-8000-000000000007",
+    "assessment_revision": 2,
+    "currency": "USD",
+    "lines": [
+      {
+        "id": "00000000-0000-4000-8000-000000000008",
+        "label": "Diagnosed seal",
+        "kind": "part",
+        "mandatory": true,
+        "amount_minor": 10000,
+        "part_reference": "SEAL-A"
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000009",
+        "label": "Assessed rate test",
+        "kind": "labor",
+        "mandatory": true,
+        "amount_minor": 5000,
+        "part_reference": null
+      }
+    ],
+    "assessment_fee_minor": 1000,
+    "return_fee_minor": 2000,
+    "warranty_terms": "Seal only, 90 days",
+    "modification_terms": "No polishing or unassessed parts",
+    "indicative_min_minor": 10000,
+    "indicative_max_minor": 20000,
+    "indicative_basis": "Current assessed parts and labor, not a valuation",
+    "lead_time_days": 4,
+    "expires_at": "2026-11-05T10:15:00Z",
+    "schedule_id": "usd-job-v2"
+  },
+  "accept": {
+    "quote_revision": 1,
+    "selected_line_ids": [
+      "00000000-0000-4000-8000-000000000008",
+      "00000000-0000-4000-8000-000000000009"
+    ],
+    "payable_minor": 16000,
+    "terms_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "accept_assessment_fee": true,
+    "accept_return_fee": false
+  },
+  "expected": {
+    "buyer_id": "00000000-0000-4000-8000-000000000003",
+    "organization_id": "00000000-0000-4000-8000-000000000005",
+    "state": "accepted",
+    "no_payment_or_execution": true
+  },
+  "negative": [
+    {
+      "patch": {
+        "quote_revision": 2
+      },
+      "status": 409
+    },
+    {
+      "patch": {
+        "payable_minor": 1
+      },
+      "status": 409
+    },
+    {
+      "current_source_revision": 5,
+      "status": 409
+    },
+    {
+      "actor": "brand_on_behalf_of_buyer",
+      "status": 403
+    },
+    {
+      "clock": "2026-11-05T10:15:00Z",
+      "status": 409
+    }
+  ],
+  "decline": {
+    "quote_revision": 1,
+    "terms_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "decline_expected_state": "declined_return_held",
+  "synthetic": true
+}

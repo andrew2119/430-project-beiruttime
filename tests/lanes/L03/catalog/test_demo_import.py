@@ -65,8 +65,8 @@ async def test_demo_import_uses_publication_twice_without_duplicate_stock(api, t
         if request.url.host == "pricing-demo":
             body = json.loads(request.content)
             assert "organization_id" not in request.url.params
-            assert body["purpose"] == "business_quote" and body["source"] == "sample"
-            assert body["schedule_id"] == "sample-v1"
+            assert body["purpose"] == "purchase" and body["source"] == "sample"
+            assert body["schedule_id"] == "usd-v2"
             token = request.headers["Authorization"][7:]
             value = quote_snapshot(
                 api, {"id": body["subject_id"], "revision": body["subject_revision"]}, token, uuid4()

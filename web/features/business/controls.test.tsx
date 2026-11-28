@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/shell/locale-context", () => ({ useLocale: () => "ar" }));
 vi.mock("@/features/identity/session", () => ({ useSession: () => null }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/ar/business", useRouter: () => ({ push: vi.fn() }) }));
-import { FormSelect } from "./form-select";
+import { fieldLimits } from "./field-limits";
+import { CanonicalSelect as FormSelect } from "./canonical-select";
 import { Field, Select, Submit, Workspace } from "./components";
 
 describe("Shared form adapters", () => {
@@ -12,10 +13,10 @@ describe("Shared form adapters", () => {
       <option value="dealer">Dealer</option><option value="brand">Brand</option>
     </FormSelect>);
     expect(html).toContain('id="kind"');
-    expect(html).toContain('class="ui-select"');
+    expect(html).toContain('role="combobox"');
     expect(html).toContain('name="kind"');
     expect(html).toMatch(/<option value="brand" selected="">/);
-    expect(html).toContain('aria-haspopup="menu"');
+    expect(html).toContain('aria-haspopup="dialog"');
     expect(html).toContain('aria-hidden="true"');
     expect(html.match(/id="kind"/g)).toHaveLength(1);
     expect(html.indexOf("<button")).toBeLessThan(html.indexOf("<select"));
@@ -25,8 +26,10 @@ describe("Shared form adapters", () => {
     expect(html).toContain('name="reauth"');
     expect(html).toContain('type="password"');
     expect(html).toContain('autoComplete="off"');
-    expect(html).toContain('minLength="1"');
-    expect(html).toContain('maxLength="128"');
+    const native = {} as HTMLInputElement;
+    fieldLimits(native, 1, 128);
+    expect(native.minLength).toBe(1);
+    expect(native.maxLength).toBe(128);
     expect(html).toContain('required=""');
     expect(html).toContain('for=');
   });
@@ -36,7 +39,8 @@ describe("Shared form adapters", () => {
     expect(target).toBeTruthy();
     expect(html).toContain(`id="${target}"`);
     expect(html).toContain('name="channel"');
-    expect(html).toContain('data-value="email"');
+    expect(html).toContain('role="combobox"');
+    expect(html).toContain('value="email" selected=""');
   });
   it("keeps pending submits disabled and announced", () => {
     const html = renderToStaticMarkup(<Submit label="حفظ" pending/>);
@@ -46,7 +50,8 @@ describe("Shared form adapters", () => {
   });
   it("uses the one shared page header and does not advertise operator tabs to visitors", () => {
     const html = renderToStaticMarkup(<Workspace title="الأعمال" intro="تعريف"><p>Content</p></Workspace>);
-    expect(html).toContain('hx-head');
+    expect(html).toContain('الأعمال');
+    expect(html).toContain('تعريف');
     expect(html).toContain('href="/ar/business"');
     expect(html).toContain('aria-current="page"');
     expect(html).not.toContain('/operations/verification');

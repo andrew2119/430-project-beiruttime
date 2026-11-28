@@ -1,0 +1,259 @@
+{
+  "version": 1,
+  "lane": "L14",
+  "contracts": [
+    {
+      "namespace": "auction.kernel.v2",
+      "path": "packages/contracts-auction/core",
+      "fixtures": []
+    },
+    {
+      "namespace": "pricing.current.v2",
+      "path": "packages/contracts-pricing/quotes",
+      "fixtures": [
+        "packages/contracts-pricing/quotes/fixtures/current.v2.json"
+      ]
+    },
+    {
+      "namespace": "pricing.current.v3",
+      "path": "packages/contracts-pricing/quotes",
+      "fixtures": [
+        "packages/contracts-pricing/quotes/fixtures/current.v3.json"
+      ]
+    },
+    {
+      "namespace": "pricing.offers.v1",
+      "path": "packages/contracts-pricing/offers",
+      "fixtures": [
+        "packages/contracts-pricing/offers/fixtures/offer.v1.json"
+      ]
+    },
+    {
+      "namespace": "pricing.brand-quotes.v1",
+      "path": "packages/contracts-pricing/brand-quotes",
+      "fixtures": [
+        "packages/contracts-pricing/brand-quotes/fixtures/assessed.v1.json"
+      ]
+    },
+    {
+      "namespace": "pricing.repair-quotes.v1",
+      "path": "packages/contracts-pricing/repair-quotes",
+      "fixtures": [
+        "packages/contracts-pricing/repair-quotes/fixtures/assessed.v1.json"
+      ]
+    }
+  ],
+  "wiring": {
+    "schema_version": 1,
+    "services": [
+      "auction",
+      "pricing"
+    ],
+    "operations": {
+      "pricing.lookup": {
+        "method": "GET",
+        "path": "/v1/pricing-operations/{key}",
+        "authority": "current_actor_and_business"
+      },
+      "pricing.validation.v3": {
+        "method": "GET",
+        "path": "/internal/v3/quotes/{id}/validation",
+        "consumers": [
+          "orders",
+          "catalog",
+          "eligibility",
+          "service-operations"
+        ],
+        "execution_authority": "not_granted"
+      },
+      "pricing.retained.v3": {
+        "method": "GET",
+        "path": "/internal/v3/quotes/{id}/retained",
+        "consumers": [
+          "orders"
+        ],
+        "authority": "retained_read_only"
+      },
+      "pricing.commit.v3": {
+        "method": "POST",
+        "path": "/internal/v3/quotes/{id}/commit",
+        "consumers": [
+          "orders"
+        ],
+        "required_binding": [
+          "buyer_id",
+          "order_id",
+          "quote_revision",
+          "total_minor",
+          "committed_at"
+        ]
+      }
+    },
+    "recovery": {
+      "retry": "same_operation",
+      "denied": "recheck_current_access",
+      "stale": "review_current_revision",
+      "timeout": "pending_until_original_operation_is_resolved"
+    },
+    "destinations": {
+      "pricing-notices-v2": {
+        "enabled": false,
+        "reason": "receiver_subscription_required"
+      },
+      "accepted-quotes-v1": {
+        "enabled": false,
+        "reason": "receiver_subscription_required"
+      },
+      "committed-quotes-v3": {
+        "enabled": false,
+        "reason": "receiver_subscription_required"
+      }
+    },
+    "fixtures": [
+      {
+        "operation_id": "l14-example-0001",
+        "expected_revision": 1,
+        "state": "succeeded",
+        "revision": 2,
+        "next_action": "read_current_record",
+        "schema_version": 1,
+        "subject_id": "00000000-0000-4000-8000-000000000014",
+        "watch_id": "00000000-0000-4000-8000-000000000015",
+        "actor_id": "00000000-0000-4000-8000-000000000016",
+        "organization_id": null,
+        "pending_reason": null,
+        "next_actor": "requesting_person",
+        "next_review_at": null,
+        "synthetic": true
+      },
+      {
+        "operation_id": "l14-example-0001",
+        "expected_revision": 1,
+        "state": "denied",
+        "revision": 1,
+        "next_action": "recheck_current_access",
+        "schema_version": 1,
+        "subject_id": "00000000-0000-4000-8000-000000000014",
+        "watch_id": "00000000-0000-4000-8000-000000000015",
+        "actor_id": "00000000-0000-4000-8000-000000000016",
+        "organization_id": null,
+        "pending_reason": null,
+        "next_actor": "requesting_person",
+        "next_review_at": null,
+        "synthetic": true
+      },
+      {
+        "operation_id": "l14-example-0001",
+        "expected_revision": 1,
+        "state": "stale",
+        "revision": 2,
+        "next_action": "review_current_revision",
+        "schema_version": 1,
+        "subject_id": "00000000-0000-4000-8000-000000000014",
+        "watch_id": "00000000-0000-4000-8000-000000000015",
+        "actor_id": "00000000-0000-4000-8000-000000000016",
+        "organization_id": null,
+        "pending_reason": null,
+        "next_actor": "requesting_person",
+        "next_review_at": null,
+        "synthetic": true
+      },
+      {
+        "operation_id": "l14-example-0001",
+        "expected_revision": 1,
+        "state": "pending",
+        "revision": 1,
+        "next_action": "retry_same_operation",
+        "schema_version": 1,
+        "subject_id": "00000000-0000-4000-8000-000000000014",
+        "watch_id": "00000000-0000-4000-8000-000000000015",
+        "actor_id": "00000000-0000-4000-8000-000000000016",
+        "organization_id": null,
+        "pending_reason": "response_lost",
+        "next_actor": "requesting_person",
+        "next_review_at": "2026-11-18T12:00:00Z",
+        "synthetic": true
+      }
+    ],
+    "fixture_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "operation_id",
+        "subject_id",
+        "watch_id",
+        "actor_id",
+        "organization_id",
+        "expected_revision",
+        "state",
+        "revision",
+        "pending_reason",
+        "next_actor",
+        "next_review_at",
+        "next_action",
+        "synthetic"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "operation_id": {
+          "type": "string"
+        },
+        "subject_id": {
+          "type": "string"
+        },
+        "watch_id": {
+          "type": "string"
+        },
+        "actor_id": {
+          "type": "string"
+        },
+        "organization_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expected_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "state": {
+          "enum": [
+            "succeeded",
+            "denied",
+            "stale",
+            "pending"
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pending_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "next_actor": {
+          "type": "string"
+        },
+        "next_review_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "next_action": {
+          "type": "string"
+        },
+        "synthetic": {
+          "const": true
+        }
+      }
+    }
+  }
+}

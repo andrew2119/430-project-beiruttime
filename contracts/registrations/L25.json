@@ -1,0 +1,441 @@
+{
+  "version": 1,
+  "lane": "L25",
+  "contracts": [],
+  "composition": {
+    "schema_version": "lane-composition.v1",
+    "lanes": {
+      "minimum": 0,
+      "maximum": 25,
+      "missing": "omit"
+    },
+    "operations": [
+      {
+        "operation_id": "lane-composition.migrate.v1",
+        "method": "POST",
+        "path": "/internal/v1/lane-composition/migrate",
+        "producer": "service-local-runtime",
+        "receipt_key": [
+          "operation_id",
+          "step_id"
+        ],
+        "authority": "authenticated-runtime-only"
+      },
+      {
+        "operation_id": "lane-composition.subscribe.v1",
+        "method": "POST",
+        "path": "/internal/v1/lane-composition/subscribe",
+        "producer": "service-local-runtime",
+        "receipt_key": [
+          "operation_id",
+          "step_id"
+        ],
+        "authority": "authenticated-runtime-only"
+      },
+      {
+        "operation_id": "lane-composition.enable.v1",
+        "method": "POST",
+        "path": "/internal/v1/lane-composition/enable",
+        "producer": "service-local-runtime",
+        "receipt_key": [
+          "operation_id",
+          "step_id"
+        ],
+        "authority": "authenticated-runtime-only"
+      }
+    ],
+    "authority": "current-provider-only",
+    "unknown_result": "pending",
+    "retry": "same-operation-id",
+    "activation_order": [
+      "migrate",
+      "subscribe",
+      "enable"
+    ],
+    "dependency_policy": {
+      "timeout_ms": 1500,
+      "request_budget_ms": 4000,
+      "failure_threshold": 3,
+      "open_ms": 30000,
+      "max_in_flight": 1
+    },
+    "states": {
+      "pending": {
+        "en": "The result is pending. Retry with the same action reference.",
+        "ar": "النتيجة قيد الانتظار. أعد المحاولة بمرجع الإجراء نفسه."
+      },
+      "denied": {
+        "en": "Access is denied. Check your current permissions.",
+        "ar": "الوصول مرفوض. تحقق من صلاحياتك الحالية."
+      },
+      "stale": {
+        "en": "The record changed. Review the current version.",
+        "ar": "تغيّر السجل. راجع النسخة الحالية."
+      },
+      "unavailable": {
+        "en": "The service is unavailable. Try again later.",
+        "ar": "الخدمة غير متاحة. حاول مجدداً لاحقاً."
+      }
+    },
+    "request": {
+      "schema_version": "lane-composition.v1",
+      "required": [
+        "operation_id",
+        "step_id",
+        "module",
+        "event",
+        "destination"
+      ],
+      "revision_rule": "same-reference-requires-identical-metadata",
+      "unknown_result": "pending"
+    },
+    "fixtures": [
+      {
+        "operation_id": "test-activation",
+        "step_id": "subscribe:L25.care:care.updated.v1",
+        "state": "current"
+      },
+      {
+        "operation_id": "test-activation",
+        "step_id": "subscribe:L25.care:care.updated.v1",
+        "state": "denied"
+      },
+      {
+        "operation_id": "test-activation",
+        "step_id": "subscribe:L25.care:care.updated.v1",
+        "state": "stale"
+      },
+      {
+        "operation_id": "test-activation",
+        "step_id": "subscribe:L25.care:care.updated.v1",
+        "state": "pending"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "id": "L25.s06",
+      "outcome": "S06",
+      "service": "service-operations",
+      "routes": [],
+      "slots": [],
+      "operations": [
+        {
+          "operation_id": "l25.s06.read.v1",
+          "method": "GET",
+          "path": "/v1/l25/s06/:id",
+          "roles": [
+            "buyer"
+          ],
+          "maxResponseBytes": 65536
+        }
+      ],
+      "migrations": [],
+      "requires": [],
+      "receives": [],
+      "destinations": [],
+      "connection": "deferred",
+      "fixtures": [
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-s06",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "current",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-s06",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "denied",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-s06",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "stale",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-s06",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "pending",
+          "revision": 1,
+          "pending_reason": "provider-connection-required",
+          "next_actor": "operator",
+          "next_review_at": null
+        }
+      ]
+    },
+    {
+      "id": "L25.m11",
+      "outcome": "M11",
+      "service": "trust",
+      "routes": [],
+      "slots": [],
+      "operations": [
+        {
+          "operation_id": "l25.m11.read.v1",
+          "method": "GET",
+          "path": "/v1/l25/m11/:id",
+          "roles": [
+            "buyer"
+          ],
+          "maxResponseBytes": 65536
+        }
+      ],
+      "migrations": [],
+      "requires": [],
+      "receives": [],
+      "destinations": [],
+      "connection": "deferred",
+      "fixtures": [
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-m11",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "current",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-m11",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "denied",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-m11",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "stale",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-m11",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "pending",
+          "revision": 1,
+          "pending_reason": "provider-connection-required",
+          "next_actor": "operator",
+          "next_review_at": null
+        }
+      ]
+    },
+    {
+      "id": "L25.e06",
+      "outcome": "E06",
+      "service": "communications",
+      "routes": [],
+      "slots": [],
+      "operations": [
+        {
+          "operation_id": "l25.e06.read.v1",
+          "method": "GET",
+          "path": "/v1/l25/e06/:id",
+          "roles": [
+            "buyer"
+          ],
+          "maxResponseBytes": 65536
+        }
+      ],
+      "migrations": [],
+      "requires": [],
+      "receives": [],
+      "destinations": [],
+      "connection": "deferred",
+      "fixtures": [
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-e06",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "current",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-e06",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "denied",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-e06",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "stale",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-e06",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "pending",
+          "revision": 1,
+          "pending_reason": "provider-connection-required",
+          "next_actor": "operator",
+          "next_review_at": null
+        }
+      ]
+    },
+    {
+      "id": "L25.e08",
+      "outcome": "E08",
+      "service": "identity",
+      "routes": [],
+      "slots": [],
+      "operations": [
+        {
+          "operation_id": "l25.e08.read.v1",
+          "method": "GET",
+          "path": "/v1/l25/e08/:id",
+          "roles": [
+            "buyer"
+          ],
+          "maxResponseBytes": 65536
+        }
+      ],
+      "migrations": [],
+      "requires": [],
+      "receives": [],
+      "destinations": [],
+      "connection": "deferred",
+      "fixtures": [
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-e08",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "current",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-e08",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "denied",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-e08",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "stale",
+          "revision": 1,
+          "pending_reason": null,
+          "next_actor": "operator",
+          "next_review_at": null
+        },
+        {
+          "schema_version": "l25.outcome.v1",
+          "operation_id": "test-e08",
+          "subject_id": "test-subject",
+          "watch_id": "test-watch",
+          "actor_id": "test-buyer",
+          "organization_id": null,
+          "expected_revision": 1,
+          "state": "pending",
+          "revision": 1,
+          "pending_reason": "provider-connection-required",
+          "next_actor": "operator",
+          "next_review_at": null
+        }
+      ]
+    }
+  ]
+}

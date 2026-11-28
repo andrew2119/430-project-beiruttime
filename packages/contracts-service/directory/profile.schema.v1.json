@@ -1,0 +1,73 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "capabilities": {
+      "items": {
+        "enum": [
+          "maintenance",
+          "cleaning",
+          "polishing",
+          "repair",
+          "bracelet_fit",
+          "customization"
+        ],
+        "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 1,
+      "title": "Capabilities",
+      "type": "array"
+    },
+    "contact": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Contact",
+      "type": "string"
+    },
+    "visit_en": {
+      "maxLength": 400,
+      "minLength": 1,
+      "title": "Visit En",
+      "type": "string"
+    },
+    "visit_ar": {
+      "maxLength": 400,
+      "minLength": 1,
+      "title": "Visit Ar",
+      "type": "string"
+    },
+    "scope_en": {
+      "maxLength": 600,
+      "minLength": 1,
+      "title": "Scope En",
+      "type": "string"
+    },
+    "scope_ar": {
+      "maxLength": 600,
+      "minLength": 1,
+      "title": "Scope Ar",
+      "type": "string"
+    },
+    "published": {
+      "default": true,
+      "title": "Published",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "expected_revision",
+    "capabilities",
+    "contact",
+    "visit_en",
+    "visit_ar",
+    "scope_en",
+    "scope_ar"
+  ],
+  "title": "Profile",
+  "type": "object"
+}

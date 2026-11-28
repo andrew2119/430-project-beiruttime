@@ -1,0 +1,10 @@
+{
+  "route": "/inbox",
+  "file": "web/app/(inbox)/inbox/page.tsx",
+  "view": "web/features/inbox/canonical.tsx",
+  "kind": "reads",
+  "reason": "Rebuild the private inbox through its existing feature entry point.",
+  "content": "Current personal notices, preferences, pagination and stable command recovery.",
+  "read": "inbox",
+  "proof": "owed"
+}

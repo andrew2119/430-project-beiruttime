@@ -1,0 +1,168 @@
+{
+  "$defs": {
+    "Compatibility": {
+      "additionalProperties": false,
+      "properties": {
+        "case": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Case",
+          "type": "string"
+        },
+        "dial": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Dial",
+          "type": "string"
+        },
+        "hands": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Hands",
+          "type": "string"
+        },
+        "functions": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "title": "Functions",
+          "type": "array"
+        },
+        "state": {
+          "enum": [
+            "supported_for_review",
+            "incompatible",
+            "parts_unavailable"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "case",
+        "dial",
+        "hands",
+        "functions",
+        "state"
+      ],
+      "title": "Compatibility",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "brand_id": {
+      "format": "uuid",
+      "title": "Brand Id",
+      "type": "string"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "label_en": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Label En",
+      "type": "string"
+    },
+    "label_ar": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Label Ar",
+      "type": "string"
+    },
+    "caliber": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Caliber",
+      "type": "string"
+    },
+    "cases": {
+      "items": {
+        "maxLength": 80,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 30,
+      "minItems": 1,
+      "title": "Cases",
+      "type": "array"
+    },
+    "dials": {
+      "items": {
+        "maxLength": 80,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 30,
+      "minItems": 1,
+      "title": "Dials",
+      "type": "array"
+    },
+    "hands": {
+      "items": {
+        "maxLength": 80,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 30,
+      "minItems": 1,
+      "title": "Hands",
+      "type": "array"
+    },
+    "functions": {
+      "items": {
+        "maxLength": 80,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Functions",
+      "type": "array"
+    },
+    "quote_minor": {
+      "maximum": 999999999999,
+      "minimum": 0,
+      "title": "Quote Minor",
+      "type": "integer"
+    },
+    "currency": {
+      "const": "USD",
+      "title": "Currency",
+      "type": "string"
+    },
+    "compatibility_rules": {
+      "items": {
+        "$ref": "#/$defs/Compatibility"
+      },
+      "maxItems": 100,
+      "title": "Compatibility Rules",
+      "type": "array"
+    },
+    "active": {
+      "default": true,
+      "title": "Active",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "brand_id",
+    "expected_revision",
+    "label_en",
+    "label_ar",
+    "caliber",
+    "cases",
+    "dials",
+    "hands",
+    "functions",
+    "quote_minor",
+    "currency"
+  ],
+  "title": "Option",
+  "type": "object"
+}

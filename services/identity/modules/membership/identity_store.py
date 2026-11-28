@@ -15,7 +15,7 @@ async def sync_member(tx, member, kind):
         )
     await tx.execute(
         """UPDATE identity_access_grants SET revoked_at=coalesce(revoked_at,now())
-        WHERE subject_id=$1 AND organization_id=$2 AND role IN ('dealer','brand')""",
+        WHERE subject_id=$1 AND organization_id=$2 AND (role IN ('dealer','brand') OR role LIKE 'eligibility:%')""",
         subject,
         member["business_id"],
     )

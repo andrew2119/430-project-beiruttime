@@ -1,0 +1,54 @@
+{
+  "version": 2,
+  "state": {
+    "opening_minor": 400000,
+    "current_minor": 430000,
+    "leader_id": "00000000-0000-0000-0000-000000000001",
+    "sequence": 3,
+    "increment_bands": [
+      {
+        "from_minor": 0,
+        "step_minor": 10000
+      }
+    ],
+    "maxima": [
+      {
+        "bidder_id": "00000000-0000-0000-0000-000000000001",
+        "amount_minor": 450000,
+        "sequence": 1,
+        "active": true
+      }
+    ]
+  },
+  "command": {
+    "kind": "manual",
+    "bidder_id": "00000000-0000-0000-0000-000000000002",
+    "amount_minor": 445000,
+    "sequence": 4
+  },
+  "result": {
+    "leader_id": "00000000-0000-0000-0000-000000000002",
+    "current_minor": 445000,
+    "maxima": [
+      {
+        "bidder_id": "00000000-0000-0000-0000-000000000001",
+        "amount_minor": 450000,
+        "sequence": 1,
+        "active": false
+      },
+      {
+        "bidder_id": "00000000-0000-0000-0000-000000000002",
+        "amount_minor": 445000,
+        "sequence": 4,
+        "active": true
+      }
+    ],
+    "bids": [
+      {
+        "bidder_id": "00000000-0000-0000-0000-000000000002",
+        "amount_minor": 445000,
+        "automatic": false
+      }
+    ]
+  }
+}

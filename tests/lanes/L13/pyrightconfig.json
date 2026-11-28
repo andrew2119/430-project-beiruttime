@@ -1,0 +1,15 @@
+{
+  "include": [
+    "portable_paths.py",
+    "../../../packages/contracts-orders/journal/v2.py",
+    "../../../packages/contracts-auction/closing/v2.py",
+    "../../../packages/contracts-orders/allocation/v3.py",
+    "../../../packages/contracts-orders/allocation/quote_commitment.py",
+    "../../../packages/contracts-orders/payments/__init__.py"
+  ],
+  "extraPaths": ["../../../packages/contracts-core/src"],
+  "venvPath": "../../..",
+  "venv": ".venv",
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic"
+}

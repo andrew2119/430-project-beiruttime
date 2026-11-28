@@ -10,12 +10,12 @@ const intent:MaximumIntent=Object.freeze({key:'logical-command-6',amount_minor:4
 beforeEach(()=>{invoke.mockReset();});
 afterEach(()=>{vi.restoreAllMocks();});
 const auction:AuctionSnapshot={id:'00000000-0000-0000-0000-000000000006',listing_id:'00000000-0000-0000-0000-000000000007',currency:'USD',opening_minor:400000,current_minor:400000,next_minimum_minor:410000,increment_bands:[{from_minor:0,step_minor:10000}],starts_at:'2020-01-01T00:00:00Z',ends_at:'2050-01-01T00:00:00Z',server_time:'2026-01-01T00:00:00Z',revision:4,accepted_sequence:1,rules_version:'ordinary.v1',extension_policy:'none.v1',high_value_minor:1000000,reserve_set:false,leader:'bidder-1',status:'live'};
-const binding={subject_id:auction.id,subject_revision:4,purpose:'bid',currency:'USD',price_minor:450000,schedule_id:'sample-v1',source:'sample'};
-const quote:Quote={...binding,purpose:'bid',currency:'USD',schedule_id:'sample-v1',source:'sample',source_verified:false,
+const binding={subject_id:auction.id,subject_revision:4,purpose:'bid',currency:'USD',price_minor:450000,schedule_id:'usd-v2',source:'sample'};
+const quote:Quote={...binding,purpose:'bid',currency:'USD',schedule_id:'usd-v2',source:'sample',source_verified:false,
   id:'00000000-0000-0000-0000-000000000008',owner_id:owner.subjectId,revision:1,minor_unit_exponent:2,
   buyer_fee_minor:13500,seller_commission_minor:22500,seller_net_minor:427500,shipping_minor:0,tax_minor:0,
   payable_minor:463500,sample:true,rounding:'half_up',fx:null,commission_basis:'price_excluding_buyer_fee_shipping_tax',
-  policy:{buyer_fee_bps:300,seller_commission_bps:500,shipping:'sample_zero',tax:'sample_zero',fx:'not_applied',currency_exponents:{USD:2,LBP:2}},
+  policy:{revision:2,buyer_fee_bps:300,seller_commission_bps:500,shipping:'sample_zero',tax:'sample_zero',fx:'not_applied',currency_exponents:{USD:2,LBP:2}},
   created_at:'2020-01-01T00:00:00Z',expires_at:'2050-01-01T00:00:00Z',reviewed_at:null};
 
 describe('pricing.quotes.v1 maximum preview',()=>{
@@ -34,7 +34,7 @@ describe('pricing.quotes.v1 maximum preview',()=>{
   });
   it.each([
     {owner_id:'another-owner'},{subject_id:'another-subject'},{subject_revision:3},{purpose:'purchase'},{currency:'LBP'},
-    {price_minor:449999},{schedule_id:'production'},{source:'listing'},{source_verified:true},{sample:false},
+    {price_minor:449999},{schedule_id:'sample-v1'},{schedule_id:'production'},{source:'listing'},{source_verified:true},{sample:false},
     {minor_unit_exponent:0},{revision:0},{buyer_fee_minor:-1},{buyer_fee_minor:1.5},{payable_minor:449999},
     {payable_minor:Number.MAX_SAFE_INTEGER+1},{shipping_minor:1},{tax_minor:1},{rounding:'floor'},{fx:1},
     {seller_net_minor:1},{policy:{...quote.policy,buyer_fee_bps:200}},
@@ -45,6 +45,10 @@ describe('pricing.quotes.v1 maximum preview',()=>{
   });
   it.each([0,NaN,MAX_QUOTE_MINOR+1])('refuses invalid maximum before quote transport %s',async amount=>{
     await expect(previewMaximum(auction,amount,owner,new AbortController().signal)).rejects.toBeInstanceOf(ApiError);
+    expect(invoke).not.toHaveBeenCalled();
+  });
+  it('refuses legacy currency before quote transport',async()=>{
+    await expect(previewMaximum({...auction,currency:'LBP'},450000,owner,new AbortController().signal)).rejects.toMatchObject({status:422,code:'invalid_currency'});
     expect(invoke).not.toHaveBeenCalled();
   });
   it('fails closed on a null preview',async()=>{

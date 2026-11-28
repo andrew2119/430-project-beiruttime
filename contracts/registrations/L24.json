@@ -40,5 +40,155 @@
         "packages/contracts-service/reduction/fixtures/success.json"
       ]
     }
-  ]
+  ],
+  "composition": {
+    "schema_version": "l24.registration.v1",
+    "outcomes": [
+      "O05",
+      "S03",
+      "S08",
+      "I08",
+      "O07",
+      "O08",
+      "T06",
+      "E04"
+    ],
+    "missing_module_state": "unavailable",
+    "authority": "current_provider",
+    "activation_order": [
+      "migrations",
+      "receivers",
+      "destinations",
+      "routes"
+    ],
+    "dependency_policy": {
+      "timeout_ms": 2000,
+      "concurrency": 4,
+      "failure_threshold": 3,
+      "reset_ms": 30000,
+      "mutation_retry": "same_operation_id",
+      "uncertain_state": "pending"
+    },
+    "operation_lookup": [],
+    "services": [
+      "identity",
+      "catalog",
+      "auction",
+      "pricing",
+      "orders",
+      "eligibility",
+      "trust",
+      "communications",
+      "service-operations"
+    ],
+    "module_schema": {
+      "required": [
+        "id",
+        "registration",
+        "service",
+        "requires",
+        "migrations",
+        "receivers",
+        "destinations",
+        "operations"
+      ],
+      "id_pattern": "^L24\\.[a-z][a-z0-9.-]*$",
+      "migration_pattern": "^migrations/L24_[0-9]{4}_[a-z0-9_]+\\.sql$",
+      "registration_type": "Registration",
+      "unknown_dependency": "unavailable",
+      "duplicate": "deny",
+      "revision_change": "review_required",
+      "activation": "explicit_after_plan",
+      "slot_descriptor": {
+        "required": [
+          "id",
+          "target",
+          "component"
+        ],
+        "id_pattern": "^L24\\.[a-z][a-z0-9.-]*$",
+        "component_pattern": "^L24\\.[a-z][a-z0-9.-]*$",
+        "targets": [
+          "watch.detail",
+          "buyer.dashboard",
+          "seller.dashboard",
+          "operator.dashboard"
+        ],
+        "resolution": "explicit_component_map_to_Registration_slot_load",
+        "unknown_component": "unavailable",
+        "duplicate": "deny"
+      }
+    },
+    "fixtures": {
+      "success": {
+        "schema_version": "l24.registration.v1",
+        "operation_id": "registration-example-1",
+        "subject_id": "module-example",
+        "watch_id": null,
+        "actor_id": "operator-example",
+        "organization_id": null,
+        "expected_revision": 1,
+        "state": "ready",
+        "revision": 1,
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null
+      },
+      "denied": {
+        "schema_version": "l24.registration.v1",
+        "operation_id": "registration-example-1",
+        "subject_id": "module-example",
+        "watch_id": null,
+        "actor_id": "operator-example",
+        "organization_id": null,
+        "expected_revision": 1,
+        "state": "denied",
+        "revision": 1,
+        "pending_reason": "current_permission",
+        "next_actor": "operator-example",
+        "next_review_at": "2026-11-18T00:00:00Z"
+      },
+      "stale": {
+        "schema_version": "l24.registration.v1",
+        "operation_id": "registration-example-1",
+        "subject_id": "module-example",
+        "watch_id": null,
+        "actor_id": "operator-example",
+        "organization_id": null,
+        "expected_revision": 1,
+        "state": "review_required",
+        "revision": 1,
+        "pending_reason": "source_revision_changed",
+        "next_actor": "operator-example",
+        "next_review_at": "2026-11-18T00:00:00Z"
+      },
+      "lost_response": {
+        "schema_version": "l24.registration.v1",
+        "operation_id": "registration-example-1",
+        "subject_id": "module-example",
+        "watch_id": null,
+        "actor_id": "operator-example",
+        "organization_id": null,
+        "expected_revision": 1,
+        "state": "pending",
+        "revision": 1,
+        "pending_reason": "result_unknown",
+        "next_actor": "operator-example",
+        "next_review_at": "2026-11-18T00:00:00Z"
+      }
+    },
+    "modules": [],
+    "runtime_contract": {
+      "metadata_source": "composition.modules",
+      "operation_source": "modules[].operations",
+      "provider_binding": "service_and_operation",
+      "activation": "migrations_then_receivers_then_destinations_then_routes",
+      "missing_provider": "unavailable",
+      "shared_discovery_prerequisite": "L00_through_L25",
+      "shared_discovery_boundaries": [
+        "web/scripts/generate-nav.mjs",
+        "web/registry-loader.ts"
+      ],
+      "shared_discovery_acceptance": "every_lane_L00_through_L25"
+    }
+  }
 }

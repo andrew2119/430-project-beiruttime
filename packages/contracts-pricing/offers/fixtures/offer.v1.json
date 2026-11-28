@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "make": {
+    "listing_id": "00000000-0000-4000-8000-000000000001",
+    "listing_revision": 3,
+    "amount_minor": 500000,
+    "currency": "USD",
+    "expires_at": "2026-11-05T11:00:00Z",
+    "schedule_id": "sample-v1",
+    "fee_quote_id": "00000000-0000-4000-8000-000000000010"
+  },
+  "answer": {
+    "expected_revision": 1,
+    "action": "accept"
+  },
+  "retained_quote": {
+    "price_minor": 500000,
+    "buyer_fee_minor": 15000,
+    "payable_minor": 515000,
+    "seller_commission_minor": 25000,
+    "seller_net_minor": 475000
+  },
+  "pending": {
+    "state": "acceptance_pending",
+    "operation_key": "offer:00000000-0000-4000-8000-000000000011",
+    "may_unfence": false
+  },
+  "negative": [
+    "self_offer",
+    "offer_blocked",
+    "stale_revision",
+    "expired",
+    "already_committed"
+  ],
+  "replay_expected": "same operation_id and order_id; one exclusive Orders reservation"
+}

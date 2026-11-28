@@ -68,6 +68,30 @@ async def record(tx, request, actor, command, key, digest, result, kind):
         data={'resource_id': result.get('id', result.get('organization_id')), 'revision': result['revision']}), ['communications'])
 
 
+@router.get('/operations/{operation_id}')
+async def operation(operation_id: str, command: str, request: Request, actor=Depends(principal)):
+    if not 8 <= len(operation_id) <= 100 or not 1 <= len(command) <= 160:
+        raise PublicError('invalid_operation', 'Use the original action reference.', status=422)
+    async with request.app.state.pool.acquire() as tx:
+        row = await tx.fetchrow('SELECT result FROM directory_commands WHERE actor_id=$1 AND command=$2 AND key=$3', actor.actor.subject_id, command, operation_id)
+    result = json.loads(row['result']) if row else None
+    organization = result.get('organization_id') if result else None
+    if command.startswith('publish:'):
+        if not organization:
+            raise PublicError('unavailable', 'Retry the original action with current business permission.', status=503)
+        scoped = await scoped_principal(request, UUID(organization))
+        require_scope(scoped, 'business.jobs.write', UUID(organization))
+        await official(request, UUID(organization))
+    elif command != 'choose' or 'buyer' not in actor.roles:
+        raise PublicError('forbidden', 'Current buyer permission is required.', status=403)
+    return {'schema_version': 'directory.operation.v1', 'operation_id': operation_id,
+        'subject_id': str(actor.actor.subject_id), 'watch_id': None, 'actor_id': str(actor.actor.subject_id),
+        'organization_id': organization, 'expected_revision': max(0, result['revision'] - 1) if result else 0,
+        'state': 'saved' if result else 'pending', 'revision': result['revision'] if result else 0,
+        'result': result, 'pending_reason': None if result else 'retry_original_reference',
+        'next_actor': None if result else str(actor.actor.subject_id), 'next_review_at': None}
+
+
 @router.put('/businesses/{organization_id}')
 async def publish(organization_id: UUID, body: Profile, request: Request, idempotency_key: str = Header(min_length=8, max_length=100)):
     actor = await scoped_principal(request, organization_id)
@@ -103,6 +127,9 @@ async def businesses(request: Request, purpose: Purpose = 'servicing', limit: in
             AND (($2::text='customization' AND 'customization'=ANY(capabilities)) OR
                  ($2='servicing' AND EXISTS(SELECT 1 FROM unnest(capabilities) capability WHERE capability!='customization')))
             ORDER BY organization_id LIMIT $3''', after, purpose, limit + 1)
+        total = await tx.fetchval('''SELECT count(*) FROM directory_profiles WHERE published
+            AND (($1::text='customization' AND 'customization'=ANY(capabilities)) OR
+                 ($1='servicing' AND EXISTS(SELECT 1 FROM unnest(capabilities) capability WHERE capability!='customization')))''', purpose)
     async def verified(row):
         try:
             business = await official(request, row['organization_id'], brand_only=purpose == 'customization', capability=purpose)
@@ -120,7 +147,17 @@ async def businesses(request: Request, purpose: Purpose = 'servicing', limit: in
                 items.extend(item for item in batch if item is not None)
     except TimeoutError:
         raise PublicError('unavailable', 'Business verification is temporarily unavailable.', status=503) from None
-    return {'items': items, 'next_after': str(rows[limit-1]['organization_id']) if len(rows) > limit else None}
+    return {'total': total, 'items': items, 'next_after': str(rows[limit-1]['organization_id']) if len(rows) > limit else None}
+
+
+@router.get('/maintenance/{organization_id}')
+async def maintenance(organization_id: UUID, request: Request):
+    actor = await scoped_principal(request, organization_id)
+    require_scope(actor, 'business.jobs.write', organization_id)
+    business = await official(request, organization_id)
+    async with request.app.state.pool.acquire() as tx:
+        row = await tx.fetchrow('SELECT * FROM directory_profiles WHERE organization_id=$1', organization_id)
+    return {'profile': {**public_profile(row, business), 'published': row['published']} if row else None}
 
 
 @router.get('/businesses/{organization_id}')
@@ -146,6 +183,8 @@ async def provider(organization_id: UUID, request: Request):
 
 @router.get('/choices/current')
 async def current_choice(request: Request, actor=Depends(principal)):
+    if 'buyer' not in actor.roles:
+        raise PublicError('buyer_required', 'Current buyer permission is required.', status=403)
     async with request.app.state.pool.acquire() as tx:
         row = await tx.fetchrow('SELECT * FROM directory_choices WHERE actor_id=$1', actor.actor.subject_id)
     return {'choice': choice_result(row) if row else None}

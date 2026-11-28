@@ -1,0 +1,39 @@
+{
+  "schema_version": "brand-quotes.v1",
+  "synthetic": true,
+  "clock": "2026-11-05T10:00:00Z",
+  "cases": [
+    {
+      "name": "success",
+      "command_fixture": "assessed.v1.json",
+      "expected_status": "succeeded",
+      "expected_customer_total_minor": 16000,
+      "expected_business_fee_minor": 800
+    },
+    {
+      "name": "denied",
+      "actor": "represented_business",
+      "action": "accept",
+      "expected_http_status": 403
+    },
+    {
+      "name": "stale",
+      "source_revision": 5,
+      "quoted_source_revision": 4,
+      "expected_http_status": 409
+    },
+    {
+      "name": "lost_response",
+      "operation_key": "synthetic-accept-001",
+      "retry_same_body": true,
+      "expected_decision_count": 1,
+      "expected_economics_expires_at": null
+    },
+    {
+      "name": "timeout",
+      "expected_http_status": 503,
+      "retry_same_operation": true,
+      "acceptance_inferred": false
+    }
+  ]
+}

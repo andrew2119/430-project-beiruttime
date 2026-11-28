@@ -1,0 +1,13 @@
+{
+  "no_bids": {
+    "winner": null,
+    "order": null
+  },
+  "reserve_not_met": {
+    "winner": null,
+    "order": null
+  },
+  "duplicate_close": "same_winner_same_order",
+  "stale_end_version": "denied",
+  "pending_http": "never_reopen"
+}
