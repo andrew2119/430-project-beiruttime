@@ -31,7 +31,28 @@ export async function navigate(page, path, {origin, cell}, call) {
   throw new Error('Navigation timed out');
 }
 
-async function localBrowser({browserPath, origin, cell, signal}) {
+/** One tab's page interface over its own CDP session. */
+function tabPage(call, origin, cell) {
+  const page = {
+    async evaluate(fn,...args) {
+      const result = await call('Runtime.evaluate',{expression:`(${fn.toString()})(...${JSON.stringify(args)})`,awaitPromise:true,returnByValue:true});
+      if (result.exceptionDetails) throw new Error('Page evaluation failed');
+      return result.result.value;
+    },
+    goto:path=>navigate(page,path,{origin,cell},call),
+    async click(selector) {const point=await page.evaluate(selector=>{const el=document.querySelector(selector);if(!el)throw Error();el.scrollIntoView({block:'center'});const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};},selector);await call('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});await call('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});},
+    async fill(selector,value) {await page.evaluate((selector,value)=>{const el=document.querySelector(selector);if(!el)throw Error();el.focus();const setter=Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set;setter.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));},selector,value);},
+    async select(selector,value) {await page.evaluate((selector,value)=>{const el=document.querySelector(selector);if(!el)throw Error();el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));},selector,value);},
+    async press(key) {const keys={Tab:9,Enter:13,Escape:27};if(!keys[key])throw new Error('Unsupported key');await call('Input.dispatchKeyEvent',{type:'keyDown',key,code:key,windowsVirtualKeyCode:keys[key]});await call('Input.dispatchKeyEvent',{type:'keyUp',key,code:key,windowsVirtualKeyCode:keys[key]});},
+    text:selector=>page.evaluate(selector=>document.querySelector(selector)?.textContent ?? null,selector),
+    exists:selector=>page.evaluate(selector=>!!document.querySelector(selector),selector),
+    async waitFor(selector,{timeout=12000}={}) {const end=Date.now()+timeout;while(Date.now()<end){if(await page.exists(selector))return;await pause(50);}throw new Error('Element timed out');},
+    url:()=>page.evaluate(()=>location.href),
+    async reload() {await page.goto(await page.url());},
+  };
+  return page;
+}
+export async function localBrowser({browserPath, origin, cell, signal}) {
   if (!browserPath || !isAbsolute(browserPath) || signal?.aborted) throw new Error('Installed browser required');
   await access(browserPath,constants.X_OK);
   if(!(await stat(browserPath)).isFile())throw new Error('Installed browser required');
@@ -83,24 +104,18 @@ async function localBrowser({browserPath, origin, cell, signal}) {
     await call('Emulation.setTouchEmulationEnabled',{enabled:cell.touch});
     await call('Emulation.setLocaleOverride',{locale:cell.locale ?? cell.language});
     await call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:cell.theme},{name:'prefers-reduced-motion',value:'reduce'}]});
-    const page = {
-      async evaluate(fn,...args) {
-        const result = await call('Runtime.evaluate',{expression:`(${fn.toString()})(...${JSON.stringify(args)})`,awaitPromise:true,returnByValue:true});
-        if (result.exceptionDetails) throw new Error('Page evaluation failed');
-        return result.result.value;
+    const page = tabPage(call, origin, cell);
+    return {page,call,close,
+      /** Attaches another tab of this same browser window, for example one a click opened; call sends to that tab. */
+      async attach(targetId) {
+        const {sessionId:tab} = await call('Target.attachToTarget',{targetId,flatten:true},null);
+        const send = (method,params={}) => call(method,params,tab);
+        await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable');
+        await send('Emulation.setDeviceMetricsOverride',{width:cell.width,height:cell.height,deviceScaleFactor:cell.dpr,mobile:cell.mobile});
+        await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:cell.theme},{name:'prefers-reduced-motion',value:'reduce'}]});
+        return {...tabPage(send, origin, cell), call:send, front:()=>send('Page.bringToFront')};
       },
-      goto:path=>navigate(page,path,{origin,cell},call),
-      async click(selector) {const point=await page.evaluate(selector=>{const el=document.querySelector(selector);if(!el)throw Error();el.scrollIntoView({block:'center'});const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};},selector);await call('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});await call('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});},
-      async fill(selector,value) {await page.evaluate((selector,value)=>{const el=document.querySelector(selector);if(!el)throw Error();el.focus();const setter=Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set;setter.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));},selector,value);},
-      async select(selector,value) {await page.evaluate((selector,value)=>{const el=document.querySelector(selector);if(!el)throw Error();el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));},selector,value);},
-      async press(key) {const keys={Tab:9,Enter:13,Escape:27};if(!keys[key])throw new Error('Unsupported key');await call('Input.dispatchKeyEvent',{type:'keyDown',key,code:key,windowsVirtualKeyCode:keys[key]});await call('Input.dispatchKeyEvent',{type:'keyUp',key,code:key,windowsVirtualKeyCode:keys[key]});},
-      text:selector=>page.evaluate(selector=>document.querySelector(selector)?.textContent ?? null,selector),
-      exists:selector=>page.evaluate(selector=>!!document.querySelector(selector),selector),
-      async waitFor(selector,{timeout=12000}={}) {const end=Date.now()+timeout;while(Date.now()<end){if(await page.exists(selector))return;await pause(50);}throw new Error('Element timed out');},
-      url:()=>page.evaluate(()=>location.href),
-      async reload() {await page.goto(await page.url());},
-    };
-    return {page,call,close,async screenshot(path){const result=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(path,Buffer.from(result.data,'base64'));}};
+      async screenshot(path){const result=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(path,Buffer.from(result.data,'base64'));}};
   } catch(error) {await close().catch(()=>{});throw error;}
 }
 

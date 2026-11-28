@@ -7,6 +7,8 @@ import { Button, ButtonLink, Card, Input, Segmented } from '@beirut-time/ui/foun
 import { request, ApiError } from '@/lib/api/client';
 import { beginSession, accountApi, refreshSession, safeReturnPath, signOut, useSession, useSessionState } from './session';
 import { ErrorNotice, useIdentityCopy } from './shared';
+import { useHeldSampleTab } from './sample-accounts';
+import { SampleTabSignedOut } from './sample-tabs';
 
 type Mode = 'signin' | 'register' | 'recovery' | 'reset';
 export default function AccountView({ initialMode = 'signin' }: { initialMode?: Mode }) {
@@ -32,6 +34,9 @@ export default function AccountView({ initialMode = 'signin' }: { initialMode?: 
 
 function AccountContent({initialMode, session, sessionState, revokeFailed, revoking, revoke, authenticated}: {initialMode:Mode; session:ReturnType<typeof useSession>; sessionState:ReturnType<typeof useSessionState>; revokeFailed:boolean; revoking:boolean; revoke:()=>Promise<void>; authenticated:()=>void}) {
   const { locale, t } = useIdentityCopy();
+  // A sample tab signs in only from its link and Identity refuses a typed sign-in there,
+  // so signed out it shows its own status instead of the password form.
+  const sample = useHeldSampleTab();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -104,10 +109,10 @@ function AccountContent({initialMode, session, sessionState, revokeFailed, revok
 
   return <PageFrame><noscript><p className="identity-demo">{t.javascriptRequired}</p></noscript><PageHeader lead={t.eyebrow} title={session ? t.welcome : t.title} count={t.intro}/>
     <PageBody><div className="account-grid"><div className="account-stack">
-      <Card><h2 ref={heading} tabIndex={-1}>{session ? t.profile : t[mode]}</h2><div className="account-stack">
+      <Card><h2 ref={heading} tabIndex={-1}>{session ? t.profile : sample ? t[`sample_${sample.role}`] : t[mode]}</h2><div className="account-stack">
         {sessionState === 'restoring' && <p role="status">{t.loading}</p>}
         {sessionState === 'unavailable' && <div className="account-feedback" role="alert"><p>{t.unavailable}</p><Button variant="outline" onClick={()=>void refreshSession().catch(setError)}>{t.retry}</Button></div>}
-        {session ? <div className="account-stack"><p>{session.account.display_name}</p><p><bdi>{session.account.email}</bdi></p><div className="account-actions"><ButtonLink href={`/${locale}/seller/verification`}>{t.apply}</ButtonLink><ButtonLink variant="outline" href={`/${locale}/consent`}>{t.consent}</ButtonLink></div><Button variant="outline" disabled={pending || revoking} onClick={logout}>{t.signout}</Button></div> : <>
+        {session ? <div className="account-stack"><p>{session.account.display_name}</p><p><bdi>{session.account.email}</bdi></p><div className="account-actions"><ButtonLink href={`/${locale}/seller/verification`}>{t.apply}</ButtonLink><ButtonLink variant="outline" href={`/${locale}/consent`}>{t.consent}</ButtonLink></div><Button variant="outline" disabled={pending || revoking} onClick={logout}>{t.signout}</Button></div> : sample ? sessionState === 'signed-out' && <SampleTabSignedOut set={sample.set} role={sample.role}/> : <>
           <div className="identity-tabs" inert={pending}><Segmented locale={locale} disabled={pending} value={mode} label={t.profile} options={(['signin','register','recovery'] as const).map(value=>({value,label:t[value]}))} onValueChange={value=>{setMode(value as Mode);setError(null);setMessage('');}}/></div>
           <form key={mode} method="post" onSubmit={submit} className="account-form" aria-busy={pending}>
             {mode==='register' && <Input label={t.name} name="display_name" autoComplete="name" required/>}
@@ -120,7 +125,7 @@ function AccountContent({initialMode, session, sessionState, revokeFailed, revok
         <ErrorNotice error={error}/>{unresolved&&<Button disabled={pending} onClick={()=>void send()}>{t.retry}</Button>}{message&&<p className="account-feedback" role="status">{t[message]}</p>}
         {revokeFailed&&<div className="account-feedback" role="alert"><p>{t.logoutFailed}</p><Button disabled={pending || revoking} onClick={logout}>{t.signout}</Button></div>}
       </div></Card>
-      {session&&<Card><h2>{t.security}</h2><form method="post" onSubmit={password} className="account-form"><input type="hidden" autoComplete="username" value={session.account.email} readOnly/><Input label={t.currentPassword} type="password" name="current_password" autoComplete="current-password" required/><Input label={t.newPassword} type="password" name="new_password" autoComplete="new-password" hint={t.passwordHint} required/><Button type="submit" disabled={pending}>{pending?t.working:t.changePassword}</Button></form></Card>}
+      {session&&!sample&&<Card><h2>{t.security}</h2><form method="post" onSubmit={password} className="account-form"><input type="hidden" autoComplete="username" value={session.account.email} readOnly/><Input label={t.currentPassword} type="password" name="current_password" autoComplete="current-password" required/><Input label={t.newPassword} type="password" name="new_password" autoComplete="new-password" hint={t.passwordHint} required/><Button type="submit" disabled={pending}>{pending?t.working:t.changePassword}</Button></form></Card>}
     </div><aside className="account-stack"><Card><p className="eyebrow">{t.privacy}</p><h2>{t.privateSelling}</h2><p>{t.privateIntro}</p><p>{t.privacyBody}</p></Card><div className="identity-demo">{t.demo}</div></aside></div>
   </PageBody></PageFrame>;
 }

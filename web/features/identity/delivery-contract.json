@@ -1,10 +1,22 @@
-{
-  "route": "/seller/verification",
-  "file": "web/app/(private-seller)/seller/verification/page.tsx",
-  "view": "web/features/identity/seller-view.tsx",
-  "kind": "reads",
-  "reason": "Private seller application read is scoped to current access; possession commands require explicit action.",
-  "content": "[data-page-answer]",
-  "read": "sellerApplicationRead",
-  "proof": "owed"
-}
+[
+  {
+    "route": "/seller/verification",
+    "file": "web/app/(private-seller)/seller/verification/page.tsx",
+    "view": "web/features/identity/seller-view.tsx",
+    "kind": "reads",
+    "reason": "Private seller application read is scoped to current access; possession commands require explicit action.",
+    "content": "[data-page-answer]",
+    "read": "sellerApplicationRead",
+    "proof": "owed"
+  },
+  {
+    "route": "/sample-tabs",
+    "file": "web/app/(accounts)/sample-tabs/page.tsx",
+    "view": "web/features/identity/sample-tabs.tsx",
+    "kind": "static",
+    "reason": "Demo kit page: lists the seeded sample accounts and the site's own operator link, and opens each in its own signed-in tab; it reads nothing and only calls sign-in actions.",
+    "content": ".bt-page",
+    "read": "none",
+    "proof": "owed"
+  }
+]

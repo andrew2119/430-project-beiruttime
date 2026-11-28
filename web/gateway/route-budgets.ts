@@ -85,6 +85,18 @@ export const routeBudgets: readonly RouteBudget[] = [
   // encrypted mail insert, one outbox insert and receipt insert.
   ['identity', 'POST', '/v1/accounts/recovery',
     transactionAcquireMs + dbCommandMs + transactionMs(10) + localWorkMs],
+  // accounts/demo_entry counts a right-key try in one transaction of up to three commands on a
+  // pool connection: the tab's retry allowance, the role budget and the new allowance. A process
+  // takes its start number in one pool command the first time it needs it, and its first entry
+  // may put its values on record in a transaction of up to six commands: advisory lock, record
+  // read, activation insert, record update, closing the other activations, and revocation.
+  // The entry transaction uses up to fifteen commands:
+  // advisory lock, record read, activation read, up to four for the deploy seed's ownership
+  // check (bt_runtime.demo_seed.account_owner) and the account read, or the Operator link's
+  // account read and operator grant check, then session insert and end-time cap,
+  // link-session row, refresh insert, older link-session revocation, grants read and audit row.
+  ['identity', 'POST', '/v1/demo-entry/sessions',
+    transactionMs(3) + pooledReadMs + transactionMs(6) + transactionMs(15) + localWorkMs],
   // contacts/routes challenge locks the operation, checks replay, consumes
   // reauthentication (three commands), reads contact and challenge history,
   // and writes the challenge state, replay result and one outbox row.

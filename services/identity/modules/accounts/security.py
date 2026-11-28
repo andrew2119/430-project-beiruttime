@@ -14,6 +14,7 @@ from bt_contracts_core.models import Actor, EventEnvelope
 from bt_contracts_core.errors import PublicError
 from bt_events import enqueue
 from service_app.identity import live_actor as live_actor
+from service_app.session_slots import link_until, refresh_cookie_name
 from bt_runtime.principal import CurrentPrincipal, OrganizationGrant
 
 hash_slots = asyncio.Semaphore(2)
@@ -92,21 +93,26 @@ def require_origin(request: Request):
         raise HTTPException(403)
 
 
-def cookie(response, token: str, *, remove=False):
-    options = dict(key='bt_refresh', path='/', httponly=True, secure=os.environ.get('BT_LOCAL_HTTP') != '1', samesite='strict')
+def cookie(response, token: str, *, remove=False, slot: str | None = None):
+    options = dict(key=refresh_cookie_name(slot), path='/', httponly=True, secure=os.environ.get('BT_LOCAL_HTTP') != '1', samesite='strict')
     if remove:
         response.delete_cookie(**options)
     else:
-        response.set_cookie(value=token, max_age=7 * 24 * 3600, **options)
+        # A slot cookie has no lifetime of its own, so it ends with the browser session.
+        response.set_cookie(value=token, max_age=None if slot else 7 * 24 * 3600, **options)
 
 
-async def limit(tx, scope: str, *, maximum=12, seconds=900):
-    count = await tx.fetchval('''INSERT INTO identity_auth_limits(scope,attempts,resets_at)
+async def attempts(tx, scope: str, *, seconds=900) -> int:
+    """Count one attempt in scope's window and return how many the window holds now."""
+    return await tx.fetchval('''INSERT INTO identity_auth_limits(scope,attempts,resets_at)
         VALUES($1,1,now()+$2*interval '1 second') ON CONFLICT(scope) DO UPDATE
         SET attempts=CASE WHEN identity_auth_limits.resets_at<=now() THEN 1 ELSE identity_auth_limits.attempts+1 END,
         resets_at=CASE WHEN identity_auth_limits.resets_at<=now() THEN excluded.resets_at ELSE identity_auth_limits.resets_at END
         RETURNING attempts''', digest(scope), seconds)
-    if count > maximum:
+
+
+async def limit(tx, scope: str, *, maximum=12, seconds=900):
+    if await attempts(tx, scope, seconds=seconds) > maximum:
         raise PublicError('try_later', 'Try again later.', status=429)
 
 
@@ -137,22 +143,36 @@ async def projection(tx, account, session):
         organization_grants=[OrganizationGrant(organization_id=key, roles=sorted(value['roles']), permissions=sorted(value['permissions'])) for key,value in orgs.items()])
 
 
-async def session_response(tx, request, account, session, refresh):
+async def session_response(tx, request, account, session, refresh, *, until=None):
     now = datetime.now(timezone.utc)
+    # A link session's access token never outlives the session's own end time.
+    expires = now + timedelta(minutes=5) if until is None else min(now + timedelta(minutes=5), until)
     token = jwt.encode({'iss': request.app.state.settings.auth_issuer, 'aud': request.app.state.settings.auth_audience,
-        'sub': str(account['id']), 'sid': str(session), 'iat': now, 'exp': now + timedelta(minutes=5), 'type': 'access'}, private_key(), algorithm='RS256')
+        'sub': str(account['id']), 'sid': str(session), 'iat': now, 'exp': expires, 'type': 'access'}, private_key(), algorithm='RS256')
     principal = await projection(tx, account, session)
-    return {'access_token': token, 'token_type': 'Bearer', 'expires_in': 300,
+    return {'access_token': token, 'token_type': 'Bearer', 'expires_in': max(0, int((expires - now).total_seconds())),
         'account': {'id': str(account['id']), 'email': account['email'], 'display_name': account['display_name']},
         'principal': principal.model_dump(mode='json'),
         'access_fingerprint': digest(f"{account['id']}:{session}:{account['access_revision']}:{principal.model_dump_json()}")}
 
 
-async def new_session(tx, request, account):
+async def new_session(tx, request, account, *, demo=None):
+    """A new session family; demo=(role, switch) makes it a link session of that activation."""
     session, refresh = uuid4(), secrets.token_urlsafe(48)
     await tx.execute('''INSERT INTO identity_sessions(id,subject_id,expires_at) VALUES($1,$2,now()+interval '7 days')''', session, account['id'])
+    until = None
+    if demo is not None:
+        role, switch = demo
+        # A link session ends with the switch, and the Operator link's no later than its cutoff.
+        until = link_until(role, switch)
+        await tx.execute('UPDATE identity_sessions SET expires_at=least(expires_at,$2) WHERE id=$1', session, until)
+        await tx.execute('INSERT INTO identity_demo_sessions(session_id,role,activation) VALUES($1,$2,$3)', session, role, switch.activation)
     await tx.execute('INSERT INTO identity_refresh_tokens(hash,session_id) VALUES($1,$2)', digest(refresh), session)
-    # Bounded active session families; all issuance shares the account lock.
-    await tx.execute('''UPDATE identity_sessions SET revoked_at=now() WHERE subject_id=$1 AND id IN
-        (SELECT id FROM identity_sessions WHERE subject_id=$1 AND revoked_at IS NULL ORDER BY created_at DESC OFFSET 5)''', account['id'])
-    return await session_response(tx, request, account, session, refresh), refresh
+    # Bounded active session families per kind; all issuance shares the account lock, and
+    # link sessions never displace the account's ordinary sessions, nor the reverse.
+    kind = 'EXISTS' if demo is not None else 'NOT EXISTS'
+    await tx.execute(f'''UPDATE identity_sessions SET revoked_at=now() WHERE subject_id=$1 AND id IN
+        (SELECT s.id FROM identity_sessions s WHERE s.subject_id=$1 AND s.revoked_at IS NULL
+         AND {kind}(SELECT 1 FROM identity_demo_sessions d WHERE d.session_id=s.id)
+         ORDER BY s.created_at DESC OFFSET 5)''', account['id'])
+    return await session_response(tx, request, account, session, refresh, until=until), refresh

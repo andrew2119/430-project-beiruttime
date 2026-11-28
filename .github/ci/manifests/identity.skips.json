@@ -1,0 +1,18 @@
+[
+  {
+    "id": "services/identity/runtime/tests/test_session_slot_rules.py::test_the_seed_accounts_are_exactly_the_deploy_seeds_own",
+    "reason": "needs the deploy seed's account list"
+  },
+  {
+    "id": "services/identity/runtime/tests/test_session_slots.py::test_a_sample_link_enters_only_the_row_the_seed_itself_inserted_and_recorded[made-again]",
+    "reason": "needs the deploy seed's own ownership check (seed round 4)"
+  },
+  {
+    "id": "services/identity/runtime/tests/test_session_slots.py::test_a_sample_link_enters_only_the_row_the_seed_itself_inserted_and_recorded[registered-at-the-address]",
+    "reason": "needs the deploy seed's own ownership check (seed round 4)"
+  },
+  {
+    "id": "services/identity/runtime/tests/test_session_slots.py::test_a_sample_link_enters_only_the_row_the_seed_itself_inserted_and_recorded[unrecorded]",
+    "reason": "needs the deploy seed's own ownership check (seed round 4)"
+  }
+]
