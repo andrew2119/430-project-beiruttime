@@ -1,0 +1,195 @@
+{
+  "label": "Synthetic contract examples; no connected collection proof",
+  "request": {
+    "operation_id": "operation-1",
+    "actor_id": "seller-1",
+    "organization_id": null,
+    "subject_id": "seller-1",
+    "expected_revision": 1,
+    "page": 1,
+    "page_size": 50,
+    "order_id": null,
+    "view": "seller",
+    "action": "read"
+  },
+  "feed": {
+    "schema_version": "orders.financial-feed.v1",
+    "events": [
+      {
+        "sequence": 1,
+        "event_id": "event-1",
+        "order_id": "order-1",
+        "watch_id": "watch-1",
+        "seller_id": "seller-1",
+        "organization_id": null,
+        "source_revision": 1,
+        "quote_id": "quote-1",
+        "quote_revision": 1,
+        "policy_revision": "policy-1",
+        "kind": "gross",
+        "state": "confirmed",
+        "amount_minor": 500000,
+        "currency": "USD",
+        "occurred_at": "2026-11-17T11:59:00Z",
+        "postings": [
+          {
+            "account": "cash",
+            "minor": 500000
+          },
+          {
+            "account": "gross",
+            "minor": -500000
+          }
+        ]
+      },
+      {
+        "sequence": 2,
+        "event_id": "event-2",
+        "order_id": "order-1",
+        "watch_id": "watch-1",
+        "seller_id": "seller-1",
+        "organization_id": null,
+        "source_revision": 2,
+        "quote_id": "quote-1",
+        "quote_revision": 1,
+        "policy_revision": "policy-1",
+        "kind": "fee_collected",
+        "state": "confirmed",
+        "amount_minor": 25000,
+        "currency": "USD",
+        "occurred_at": "2026-11-17T11:59:00Z",
+        "postings": [
+          {
+            "account": "cash",
+            "minor": 25000
+          },
+          {
+            "account": "fee_collected",
+            "minor": -25000
+          }
+        ]
+      },
+      {
+        "sequence": 3,
+        "event_id": "event-3",
+        "order_id": "order-1",
+        "watch_id": "watch-1",
+        "seller_id": "seller-1",
+        "organization_id": null,
+        "source_revision": 3,
+        "quote_id": "quote-1",
+        "quote_revision": 1,
+        "policy_revision": "policy-1",
+        "kind": "payout",
+        "state": "confirmed",
+        "amount_minor": 475000,
+        "currency": "USD",
+        "occurred_at": "2026-11-17T11:59:00Z",
+        "postings": [
+          {
+            "account": "cash",
+            "minor": 475000
+          },
+          {
+            "account": "payout",
+            "minor": -475000
+          }
+        ]
+      }
+    ],
+    "high_watermark": 3,
+    "checked_at": "2026-11-17T12:00:00Z"
+  },
+  "success": {
+    "schema_version": "financial-reports.v1",
+    "operation_id": "operation-1",
+    "subject_id": "seller-1",
+    "watch_id": null,
+    "actor_id": "seller-1",
+    "organization_id": null,
+    "expected_revision": 1,
+    "state": "ready",
+    "revision": 1,
+    "pending_reason": null,
+    "next_actor": null,
+    "next_review_at": null,
+    "currency": "USD",
+    "simulated": true,
+    "checkpoint": 3,
+    "checked_at": "2026-11-17T12:00:00Z",
+    "total_count": 1,
+    "totals": {
+      "gross": 500000,
+      "buyer_fee_collected": 0,
+      "fee_collected": 25000,
+      "fee_owed": 0,
+      "refund": 0,
+      "payout": 475000,
+      "net": 475000
+    },
+    "items": [
+      {
+        "order_id": "order-1",
+        "watch_id": "watch-1",
+        "quote_id": "quote-1",
+        "quote_revision": 1,
+        "policy_revision": "policy-1",
+        "revision": 3,
+        "occurred_at": "2026-11-17T11:59:00Z",
+        "gross": 500000,
+        "buyer_fee_collected": 0,
+        "fee_collected": 25000,
+        "fee_owed": 0,
+        "refund": 0,
+        "payout": 475000,
+        "net": 475000
+      }
+    ],
+    "page": 1,
+    "page_size": 50
+  },
+  "denied": {
+    "schema_version": "financial-reports.v1",
+    "operation_id": "operation-1",
+    "subject_id": null,
+    "watch_id": null,
+    "actor_id": null,
+    "organization_id": null,
+    "expected_revision": null,
+    "state": "denied",
+    "revision": null,
+    "pending_reason": "scope_denied",
+    "next_actor": "operator",
+    "next_review_at": null
+  },
+  "stale": {
+    "schema_version": "financial-reports.v1",
+    "operation_id": "operation-1",
+    "subject_id": "seller-1",
+    "watch_id": null,
+    "actor_id": "seller-1",
+    "organization_id": null,
+    "expected_revision": 2,
+    "state": "stale",
+    "revision": 1,
+    "pending_reason": "stale_revision",
+    "next_actor": "operator",
+    "next_review_at": null
+  },
+  "lost_response": {
+    "request": {
+      "operation_id": "operation-1",
+      "actor_id": "seller-1",
+      "organization_id": null,
+      "subject_id": "seller-1",
+      "expected_revision": 1,
+      "page": 1,
+      "page_size": 50,
+      "order_id": null,
+      "view": "seller",
+      "action": "read"
+    },
+    "recovery_operation_id": "operation-1",
+    "state": "unavailable"
+  }
+}

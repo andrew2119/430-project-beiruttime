@@ -1,0 +1,209 @@
+{
+  "schema_version": "enlargement.v1",
+  "synthetic": true,
+  "success": {
+    "actor_id": "10000000-0000-4000-8000-000000000001",
+    "facts": {
+      "active": true,
+      "authorized": true,
+      "actor_id": "10000000-0000-4000-8000-000000000001",
+      "buyer_id": "10000000-0000-4000-8000-000000000001",
+      "organization_id": "10000000-0000-4000-8000-000000000002",
+      "watch_id": "10000000-0000-4000-8000-000000000003",
+      "source_revision": 1,
+      "role": "buyer",
+      "commitment_current": true,
+      "capability_current": true
+    },
+    "command": {
+      "schema_version": "enlargement.v1",
+      "operation_id": "request_0001",
+      "request_id": "10000000-0000-4000-8000-000000000004",
+      "watch_id": "10000000-0000-4000-8000-000000000003",
+      "organization_id": "10000000-0000-4000-8000-000000000002",
+      "expected_revision": 0,
+      "source_revision": 1,
+      "kind": "request",
+      "payload": {
+        "measurement": "17.5",
+        "unit": "cm",
+        "method": "tape",
+        "source": "buyer",
+        "target": "Comfortable fit",
+        "choice": "links"
+      }
+    },
+    "status": 200,
+    "response": {
+      "schema_version": "enlargement.v1",
+      "request_id": "10000000-0000-4000-8000-000000000004",
+      "subject_id": "10000000-0000-4000-8000-000000000001",
+      "watch_id": "10000000-0000-4000-8000-000000000003",
+      "organization_id": "10000000-0000-4000-8000-000000000002",
+      "request": {
+        "measurement": "17.5",
+        "unit": "cm",
+        "method": "tape",
+        "source": "buyer",
+        "target": "Comfortable fit",
+        "choice": "links",
+        "measurement_mm": "175"
+      },
+      "operation_id": "request_0001",
+      "actor_id": "10000000-0000-4000-8000-000000000001",
+      "expected_revision": 0,
+      "source_revision": 1,
+      "revision": 1,
+      "state": "requested",
+      "pending_reason": null,
+      "next_actor": "business",
+      "next_review_at": null
+    }
+  },
+  "lost_response": {
+    "actor_id": "10000000-0000-4000-8000-000000000001",
+    "command": {
+      "schema_version": "enlargement.v1",
+      "operation_id": "request_0001",
+      "request_id": "10000000-0000-4000-8000-000000000004",
+      "watch_id": "10000000-0000-4000-8000-000000000003",
+      "organization_id": "10000000-0000-4000-8000-000000000002",
+      "expected_revision": 0,
+      "source_revision": 1,
+      "kind": "request",
+      "payload": {
+        "measurement": "17.5",
+        "unit": "cm",
+        "method": "tape",
+        "source": "buyer",
+        "target": "Comfortable fit",
+        "choice": "links"
+      }
+    },
+    "status": 200,
+    "response": {
+      "schema_version": "enlargement.v1",
+      "request_id": "10000000-0000-4000-8000-000000000004",
+      "subject_id": "10000000-0000-4000-8000-000000000001",
+      "watch_id": "10000000-0000-4000-8000-000000000003",
+      "organization_id": "10000000-0000-4000-8000-000000000002",
+      "request": {
+        "measurement": "17.5",
+        "unit": "cm",
+        "method": "tape",
+        "source": "buyer",
+        "target": "Comfortable fit",
+        "choice": "links",
+        "measurement_mm": "175"
+      },
+      "operation_id": "request_0001",
+      "actor_id": "10000000-0000-4000-8000-000000000001",
+      "expected_revision": 0,
+      "source_revision": 1,
+      "revision": 1,
+      "state": "requested",
+      "pending_reason": null,
+      "next_actor": "business",
+      "next_review_at": null
+    }
+  },
+  "denied": {
+    "actor_id": "10000000-0000-4000-8000-000000000001",
+    "command": {
+      "schema_version": "enlargement.v1",
+      "operation_id": "request_0001",
+      "request_id": "10000000-0000-4000-8000-000000000004",
+      "watch_id": "10000000-0000-4000-8000-000000000003",
+      "organization_id": "10000000-0000-4000-8000-000000000002",
+      "expected_revision": 0,
+      "source_revision": 1,
+      "kind": "request",
+      "payload": {
+        "measurement": "17.5",
+        "unit": "cm",
+        "method": "tape",
+        "source": "buyer",
+        "target": "Comfortable fit",
+        "choice": "links"
+      }
+    },
+    "facts": {
+      "active": true,
+      "authorized": false,
+      "actor_id": "10000000-0000-4000-8000-000000000001",
+      "buyer_id": "10000000-0000-4000-8000-000000000001",
+      "organization_id": "10000000-0000-4000-8000-000000000002",
+      "watch_id": "10000000-0000-4000-8000-000000000003",
+      "source_revision": 1,
+      "role": "buyer",
+      "commitment_current": true,
+      "capability_current": true
+    },
+    "status": 403,
+    "response": {
+      "code": "denied"
+    }
+  },
+  "stale": {
+    "actor_id": "10000000-0000-4000-8000-000000000001",
+    "command": {
+      "schema_version": "enlargement.v1",
+      "operation_id": "request_0001",
+      "request_id": "10000000-0000-4000-8000-000000000004",
+      "watch_id": "10000000-0000-4000-8000-000000000003",
+      "organization_id": "10000000-0000-4000-8000-000000000002",
+      "expected_revision": 0,
+      "source_revision": 2,
+      "kind": "request",
+      "payload": {
+        "measurement": "17.5",
+        "unit": "cm",
+        "method": "tape",
+        "source": "buyer",
+        "target": "Comfortable fit",
+        "choice": "links"
+      }
+    },
+    "facts": {
+      "active": true,
+      "authorized": true,
+      "actor_id": "10000000-0000-4000-8000-000000000001",
+      "buyer_id": "10000000-0000-4000-8000-000000000001",
+      "organization_id": "10000000-0000-4000-8000-000000000002",
+      "watch_id": "10000000-0000-4000-8000-000000000003",
+      "source_revision": 1,
+      "role": "buyer",
+      "commitment_current": true,
+      "capability_current": true
+    },
+    "status": 409,
+    "response": {
+      "code": "stale"
+    }
+  },
+  "timeout": {
+    "actor_id": "10000000-0000-4000-8000-000000000001",
+    "command": {
+      "schema_version": "enlargement.v1",
+      "operation_id": "request_0001",
+      "request_id": "10000000-0000-4000-8000-000000000004",
+      "watch_id": "10000000-0000-4000-8000-000000000003",
+      "organization_id": "10000000-0000-4000-8000-000000000002",
+      "expected_revision": 0,
+      "source_revision": 1,
+      "kind": "request",
+      "payload": {
+        "measurement": "17.5",
+        "unit": "cm",
+        "method": "tape",
+        "source": "buyer",
+        "target": "Comfortable fit",
+        "choice": "links"
+      }
+    },
+    "status": 503,
+    "response": {
+      "code": "unavailable"
+    }
+  }
+}

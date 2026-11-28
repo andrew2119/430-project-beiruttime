@@ -1,0 +1,160 @@
+{
+  "callback": {
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": 1,
+        "default": 1,
+        "title": "Schema Version",
+        "type": "integer"
+      },
+      "operation_id": {
+        "pattern": "^[a-zA-Z0-9_-]{16,100}$",
+        "title": "Operation Id",
+        "type": "string"
+      },
+      "expected_revision": {
+        "maximum": 2147483647,
+        "minimum": 0,
+        "title": "Expected Revision",
+        "type": "integer"
+      },
+      "state": {
+        "maxLength": 128,
+        "minLength": 32,
+        "title": "State",
+        "type": "string"
+      },
+      "code": {
+        "maxLength": 2048,
+        "minLength": 1,
+        "title": "Code",
+        "type": "string"
+      }
+    },
+    "required": [
+      "operation_id",
+      "expected_revision",
+      "state",
+      "code"
+    ],
+    "title": "Callback",
+    "type": "object"
+  },
+  "current_operation": {
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": 1,
+        "default": 1,
+        "title": "Schema Version",
+        "type": "integer"
+      },
+      "operation_id": {
+        "title": "Operation Id",
+        "type": "string"
+      },
+      "subject_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Subject Id"
+      },
+      "watch_id": {
+        "default": null,
+        "title": "Watch Id",
+        "type": "null"
+      },
+      "actor_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Actor Id"
+      },
+      "organization_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Organization Id"
+      },
+      "expected_revision": {
+        "maximum": 2147483647,
+        "minimum": 0,
+        "title": "Expected Revision",
+        "type": "integer"
+      },
+      "state": {
+        "enum": [
+          "ready",
+          "pending",
+          "signed_in",
+          "linked",
+          "denied",
+          "stale",
+          "unavailable"
+        ],
+        "title": "State",
+        "type": "string"
+      },
+      "revision": {
+        "maximum": 2147483647,
+        "minimum": 0,
+        "title": "Revision",
+        "type": "integer"
+      },
+      "pending_reason": {
+        "anyOf": [
+          {
+            "const": "identity_unavailable",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Pending Reason"
+      },
+      "next_actor": {
+        "default": "buyer",
+        "enum": [
+          "buyer",
+          "identity"
+        ],
+        "title": "Next Actor",
+        "type": "string"
+      },
+      "next_review_at": {
+        "default": null,
+        "title": "Next Review At",
+        "type": "null"
+      }
+    },
+    "required": [
+      "operation_id",
+      "expected_revision",
+      "state",
+      "revision"
+    ],
+    "title": "CurrentOperation",
+    "type": "object"
+  }
+}

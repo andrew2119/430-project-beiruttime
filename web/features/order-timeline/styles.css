@@ -1,0 +1,6 @@
+.order-timeline { display: grid; gap: var(--space-4); min-inline-size: 0; }
+.order-timeline ul, .order-timeline ol { display: grid; gap: var(--space-3); padding-inline-start: var(--space-5); }
+.order-timeline li, .order-timeline bdi { overflow-wrap: anywhere; min-inline-size: 0; }
+.order-timeline nav { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.order-timeline dd { margin-inline-start: 0; }
+.order-timeline dt { font-weight: var(--bt-weight-strong); }

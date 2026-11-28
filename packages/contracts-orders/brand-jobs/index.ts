@@ -1,0 +1,40 @@
+export type BrandJobState = 'authorized' | 'denied' | 'stale' | 'pending' | 'unavailable';
+export type BrandJobReceipt = {
+  schema_version: 'orders.brand-jobs.v1';
+  operation_id: string;
+  subject_id: string;
+  watch_id: string;
+  actor_id: string;
+  organization_id: string;
+  expected_revision: number;
+  state: BrandJobState;
+  revision: number;
+  pending_reason: string | null;
+  next_actor: string | null;
+  next_review_at: string | null;
+  recovery?: {
+    operator_id: string;
+    next_action: string;
+    escalation_actor_id: string;
+    opened_at: string;
+    next_review_at: string;
+    escalate_at: string;
+  };
+  job_id?: string;
+  assignee_id?: string;
+  permitted_start_state?: 'requires_current_start_check';
+};
+export type ServicePaidScope = {
+  acceptance_id: string;
+  acceptance_revision: number;
+  order_id: string;
+  order_kind: 'service';
+  watch_id: string;
+  quote_id: string;
+  quote_revision: number;
+  currency: 'USD';
+  total_minor: number;
+  payment_operation_id: string;
+  payment_revision: number;
+  state: 'paid_held' | 'pending' | 'unpaid';
+};

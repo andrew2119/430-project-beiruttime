@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Public seller profile v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "operation_id",
+    "subject_id",
+    "revision",
+    "state",
+    "identity",
+    "sales",
+    "reviews",
+    "listings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "public-profile.v1"
+    },
+    "operation_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9-]{1,80}$",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "subject_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9-]{1,80}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "state": {
+      "enum": [
+        "ready",
+        "pending",
+        "denied",
+        "stale",
+        "unavailable"
+      ]
+    },
+    "identity": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "city",
+            "kind",
+            "member_since",
+            "verification",
+            "logo",
+            "banner"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 180
+            },
+            "city": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 120
+            },
+            "kind": {
+              "enum": [
+                "private",
+                "dealer"
+              ]
+            },
+            "member_since": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "verification": {
+              "enum": [
+                "private_seller_approved",
+                "dealer_business_verified"
+              ]
+            },
+            "logo": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^/media/[a-zA-Z0-9/_-]{1,180}\\.(png|jpg|jpeg)$"
+            },
+            "banner": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^/media/[a-zA-Z0-9/_-]{1,180}\\.(png|jpg|jpeg)$"
+            }
+          }
+        }
+      ]
+    },
+    "sales": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "released_count"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "ready",
+            "pending",
+            "denied",
+            "stale",
+            "unavailable"
+          ]
+        },
+        "released_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "reviews": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "distribution"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "ready",
+            "pending",
+            "denied",
+            "stale",
+            "unavailable"
+          ]
+        },
+        "distribution": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "minItems": 5,
+              "maxItems": 5,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          ]
+        }
+      }
+    },
+    "listings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "items",
+        "total",
+        "page",
+        "page_size"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "ready",
+            "pending",
+            "denied",
+            "stale",
+            "unavailable"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9-]{1,80}$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              }
+            }
+          }
+        },
+        "total": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "page_size": {
+          "const": 20
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,246 @@
+{
+  "$defs": {
+    "Match": {
+      "additionalProperties": false,
+      "properties": {
+        "watch": {
+          "$ref": "#/$defs/Watch"
+        },
+        "rule": {
+          "enum": [
+            "reference",
+            "brand",
+            "price_band"
+          ],
+          "title": "Rule",
+          "type": "string"
+        }
+      },
+      "required": [
+        "watch",
+        "rule"
+      ],
+      "title": "Match",
+      "type": "object"
+    },
+    "Watch": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "watch_id": {
+          "format": "uuid",
+          "title": "Watch Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "title": {
+          "maxLength": 320,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "brand": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Brand",
+          "type": "string"
+        },
+        "reference": {
+          "maxLength": 100,
+          "title": "Reference",
+          "type": "string"
+        },
+        "currency": {
+          "const": "USD",
+          "default": "USD",
+          "title": "Currency",
+          "type": "string"
+        },
+        "price_minor": {
+          "anyOf": [
+            {
+              "maximum": 1000000000000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Price Minor"
+        },
+        "available": {
+          "title": "Available",
+          "type": "boolean"
+        },
+        "sample": {
+          "title": "Sample",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "watch_id",
+        "revision",
+        "title",
+        "brand",
+        "reference",
+        "available",
+        "sample"
+      ],
+      "title": "Watch",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "similar-watches.v1",
+      "default": "similar-watches.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "subject_id": {
+      "format": "uuid",
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Watch Id"
+    },
+    "actor_id": {
+      "default": null,
+      "title": "Actor Id",
+      "type": "null"
+    },
+    "organization_id": {
+      "default": null,
+      "title": "Organization Id",
+      "type": "null"
+    },
+    "expected_revision": {
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "state": {
+      "enum": [
+        "ready",
+        "empty",
+        "stale",
+        "denied",
+        "unavailable"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "revision": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Revision"
+    },
+    "pending_reason": {
+      "anyOf": [
+        {
+          "const": "current_source_unavailable",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pending Reason"
+    },
+    "next_actor": {
+      "const": "viewer",
+      "default": "viewer",
+      "title": "Next Actor",
+      "type": "string"
+    },
+    "next_review_at": {
+      "default": null,
+      "title": "Next Review At",
+      "type": "null"
+    },
+    "rules_version": {
+      "const": "reference-brand-band.v1",
+      "default": "reference-brand-band.v1",
+      "title": "Rules Version",
+      "type": "string"
+    },
+    "items": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Match"
+      },
+      "maxItems": 20,
+      "title": "Items",
+      "type": "array"
+    },
+    "total": {
+      "default": 0,
+      "maximum": 1000,
+      "minimum": 0,
+      "title": "Total",
+      "type": "integer"
+    },
+    "offset": {
+      "maximum": 1000,
+      "minimum": 0,
+      "title": "Offset",
+      "type": "integer"
+    },
+    "next_offset": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Next Offset"
+    }
+  },
+  "required": [
+    "operation_id",
+    "subject_id",
+    "expected_revision",
+    "state",
+    "offset"
+  ],
+  "title": "Result",
+  "type": "object"
+}

@@ -1,0 +1,239 @@
+{
+  "schema_version": "orders.returns.v1",
+  "synthetic": true,
+  "cases": [
+    {
+      "name": "success",
+      "source": {
+        "authorized": true,
+        "organization_id": "shop",
+        "watch_id": "watch",
+        "policy_revision": "p1",
+        "revision": 7,
+        "buyer_id": "buyer",
+        "paid_held": true,
+        "assigned_reviewer": true,
+        "assigned_intake": true,
+        "financial_producer": false,
+        "principal_minor": 500000,
+        "currency": "USD",
+        "quote_id": "quote",
+        "quote_revision": 1,
+        "subject_id": "order",
+        "actor_id": "buyer",
+        "accessories": [
+          "box"
+        ],
+        "watch_revision": 2,
+        "responsible_operator": "operator",
+        "next_review_at": "2026-11-18T00:00:00Z",
+        "now": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "operation_id": "request",
+        "subject_id": "order",
+        "watch_id": "watch",
+        "actor_id": "buyer",
+        "organization_id": "shop",
+        "expected_revision": 0,
+        "kind": "request",
+        "source_revision": 7,
+        "policy_revision": "p1",
+        "reason": "Policy review",
+        "receipt_id": ""
+      },
+      "result": {
+        "bindings": {
+          "watch_id": "watch",
+          "watch_revision": 2,
+          "buyer_id": "buyer",
+          "organization_id": "shop",
+          "quote_id": "quote",
+          "quote_revision": 1,
+          "policy_revision": "p1",
+          "principal_minor": 500000,
+          "currency": "USD"
+        },
+        "reason": "Policy review",
+        "source_revision": 7,
+        "receipt_id": null,
+        "schema_version": "orders.returns.v1",
+        "operation_id": "request",
+        "subject_id": "order",
+        "watch_id": "watch",
+        "actor_id": "buyer",
+        "organization_id": "shop",
+        "expected_revision": 0,
+        "state": "requested",
+        "revision": 1,
+        "pending_reason": null,
+        "next_actor": "operator",
+        "next_review_at": "2026-11-18T00:00:00Z",
+        "receipt_operation_id": null,
+        "policy_revision": "p1",
+        "quote_id": "quote"
+      }
+    },
+    {
+      "name": "denied",
+      "source": {
+        "authorized": true,
+        "organization_id": "shop",
+        "watch_id": "watch",
+        "policy_revision": "p1",
+        "revision": 7,
+        "buyer_id": "buyer",
+        "paid_held": true,
+        "assigned_reviewer": true,
+        "assigned_intake": true,
+        "financial_producer": false,
+        "principal_minor": 500000,
+        "currency": "USD",
+        "quote_id": "quote",
+        "quote_revision": 1,
+        "subject_id": "order",
+        "actor_id": "buyer",
+        "accessories": [
+          "box"
+        ],
+        "watch_revision": 2,
+        "responsible_operator": "operator",
+        "next_review_at": "2026-11-18T00:00:00Z",
+        "now": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "operation_id": "denied",
+        "subject_id": "order",
+        "watch_id": "watch",
+        "actor_id": "buyer",
+        "organization_id": "other",
+        "expected_revision": 0,
+        "kind": "request",
+        "source_revision": 7,
+        "policy_revision": "p1",
+        "reason": "Policy review",
+        "receipt_id": ""
+      },
+      "result": {
+        "error": "denied"
+      }
+    },
+    {
+      "name": "stale",
+      "source": {
+        "authorized": true,
+        "organization_id": "shop",
+        "watch_id": "watch",
+        "policy_revision": "p1",
+        "revision": 7,
+        "buyer_id": "buyer",
+        "paid_held": true,
+        "assigned_reviewer": true,
+        "assigned_intake": true,
+        "financial_producer": false,
+        "principal_minor": 500000,
+        "currency": "USD",
+        "quote_id": "quote",
+        "quote_revision": 1,
+        "subject_id": "order",
+        "actor_id": "buyer",
+        "accessories": [
+          "box"
+        ],
+        "watch_revision": 2,
+        "responsible_operator": "operator",
+        "next_review_at": "2026-11-18T00:00:00Z",
+        "now": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "operation_id": "stale",
+        "subject_id": "order",
+        "watch_id": "watch",
+        "actor_id": "buyer",
+        "organization_id": "shop",
+        "expected_revision": 1,
+        "kind": "request",
+        "source_revision": 7,
+        "policy_revision": "p1",
+        "reason": "Policy review",
+        "receipt_id": ""
+      },
+      "result": {
+        "error": "stale_revision"
+      }
+    },
+    {
+      "name": "lost_response",
+      "source": {
+        "authorized": true,
+        "organization_id": "shop",
+        "watch_id": "watch",
+        "policy_revision": "p1",
+        "revision": 7,
+        "buyer_id": "buyer",
+        "paid_held": true,
+        "assigned_reviewer": true,
+        "assigned_intake": true,
+        "financial_producer": false,
+        "principal_minor": 500000,
+        "currency": "USD",
+        "quote_id": "quote",
+        "quote_revision": 1,
+        "subject_id": "order",
+        "actor_id": "buyer",
+        "accessories": [
+          "box"
+        ],
+        "watch_revision": 2,
+        "responsible_operator": "operator",
+        "next_review_at": "2026-11-18T00:00:00Z",
+        "now": "2026-11-17T00:00:00Z"
+      },
+      "command": {
+        "operation_id": "request",
+        "subject_id": "order",
+        "watch_id": "watch",
+        "actor_id": "buyer",
+        "organization_id": "shop",
+        "expected_revision": 0,
+        "kind": "request",
+        "source_revision": 7,
+        "policy_revision": "p1",
+        "reason": "Policy review",
+        "receipt_id": ""
+      },
+      "result": {
+        "bindings": {
+          "watch_id": "watch",
+          "watch_revision": 2,
+          "buyer_id": "buyer",
+          "organization_id": "shop",
+          "quote_id": "quote",
+          "quote_revision": 1,
+          "policy_revision": "p1",
+          "principal_minor": 500000,
+          "currency": "USD"
+        },
+        "reason": "Policy review",
+        "source_revision": 7,
+        "receipt_id": null,
+        "schema_version": "orders.returns.v1",
+        "operation_id": "request",
+        "subject_id": "order",
+        "watch_id": "watch",
+        "actor_id": "buyer",
+        "organization_id": "shop",
+        "expected_revision": 0,
+        "state": "requested",
+        "revision": 1,
+        "pending_reason": null,
+        "next_actor": "operator",
+        "next_review_at": "2026-11-18T00:00:00Z",
+        "receipt_operation_id": null,
+        "policy_revision": "p1",
+        "quote_id": "quote"
+      },
+      "retry": "same_operation_id"
+    }
+  ]
+}

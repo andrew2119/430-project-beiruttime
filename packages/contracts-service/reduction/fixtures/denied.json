@@ -1,0 +1,77 @@
+{
+  "synthetic": true,
+  "command": {
+    "subject_id": "00000000-0024-4000-8000-000000000001",
+    "watch_id": "00000000-0024-4000-8000-000000000002",
+    "organization_id": "00000000-0024-4000-8000-000000000003",
+    "source_revision": 1,
+    "quote_id": "00000000-0024-4000-8000-000000000004",
+    "quote_revision": 1,
+    "policy_revision": 1,
+    "schema_version": "reduction.command.v1",
+    "operation_id": "00000000-0024-4000-8000-000000000005",
+    "expected_revision": 1,
+    "kind": "record",
+    "choice_id": "compatible-links-v1",
+    "target": {
+      "value": "17.5",
+      "unit": "cm",
+      "source": "buyer",
+      "method": "tape"
+    },
+    "recipient_id": "00000000-0024-4000-8000-000000000001",
+    "removed_link_ids": [
+      "00000000-0024-4000-8000-000000000006"
+    ],
+    "returned_link_ids": [
+      "00000000-0024-4000-8000-000000000006"
+    ],
+    "exception_id": null,
+    "fit_confirmed": true,
+    "actual_strap_id": null
+  },
+  "authority": {
+    "subject_id": "00000000-0024-4000-8000-000000000001",
+    "watch_id": "00000000-0024-4000-8000-000000000002",
+    "organization_id": "00000000-0024-4000-8000-000000000003",
+    "source_revision": 1,
+    "quote_id": "00000000-0024-4000-8000-000000000004",
+    "quote_revision": 1,
+    "policy_revision": 1,
+    "schema_version": "reduction.authority.v1",
+    "actor_id": "00000000-0024-4000-8000-000000000007",
+    "assignment_revision": 1,
+    "permission": "assigned_work",
+    "current": true,
+    "checked_at": "2026-11-17T00:00:00Z",
+    "valid_until": "2026-11-17T00:01:00Z",
+    "commitment_id": "00000000-0024-4000-8000-000000000008",
+    "accepted_scope": true,
+    "custody_current": false,
+    "payment_state": "paid_held",
+    "fit_confirmed": true,
+    "incident_open": false,
+    "currency": "USD",
+    "total_minor": 10000,
+    "choices": [
+      {
+        "id": "compatible-links-v1",
+        "kind": "removable_links",
+        "compatible": true
+      }
+    ],
+    "removable_link_ids": [
+      "00000000-0024-4000-8000-000000000006"
+    ],
+    "buyer_owned_link_ids": [
+      "00000000-0024-4000-8000-000000000006"
+    ],
+    "authorized_recipient_ids": [
+      "00000000-0024-4000-8000-000000000001"
+    ],
+    "accepted_exceptions": [],
+    "responsible_actor_id": "00000000-0024-4000-8000-000000000007",
+    "next_review_at": "2026-11-17T12:00:00Z"
+  },
+  "expected_state": "denied"
+}

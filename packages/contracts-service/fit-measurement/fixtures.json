@@ -1,0 +1,87 @@
+{
+  "schema_version": "fit-measurement.v1",
+  "synthetic": true,
+  "cases": [
+    {
+      "name": "success",
+      "circumference": "17.5cm",
+      "unit": "cm",
+      "circumference_mm": 175,
+      "state": "recorded",
+      "revision": 1,
+      "final_fit_pass": false
+    },
+    {
+      "name": "arabic",
+      "circumference": "١٧٫٥ سم",
+      "unit": "cm",
+      "circumference_mm": 175,
+      "state": "recorded",
+      "revision": 1,
+      "final_fit_pass": false
+    },
+    {
+      "name": "denied",
+      "status": 403,
+      "code": "denied"
+    },
+    {
+      "name": "stale",
+      "status": 409,
+      "code": "stale_revision"
+    },
+    {
+      "name": "timeout",
+      "status": 503,
+      "code": "unavailable"
+    },
+    {
+      "name": "lost_response",
+      "retry": "same_operation_and_body",
+      "state": "recorded",
+      "revision": 1
+    },
+    {
+      "name": "duplicate",
+      "retry": "same_operation_and_body",
+      "state": "recorded",
+      "revision": 1
+    }
+  ],
+  "command": {
+    "schema_version": "fit-measurement.v1",
+    "operation_id": "00000000-0000-4000-8000-000000000002",
+    "subject_id": "00000000-0000-4000-8000-000000000001",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "organization_id": "00000000-0000-4000-8000-000000000004",
+    "expected_revision": 0,
+    "source_revision": 1,
+    "circumference": "17.5cm",
+    "unit": "cm",
+    "method": "tape",
+    "source": "buyer_measured",
+    "target": "comfortable",
+    "final_fit_pass": false
+  },
+  "record": {
+    "schema_version": "fit-measurement.v1",
+    "operation_id": "00000000-0000-4000-8000-000000000002",
+    "subject_id": "00000000-0000-4000-8000-000000000001",
+    "watch_id": "00000000-0000-4000-8000-000000000003",
+    "actor_id": "00000000-0000-4000-8000-000000000001",
+    "organization_id": "00000000-0000-4000-8000-000000000004",
+    "expected_revision": 0,
+    "source_revision": 1,
+    "state": "recorded",
+    "revision": 1,
+    "circumference_mm": 175,
+    "method": "tape",
+    "source": "buyer_measured",
+    "target": "comfortable",
+    "final_fit_pass": false,
+    "recorded_at": "2026-11-17T00:00:00+00:00",
+    "pending_reason": null,
+    "next_actor": null,
+    "next_review_at": null
+  }
+}

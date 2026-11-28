@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Retained readiness support assignment v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation_id",
+    "operator_id",
+    "opened_at",
+    "last_progress_at"
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "operator_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "opened_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_progress_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

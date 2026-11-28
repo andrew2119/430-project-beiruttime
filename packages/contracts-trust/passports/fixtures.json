@@ -1,0 +1,117 @@
+{
+  "schema_version": "passports.fixtures.v1",
+  "synthetic": true,
+  "command": {
+    "schema_version": "passports.issue.v1",
+    "operation_id": "00000000-0000-0000-0000-000000000001",
+    "subject_id": "00000000-0000-0000-0000-000000000002",
+    "watch_id": "00000000-0000-0000-0000-000000000003",
+    "organization_id": "00000000-0000-0000-0000-000000000004",
+    "expected_revision": 1,
+    "inspection_id": "00000000-0000-0000-0000-000000000005"
+  },
+  "cases": [
+    {
+      "name": "released_independent_pass",
+      "expected": "signed"
+    },
+    {
+      "name": "wrong_organization",
+      "expected": "denied"
+    },
+    {
+      "name": "stale_revision",
+      "expected": "stale_revision"
+    },
+    {
+      "name": "lost_response",
+      "expected": "same_signed_receipt"
+    },
+    {
+      "name": "source_timeout",
+      "expected": "unavailable"
+    },
+    {
+      "name": "no_inspection",
+      "expected": "inspection_required"
+    }
+  ],
+  "signed": {
+    "summary": {
+      "schema_version": "passports.summary.v1",
+      "passport_id": "00000000-0000-0000-0000-000000000014",
+      "issuer_id": "00000000-0000-0000-0000-000000000007",
+      "inspected_at": "2026-11-17T12:00:00Z",
+      "issued_at": "2026-11-17T12:00:00Z",
+      "scope": "independent_private_sale_inspection",
+      "watch_reference": "00000000-0000-0000-0000-000000000015",
+      "inspected_revision": 1,
+      "claim": "historical_inspection_summary_only"
+    },
+    "key_id": "00000000-0000-0000-0000-00000000000d",
+    "signature": "s-SRvlb-CpOVCNTpBA7u0WO1vLI9TcS7FEtrOSQviaXei_RoZFqXpA9KzZsc9ClmGYBqgXckq9EmVPO1wI9uDA"
+  },
+  "results": {
+    "success": {
+      "status": 200,
+      "body": {
+        "summary": {
+          "schema_version": "passports.summary.v1",
+          "passport_id": "00000000-0000-0000-0000-000000000014",
+          "issuer_id": "00000000-0000-0000-0000-000000000007",
+          "inspected_at": "2026-11-17T12:00:00Z",
+          "issued_at": "2026-11-17T12:00:00Z",
+          "scope": "independent_private_sale_inspection",
+          "watch_reference": "00000000-0000-0000-0000-000000000015",
+          "inspected_revision": 1,
+          "claim": "historical_inspection_summary_only"
+        },
+        "key_id": "00000000-0000-0000-0000-00000000000d",
+        "signature": "s-SRvlb-CpOVCNTpBA7u0WO1vLI9TcS7FEtrOSQviaXei_RoZFqXpA9KzZsc9ClmGYBqgXckq9EmVPO1wI9uDA"
+      }
+    },
+    "denied": {
+      "status": 403,
+      "body": {
+        "detail": {
+          "code": "denied"
+        }
+      }
+    },
+    "stale": {
+      "status": 409,
+      "body": {
+        "detail": {
+          "code": "stale_revision"
+        }
+      }
+    },
+    "timeout": {
+      "status": 503,
+      "body": {
+        "detail": {
+          "code": "unavailable"
+        }
+      }
+    },
+    "lost_response": {
+      "operation_id": "00000000-0000-0000-0000-000000000001",
+      "lookup_status": 200,
+      "body": {
+        "summary": {
+          "schema_version": "passports.summary.v1",
+          "passport_id": "00000000-0000-0000-0000-000000000014",
+          "issuer_id": "00000000-0000-0000-0000-000000000007",
+          "inspected_at": "2026-11-17T12:00:00Z",
+          "issued_at": "2026-11-17T12:00:00Z",
+          "scope": "independent_private_sale_inspection",
+          "watch_reference": "00000000-0000-0000-0000-000000000015",
+          "inspected_revision": 1,
+          "claim": "historical_inspection_summary_only"
+        },
+        "key_id": "00000000-0000-0000-0000-00000000000d",
+        "signature": "s-SRvlb-CpOVCNTpBA7u0WO1vLI9TcS7FEtrOSQviaXei_RoZFqXpA9KzZsc9ClmGYBqgXckq9EmVPO1wI9uDA"
+      }
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "schema_version": "transaction-reviews.v1",
+  "operations": {
+    "create": "POST /v1/transaction-reviews/purchases/{subject_id}",
+    "reply": "POST /v1/transaction-reviews/{subject_id}/reply",
+    "report": "POST /v1/transaction-reviews/{subject_id}/reports",
+    "decide": "POST /v1/transaction-reviews/{subject_id}/decisions",
+    "lookup": "GET /v1/transaction-reviews/operations/{operation_id}",
+    "list": "GET /v1/transaction-reviews/sellers/{seller_id}?page=1"
+  },
+  "command": {
+    "required": [
+      "operation_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "source_revision",
+      "quote_revision",
+      "policy_revision"
+    ],
+    "kinds": [
+      "create",
+      "reply",
+      "report",
+      "decide"
+    ],
+    "rating": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "text_max_length": 2000,
+    "reason_max_length": 1000,
+    "page_size": 20,
+    "serialized_character_limit": 24000
+  },
+  "result": {
+    "schema_version": "transaction-reviews.v1",
+    "states": [
+      "confirmed",
+      "pending",
+      "denied",
+      "stale",
+      "unavailable"
+    ],
+    "required": [
+      "operation_id",
+      "subject_id",
+      "watch_id",
+      "actor_id",
+      "organization_id",
+      "expected_revision",
+      "state",
+      "revision",
+      "pending_reason",
+      "next_actor",
+      "next_review_at"
+    ]
+  },
+  "rules": [
+    "Current authority is checked before every private read, write and replay.",
+    "Only a released purchase permits its buyer one review; buyer and seller must differ.",
+    "Only the current seller representative permits one reply, never removal.",
+    "Only an assigned moderator independent of buyer, seller and every reporter may adjudicate.",
+    "Reports and decisions retain reasons privately. Public rows exclude identities and private reasons.",
+    "Identical retries return the retained result; changed payloads conflict.",
+    "Missing or timed out current facts remain unavailable. Retry the same operation.",
+    "Registration and provider composition belong to the runtime owner."
+  ],
+  "public_item": {
+    "required": [
+      "review_ref",
+      "rating",
+      "text",
+      "reply"
+    ],
+    "report_subject": "review_ref",
+    "review_ref": "Stable opaque reference; no purchase or identity data."
+  }
+}

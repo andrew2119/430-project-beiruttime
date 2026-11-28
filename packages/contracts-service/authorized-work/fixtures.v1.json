@@ -1,0 +1,238 @@
+{
+  "label": "Synthetic development contract examples; no connected authorization proof",
+  "schema_version": "authorized-work.v1",
+  "cases": [
+    {
+      "case": "success",
+      "command": {
+        "schema_version": "authorized-work.v1",
+        "operation_id": "00000000-0000-0000-0000-000000000001",
+        "subject_id": "00000000-0000-0000-0000-000000000002",
+        "watch_id": "00000000-0000-0000-0000-000000000003",
+        "actor_id": "00000000-0000-0000-0000-000000000004",
+        "organization_id": "00000000-0000-0000-0000-000000000005",
+        "expected_revision": 0,
+        "source_revision": 1,
+        "quote_id": "00000000-0000-0000-0000-000000000006",
+        "quote_revision": 1,
+        "policy_revision": 1,
+        "kind": "progress",
+        "line_ids": [
+          "00000000-0000-0000-0000-000000000007"
+        ],
+        "parts": [],
+        "readings": [
+          {
+            "phase": "before",
+            "observed_at": "2026-11-17T12:00:00Z",
+            "seconds_per_day": 12,
+            "method": "Timing instrument"
+          }
+        ],
+        "note": "Synthetic observation",
+        "observed_at": "2026-11-17T12:00:00Z",
+        "next_actor": "00000000-0000-0000-0000-000000000004",
+        "next_action": "Check actual work",
+        "next_review_at": "2026-11-17T13:00:00Z"
+      },
+      "authority": {
+        "actor_id": "00000000-0000-0000-0000-000000000004",
+        "organization_id": "00000000-0000-0000-0000-000000000005",
+        "subject_id": "00000000-0000-0000-0000-000000000002",
+        "watch_id": "00000000-0000-0000-0000-000000000003",
+        "source_revision": 1,
+        "quote_id": "00000000-0000-0000-0000-000000000006",
+        "quote_revision": 1,
+        "policy_revision": 1,
+        "accepted_line_ids": [
+          "00000000-0000-0000-0000-000000000007"
+        ],
+        "responsible_actor_id": "00000000-0000-0000-0000-000000000004",
+        "required_line_ids": [
+          "00000000-0000-0000-0000-000000000007"
+        ],
+        "state": "authorized",
+        "valid_until": "2026-11-17T14:00:00Z",
+        "custody_current": true,
+        "payment_state": "paid_held",
+        "commitment_current": true
+      },
+      "expected": {
+        "state": "recorded",
+        "revision": 1
+      }
+    },
+    {
+      "case": "denied",
+      "command": {
+        "schema_version": "authorized-work.v1",
+        "operation_id": "00000000-0000-0000-0000-000000000001",
+        "subject_id": "00000000-0000-0000-0000-000000000002",
+        "watch_id": "00000000-0000-0000-0000-000000000003",
+        "actor_id": "00000000-0000-0000-0000-000000000004",
+        "organization_id": "00000000-0000-0000-0000-000000000005",
+        "expected_revision": 0,
+        "source_revision": 1,
+        "quote_id": "00000000-0000-0000-0000-000000000006",
+        "quote_revision": 1,
+        "policy_revision": 1,
+        "kind": "progress",
+        "line_ids": [
+          "00000000-0000-0000-0000-000000000007"
+        ],
+        "parts": [],
+        "readings": [
+          {
+            "phase": "before",
+            "observed_at": "2026-11-17T12:00:00Z",
+            "seconds_per_day": 12,
+            "method": "Timing instrument"
+          }
+        ],
+        "note": "Synthetic observation",
+        "observed_at": "2026-11-17T12:00:00Z",
+        "next_actor": "00000000-0000-0000-0000-000000000004",
+        "next_action": "Check actual work",
+        "next_review_at": "2026-11-17T13:00:00Z"
+      },
+      "authority": {
+        "actor_id": "00000000-0000-0000-0000-000000000004",
+        "organization_id": "00000000-0000-0000-0000-000000000005",
+        "subject_id": "00000000-0000-0000-0000-000000000002",
+        "watch_id": "00000000-0000-0000-0000-000000000003",
+        "source_revision": 1,
+        "quote_id": "00000000-0000-0000-0000-000000000006",
+        "quote_revision": 1,
+        "policy_revision": 1,
+        "accepted_line_ids": [
+          "00000000-0000-0000-0000-000000000007"
+        ],
+        "responsible_actor_id": "00000000-0000-0000-0000-000000000004",
+        "required_line_ids": [
+          "00000000-0000-0000-0000-000000000007"
+        ],
+        "state": "denied",
+        "valid_until": "2026-11-17T14:00:00Z",
+        "custody_current": true,
+        "payment_state": "paid_held",
+        "commitment_current": true
+      },
+      "expected": {
+        "error": "denied",
+        "writes": 0
+      }
+    },
+    {
+      "case": "stale",
+      "command": {
+        "schema_version": "authorized-work.v1",
+        "operation_id": "00000000-0000-0000-0000-000000000001",
+        "subject_id": "00000000-0000-0000-0000-000000000002",
+        "watch_id": "00000000-0000-0000-0000-000000000003",
+        "actor_id": "00000000-0000-0000-0000-000000000004",
+        "organization_id": "00000000-0000-0000-0000-000000000005",
+        "expected_revision": 0,
+        "source_revision": 2,
+        "quote_id": "00000000-0000-0000-0000-000000000006",
+        "quote_revision": 1,
+        "policy_revision": 1,
+        "kind": "progress",
+        "line_ids": [
+          "00000000-0000-0000-0000-000000000007"
+        ],
+        "parts": [],
+        "readings": [
+          {
+            "phase": "before",
+            "observed_at": "2026-11-17T12:00:00Z",
+            "seconds_per_day": 12,
+            "method": "Timing instrument"
+          }
+        ],
+        "note": "Synthetic observation",
+        "observed_at": "2026-11-17T12:00:00Z",
+        "next_actor": "00000000-0000-0000-0000-000000000004",
+        "next_action": "Check actual work",
+        "next_review_at": "2026-11-17T13:00:00Z"
+      },
+      "authority": {
+        "actor_id": "00000000-0000-0000-0000-000000000004",
+        "organization_id": "00000000-0000-0000-0000-000000000005",
+        "subject_id": "00000000-0000-0000-0000-000000000002",
+        "watch_id": "00000000-0000-0000-0000-000000000003",
+        "source_revision": 1,
+        "quote_id": "00000000-0000-0000-0000-000000000006",
+        "quote_revision": 1,
+        "policy_revision": 1,
+        "accepted_line_ids": [
+          "00000000-0000-0000-0000-000000000007"
+        ],
+        "responsible_actor_id": "00000000-0000-0000-0000-000000000004",
+        "required_line_ids": [
+          "00000000-0000-0000-0000-000000000007"
+        ],
+        "state": "authorized",
+        "valid_until": "2026-11-17T14:00:00Z",
+        "custody_current": true,
+        "payment_state": "paid_held",
+        "commitment_current": true
+      },
+      "expected": {
+        "error": "stale",
+        "writes": 0
+      }
+    },
+    {
+      "case": "lost_response",
+      "command": {
+        "schema_version": "authorized-work.v1",
+        "operation_id": "00000000-0000-0000-0000-000000000001",
+        "subject_id": "00000000-0000-0000-0000-000000000002",
+        "watch_id": "00000000-0000-0000-0000-000000000003",
+        "actor_id": "00000000-0000-0000-0000-000000000004",
+        "organization_id": "00000000-0000-0000-0000-000000000005",
+        "expected_revision": 0,
+        "source_revision": 1,
+        "quote_id": "00000000-0000-0000-0000-000000000006",
+        "quote_revision": 1,
+        "policy_revision": 1,
+        "kind": "loss",
+        "line_ids": [],
+        "parts": [],
+        "readings": [],
+        "note": "Synthetic observation",
+        "observed_at": "2026-11-17T12:00:00Z",
+        "next_actor": "00000000-0000-0000-0000-000000000004",
+        "next_action": "Check actual work",
+        "next_review_at": "2026-11-17T13:00:00Z"
+      },
+      "authority": {
+        "actor_id": "00000000-0000-0000-0000-000000000004",
+        "organization_id": "00000000-0000-0000-0000-000000000005",
+        "subject_id": "00000000-0000-0000-0000-000000000002",
+        "watch_id": "00000000-0000-0000-0000-000000000003",
+        "source_revision": 1,
+        "quote_id": "00000000-0000-0000-0000-000000000006",
+        "quote_revision": 1,
+        "policy_revision": 1,
+        "accepted_line_ids": [
+          "00000000-0000-0000-0000-000000000007"
+        ],
+        "responsible_actor_id": "00000000-0000-0000-0000-000000000004",
+        "required_line_ids": [
+          "00000000-0000-0000-0000-000000000007"
+        ],
+        "state": "authorized",
+        "valid_until": "2026-11-17T14:00:00Z",
+        "custody_current": true,
+        "payment_state": "paid_held",
+        "commitment_current": true
+      },
+      "expected": {
+        "state": "pending",
+        "pending_reason": "orders_hold",
+        "retry_same_operation": true
+      }
+    }
+  ]
+}

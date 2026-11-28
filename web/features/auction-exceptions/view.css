@@ -1,0 +1,5 @@
+@layer components {
+  .bt-auction-exceptions { min-inline-size: 0; }
+  .bt-auction-exception-form { display: grid; gap: var(--bt-space-4); min-inline-size: 0; }
+  .bt-auction-exceptions dd { margin-inline-start: 0; overflow-wrap: anywhere; }
+}

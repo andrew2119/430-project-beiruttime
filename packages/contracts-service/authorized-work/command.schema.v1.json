@@ -1,0 +1,229 @@
+{
+  "$defs": {
+    "Part": {
+      "additionalProperties": false,
+      "properties": {
+        "line_id": {
+          "format": "uuid",
+          "title": "Line Id",
+          "type": "string"
+        },
+        "reference": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Reference",
+          "type": "string"
+        },
+        "quantity": {
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Quantity",
+          "type": "integer"
+        },
+        "disposition": {
+          "enum": [
+            "installed",
+            "consumed",
+            "removed_return",
+            "unused_return"
+          ],
+          "title": "Disposition",
+          "type": "string"
+        }
+      },
+      "required": [
+        "line_id",
+        "reference",
+        "quantity",
+        "disposition"
+      ],
+      "title": "Part",
+      "type": "object"
+    },
+    "Reading": {
+      "additionalProperties": false,
+      "properties": {
+        "phase": {
+          "enum": [
+            "before",
+            "after"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "seconds_per_day": {
+          "maximum": 86400,
+          "minimum": -86400,
+          "title": "Seconds Per Day",
+          "type": "integer"
+        },
+        "method": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "phase",
+        "observed_at",
+        "seconds_per_day",
+        "method"
+      ],
+      "title": "Reading",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "authorized-work.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "subject_id": {
+      "format": "uuid",
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "actor_id": {
+      "format": "uuid",
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "source_revision": {
+      "minimum": 1,
+      "title": "Source Revision",
+      "type": "integer"
+    },
+    "quote_id": {
+      "format": "uuid",
+      "title": "Quote Id",
+      "type": "string"
+    },
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "kind": {
+      "enum": [
+        "progress",
+        "material_change",
+        "loss",
+        "damage",
+        "waiting_parts",
+        "waiting_customer",
+        "declined_return"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "line_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Line Ids",
+      "type": "array"
+    },
+    "parts": {
+      "items": {
+        "$ref": "#/$defs/Part"
+      },
+      "maxItems": 100,
+      "title": "Parts",
+      "type": "array"
+    },
+    "readings": {
+      "items": {
+        "$ref": "#/$defs/Reading"
+      },
+      "maxItems": 20,
+      "title": "Readings",
+      "type": "array"
+    },
+    "note": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Note",
+      "type": "string"
+    },
+    "observed_at": {
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "next_actor": {
+      "format": "uuid",
+      "title": "Next Actor",
+      "type": "string"
+    },
+    "next_action": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Next Action",
+      "type": "string"
+    },
+    "next_review_at": {
+      "format": "date-time",
+      "title": "Next Review At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "operation_id",
+    "subject_id",
+    "watch_id",
+    "actor_id",
+    "organization_id",
+    "expected_revision",
+    "source_revision",
+    "quote_id",
+    "quote_revision",
+    "policy_revision",
+    "kind",
+    "line_ids",
+    "parts",
+    "readings",
+    "note",
+    "observed_at",
+    "next_actor",
+    "next_action",
+    "next_review_at"
+  ],
+  "title": "Command",
+  "type": "object"
+}

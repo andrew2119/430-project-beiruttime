@@ -1,0 +1,1 @@
+{"version":1,"id":"L20.dealer-import","dependencies":["fastapi","asyncpg"],"routes":["routes.py:router"],"migrations":["migrations/L20_0001_dealer_import.sql"],"workers":[],"fixtures":{}}

@@ -1,0 +1,123 @@
+{
+  "sample": true,
+  "source": {
+    "watch_id": "watch-1",
+    "revision": 3,
+    "status": "available",
+    "title": "Sample watch / \u0633\u0627\u0639\u0629 \u062a\u062c\u0631\u064a\u0628\u064a\u0629 \u231a",
+    "price_minor": 500000,
+    "bid_sequence": 0,
+    "scheduled_end": "2026-11-17T12:00:00Z",
+    "cancelled": false,
+    "occurred_at": "2026-11-17T09:00:00Z",
+    "sample": true
+  },
+  "success": {
+    "schema_version": "communications.saved-watches.v1",
+    "operation_id": "save-1",
+    "subject_id": "buyer-1",
+    "watch_id": "watch-1",
+    "actor_id": "buyer-1",
+    "organization_id": null,
+    "expected_revision": 0,
+    "state": "saved",
+    "revision": 1,
+    "pending_reason": null,
+    "next_actor": null,
+    "next_review_at": null,
+    "source_revision": 3
+  },
+  "denied": {
+    "schema_version": "communications.saved-watches.v1",
+    "operation_id": "save-1",
+    "subject_id": "buyer-1",
+    "watch_id": "watch-1",
+    "actor_id": "buyer-2",
+    "organization_id": null,
+    "expected_revision": 0,
+    "state": "denied",
+    "revision": null,
+    "pending_reason": null,
+    "next_actor": "buyer",
+    "next_review_at": null,
+    "source_revision": null
+  },
+  "stale": {
+    "schema_version": "communications.saved-watches.v1",
+    "operation_id": "save-2",
+    "subject_id": "buyer-1",
+    "watch_id": "watch-1",
+    "actor_id": "buyer-1",
+    "organization_id": null,
+    "expected_revision": 0,
+    "state": "stale",
+    "revision": 1,
+    "pending_reason": null,
+    "next_actor": "buyer",
+    "next_review_at": null,
+    "source_revision": null
+  },
+  "lost_response": {
+    "result": {
+      "schema_version": "communications.saved-watches.v1",
+      "operation_id": "save-1",
+      "subject_id": "buyer-1",
+      "watch_id": "watch-1",
+      "actor_id": "buyer-1",
+      "organization_id": null,
+      "expected_revision": 0,
+      "state": "saved",
+      "revision": 1,
+      "pending_reason": null,
+      "next_actor": null,
+      "next_review_at": null,
+      "source_revision": 3
+    },
+    "response_received": false,
+    "retry_operation_id": "save-1"
+  },
+  "timeout": {
+    "schema_version": "communications.saved-watches.v1",
+    "operation_id": "save-1",
+    "subject_id": "buyer-1",
+    "watch_id": "watch-1",
+    "actor_id": "buyer-1",
+    "organization_id": null,
+    "expected_revision": 0,
+    "state": "pending",
+    "revision": null,
+    "pending_reason": "source_unavailable",
+    "next_actor": "buyer",
+    "next_review_at": null,
+    "source_revision": null
+  },
+  "command": {
+    "schema_version": "communications.saved-watches.v1",
+    "operation_id": "save-1",
+    "expected_revision": 0,
+    "saved": true,
+    "alerts": [
+      "price",
+      "bid",
+      "ending",
+      "sold"
+    ]
+  },
+  "occurrences": {
+    "through_revision": 5,
+    "items": [
+      {
+        "event_id": "price-4",
+        "watch_id": "watch-1",
+        "kind": "price",
+        "revision": 4,
+        "occurred_at": "2026-11-17T10:01:00Z",
+        "sample": true
+      }
+    ]
+  },
+  "recovery_assignment": [
+    "operator-1",
+    "operator-2"
+  ]
+}

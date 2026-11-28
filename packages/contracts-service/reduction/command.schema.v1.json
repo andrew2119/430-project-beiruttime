@@ -1,0 +1,185 @@
+{
+  "$defs": {
+    "Measurement": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "pattern": "^[0-9]{1,3}(\\.[0-9])?$",
+          "title": "Value",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "cm",
+            "mm"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "source": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "method": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "unit",
+        "source",
+        "method"
+      ],
+      "title": "Measurement",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "subject_id": {
+      "format": "uuid",
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "watch_id": {
+      "format": "uuid",
+      "title": "Watch Id",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "source_revision": {
+      "minimum": 1,
+      "title": "Source Revision",
+      "type": "integer"
+    },
+    "quote_id": {
+      "format": "uuid",
+      "title": "Quote Id",
+      "type": "string"
+    },
+    "quote_revision": {
+      "minimum": 1,
+      "title": "Quote Revision",
+      "type": "integer"
+    },
+    "policy_revision": {
+      "minimum": 1,
+      "title": "Policy Revision",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "reduction.command.v1",
+      "default": "reduction.command.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "expected_revision": {
+      "minimum": 0,
+      "title": "Expected Revision",
+      "type": "integer"
+    },
+    "kind": {
+      "enum": [
+        "request",
+        "record"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "choice_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Choice Id",
+      "type": "string"
+    },
+    "target": {
+      "$ref": "#/$defs/Measurement"
+    },
+    "recipient_id": {
+      "format": "uuid",
+      "title": "Recipient Id",
+      "type": "string"
+    },
+    "removed_link_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Removed Link Ids",
+      "type": "array"
+    },
+    "returned_link_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "title": "Returned Link Ids",
+      "type": "array"
+    },
+    "exception_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Exception Id"
+    },
+    "fit_confirmed": {
+      "default": false,
+      "title": "Fit Confirmed",
+      "type": "boolean"
+    },
+    "actual_strap_id": {
+      "anyOf": [
+        {
+          "maxLength": 160,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Actual Strap Id"
+    }
+  },
+  "required": [
+    "subject_id",
+    "watch_id",
+    "organization_id",
+    "source_revision",
+    "quote_id",
+    "quote_revision",
+    "policy_revision",
+    "operation_id",
+    "expected_revision",
+    "kind",
+    "choice_id",
+    "target",
+    "recipient_id"
+  ],
+  "title": "Command",
+  "type": "object"
+}

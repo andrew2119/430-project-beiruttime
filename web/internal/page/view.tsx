@@ -1,4 +1,5 @@
 'use client';
+import { useLocale } from '@/shell/locale-context';
 import { useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Button, Card, Input, RowSkeleton, Segmented, Skeleton, State, formatCount, formatNumber } from '@beirut-time/ui/foundation';
@@ -12,7 +13,8 @@ import { replacePageQuery } from '@/lib/page-speed/address';
 import { TEXT } from '@/tests/fixtures/worst-case';
 import { demoRead, demoRequest } from './reads';
 import { PAGE_COPY } from './copy';
-export function StartingPage({locale}: {locale:Locale}) {
+export function StartingPage({locale: initialLocale}: {locale:Locale}) {
+  const locale = useLocale(initialLocale);
   const path = usePathname(), search = useSearchParams(), request = demoRequest(search.get('data'),search.get('page'));
   const query = usePageRead(demoRead(request),{keep:true}), t = PAGE_COPY[locale], [draft,setDraft] = useState('');
   const answer = query.data;

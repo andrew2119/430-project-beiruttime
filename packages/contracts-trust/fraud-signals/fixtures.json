@@ -1,0 +1,114 @@
+{
+  "schema_version": "fraud-signals.v1",
+  "synthetic": true,
+  "now": "2026-11-17T00:00:00+00:00",
+  "request": {
+    "schema_version": "fraud-signals.v1",
+    "operation_id": "operation-0001",
+    "subject_id": "subject",
+    "watch_id": "watch",
+    "organization_id": "business",
+    "expected_revision": 0,
+    "source_revision": 1
+  },
+  "photos": [
+    {
+      "photo_id": "photo",
+      "normalized_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "normalization_version": "v1",
+      "watch_id": "watch",
+      "seller_id": "seller"
+    },
+    {
+      "photo_id": "other",
+      "normalized_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "normalization_version": "v1",
+      "watch_id": "other",
+      "seller_id": "seller"
+    }
+  ],
+  "bids": [],
+  "success": {
+    "schema_version": "fraud-signals.v1",
+    "operation_id": "operation-0001",
+    "subject_id": "subject",
+    "watch_id": "watch",
+    "organization_id": "business",
+    "expected_revision": 0,
+    "source_revision": 1,
+    "actor_id": "reviewer",
+    "revision": 1,
+    "state": "review_required",
+    "reasons": [
+      {
+        "kind": "exact_photo_reuse",
+        "count": 1
+      }
+    ],
+    "pending_reason": null,
+    "next_actor": "reviewer",
+    "next_review_at": "2026-11-18T00:00:00+00:00"
+  },
+  "negative": {
+    "schema_version": "fraud-signals.v1",
+    "operation_id": "operation-0001",
+    "subject_id": "subject",
+    "watch_id": "watch",
+    "organization_id": "business",
+    "expected_revision": 0,
+    "source_revision": 1,
+    "actor_id": "reviewer",
+    "revision": 1,
+    "state": "no_observable_signal",
+    "reasons": [],
+    "pending_reason": null,
+    "next_actor": "reviewer",
+    "next_review_at": "2026-11-18T00:00:00+00:00"
+  },
+  "denied": {
+    "context_override": {
+      "permitted": false
+    },
+    "status": 403,
+    "body": {
+      "detail": {
+        "code": "denied"
+      }
+    }
+  },
+  "stale": {
+    "context_override": {
+      "source_revision": 2
+    },
+    "status": 409,
+    "body": {
+      "detail": {
+        "code": "stale"
+      }
+    }
+  },
+  "lost_response": {
+    "lookup": "/v1/fraud-signals/operations/operation-0001",
+    "result": {
+      "schema_version": "fraud-signals.v1",
+      "operation_id": "operation-0001",
+      "subject_id": "subject",
+      "watch_id": "watch",
+      "organization_id": "business",
+      "expected_revision": 0,
+      "source_revision": 1,
+      "actor_id": "reviewer",
+      "revision": 1,
+      "state": "review_required",
+      "reasons": [
+        {
+          "kind": "exact_photo_reuse",
+          "count": 1
+        }
+      ],
+      "pending_reason": null,
+      "next_actor": "reviewer",
+      "next_review_at": "2026-11-18T00:00:00+00:00"
+    }
+  }
+}

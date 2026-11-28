@@ -1,0 +1,15 @@
+# Resale record transfer v1
+
+Private command: `POST /internal/v1/resale-records/transfers`.
+Private lookup: `GET /internal/v1/resale-records/operations/{operation_id}`.
+Both require current authenticated identity, selected organization and record scope. Transport adapters derive actor and organization from authentication, never request bodies.
+
+The immutable command binds operation, actor, organization, recipient subject, canonical watch, actual resale, expected record revision, source revision, retained quote revision and policy revision. Identical retries return the durable result; changed bindings conflict. A second operation for the same sale cannot transfer twice.
+
+The provider must serialize current authority and released-sale facts for the duration of `locked_facts(command, timeout_seconds=2)`. Its context must prevent authority, ownership, recipient grant, watch, release and source revisions changing until local commit. It verifies the prior signed record, actual independent pass and custody, canonical commitment, retained economics and actual released resale. A projection is insufficient. Missing integration raises unavailable. No transfer is inferred from payment, dispatch or a declaration.
+
+Results carry schema_version, operation_id, subject_id, watch_id, actor_id, organization_id, expected_revision, state, revision, pending_reason, next_actor and next_review_at. Definitive denied, stale and duplicate outcomes are durable private receipts separate from history. They do not mutate history. Once current access is restored, lookup and identical retries return the original terminal outcome even if source facts change. A changed binding conflicts without replacing the original receipt. Current access denial never replaces an existing terminal receipt. Dependency timeout returns pending with the same operation reference. Retry and lookup recheck current authority. The store requires a configured responsible operator. First request time, 24-hour review and 48-hour escalation deadlines survive restart and never slide on retry. Receipt-store failure is unavailable rather than an acknowledged action. Pending is never success; clients retain the exact command until resolved.
+
+Public history contains only issuer, inspection date, scope, privacy-safe watch reference, qualification, signed-record hash, previous-revision hash and hash-linked revision. It contains no sale, operation, account, recipient, former owner, serial or evidence reference. The prior hash must address a previously verified privacy-safe signed summary. The reference verifies that summary, not the object in hand. Modification or inspection expiry at equality leaves the inspection historical. Transfers never create service work or a fresh authenticity claim.
+
+The local store is a durable receipt/history store, with a unique released-sale key and atomic outbox. It holds no money, allocation or release authority. Delivery consumers acknowledge the same event reference; acknowledgement and transfer commit are separate. Runtime composition, authenticated HTTP adapters, provider integration and outbox dispatch remain with their owning runtime.

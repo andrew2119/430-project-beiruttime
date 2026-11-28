@@ -1,0 +1,48 @@
+services:
+  policy-auction:
+    image: ${BT_L12_AUCTION_IMAGE:?}
+    command: ["uvicorn", "service_app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+    environment:
+      BT_SERVICE_NAME: auction
+      BT_DATABASE_URL: ${BT_L12_DATABASE_URL:?}
+      BT_PUBLIC_WEB_ORIGINS: http://127.0.0.1:3412
+    volumes:
+      - ${BT_L12_AUCTION_SOURCE:?}:/app/service_app:ro
+      - ${BT_L12_AUCTION_MODULES:?}:/app/modules:ro
+      - ${BT_L12_DOMAIN_CONTRACTS:?}:/opt/domain-contracts:ro
+    ports: ["127.0.0.1:3413:8000"]
+    mem_limit: 256m
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready')"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  policy-web:
+    image: ${BT_L12_WEB_IMAGE:?}
+    environment:
+      AUCTION_API_URL: http://policy-auction:8000
+      IDENTITY_API_URL: http://127.0.0.1:3499
+      CATALOG_API_URL: http://127.0.0.1:3499
+      PRICING_API_URL: http://127.0.0.1:3499
+      ORDERS_API_URL: http://127.0.0.1:3499
+      ELIGIBILITY_API_URL: http://127.0.0.1:3499
+      TRUST_API_URL: http://127.0.0.1:3499
+      COMMUNICATIONS_API_URL: http://127.0.0.1:3499
+      SERVICE_OPERATIONS_API_URL: http://127.0.0.1:3499
+      BT_ALLOWED_WEB_ORIGINS: http://127.0.0.1:3412
+      BT_PUBLIC_WEB_ORIGINS: http://127.0.0.1:3412
+    ports: ["127.0.0.1:3412:3000"]
+    mem_limit: 512m
+    cpus: 0.5
+    depends_on:
+      policy-auction: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+networks:
+  default:
+    external: true
+    name: beirut-time_default

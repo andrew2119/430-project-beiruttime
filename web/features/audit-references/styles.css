@@ -1,0 +1,8 @@
+.audit-stack { display: grid; gap: var(--space-4); min-inline-size: 0; }
+.audit-filters { display: grid; gap: var(--space-4); min-inline-size: 0; }
+.audit-records { display: grid; gap: var(--space-4); padding-inline-start: var(--space-5); }
+.audit-records li { min-inline-size: 0; overflow-wrap: anywhere; }
+.audit-reference { display: grid; gap: var(--space-2); min-inline-size: 0; }
+.audit-reference dt { font-weight: var(--bt-weight-strong); }
+.audit-reference dd { margin: 0; overflow-wrap: anywhere; }
+.audit-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
