@@ -1,3 +1,3 @@
 import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
-export default defineConfig({ esbuild:{jsx:'automatic'}, resolve:{ alias:{ '@':fileURLToPath(new URL('../..',import.meta.url)) } }, test:{ include:['features/identity/*.test.ts'],maxWorkers:1 } });
+export default defineConfig({ esbuild:{jsx:'automatic'}, resolve:{ alias:{ '@':fileURLToPath(new URL('../..',import.meta.url)), '@contracts':fileURLToPath(new URL('../../../packages',import.meta.url)) } }, test:{ include:['features/identity/*.test.ts'],maxWorkers:1 } });

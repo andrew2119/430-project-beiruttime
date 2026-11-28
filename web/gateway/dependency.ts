@@ -15,9 +15,12 @@ function isPublicationPending(bytes: Uint8Array): boolean {
 
 export type Unavailable = { kind: 'unavailable'; dependency: string };
 // Independent per-dependency budgets; bounded body/deadline, no retry or waiting queue.
+// A dependency that answers its own 429 on purpose (answersThrottle) passes it through as
+// an ordinary answer, so a spent budget never counts as a failure or opens the breaker.
 export class Dependency {
   active = 0; failures = 0; openedAt = 0; probing = false;
-  constructor(readonly name: string, readonly origin: string, readonly timeoutMs = 1200, readonly concurrency = 4, readonly cooldownMs = 10000) {}
+  constructor(readonly name: string, readonly origin: string, readonly timeoutMs = 1200, readonly concurrency = 4, readonly cooldownMs = 10000,
+    readonly answersThrottle = false) {}
   get(path: string, requestId: string) { return this.request('GET',path,requestId); }
   async request(method: string, path: string, requestId: string, options: { headers?: HeadersInit; body?: BodyInit; maxResponseBytes?: number } = {}): Promise<Response | Unavailable> {
     const halfOpen = this.openedAt !== 0;
@@ -34,7 +37,7 @@ export class Dependency {
       const pendingCandidate = isCatalogPublication
         && response.status === 503 && response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() === 'application/json';
       const responseLimit = pendingCandidate ? Math.min(maxResponseBytes, 16 * 1024) : maxResponseBytes;
-      if ((response.status >= 500 && !pendingCandidate) || response.status === 429) { await response.body?.cancel(); throw new Error('upstream'); }
+      if ((response.status >= 500 && !pendingCandidate) || (response.status === 429 && !this.answersThrottle)) { await response.body?.cancel(); throw new Error('upstream'); }
       const reader = response.body?.getReader(); const chunks: Uint8Array[] = []; let size=0;
       if (reader) while (true) { const next=await reader.read(); if(next.done) break; size+=next.value.byteLength; if(size>responseLimit) { await reader.cancel(); throw new Error('upstream budget'); } chunks.push(next.value); }
       const bytes = new Uint8Array(size); let offset=0; for(const chunk of chunks) { bytes.set(chunk,offset); offset+=chunk.byteLength; }

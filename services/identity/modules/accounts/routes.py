@@ -12,10 +12,12 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from bt_contracts_core.errors import PublicError
 from bt_runtime.app.db import unit_of_work
 from bt_runtime.app.auth import require_principal
+from service_app.session_slots import demo_switch, link_session_holds, refresh_cookie_name, session_slot, slot_refusal
 from .security import (audit, check_password, cookie, digest, event, hash_password, limit, live_actor,
     DUMMY_PASSWORD_HASH, new_session, password_matches, password_work, private_key, projection, require_origin, session_response)
 
 from .recovery import recovery_payload, recovery_details
+from .demo_entry import note_settings
 
 router = APIRouter()
 
@@ -84,6 +86,9 @@ async def admission(request, scope, maximum=12):
 @router.post('/v1/accounts/register', status_code=201)
 async def register(body: Register, request: Request, response: Response):
     require_origin(request)
+    if session_slot(request) is not None:
+        # A sample tab only ever holds a link session; new accounts use an ordinary tab.
+        raise slot_refusal()
     private_key()  # Configuration fails before durable registration.
     check_password(body.password)
     await admission(request, 'register:' + str(request.client.host), 30)
@@ -120,6 +125,10 @@ async def register(body: Register, request: Request, response: Response):
 @router.post('/v1/accounts/login')
 async def login(body: Credentials, request: Request, response: Response):
     require_origin(request)
+    if session_slot(request) is not None:
+        # A sample tab only ever holds a link session, so a typed sign-in there is refused
+        # before any account is read or any password work is spent.
+        raise slot_refusal()
     await admission(request, 'login-ip:' + str(request.client.host), 60)
     await admission(request, 'login-email:' + body.email)
     async with unit_of_work(request.app.state.pool, lock_key='account-login:' + body.email) as tx:
@@ -142,8 +151,8 @@ async def login(body: Credentials, request: Request, response: Response):
     return result
 
 
-async def refresh_owner(tx, request):
-    raw = request.cookies.get('bt_refresh', '')
+async def refresh_owner(tx, request, name='bt_refresh'):
+    raw = request.cookies.get(name, '')
     if not 32 <= len(raw) <= 200:
         raise HTTPException(401)
     return await tx.fetchrow('''SELECT s.subject_id,t.session_id FROM identity_refresh_tokens t
@@ -153,14 +162,27 @@ async def refresh_owner(tx, request):
 @router.post('/v1/accounts/refresh')
 async def refresh(request: Request, response: Response):
     require_origin(request)
+    slot = session_slot(request)
+    name = refresh_cookie_name(slot)
+    # This process's sample-entry values go on record before any link session is judged.
+    await note_settings(request.app)
     async with unit_of_work(request.app.state.pool) as tx:
-        owner = await refresh_owner(tx, request)
+        owner = await refresh_owner(tx, request, name)
         if not owner:
             raise HTTPException(401)
         account = await tx.fetchrow('SELECT * FROM identity_accounts WHERE id=$1 FOR UPDATE', owner['subject_id'])
         session = await tx.fetchrow('SELECT * FROM identity_sessions WHERE id=$1', owner['session_id'])
-        token = await tx.fetchrow('SELECT * FROM identity_refresh_tokens WHERE hash=$1', digest(request.cookies['bt_refresh']))
+        token = await tx.fetchrow('SELECT * FROM identity_refresh_tokens WHERE hash=$1', digest(request.cookies[name]))
         active = await tx.fetchval('SELECT $1::timestamptz>now()', session['expires_at'])
+        demo = await tx.fetchrow('SELECT role,activation FROM identity_demo_sessions WHERE session_id=$1', session['id'])
+        if slot is not None or demo is not None:
+            # A slot holds only a link session, and a link session lives only in a slot, under
+            # the current unclosed activation that issued it, for its role's listed seed account.
+            holds = False
+            if slot is not None and demo is not None:
+                closed = await tx.fetchval('SELECT closed_at IS NOT NULL FROM identity_demo_activations WHERE activation=$1', demo['activation'])
+                holds = link_session_holds(demo, demo_switch(), closed, account)
+            active = active and holds
         if token['consumed_at'] or session['revoked_at'] or account['status'] != 'active' or not active:
             await tx.execute('UPDATE identity_sessions SET revoked_at=coalesce(revoked_at,now()) WHERE id=$1', session['id'])
             result, successor = None, None
@@ -168,28 +190,31 @@ async def refresh(request: Request, response: Response):
             successor = secrets.token_urlsafe(48)
             await tx.execute('UPDATE identity_refresh_tokens SET consumed_at=now() WHERE hash=$1', token['hash'])
             await tx.execute('INSERT INTO identity_refresh_tokens(hash,session_id) VALUES($1,$2)', digest(successor), session['id'])
-            result = await session_response(tx, request, account, session['id'], successor)
+            result = await session_response(tx, request, account, session['id'], successor,
+                until=session['expires_at'] if demo is not None else None)
     if result is None:
         raise HTTPException(401)
-    cookie(response, successor)
+    cookie(response, successor, slot=slot)
     return result
 
 
 @router.post('/v1/accounts/logout')
 async def logout(request: Request, response: Response):
     require_origin(request)
+    slot = session_slot(request)
     async with unit_of_work(request.app.state.pool) as tx:
-        owner = await refresh_owner(tx, request)
+        owner = await refresh_owner(tx, request, refresh_cookie_name(slot))
         if owner:
             await tx.fetchrow('SELECT id FROM identity_accounts WHERE id=$1 FOR UPDATE', owner['subject_id'])
             await tx.execute('UPDATE identity_sessions SET revoked_at=now() WHERE id=$1', owner['session_id'])
             await audit(tx, request, owner['subject_id'], owner['session_id'], 'session.logout', 'accepted')
-    cookie(response, '', remove=True)
+    cookie(response, '', remove=True, slot=slot)
     return {'signed_out': True}
 
 
 @router.get('/internal/v1/principal')
 async def principal(request: Request, organization_id: UUID | None = None):
+    await note_settings(request.app)
     async with unit_of_work(request.app.state.pool) as tx:
         account, session = await live_actor(tx, request)
         result = await projection(tx, account, session)
