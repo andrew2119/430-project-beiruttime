@@ -22,6 +22,31 @@ def attribution_matches(content, credit):
     )
 
 
+def attribution_text(credit):
+    return (
+        "Author: "
+        + credit["author"]
+        + "\n"
+        + credit["credit"]
+        + "\nSource: "
+        + credit["source_url"]
+        + "\nLicense: "
+        + credit["license_url"]
+        + "\nLicense name: "
+        + credit["license"]
+        + "\nChanges: oriented, metadata removed, resized and re-encoded."
+    ).encode("utf-8")
+
+
+def embed_attribution(variants, credit):
+    # Exported derivatives retain deliberately authored attribution, not any
+    # source EXIF/serial metadata. JPEG COM does not alter decoded pixels.
+    text = attribution_text(credit)
+    for variant in variants.values():
+        pixels = variant["content"]
+        variant["content"] = pixels[:2] + b"\xff\xfe" + (len(text) + 2).to_bytes(2, "big") + text + pixels[2:]
+
+
 def normalize(content):
     if not content or len(content) > MAX_BYTES:
         raise PublicError("media_bytes_limit", "Image exceeds the upload budget.", status=413)
