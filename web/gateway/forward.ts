@@ -1,9 +1,10 @@
 import { gatewayRegistrations } from '@/registry-loader';
-import { dependencies, requestId, privateHeaders, serviceNames } from '@/lib/bff/status';
+import { dependencies, requestId, privateHeaders, sampleEntry, serviceNames } from '@/lib/bff/status';
 import type { ServiceName } from '@/lib/api/types';
 import type { Role } from '@/registry-types';
 import { validatedBrowserOrigin } from './origin';
 
+const sessionSlot=/^[A-Za-z0-9_-]{22}$/;
 function error(status: number, code: string, id: string) {
   return Response.json({ error: { code, message: status===503 ? 'Service is temporarily unavailable.' : 'The request could not be completed.', request_id:id, details:{} } },{status,headers:privateHeaders(id)});
 }
@@ -41,14 +42,22 @@ export async function forward(request: Request, context: { params: Promise<{ ser
   if(validatedOrigin) headers.set('Origin',validatedOrigin);
   for(const key of ['Authorization','Content-Type','Idempotency-Key','If-Match','Accept-Language']) { const value=request.headers.get(key); if(value) headers.set(key,value); }
   if(service==='identity' && endpoint.forwardCookies?.length) {
-    const allowed=endpoint.forwardCookies;
+    // A sample tab names its session slot; only that slot's refresh cookie travels with it.
+    const slot=request.headers.get('X-BT-Session-Slot');
+    if(slot!==null && !sessionSlot.test(slot)) return error(400,'invalid_session_slot',id);
+    let allowed=endpoint.forwardCookies;
+    if(slot!==null) {
+      allowed=endpoint.forwardCookies.includes('bt_refresh') ? ['bt_refresh_s_'+slot] : [];
+      if(allowed.length) headers.set('X-BT-Session-Slot',slot);
+    }
     const cookies=(request.headers.get('Cookie')??'').split(';').filter(c=>allowed.includes(c.trim().split('=')[0]));
     if(cookies.length) headers.set('Cookie',cookies.join(';'));
   }
   let body:Uint8Array|undefined;
   try { if(!['GET','HEAD'].includes(request.method)) body=await readBody(request,endpoint.maxBodyBytes??1024*1024); } catch { return error(413,'body_too_large',id); }
   const query=new URL(request.url).search;
-  const upstream=await dependencies.get(service as ServiceName)!.request(request.method,'/'+path.map(encodeURIComponent).join('/')+query,id,{headers,body:body as BodyInit|undefined,maxResponseBytes:endpoint.maxResponseBytes});
+  const target=service==='identity' && endpoint.path==='/v1/demo-entry/sessions' ? sampleEntry : dependencies.get(service as ServiceName)!;
+  const upstream=await target.request(request.method,'/'+path.map(encodeURIComponent).join('/')+query,id,{headers,body:body as BodyInit|undefined,maxResponseBytes:endpoint.maxResponseBytes});
   if(!(upstream instanceof Response)) return error(503,'unavailable',id);
   const responseHeaders=new Headers(privateHeaders(id));
   responseHeaders.set('Content-Type',upstream.headers.get('Content-Type')??'application/json');

@@ -81,6 +81,8 @@ it.each([
   ['GET', '/v1/businesses/test-record/memberships', 29200],
   ['POST', '/v1/accounts/recovery', 44200],
   ['POST', '/v1/accounts/logout', 21200],
+  ['POST', '/v1/demo-entry/sessions', 102200],
+  ['GET', '/v1/demo-entry/sessions', undefined],
   ['GET', '/v1/accounts/logout', undefined],
   ['GET', '/v1/accounts/recovery', undefined],
   ['POST', '/v1/contacts/challenges', 59200],

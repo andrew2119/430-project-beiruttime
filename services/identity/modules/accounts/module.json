@@ -9,15 +9,18 @@
     "httpx"
   ],
   "routes": [
-    "routes.py:router"
+    "routes.py:router",
+    "demo_entry.py:router"
   ],
   "migrations": [
     "migrations/L01_0001_accounts.sql",
     "migrations/L01_0002_reauthentication.sql",
-    "migrations/L01_0003_operator_bootstrap.sql"
+    "migrations/L01_0003_operator_bootstrap.sql",
+    "migrations/L01_0005_demo_sessions.sql"
   ],
   "workers": [
-    "workers.py:run"
+    "workers.py:run",
+    "demo_entry.py:sweep"
   ],
   "fixtures": {"demo":"fixtures.py:seed"}
 }

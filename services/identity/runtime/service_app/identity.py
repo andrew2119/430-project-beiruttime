@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import HTTPException, Request
 from bt_runtime.app.auth import require_principal
 from bt_contracts_core.errors import PublicError
+from service_app.session_slots import demo_switch, link_session_holds
 
 
 async def live_actor(tx, request: Request, *, lock=False):
@@ -13,8 +14,16 @@ async def live_actor(tx, request: Request, *, lock=False):
     except ValueError:
         raise HTTPException(401) from None
     row = await tx.fetchrow('SELECT * FROM identity_accounts WHERE id=$1' + (' FOR UPDATE' if lock else ''), subject)
-    active = await tx.fetchval('''SELECT id FROM identity_sessions WHERE id=$1 AND subject_id=$2
-        AND revoked_at IS NULL AND expires_at>now()''', session, subject)
+    # Accounts creates the session and link-session tables together, so both exist here.
+    # A link session works only under the current unclosed activation that issued it.
+    switch = demo_switch()
+    found = await tx.fetchrow('''SELECT s.id, d.role, d.activation FROM identity_sessions s
+        LEFT JOIN identity_demo_sessions d ON d.session_id=s.id
+        LEFT JOIN identity_demo_activations a ON a.activation=d.activation
+        WHERE s.id=$1 AND s.subject_id=$2 AND s.revoked_at IS NULL AND s.expires_at>now()
+        AND (d.session_id IS NULL OR (d.activation=$3::text AND a.closed_at IS NULL))''',
+        session, subject, switch.activation if switch else None)
+    active = found is not None and (found['role'] is None or (row is not None and link_session_holds(found, switch, False, row)))
     if not row or row['status'] != 'active' or not active:
         raise HTTPException(401)
     return row, session
