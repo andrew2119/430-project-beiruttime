@@ -303,3 +303,38 @@ jobs:
         run: |
           printf '%s' "$NEEDS" > "$RUNNER_TEMP/needs.json"
           python3 .github/ci/verify.py light "$RUNNER_TEMP/needs.json" "$RUNNER_TEMP/reports"
+
+  # Proof-only job for a throwaway proof pull request; never merged.
+  a07-tests-proof:
+    name: A07 named tests (proof only)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/python-env
+      - name: Run the L14 event destination tests
+        run: python -m pytest -p no:cacheprovider -o asyncio_mode=auto -v tests/lanes/L14/WIRE-L14/test_event_destinations.py
+      - name: List the event ingress tests the auction services job must collect and pass
+        run: |
+          python3 -I - <<'EOF'
+          import sys
+          sys.path.insert(0, '.github/ci')
+          import services
+          found = sorted(t for t in services.definitions('auction')
+                         if t[0] == 'services/auction/runtime/tests/test_event_ingress.py')
+          for test in found:
+              print('::'.join(filter(None, test)))
+          sys.exit(0 if len(found) == 2 else 1)
+          EOF
+      - uses: ./.github/actions/node-env
+      - name: Generate the navigation index
+        working-directory: web
+        run: node scripts/generate-nav.mjs
+      - name: Run the locale refresh and proxy bid presentation tests
+        working-directory: web
+        run: |
+          pnpm exec vitest run --config vitest.config.ts --root . tests/locale-route-refresh.test.tsx --reporter=verbose
+          pnpm exec vitest run --config features/proxy-bid/vitest.config.ts --root . features/proxy-bid/presentation.test.tsx --reporter=verbose
