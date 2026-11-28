@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
 import { gatewayRegistrations } from '@/registry-loader';
 import { Dependency } from './dependency';
@@ -205,6 +206,27 @@ it.each([
   expect(routeBudget('communications', method, path)).toBe(budget);
 });
 
+it('changes only the two intake receipt operation budgets', () => {
+  const receiptPath = '/v1/intake/operations/:key';
+  const isReceiptBudget = ([service, method, path]: (typeof routeBudgets)[number]) =>
+    service === 'service-operations' && (method === 'GET' || method === 'DELETE') && path === receiptPath;
+  expect(routeBudgets.filter(isReceiptBudget)).toEqual([
+    ['service-operations', 'GET', receiptPath, 18800],
+    ['service-operations', 'DELETE', receiptPath, 20600],
+  ]);
+  const unchanged = routeBudgets.filter(row => !isReceiptBudget(row)).map(([service, method, path, budget]) =>
+    [service, method, typeof path === 'string' ? path : { source: path.source, flags: path.flags }, budget],
+  );
+  // Pin the ordered pre-change table, including regex patterns and flags.
+  expect(unchanged).toHaveLength(163);
+  expect(createHash('sha256').update(JSON.stringify(unchanged)).digest('hex')).toBe(
+    'a3f64b4dd21021c5c19f8b131bcb06ebeaa81f8fb580de5cccc589b8097c0620',
+  );
+  expect(routeBudget('service-operations', 'GET', '/v1/intake/operations/test-operation')).toBe(18800);
+  expect(routeBudget('service-operations', 'DELETE', '/v1/intake/operations/test-operation')).toBe(20600);
+  expect(routeBudget('service-operations', 'POST', '/v1/intake/operations/test-operation')).toBeUndefined();
+});
+
 it.each([
   ['PUT', '/v1/directory/businesses/test-record', 28200],
   ['POST', '/v1/directory/choices', 31200],
@@ -237,6 +259,8 @@ it.each([
   ['service-operations', 'GET', '/v1/intake/records/test-record', 7201, 12200, 200],
   ['service-operations', 'POST', '/v1/intake/records', 6001, 41000, 201],
   ['service-operations', 'PUT', '/v1/intake/records/test-record', 6001, 38000, 200],
+  ['service-operations', 'GET', '/v1/intake/operations/test-operation', 2401, 18800, 200],
+  ['service-operations', 'DELETE', '/v1/intake/operations/test-operation', 2401, 20600, 200],
   ['service-operations', 'GET', '/v1/intake/records/test-record/evidence', 4801, 12800, 200],
   ['service-operations', 'GET', '/v1/intake/evidence/test-evidence', 4801, 14800, 200],
 ] as const)('returns %s %s %s after the former deadline', async (service, method, path, delay, budget, status) => {

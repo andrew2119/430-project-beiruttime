@@ -536,6 +536,12 @@ export const routeBudgets: readonly RouteBudget[] = [
   // existing intake. Update locks and reads the existing intake in one command.
   ['service-operations', 'POST', '/v1/intake/records', 4 * standardCallMs + transactionMs(9) + localWorkMs],
   ['service-operations', 'PUT', '/v1/intake/records/:id', 4 * standardCallMs + transactionMs(8) + localWorkMs],
+  // Intake receipt lookup checks the selected principal and provider, locks and
+  // reads the operation, then rechecks record access on an existing receipt.
+  ['service-operations', 'GET', '/v1/intake/operations/:key', 3 * standardCallMs + transactionMs(2) + localWorkMs],
+  // Closure can return an existing receipt or insert a tombstone without a
+  // record access read. Budget for the slower of those mutually exclusive paths.
+  ['service-operations', 'DELETE', '/v1/intake/operations/:key', Math.max(3 * standardCallMs + transactionMs(2), 2 * standardCallMs + transactionMs(3)) + localWorkMs],
   // Intake evidence checks principal, provider and record scope. Upload also
   // validates the bounded file payload in evidence and photo. intake/evidence
   // upload takes the operation and intake locks, checks replay, count and

@@ -29,6 +29,7 @@ export default {
     {service:'communications',path:'/v1/operator-workspace/queues/:key',methods:['GET'],roles:['operator']},
     {service:'service-operations',path:'/v1/intake/records',methods:['GET','POST'],roles:['dealer','brand'],maxBodyBytes:65536},
     {service:'service-operations',path:'/v1/intake/records/:id',methods:['GET','PUT'],roles:['dealer','brand'],maxBodyBytes:65536},
+    {service:'service-operations',path:'/v1/intake/operations/:key',methods:['GET','DELETE'],roles:['dealer','brand'],maxBodyBytes:4096,maxResponseBytes:8192},
     {service:'service-operations',path:'/v1/intake/records/:id/evidence',methods:['GET','POST'],roles:['dealer','brand'],maxBodyBytes:524288},
     {service:'service-operations',path:'/v1/intake/evidence/:id',methods:['GET'],roles:['dealer','brand'],maxResponseBytes:524288}
   ],slots:[]
