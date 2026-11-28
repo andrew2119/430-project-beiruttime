@@ -1,0 +1,26 @@
+export const copy = {
+  en: {
+    areas:'Assessed areas', draft:'New or replacement assessment request', title:'Request external cleaning', intro:'Case and bracelet only. The brand or dealer must assess the process and limits. No submersion safety or movement service is promised.',
+    subject:'Service request reference', open:'Open request', missing:'Enter the service request reference from your chosen business.', signedOut:'Sign in to view your own cleaning request.',
+    empty:'No cleaning request has been submitted.', condition:'Current watch condition and known modifications', limits:'Preservation limits and areas to avoid', case:'Case', bracelet:'Bracelet',
+    permission:'I permit a limited external cleaning assessment. This does not permit opening or work.', water:'I understand that an assembled watch is not assumed safe to submerge.', movement:'This request excludes movement service, polishing and opening.',
+    submit:'Request assessment', accept:'Accept this assessed line and terms', refresh:'Refresh current assessment', retry:'Retry the same action', pending:'The result is uncertain. Keep this action reference and retry the same action.', sending:'Submitting…',
+    requested:'Assessment requested. The business must assess the process before quoting.', accepted:'This exact cleaning line was accepted. Work still requires a current job, custody, consent, watch commitment and confirmed platform-held simulated payment.',
+    unavailable:'Current facts are unavailable. Try again; no success is assumed.', denied:'Access is denied. Sign in with the account permitted for this request.', stale:'The request or quote changed. Refresh and review the current assessment before accepting.',
+    error:'The action could not be confirmed. Refresh the current record before continuing.', loading:'Loading the current request…', quote:'Separate assessed cleaning line', process:'Assessed process', limitations:'Assessed limitations', lead:'Lead time', terms:'Terms',
+    amount:'Customer total', fee:'Business-paid platform fee (included)', absent:'Assessment and quote are not yet available. Refresh after the business responds.', reference:'Action reference', review:'Review the complete assessed process, preservation limits, amount and terms before explicitly accepting.',
+    acceptedTerms:'I accept this exact assessed line, amount and terms.', currentCondition:'Retained condition', currentLimits:'Retained preservation limits', support:'Contact support through your service request if the result remains pending.',
+  },
+  ar: {
+    areas:'المناطق المقيّمة', draft:'طلب تقييم جديد أو بديل', title:'طلب تنظيف خارجي', intro:'العلبة والسوار فقط. يجب أن تقيّم العلامة أو الوكيل الطريقة والحدود. لا يُفترض أمان الغمر بالماء ولا تُوعَد صيانة الحركة.',
+    subject:'مرجع طلب الخدمة', open:'فتح الطلب', missing:'أدخل مرجع طلب الخدمة من المنشأة التي اخترتها.', signedOut:'سجّل الدخول لعرض طلب التنظيف الخاص بك.',
+    empty:'لم يُرسل طلب تنظيف بعد.', condition:'حالة الساعة الحالية والتعديلات المعروفة', limits:'حدود الحفاظ والمناطق التي يجب تجنبها', case:'العلبة', bracelet:'السوار',
+    permission:'أسمح بتقييم محدود للتنظيف الخارجي. هذا لا يسمح بالفتح أو تنفيذ العمل.', water:'أفهم أنه لا يُفترض أمان غمر الساعة المجمّعة بالماء.', movement:'يستثني هذا الطلب صيانة الحركة والتلميع والفتح.',
+    submit:'طلب التقييم', accept:'قبول هذا البند المقيّم وشروطه', refresh:'تحديث التقييم الحالي', retry:'إعادة المحاولة بنفس الإجراء', pending:'النتيجة غير مؤكدة. احتفظ بمرجع الإجراء وأعد المحاولة بنفس الإجراء.', sending:'جارٍ الإرسال…',
+    requested:'طُلب التقييم. يجب أن تقيّم المنشأة الطريقة قبل تقديم العرض.', accepted:'قُبل بند التنظيف هذا بدقته. يبقى العمل مشروطاً بمهمة وحيازة وموافقة والتزام حصري للساعة بحالتها الحالية ودفعة محاكاة مؤكدة تحتفظ بها المنصة.',
+    unavailable:'الحقائق الحالية غير متاحة. حاول مجدداً؛ لا يُفترض النجاح.', denied:'الوصول مرفوض. سجّل الدخول بالحساب المصرّح له بهذا الطلب.', stale:'تغيّر الطلب أو العرض. حدّث وراجع التقييم الحالي قبل القبول.',
+    error:'تعذّر تأكيد الإجراء. حدّث السجل الحالي قبل المتابعة.', loading:'جارٍ تحميل الطلب الحالي…', quote:'بند مستقل للتنظيف الخارجي المقيّم', process:'الطريقة المقيّمة', limitations:'القيود المقيّمة', lead:'مدة التنفيذ', terms:'الشروط',
+    amount:'إجمالي العميل', fee:'رسم المنصة على المنشأة (مشمول)', absent:'التقييم والعرض غير متاحين بعد. حدّث بعد رد المنشأة.', reference:'مرجع الإجراء', review:'راجع الطريقة المقيّمة كاملة وحدود الحفاظ والمبلغ والشروط قبل القبول الصريح.',
+    acceptedTerms:'أقبل هذا البند المقيّم بدقته ومبلغه وشروطه.', currentCondition:'الحالة المحفوظة', currentLimits:'حدود الحفاظ المحفوظة', support:'تواصل مع الدعم عبر طلب الخدمة إذا بقيت النتيجة معلّقة.',
+  },
+} as const;

@@ -1,0 +1,9 @@
+export type AlertKind = 'price' | 'bid' | 'ending' | 'sold';
+export type SavedWatch = {watch_id:string; revision:number; saved:boolean; alerts:AlertKind[]; status:'available'|'sold'|'unavailable'; title:string|null; price_minor:number|null};
+export type SavedList = {items:SavedWatch[];total:number;offset:number;limit:number};
+export type SaveCommand = {schema_version:'communications.saved-watches.v1';operation_id:string;expected_revision:number;saved:boolean;alerts:AlertKind[]};
+export type SaveResult = {schema_version:'communications.saved-watches.v1';operation_id:string;subject_id:string;watch_id:string;actor_id:string;organization_id:null;expected_revision:number;source_revision:number|null;state:'saved'|'removed';revision:number;pending_reason:null;next_actor:null;next_review_at:null};
+export type SavedRecord = {watch_id:string;revision:number;saved:boolean;alerts:AlertKind[];ending_since_revision:number|null;alert_subscriptions:Partial<Record<AlertKind,{since_revision:number;source_revision:number}>>};
+export type WatchOccurrence = {event_id:string;watch_id:string;kind:Exclude<AlertKind,'ending'>;revision:number;occurred_at:string;sample:boolean};
+export type OccurrenceBatch = {through_revision:number;items:WatchOccurrence[]};
+export type NoticeRecovery = {notice_id:string;operator:string;escalation_operator:string;next_action:'review_delivery'|'response_overdue'|'escalated_review'|'retry_delivery';held_at:string;response_due:string;escalate_at:string;responded_at:string|null;escalated_at:string|null;state:'held'|'escalated'|'resolved';revision:number};

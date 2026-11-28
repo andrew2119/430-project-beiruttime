@@ -1,0 +1,14 @@
+{
+  "title": "Transfer inspection history",
+  "intro": "Only an actual released resale and the new owner's authorization permit transfer. Previous owners and private evidence are excluded.",
+  "qualification": "An inspection describes its recorded scope and date. Later changes or expiry leave it historical. A reference verifies a summary, not the watch in hand.",
+  "empty": "No eligible released resale is selected. Open the released sale to check ownership and recipient authorization.",
+  "pending": "The result is uncertain. Keep this action reference and retry the same transfer. Support review is due within 24 hours.",
+  "transferred": "The transfer is recorded. The prior inspection remains qualified by its original scope and date.",
+  "denied": "Current permission, ownership or recipient authorization is missing. Return to the sale to review access.",
+  "stale": "The record or source changed. Return to the sale and review the current revision before starting a new action.",
+  "conflict": "This action reference belongs to different details. Return to the sale and review the existing action.",
+  "duplicate": "This released sale already transferred its record. Return to the sale to view its existing result.",
+  "unavailable": "Current resale verification is unavailable. Return to the sale or try again later; no transfer is confirmed.",
+  "submit": "Transfer record", "retry": "Retry same transfer", "back": "Back to sales", "reference": "Action reference"
+}

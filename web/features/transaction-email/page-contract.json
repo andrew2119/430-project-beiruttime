@@ -1,0 +1,18 @@
+{
+  "route": "/notification-email",
+  "visibility": "private",
+  "read_keys": [
+    "transaction-email.v1, access fingerprint, offset",
+    "transaction-email.v1, access fingerprint, operation, operation reference"
+  ],
+  "warming": "open-only; private records never load on public hover",
+  "retained_answer": "shared access-partitioned memory; locale is excluded from keys; an error hides retained private results",
+  "refresh": "show the current answer while its bounded read refreshes; no delivery action is retried",
+  "first_frame": "shared page header and row skeletons before the first answer; existing root theme, fonts and shell",
+  "arrival": "one shared AnswerArrival per access scope; reduced motion and keyboard follow the shared recipe",
+  "page_size": 20,
+  "server_total": true,
+  "pagination": "bounded offset, maximum 100000; server limit maximum 50",
+  "composition": "shared page-read provider and shell only; route registry composition belongs to its existing owner",
+  "composition_unavailable": "Route entry remains unmounted until the composition owner registers the delivery contract and shared shell."
+}

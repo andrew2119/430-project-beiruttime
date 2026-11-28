@@ -1,0 +1,308 @@
+{
+  "schema_version": "l25.proof.v1",
+  "mode": "module_preparation",
+  "connected_status": "deferred",
+  "operations": {
+    "quote.validate": {
+      "owner": "pricing",
+      "method": "GET",
+      "route": "/internal/v3/quotes/{id}/validation?buyer_id={buyer_id}"
+    },
+    "quote.retain": {
+      "owner": "pricing",
+      "method": "GET",
+      "route": "/internal/v3/quotes/{id}/retained",
+      "consumer": "orders"
+    },
+    "quote.commit": {
+      "owner": "pricing",
+      "method": "POST",
+      "route": "/internal/v3/quotes/{id}/commit",
+      "consumer": "orders"
+    },
+    "payment.notice": {
+      "owner": "orders",
+      "method": "POST",
+      "route": "/internal/v3/payment-notices",
+      "consumer": "communications"
+    }
+  },
+  "cases": [
+    "positive",
+    "denied",
+    "stale",
+    "cross_account",
+    "cross_business",
+    "timeout",
+    "lost_response",
+    "duplicate",
+    "restart",
+    "recovery"
+  ],
+  "display_matrix": {
+    "languages": [
+      "en",
+      "ar"
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "viewports": [
+      [
+        1440,
+        900
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "phone_assertion": "window.innerWidth === 390",
+    "physical_phone": "deferred",
+    "keyboard": "deferred",
+    "speed": [
+      "ready_before_press",
+      "data_on_intent",
+      "retained_answers",
+      "content_during_refresh",
+      "first_load_placeholders",
+      "single_arrival_fade"
+    ]
+  },
+  "case_assertions": {
+    "positive": "Use actual ordered producer operations, verify current source facts and exact resulting revision; no seeded paid, winner, pass, receipt, work or release.",
+    "denied": "Revoke current permission or assignment before action; private read and write deny with no commercial mutation.",
+    "stale": "Change source revision, scope, consent or quote before action; reject old acceptance and preserve retained history.",
+    "cross_account": "Use another identity with the same operation reference; deny private access and writes, clear the old private view.",
+    "cross_business": "Switch selected organization or revoke membership; deny old business access even with an open screen.",
+    "timeout": "Bound the dependency request; retain pending/unavailable with responsible owner, next action and review time.",
+    "lost_response": "Lose response after acknowledgement, read current operation, retry the identical binding; one durable effect.",
+    "duplicate": "Replay identical operation and callback; same receipt, one allocation, charge, refund, notice and job. Conflicting binding denies.",
+    "restart": "Restart after acknowledged mutation and before response; retained revision and operation recover without lost bid or duplicate work.",
+    "recovery": "Resolve the same pending reference from authoritative source; preserve owned draft and exact economics; never guess success."
+  },
+  "protected_assertions": {
+    "auction": [
+      "Canonical serialized admission alone determines order.",
+      "Opening 400000; step 10000; maximum 450000 opens at 400000; challenger 420000 produces 430000 automatic response.",
+      "At public 430000, challenger 445000 or 450000 leads; displaced 450000 ceiling is inactive until raised.",
+      "Use band at challenger amount; no equal public rows or public ceilings; leader ceiling raise creates no public bid.",
+      "Before end admits; equal/after end rejects; original end never extends.",
+      "No bids or public final below reserve means no winner/order; unused ceiling cannot meet reserve.",
+      "Winner allocation is once; unknown allocation cannot select another winner.",
+      "Auction purchase is denied; no-bid cancellation allowed, cancellation after bid denied; legacy purchase uncertainty holds while auction ends."
+    ],
+    "purchase": [
+      "Race fixed purchase, accepted offer and winner against one physical watch: exactly one exclusive commitment.",
+      "Signed simulated callbacks bind actor, order, method, quote revision, currency, amount and operation. Test wrong signature and every mismatched binding.",
+      "Durable required inbox notice and verified-recipient record precede payment clock; failed publication leaves null deadline.",
+      "Identical notice replay is idempotent; conflicting event/buyer/order/timestamp denies.",
+      "No attempt or only final declines releases atomically at expiry; pending/unknown/held money never releases on timer.",
+      "Late conflicting confirmation goes to reconciliation/refund review, never another sale."
+    ],
+    "custody": [
+      "Private route requires paid held, expert physical receipt, current independent assignment and actual current pass.",
+      "Dealer and brand route requires current onboarding/assurance and no invented pass.",
+      "Dispatch, appointment and prepared states cannot establish receipt; wrong watch/recipient/condition blocks.",
+      "Failed inspection blocks buyer handover and payout; seller 25000 commission plus disclosed return trip collected once before controlled return. Decline/unknown remains held.",
+      "72h private and 168h business/job dispute windows start at actual receipt; before/equal/after release boundary and timely/late dispute boundary are checked.",
+      "Loss/damage, open dispute, uncertain transfer or changed recipient blocks release."
+    ],
+    "customization": [
+      "Exactly five immutable versioned option snapshots; save upload attachment explicitly; stale/incompatible options remain correctable.",
+      "Active official brand only; dealer customization denied; assessor, approver and quality reviewer distinct, eligibility reviewer separate from buyer/approver.",
+      "Accepted quote precedes identity eligibility and brand approval; approval precedes payment; exact payment readiness precedes production.",
+      "Consent withdrawal immediately removes effectiveness; grant prepare/consume/revoke serialized; stale consent/assessment/quote/assignment denies execution.",
+      "Production requires current accepted scope, approval, exclusive allocation and confirmed platform-held payment; material change pauses work.",
+      "Purchase then customization uses two linked sequential orders, completed purchase receipt/window before separate brand custody and payment."
+    ],
+    "service": [
+      "Brand/dealer current supported scope only; cross-business and unsupported intervention deny.",
+      "Confirmed Beirut appointment is distinct from custody; missing/repeated civil times require correction or explicit disambiguation.",
+      "Reported symptoms are not diagnosis; opening needs exact permission; current custody and explicit accepted mandatory/chosen optional lines precede paid work.",
+      "17.5 cm remains exactly 175 mm; ambiguous or implausible input corrects.",
+      "New fault/price/part requires renewed acceptance; delay never permits substitution.",
+      "Quality records actual tests/fit/returned parts; failure reworks; later incident invalidates earlier readiness."
+    ],
+    "economics": [
+      "USD integer cents only; reject boolean, float, nonfinite, negative and unsafe amounts; half-up one-cent rounding.",
+      "500000 watch: buyer fee 15000, buyer total 515000, seller commission 25000, ordinary net 475000 for every seller type.",
+      "500000 job: customer total 500000, single business fee 25000, business net 475000; aliases never double-deduct.",
+      "Watch refund maximum 500000 excludes collected fees; unresolved and confirmed refunds reserve the same maximum.",
+      "Full job refund returns permitted gross principal, business fee remains one receivable/collection; unknown collection never creates another customer refund.",
+      "Retained economics with null expiry never authorizes execution; preview before/equal/after 15-minute boundary, offer 48h boundary tested."
+    ],
+    "privacy_bounds": [
+      "Restricted evidence never enters public photos, events, logs, previews or result records.",
+      "Listing photos: JPEG/PNG, 8 MB each, 20 million decoded pixels, 12 photos, five separate private files, 40 MB total; test below/equal/above.",
+      "Dial references: three PNG files, 1 MiB each, permitted dimensions; intake evidence ten files, 256 KiB each; below/equal/above.",
+      "Bound requests/retries/import rows; stable operation scope cannot cross actor/business/subject/revision.",
+      "Never persist passwords/private bytes; locale switch preserves same mounted form and operation without implicit submission."
+    ],
+    "display": [
+      "EN/AR, RTL, light/dark, desktop and actual 390x844; assert innerWidth equals 390.",
+      "Loading, empty, denied, pending, error, retry, unavailable with complete bilingual next actions.",
+      "Long mixed Arabic/Latin, emoji, missing facts, counts 0/1/large, 1000 rows with actual pagination/server totals.",
+      "Keyboard/focus, reduced motion, safe areas, 16px coarse-pointer inputs and 44px targets; screenshot and geometry checks.",
+      "Password/private file retention, session switch clearing, exact total and pending reference retention.",
+      "Record actual per-page read key, warming, retained answer, first frame and size measurements; physical phone remains owed."
+    ]
+  },
+  "provider_lookup": {
+    "assessment": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "brand_approval": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "business_assurance": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "buyer_receipt": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "commit": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "consent": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "custody_receipt": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "diagnosis": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "expert_receipt": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "five_snapshots": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "independent_eligibility": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "independent_pass": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "notice": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "payment_held": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "payment_readiness": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "production": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "quality": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "quote_acceptance": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "release": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "watch_allocation": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "window_elapsed": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    },
+    "work": {
+      "binding": "provider versioned operation required",
+      "status": "deferred"
+    }
+  },
+  "journeys": [
+    {"id": "J01", "name": "registration", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J02", "name": "sign_in", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J03", "name": "sign_out_revocation", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J04", "name": "password_change", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J05", "name": "recovery", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J06", "name": "second_factor", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J07", "name": "contact_proof", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J08", "name": "private_seller_application", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J09", "name": "listing_possession", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J10", "name": "business_onboarding", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J11", "name": "membership_scope", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J12", "name": "private_export_redaction", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J13", "name": "listing_draft", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J14", "name": "public_photo_safety", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J15", "name": "publication_registration", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J16", "name": "listing_revision_withdrawal", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J17", "name": "pause_relist", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J18", "name": "dealer_import", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J19", "name": "discovery_pagination", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J20", "name": "watch_detail", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J21", "name": "comparison_similar", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J22", "name": "seller_reviews", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J23", "name": "fixed_purchase", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J24", "name": "offer_acceptance", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J25", "name": "offer_counter_block", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J26", "name": "exclusive_commitment", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J27", "name": "retained_economics", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J28", "name": "durable_payment_notice", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J29", "name": "payment_method_clock", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J30", "name": "payment_attempt_window", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J31", "name": "signed_payment_confirmation", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J32", "name": "unpaid_expiry_reconciliation", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J33", "name": "auction_schedule", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J34", "name": "auction_admission", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J35", "name": "proxy_competition", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J36", "name": "maximum_raise_retraction", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J37", "name": "reserve_close", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J38", "name": "winner_allocation", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J39", "name": "auction_purchase_exclusion", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J40", "name": "auction_no_bid_cancel", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J41", "name": "private_inspection", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J42", "name": "business_direct_custody", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J43", "name": "failed_inspection_collection", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J44", "name": "custody_incident_pickup", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J45", "name": "receipt_dispute_window", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J46", "name": "dispute_independence", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J47", "name": "release_refund", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J48", "name": "customization_five_dimensions", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J49", "name": "customization_submission", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J50", "name": "brand_assessment", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J51", "name": "accepted_job_quote", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J52", "name": "consent_withdrawal", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J53", "name": "independent_eligibility", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J54", "name": "brand_current_approval", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J55", "name": "platform_payment_readiness", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J56", "name": "production_scope_change", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J57", "name": "service_destination_appointment", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J58", "name": "service_intake_diagnosis", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J59", "name": "service_acceptance_work", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J60", "name": "quality_rework_parts", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J61", "name": "job_receipt_release", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J62", "name": "notices_saved_following", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J63", "name": "private_messages", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"},
+    {"id": "J64", "name": "moderation_support_passport", "cases": ["positive", "denied", "stale", "cross_account", "cross_business", "timeout", "lost_response", "duplicate", "restart", "recovery"], "required_facts": ["current_identity", "current_scope", "current_revision", "stable_operation", "source_result"], "connected_status": "deferred"}
+  ]
+}

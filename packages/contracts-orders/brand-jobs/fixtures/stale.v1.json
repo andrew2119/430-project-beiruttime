@@ -1,0 +1,22 @@
+{
+  "schema_version": "orders.brand-jobs.v1",
+  "operation_id": "sample-operation",
+  "subject_id": "sample-buyer",
+  "watch_id": "sample-watch",
+  "actor_id": "sample-buyer",
+  "organization_id": "sample-brand",
+  "expected_revision": 1,
+  "revision": 1,
+  "next_actor": "sample-operator",
+  "next_review_at": "2026-11-17T12:00:00+00:00",
+  "pending_reason": "revision",
+  "state": "stale",
+  "recovery": {
+    "operator_id": "sample-operator",
+    "next_action": "reconcile_current_authority",
+    "escalation_actor_id": "sample-escalation-operator",
+    "opened_at": "2026-11-16T12:00:00+00:00",
+    "next_review_at": "2026-11-17T12:00:00+00:00",
+    "escalate_at": "2026-11-18T12:00:00+00:00"
+  }
+}

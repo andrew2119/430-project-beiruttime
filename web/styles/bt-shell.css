@@ -1,0 +1,52 @@
+@layer components {
+  /* A single real frame: it paints before session restore and owns its scroll. */
+  :where(.bt-shell) { display: grid; grid-template-columns: 14rem minmax(0, 1fr); gap: var(--bt-space-6); block-size: 100dvh; min-block-size: 0; padding-block: max(var(--bt-space-4), env(safe-area-inset-top)) max(var(--bt-space-4), env(safe-area-inset-bottom)); padding-left: max(var(--bt-space-4), env(safe-area-inset-left)); padding-right: max(var(--bt-space-4), env(safe-area-inset-right)); font-family: var(--bt-font-body), sans-serif; background: var(--bt-canvas); color: var(--bt-foreground); }
+  :where(.bt-shell-rail) { display: flex; flex-direction: column; gap: var(--bt-space-4); min-block-size: 0; padding: var(--bt-space-3); overflow-y: auto; border-radius: var(--bt-radius-navigation); background: var(--bt-background); color: var(--bt-foreground); }
+  .bt-shell-content.pg-tray { min-inline-size: 0; min-block-size: 0; overflow: auto; scroll-padding-block: var(--bt-space-4); background: var(--bt-card); color: var(--bt-card-foreground); border-radius: var(--bt-radius-frame); box-shadow: var(--bt-shadow-frame); }
+  :where(.bt-shell-topbar) { display: none; }
+  :where(.bt-shell-brand) { display: flex; gap: var(--bt-space-2); align-items: center; min-block-size: var(--bt-touch-target); padding-inline: var(--bt-space-2); color: var(--bt-foreground); font-weight: var(--bt-weight-heavy); text-decoration: none; border-radius: var(--bt-radius-lg); user-select: none; }
+  :where(.bt-shell-brand svg) { inline-size: var(--bt-space-6); block-size: var(--bt-space-6); flex: none; color: var(--bt-primary-ink); }
+  :where(.bt-shell-brand span, .bt-destination-label) { min-inline-size: 0; overflow-wrap: anywhere; }
+  :where(.bt-shell-navigation, .bt-navigation-group) { display: grid; align-content: start; gap: var(--bt-space-1); min-inline-size: 0; }
+  :where(.bt-shell-navigation) { gap: var(--bt-space-5); }
+  :where(.bt-navigation-group h2) { padding-inline: var(--bt-space-2); }
+  :where(.bt-destination) { display: flex; align-items: center; gap: var(--bt-space-3); min-inline-size: 0; min-block-size: var(--bt-touch-target); padding: var(--bt-space-2) var(--bt-space-3); border-radius: var(--bt-radius-raised); background: transparent; color: var(--bt-foreground); font-size: var(--bt-text-small); line-height: var(--bt-leading-body); text-decoration: none; user-select: none; touch-action: pan-y pinch-zoom; }
+  :where(.bt-destination[aria-current="page"]) { background: var(--bt-accent); color: var(--bt-accent-foreground); font-weight: var(--bt-weight-strong); }
+  :where(.bt-destination[aria-disabled="true"]) { color: var(--bt-muted-foreground); background: var(--bt-muted); cursor: not-allowed; transform: none; }
+  :where(.bt-destination-tab) { border: var(--bt-border-width) solid var(--bt-border); }
+  :where(.bt-shell-profile) { display: grid; gap: var(--bt-space-2); margin-block-start: auto; padding-block-start: var(--bt-space-4); border-block-start: var(--bt-border-width) solid var(--bt-border); }
+  :where(.bt-profile-identity) { display: flex; align-items: center; gap: var(--bt-space-2); min-inline-size: 0; }
+  :where(.bt-profile-identity p) { flex: 1; min-inline-size: 0; overflow-wrap: anywhere; }
+  :where(.bt-shell-drawer-content) { display: grid; align-content: start; gap: var(--bt-space-6); }
+  :where(.bt-shell-connectivity) { padding: var(--bt-space-3) var(--bt-space-4); background: var(--bt-muted); color: var(--bt-foreground); overflow-wrap: anywhere; }
+  :where(.bt-shell-skip) { position: fixed; inset-block-start: max(var(--bt-space-4), env(safe-area-inset-top)); inset-inline-start: max(var(--bt-space-4), env(safe-area-inset-left), env(safe-area-inset-right)); z-index: var(--bt-layer-skip); transform: translateY(-250%); padding: var(--bt-space-3) var(--bt-space-4); border-radius: var(--bt-radius-lg); background: var(--bt-background); color: var(--bt-foreground); }
+  :where(.bt-shell-skip:focus) { transform: none; }
+  :where(.bt-page) { min-inline-size: 0; min-block-size: 100%; }
+  /* Trim the sticky strip at the page edges without creating a scroll container. */
+  :where(.bt-page:has([data-sx-root])) { overflow-x: clip; }
+  :where(.bt-page-header:not(.hx-wrap)) { display: grid; gap: var(--bt-space-4); min-inline-size: 0; padding: var(--bt-pad-header-block) var(--bt-pad-header-inline); border-block-end: var(--bt-border-width) solid var(--bt-border); }
+  :where(.bt-page-title-row) { display: flex; align-items: start; justify-content: space-between; flex-wrap: wrap; gap: var(--bt-space-4); }
+  :where(.bt-page-heading) { flex: 1 1 18rem; display: grid; gap: var(--bt-space-2); min-inline-size: 0; }
+  :where(.bt-page-heading h1, .bt-page-heading p) { overflow-wrap: anywhere; }
+  :where(.bt-page-count, .bt-page-feedback) { min-block-size: calc(var(--bt-text-body) * var(--bt-leading-body)); }
+  :where(.bt-page-count) { display: flex; align-items: center; }
+  :where(.bt-page-actions, .bt-page-tools, .bt-page-tabs) { display: flex; flex-wrap: wrap; align-items: center; gap: var(--bt-space-2); min-inline-size: 0; }
+  :where(.bt-page-actions) { flex: 0 1 auto; }
+  :where(.bt-page-body) { display: grid; align-content: start; gap: var(--bt-space-4); min-inline-size: 0; padding: var(--bt-pad-header-block) var(--bt-pad-header-inline); }
+  :where(.bt-page-notice) { overflow-wrap: anywhere; }
+  :where(.bt-page-wait) { pointer-events: none; }
+  @media (hover: hover) and (pointer: fine) { :where(.bt-destination:hover:not([aria-disabled="true"])) { background: var(--bt-accent); color: var(--bt-accent-foreground); } }
+  @media (max-width: 850px) {
+    :where(.bt-shell) { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: var(--bt-space-2); padding-block-start: max(var(--bt-space-2), env(safe-area-inset-top)); padding-block-end: max(var(--bt-space-2), env(safe-area-inset-bottom)); padding-left: max(var(--bt-space-2), env(safe-area-inset-left)); padding-right: max(var(--bt-space-2), env(safe-area-inset-right)); }
+    :where(.bt-shell-rail) { display: none; }
+    :where(.bt-shell-topbar) { display: flex; align-items: center; gap: var(--bt-space-2); min-inline-size: 0; }
+    .bt-shell-content.pg-tray { grid-row: 2; }
+    :where(.bt-page-heading) { flex-basis: 100%; }
+    :where(.bt-page-actions) { inline-size: 100%; }
+  }
+}
+
+/* Retained scroll selectors must not reserve room for an absent dock. These
+ * compatibility overrides also cover unlayered phone scroll declarations. */
+.bt-shell-content.pg-tray { --dock-room: 0px; --end-room: 0px; scroll-padding-block-end: var(--bt-space-4); }
+.bt-shell-content.pg-tray::after { content: none; }

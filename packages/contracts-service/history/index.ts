@@ -1,0 +1,5 @@
+export type Warranty = {issuer_id:string;scope_code:'accepted_work'|'installed_parts';starts_at:string;terms_revision:number;terms_en:string;terms_ar:string};
+export type Entry = {job_id:string;watch_id:string;organization_id:string;kind:'service'|'modification';work_codes:('maintenance'|'repair'|'cleaning'|'polishing'|'bracelet_fit'|'customization')[];released_at:string;source_revision:number;warranty:Warranty|null};
+export type HistoryResult = {schema_version:'history.v1';operation_id:string;subject_id:string;watch_id:string;actor_id:string;organization_id:string|null;expected_revision:number;state:'ready'|'pending'|'denied'|'stale'|'unavailable';revision:number;pending_reason:string|null;next_actor:'reader'|'record_operator';next_review_at:string|null;items:Entry[];total:number;page:number;page_size:number};
+export type PublicationBody = {operation_id:string;expected_revision:number;job_ids:string[]};
+export type PublicationResult = Omit<HistoryResult,'schema_version'|'state'> & {schema_version:'history-publication.v1';state:'ready'|'pending'|'denied'|'stale'};

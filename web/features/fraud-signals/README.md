@@ -1,0 +1,9 @@
+# Private signal view
+
+The shared mounted read uses fraud-signals.v1, current access fingerprint and page as its read key. It is open-only: no private intent warming. The shared cache owns retained answers and clears its access partition; denied data is never rendered. Refresh retains the current answer, with loading placeholders only before an answer. The canonical root owns theme, first-frame fonts, navigation feedback, shell and motion; this view creates no provider or independent arrival animation.
+
+Language changes retain the same form identity, page and in-memory filter. Access fingerprint changes remount the private view. The operation reference is rendered unchanged. The filter searches the loaded page; server pagination and total remain authoritative. There is no mutation or upload surface.
+
+Shared route registration, ready-before-press, route data-on-intent and size measurements are deferred to the shared registry steward. The current registry accepts only internal routes and cannot be extended inside this module lease. No measured speed or first-frame pass is claimed. Browser geometry, both themes/languages, keyboard, 390×844 viewport assertion and physical-phone review remain required.
+
+The operations page entry is withheld until the shared owner registers the exact operations route and private read in the delivery table and enables the canonical shell for that route. The current validator accepts only internal routes and one demonstration read. The view retains its shell guard so an unsupported host cannot mount a private read. No operations route or completed authorized journey is claimed by this module. Runtime registration remains a connected composition prerequisite; reintroduce the page entry only with those shared changes and rerun the delivery check and route tests.

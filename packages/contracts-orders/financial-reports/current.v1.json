@@ -1,0 +1,67 @@
+{
+  "schema_version": "financial-reports.v1",
+  "operations": {
+    "read": {
+      "method": "GET",
+      "path": "/internal/v1/financial-reports",
+      "permission": "financial_reports.read"
+    },
+    "receipt": {
+      "method": "GET",
+      "path": "/internal/v1/financial-reports/receipts/{order_id}",
+      "permission": "financial_reports.read"
+    },
+    "export": {
+      "method": "GET",
+      "path": "/internal/v1/financial-reports/export",
+      "permission": "financial_reports.read"
+    },
+    "operation": {
+      "method": "GET",
+      "path": "/internal/v1/financial-reports/operations/{operation_id}",
+      "permission": "financial_reports.read"
+    }
+  },
+  "states": [
+    "ready",
+    "pending",
+    "denied",
+    "stale",
+    "unavailable",
+    "drift"
+  ],
+  "limits": {
+    "page_size": 50,
+    "export_rows": 1000,
+    "export_bytes": 1048576,
+    "feed_batch": 500,
+    "provider_timeout_seconds": 2,
+    "fresh_seconds": 60
+  },
+  "money": {
+    "currency": "USD",
+    "unit": "integer cents",
+    "maximum": 9007199254740991
+  },
+  "feed": {
+    "producer": "orders",
+    "schema_version": "orders.financial-feed.v1",
+    "checkpoint": "Contiguous immutable global sequence; high_watermark and checked_at are obtained from the same producer snapshot.",
+    "facts": [
+      "gross",
+      "buyer_fee_collected",
+      "fee_collected",
+      "fee_owed",
+      "refund",
+      "payout"
+    ],
+    "states": [
+      "confirmed",
+      "pending"
+    ],
+    "postings": "Exactly two equal opposite integer minor-unit entries per fact. No private evidence or customer names."
+  },
+  "privacy": "Current actor, organization, record permission and source revision are checked for every read, export and operation lookup. Seller totals filter before aggregation. Only a current financial_reports.operator permission permits platform reconciliation. No public cache, logs or previews.",
+  "authority": "Read-only projection. Never authorizes collection, receipt, approval, refund or release. No Pricing input.",
+  "recovery": "Retry the same operation_id and exact request. Conflicting bindings deny. Revision changes return stale without rows or totals. Missing, delayed, unbalanced or conflicting feed returns pending or drift without financial totals."
+}

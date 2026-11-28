@@ -10,6 +10,7 @@ from bt_contracts_core.models import EventEnvelope
 from bt_events import enqueue
 from bt_runtime.app.db import unit_of_work
 from service_app.identity import live_actor
+from .possession_routes import router as possession_router
 
 router = APIRouter(prefix='/v1/private-seller')
 
@@ -69,7 +70,8 @@ async def submit(body: Application, request: Request):
                 raise PublicError('operation_conflict', 'Use a new request key.', status=409)
             return json.loads(prior['result'])
         current = await tx.fetchrow('SELECT * FROM identity_private_applications WHERE subject_id=$1 FOR UPDATE', actor['id'])
-        if (current and (current['revision'] != body.expected_revision or current['status'] not in {'correction','rejected'})) or (not current and body.expected_revision != 0):
+        revision = current['revision'] if current else 0
+        if revision != body.expected_revision or (current and current['status'] not in {'correction', 'rejected'}):
             raise PublicError('stale_application', 'Reload the current application before submitting.', status=409)
         identifier = current['id'] if current else uuid4()
         if current:
@@ -107,3 +109,6 @@ async def evidence(application_id: UUID, evidence_id: UUID, request: Request):
     if content is None:
         raise HTTPException(404)
     return Response(content, media_type='text/plain', headers={'Content-Disposition':'attachment; filename="synthetic-proof.txt"','Cache-Control':'no-store'})
+
+
+router.include_router(possession_router)

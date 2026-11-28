@@ -1,0 +1,207 @@
+{
+  "schema_version": "disputes.v1",
+  "synthetic": true,
+  "cases": [
+    {
+      "name": "confirmed_hold",
+      "request": {
+        "schema_version": "disputes.v1",
+        "operation_id": "operation_1",
+        "subject_id": "order_1",
+        "organization_id": null,
+        "expected_revision": 0,
+        "source_revision": 1,
+        "assignment_revision": 1,
+        "kind": "open",
+        "reason": "Synthetic condition mismatch",
+        "evidence": [],
+        "amount_minor": 0
+      },
+      "result": {
+        "schema_version": "disputes.v1",
+        "operation_id": "operation_1",
+        "subject_id": "order_1",
+        "watch_id": "watch_1",
+        "actor_id": "buyer",
+        "organization_id": null,
+        "expected_revision": 0,
+        "state": "open",
+        "revision": 2,
+        "pending_reason": null,
+        "next_actor": "operator_1",
+        "next_action": "independent_review",
+        "next_review_at": "2026-11-18T00:00:00+00:00",
+        "closing_at": "2026-11-19T23:00:00+00:00",
+        "financial_operation_id": "dispute_operation_1",
+        "amount_minor": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "name": "lost_hold_response",
+      "request": {
+        "schema_version": "disputes.v1",
+        "operation_id": "operation_1",
+        "subject_id": "order_1",
+        "organization_id": null,
+        "expected_revision": 0,
+        "source_revision": 1,
+        "assignment_revision": 1,
+        "kind": "open",
+        "reason": "Synthetic condition mismatch",
+        "evidence": [],
+        "amount_minor": 0
+      },
+      "result": {
+        "schema_version": "disputes.v1",
+        "operation_id": "operation_1",
+        "subject_id": "order_1",
+        "watch_id": "watch_1",
+        "actor_id": "buyer",
+        "organization_id": null,
+        "expected_revision": 0,
+        "state": "hold_pending",
+        "revision": 1,
+        "pending_reason": "orders_confirmation",
+        "next_actor": "operator_1",
+        "next_action": "confirm_orders",
+        "next_review_at": "2026-11-18T00:00:00+00:00",
+        "closing_at": "2026-11-19T23:00:00+00:00",
+        "financial_operation_id": "dispute_operation_1",
+        "amount_minor": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "name": "denied_hold",
+      "request": {
+        "schema_version": "disputes.v1",
+        "operation_id": "operation_1",
+        "subject_id": "order_1",
+        "organization_id": null,
+        "expected_revision": 0,
+        "source_revision": 1,
+        "assignment_revision": 1,
+        "kind": "open",
+        "reason": "Synthetic condition mismatch",
+        "evidence": [],
+        "amount_minor": 0
+      },
+      "result": {
+        "schema_version": "disputes.v1",
+        "operation_id": "operation_1",
+        "subject_id": "order_1",
+        "watch_id": "watch_1",
+        "actor_id": "buyer",
+        "organization_id": null,
+        "expected_revision": 0,
+        "state": "denied",
+        "revision": 2,
+        "pending_reason": "orders_denied",
+        "next_actor": "operator_1",
+        "next_action": "support_review",
+        "next_review_at": "2026-11-18T00:00:00+00:00",
+        "closing_at": "2026-11-19T23:00:00+00:00",
+        "financial_operation_id": "dispute_operation_1",
+        "amount_minor": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "name": "stale_source",
+      "request": {
+        "schema_version": "disputes.v1",
+        "operation_id": "operation_1",
+        "subject_id": "order_1",
+        "organization_id": null,
+        "expected_revision": 0,
+        "source_revision": 2,
+        "assignment_revision": 1,
+        "kind": "open",
+        "reason": "Synthetic condition mismatch",
+        "evidence": [],
+        "amount_minor": 0
+      },
+      "error": {
+        "code": "stale",
+        "status": 409
+      }
+    },
+    {
+      "name": "buyer_win",
+      "request": {
+        "schema_version": "disputes.v1",
+        "operation_id": "refund_1",
+        "subject_id": "order_1",
+        "organization_id": null,
+        "expected_revision": 2,
+        "source_revision": 1,
+        "assignment_revision": 1,
+        "kind": "refund",
+        "reason": "Synthetic condition mismatch",
+        "evidence": [],
+        "amount_minor": 500000
+      },
+      "result": {
+        "schema_version": "disputes.v1",
+        "operation_id": "refund_1",
+        "subject_id": "order_1",
+        "watch_id": "watch_1",
+        "actor_id": "reviewer",
+        "organization_id": null,
+        "expected_revision": 2,
+        "state": "refunded",
+        "revision": 4,
+        "pending_reason": null,
+        "next_actor": "operator_1",
+        "next_action": "closed",
+        "next_review_at": "2026-11-18T00:00:00+00:00",
+        "closing_at": "2026-11-19T23:00:00+00:00",
+        "financial_operation_id": "dispute_refund_1",
+        "amount_minor": 500000,
+        "currency": "USD"
+      },
+      "principal_minor": 500000,
+      "buyer_fee_minor": 15000,
+      "business_fee_minor": 25000
+    },
+    {
+      "name": "full_job_refund",
+      "request": {
+        "schema_version": "disputes.v1",
+        "operation_id": "refund_1",
+        "subject_id": "order_1",
+        "organization_id": null,
+        "expected_revision": 2,
+        "source_revision": 1,
+        "assignment_revision": 1,
+        "kind": "refund",
+        "reason": "Synthetic condition mismatch",
+        "evidence": [],
+        "amount_minor": 500000
+      },
+      "result": {
+        "schema_version": "disputes.v1",
+        "operation_id": "refund_1",
+        "subject_id": "order_1",
+        "watch_id": "watch_1",
+        "actor_id": "reviewer",
+        "organization_id": null,
+        "expected_revision": 2,
+        "state": "refunded",
+        "revision": 4,
+        "pending_reason": null,
+        "next_actor": "operator_1",
+        "next_action": "closed",
+        "next_review_at": "2026-11-18T00:00:00+00:00",
+        "closing_at": "2026-11-19T23:00:00+00:00",
+        "financial_operation_id": "dispute_refund_1",
+        "amount_minor": 500000,
+        "currency": "USD"
+      },
+      "principal_minor": 500000,
+      "buyer_fee_minor": 0,
+      "business_fee_minor": 25000
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "id": "L19.two-factor",
+  "dependencies": ["fastapi", "cryptography", "asyncpg"],
+  "routes": ["adapter.py:router"],
+  "migrations": ["migrations/L19_0001_two_factor.sql"]
+}

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "id": "L19.photo-retention",
+  "migration_dependencies": ["L19.account-access"],
+  "migrations": ["migrations/L19_0001_current_photo_retention.sql",
+    "migrations/L19_0002_possession_review_facts.sql",
+    "migrations/L19_0003_assignment_revision.sql"]
+}

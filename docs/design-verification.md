@@ -70,3 +70,83 @@ The historical screenshot matrix includes:
 - `checks/`: final route, populated, role, focus and geometry records plus automated results.
 
 Phone captures use actual device emulation and headless Page.captureScreenshot. A plain 390px headless window was found to lay out at 500px and crop; the historical `before-en-cropped500.png` is retained only as a labeled crop, **not** as 390px evidence. The CLI screenshot writer could report success without writing a file, so saved PNGs were checked directly.
+
+### Public shell and preference composition
+
+The root composes the canonical shell for every route. Home, About and Settings
+use its page frame, header, controls and first-answer arrival. Their additive
+contracts live in `web/shell/foundation/pages.json`. The frozen page ledger keeps
+its original hashes; only a registered rebuild with its declared view and shared
+composition replaces a frozen page check. Unrelated frozen pages and shell files
+remain immutable.
+
+Language controls update the shared locale context in place. These three views
+resolve copy and destinations from that context. The mounted child subtree is
+never keyed by language. Query strings, fragments, passwords, private file inputs
+and pending operation references remain in memory. Only language and appearance
+preferences are durable. Access changes invalidate the shared memory read scope.
+
+| Route | Data/read key | Warming | Retained answer and first frame |
+| --- | --- | --- | --- |
+| `/` | Static navigation filtered by current access; no market read | Shared full-route intent and visible-link warming | Current access labels; one arrival per access scope |
+| `/about` | Static bilingual copy; no remote read | Shared full-route intent and visible-link warming | Copy is present immediately; one arrival per access scope |
+| `/settings` | Existing identity subscription; no new remote read | Shared full-route intent and visible-link warming | Identity restoration alone uses a skeleton; preference sections stay mounted |
+| `/internal/page` | Existing demo definition, mode and page | Shared route and data intent engine | Existing retained-answer, refresh-content and first-load placeholder rules |
+
+These are implementation contracts, not measured speed or connected acceptance.
+The canonical shell mounts the existing shared warming controller once.
+The owned path dependency composes public page contracts into the registry input
+before the shared registry takes its immutable snapshot. The frozen internal
+source table is unchanged. Home, About and Settings have explicit no-read policies: static copy
+and navigation need no remote answer, and Settings observes the existing identity
+subscription. The controller shares the existing memory scope, read definitions,
+refresh policy and running signal. There is no additional controller. Unknown routes retain native full-page prefetch; registration
+never grants permission or dispatches a command.
+
+The six methods apply through full-route readiness requests, data on intent for
+registered reads, access-scoped retained answers, content during refresh,
+first-load-only placeholders and one answer arrival. Static pages have no loading
+answer to retain or refresh. The internal read fixture exercises those data
+branches using the same definition for warming and mounting. Domain owners still
+must publish their actual read definitions before claiming their data adoption;
+no fixture asserts a connected market answer.
+Language changes merge a fresh server route response into the mounted client
+tree so server copy, recovery destinations and slot locale props update too.
+The header uses a preference button, outside legacy navigation interception,
+and never saves a draft or retries a pending reservation. Other domain page
+rebuilds remain with their page owners. The canonical shell alone does not certify
+their six speed methods or their language retention.
+
+The existing public-only worker has one registration in the canonical shell.
+Updates require an explicit reload action; language changes never reload. Push
+dispatch integration remains owed to its producer. No private data is added to
+worker caches.
+
+Separate-machine proof remains owed for emitted page sizes, network readiness,
+actual mounted password/file retention through both controls, screenshots in both
+languages and themes, keyboard flow, safe-area/target geometry and the viewport
+assertion `window.innerWidth === 390` at 390 by 844. A physical phone remains
+required for a complete phone-feel claim. No production build or connected
+transaction is established by the focused module checks.
+
+The canonical page header uses the shared raised-card rows, sticky measurement,
+title fitting and width-driven phone stylesheet. Settings uses the shared pane
+tabs with a measured single-line ruler and tile fallback, alongside its wide
+section index. Home and About use the same header boundary. These structural
+checks do not establish browser geometry or physical-phone acceptance.
+
+The preserved language interface keeps both change-hook names and the dedicated
+legacy-link capture before document-level draft handlers. Compatibility shell,
+profile, preference, provider and focus entries now delegate to their shared
+compositions. Their frozen ledger hashes remain unchanged. The contract check
+requires each rebuilt entry to render its declared shared view, and the shell
+view to render the single boundary. Other frozen entries still require exact
+bytes. The retired shell styling debt is absent from its rebuilt entry.
+
+The scheduling and registration suites use deterministic local contract fixtures
+because their route implementation and widened runtime validator are outside this
+snapshot's owned boundary. Scheduling examples cover civil-time review, exact
+confirmation and retained action references; registration examples cover lane
+and version boundaries. Passing these fixtures does not prove runtime dispatch,
+timezone interpretation or generated-registry integration. Those connected checks
+remain owed against the implementations before acceptance.

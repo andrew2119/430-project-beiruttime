@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "host": "127.0.0.1",
+  "database": {
+    "major": 17,
+    "port": 54329
+  },
+  "origins": [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+  ],
+  "services": [
+    {
+      "name": "identity",
+      "port": 8101,
+      "database": "identity",
+      "factory": "service_app.main:create_app",
+      "requirements": "services/identity/runtime/requirements.txt"
+    },
+    {
+      "name": "catalog",
+      "port": 8102,
+      "database": "catalog",
+      "factory": "bt_runtime.app.main:create_app",
+      "requirements": "services/catalog/runtime/requirements.txt"
+    },
+    {
+      "name": "auction",
+      "port": 8103,
+      "database": "auction",
+      "factory": "service_app.main:create_app",
+      "requirements": "services/auction/runtime/requirements.txt"
+    },
+    {
+      "name": "pricing",
+      "port": 8104,
+      "database": "pricing",
+      "factory": "service_app.main:create_app",
+      "requirements": "services/pricing/runtime/requirements.txt"
+    },
+    {
+      "name": "orders",
+      "port": 8105,
+      "database": "orders",
+      "factory": "bt_runtime.app.main:create_app",
+      "requirements": "services/orders/runtime/requirements.txt"
+    },
+    {
+      "name": "eligibility",
+      "port": 8106,
+      "database": "eligibility",
+      "factory": "service_app.main:create_app",
+      "requirements": "services/eligibility/runtime/requirements.txt"
+    },
+    {
+      "name": "trust",
+      "port": 8107,
+      "database": "trust",
+      "factory": "bt_runtime.app.main:create_app",
+      "requirements": "services/trust/runtime/requirements.txt"
+    },
+    {
+      "name": "communications",
+      "port": 8108,
+      "database": "communications",
+      "factory": "service_app.main:create_app",
+      "requirements": "services/communications/runtime/requirements.txt"
+    },
+    {
+      "name": "service-operations",
+      "port": 8109,
+      "database": "service_ops",
+      "factory": "bt_runtime.app.main:create_app",
+      "requirements": "services/service-operations/runtime/requirements.txt"
+    },
+    {
+      "name": "web",
+      "port": 3000,
+      "command": [
+        "node",
+        "web/node_modules/next/dist/bin/next",
+        "start",
+        "web",
+        "--hostname",
+        "127.0.0.1",
+        "--port",
+        "3000"
+      ]
+    }
+  ]
+}

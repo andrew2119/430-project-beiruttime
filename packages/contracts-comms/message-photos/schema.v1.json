@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:beirut-time:communications:message-photos:v1",
+  "title": "Protected watch photo attachment v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["operation", "photo", "purpose", "declaration"],
+  "properties": {
+    "operation": {"type": "string", "minLength": 1, "maxLength": 128},
+    "photo": {"type": "string", "minLength": 1, "maxLength": 128},
+    "purpose": {"const": "watch_detail"},
+    "declaration": {"const": true}
+  }
+}

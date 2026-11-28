@@ -1,0 +1,51 @@
+{
+  "schema_version": "listing-questions.v1",
+  "operations": {
+    "list": "GET /v1/listing-questions/{listing_id}?page=0",
+    "suggest": "POST /v1/listing-questions/{listing_id}/suggest",
+    "command": "POST /v1/listing-questions/{listing_id}/commands",
+    "lookup": "GET /v1/listing-questions/{listing_id}/operations/{operation_id}",
+    "review": "GET /v1/listing-questions/{listing_id}/review/{question_id}?reports_page=0&appeals_page=0"
+  },
+  "suggestion_request": {"text": "1–2000 characters", "page": "integer 0–50000"},
+  "suggestion_response": {"items": "up to 20 answered exact matches", "total": "server match count", "page": "requested page"},
+  "private_review": {"pages": "independent integer reports_page and appeals_page from 0 through 50000", "page_size": 20, "totals": ["reports_total", "appeals_total"], "order": "created_at descending, operation descending"},
+  "commands": [
+    "ask",
+    "answer",
+    "report",
+    "hide",
+    "appeal"
+  ],
+  "binding": [
+    "operation_id",
+    "actor_id",
+    "organization_id",
+    "listing_id",
+    "watch_id",
+    "source_revision",
+    "expected_revision"
+  ],
+  "limits": {
+    "text": 2000,
+    "page_size": 20,
+    "attachments": 0,
+    "dependency_timeout_seconds": 1.2
+  },
+  "states": [
+    "published",
+    "held",
+    "reported",
+    "hidden",
+    "pending"
+  ],
+  "errors": [
+    "denied",
+    "stale",
+    "invalid",
+    "conflict",
+    "unavailable"
+  ],
+  "retry": "Retain the exact command and operation reference after uncertain delivery. Recheck current authority before lookup or replay.",
+  "privacy": "Held text is never returned by public reads. Reports carry no public reporter or reason. No request bodies are logged."
+}

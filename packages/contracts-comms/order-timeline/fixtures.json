@@ -1,0 +1,293 @@
+{
+  "synthetic": true,
+  "sources": {
+    "orders": {
+      "schema_version": "timeline-source.v1",
+      "source": "orders",
+      "operation_id": "orders-operation-1",
+      "order_id": "order-1",
+      "watch_id": "watch-1",
+      "revision": 1,
+      "state": "pending",
+      "occurred_at": "2026-11-16T00:00:00Z",
+      "amount_minor": null,
+      "quote_id": "quote-1",
+      "quote_revision": 1,
+      "reference": "BT-1001",
+      "currency": "USD",
+      "economics": {
+        "principal_minor": 500000,
+        "buyer_fee_minor": 15000,
+        "business_fee_minor": 25000,
+        "total_minor": 515000,
+        "quote_id": "quote-1",
+        "quote_revision": 1
+      },
+      "waiting": {
+        "party": "operator",
+        "action": "review",
+        "operator_id": "operator-1",
+        "since": "2026-11-16T00:00:00Z",
+        "last_progress_at": "2026-11-16T00:00:00Z"
+      }
+    },
+    "payments": {
+      "schema_version": "timeline-source.v1",
+      "source": "payments",
+      "operation_id": "payments-operation-1",
+      "order_id": "order-1",
+      "watch_id": "watch-1",
+      "revision": 1,
+      "state": "pending",
+      "occurred_at": "2026-11-16T00:00:00Z",
+      "amount_minor": null,
+      "quote_id": "quote-1",
+      "quote_revision": 1,
+      "financial": []
+    },
+    "inspection": {
+      "schema_version": "timeline-source.v1",
+      "source": "inspection",
+      "operation_id": "inspection-operation-1",
+      "order_id": "order-1",
+      "watch_id": "watch-1",
+      "revision": 1,
+      "state": "pending",
+      "occurred_at": "2026-11-16T00:00:00Z",
+      "amount_minor": null,
+      "quote_id": "quote-1",
+      "quote_revision": 1
+    },
+    "custody": {
+      "schema_version": "timeline-source.v1",
+      "source": "custody",
+      "operation_id": "custody-operation-1",
+      "order_id": "order-1",
+      "watch_id": "watch-1",
+      "revision": 1,
+      "state": "pending",
+      "occurred_at": "2026-11-16T00:00:00Z",
+      "amount_minor": null,
+      "quote_id": "quote-1",
+      "quote_revision": 1
+    },
+    "progress": {
+      "schema_version": "timeline-source.v1",
+      "source": "progress",
+      "operation_id": "progress-operation-1",
+      "order_id": "order-1",
+      "watch_id": "watch-1",
+      "revision": 1,
+      "state": "pending",
+      "occurred_at": "2026-11-16T00:00:00Z",
+      "amount_minor": null,
+      "quote_id": "quote-1",
+      "quote_revision": 1
+    },
+    "settlement": {
+      "schema_version": "timeline-source.v1",
+      "source": "settlement",
+      "operation_id": "settlement-operation-1",
+      "order_id": "order-1",
+      "watch_id": "watch-1",
+      "revision": 1,
+      "state": "pending",
+      "occurred_at": "2026-11-16T00:00:00Z",
+      "amount_minor": null,
+      "quote_id": "quote-1",
+      "quote_revision": 1,
+      "financial": []
+    }
+  },
+  "success": {
+    "schema_version": "order-timeline.v1",
+    "order_id": "order-1",
+    "watch_id": "watch-1",
+    "reference": "BT-1001",
+    "revision": 1,
+    "operation_id": "orders-operation-1",
+    "currency": "USD",
+    "simulated": true,
+    "as_of": "2026-11-16T00:00:00Z",
+    "economics": {
+      "principal_minor": 500000,
+      "buyer_fee_minor": 15000,
+      "business_fee_minor": 25000,
+      "total_minor": 515000,
+      "quote_id": "quote-1",
+      "quote_revision": 1
+    },
+    "waiting": {
+      "party": "operator",
+      "action": "review",
+      "operator_id": "operator-1",
+      "since": "2026-11-16T00:00:00Z",
+      "next_review_at": "2026-11-17T00:00:00Z",
+      "follow_up": "scheduled"
+    },
+    "milestones": [
+      {
+        "source": "orders",
+        "state": "pending",
+        "revision": 1,
+        "occurred_at": "2026-11-16T00:00:00Z",
+        "amount_minor": null,
+        "operation_id": "orders-operation-1"
+      },
+      {
+        "source": "payments",
+        "state": "pending",
+        "revision": 1,
+        "occurred_at": "2026-11-16T00:00:00Z",
+        "amount_minor": null,
+        "operation_id": "payments-operation-1"
+      },
+      {
+        "source": "inspection",
+        "state": "pending",
+        "revision": 1,
+        "occurred_at": "2026-11-16T00:00:00Z",
+        "amount_minor": null,
+        "operation_id": "inspection-operation-1"
+      },
+      {
+        "source": "custody",
+        "state": "pending",
+        "revision": 1,
+        "occurred_at": "2026-11-16T00:00:00Z",
+        "amount_minor": null,
+        "operation_id": "custody-operation-1"
+      },
+      {
+        "source": "progress",
+        "state": "pending",
+        "revision": 1,
+        "occurred_at": "2026-11-16T00:00:00Z",
+        "amount_minor": null,
+        "operation_id": "progress-operation-1"
+      },
+      {
+        "source": "settlement",
+        "state": "pending",
+        "revision": 1,
+        "occurred_at": "2026-11-16T00:00:00Z",
+        "amount_minor": null,
+        "operation_id": "settlement-operation-1"
+      }
+    ],
+    "financial": []
+  },
+  "denied": {
+    "status": 403,
+    "code": "denied"
+  },
+  "stale": {
+    "source": "payments",
+    "revision": 0,
+    "expected_state": "unavailable"
+  },
+  "timeout": {
+    "source": "custody",
+    "expected_state": "unavailable"
+  },
+  "lost_response": {
+    "operation_id": "orders-operation-1",
+    "retry": "same_read",
+    "expected": {
+      "schema_version": "order-timeline.v1",
+      "order_id": "order-1",
+      "watch_id": "watch-1",
+      "reference": "BT-1001",
+      "revision": 1,
+      "operation_id": "orders-operation-1",
+      "currency": "USD",
+      "simulated": true,
+      "as_of": "2026-11-16T00:00:00Z",
+      "economics": {
+        "principal_minor": 500000,
+        "buyer_fee_minor": 15000,
+        "business_fee_minor": 25000,
+        "total_minor": 515000,
+        "quote_id": "quote-1",
+        "quote_revision": 1
+      },
+      "waiting": {
+        "party": "operator",
+        "action": "review",
+        "operator_id": "operator-1",
+        "since": "2026-11-16T00:00:00Z",
+        "next_review_at": "2026-11-17T00:00:00Z",
+        "follow_up": "scheduled"
+      },
+      "milestones": [
+        {
+          "source": "orders",
+          "state": "pending",
+          "revision": 1,
+          "occurred_at": "2026-11-16T00:00:00Z",
+          "amount_minor": null,
+          "operation_id": "orders-operation-1"
+        },
+        {
+          "source": "payments",
+          "state": "pending",
+          "revision": 1,
+          "occurred_at": "2026-11-16T00:00:00Z",
+          "amount_minor": null,
+          "operation_id": "payments-operation-1"
+        },
+        {
+          "source": "inspection",
+          "state": "pending",
+          "revision": 1,
+          "occurred_at": "2026-11-16T00:00:00Z",
+          "amount_minor": null,
+          "operation_id": "inspection-operation-1"
+        },
+        {
+          "source": "custody",
+          "state": "pending",
+          "revision": 1,
+          "occurred_at": "2026-11-16T00:00:00Z",
+          "amount_minor": null,
+          "operation_id": "custody-operation-1"
+        },
+        {
+          "source": "progress",
+          "state": "pending",
+          "revision": 1,
+          "occurred_at": "2026-11-16T00:00:00Z",
+          "amount_minor": null,
+          "operation_id": "progress-operation-1"
+        },
+        {
+          "source": "settlement",
+          "state": "pending",
+          "revision": 1,
+          "occurred_at": "2026-11-16T00:00:00Z",
+          "amount_minor": null,
+          "operation_id": "settlement-operation-1"
+        }
+      ],
+      "financial": []
+    }
+  },
+  "refund_pending": {
+    "kind": "refund",
+    "state": "pending",
+    "amount_minor": 500000,
+    "operation_id": "refund-operation-1",
+    "revision": 1,
+    "occurred_at": "2026-11-16T00:00:00Z",
+    "source": "settlement"
+  },
+  "refund_confirmed": {
+    "kind": "refund",
+    "state": "confirmed",
+    "amount_minor": 500000,
+    "operation_id": "refund-operation-1",
+    "revision": 2,
+    "occurred_at": "2026-11-16T00:00:00Z",
+    "source": "settlement"
+  }
+}

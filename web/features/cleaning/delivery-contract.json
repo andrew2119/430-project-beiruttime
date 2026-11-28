@@ -1,0 +1,10 @@
+{
+  "route": "/care/cleaning",
+  "file": "web/app/(cleaning)/care/cleaning/page.tsx",
+  "view": "web/features/cleaning/view.tsx",
+  "kind": "reads",
+  "reason": "Private current cleaning request, assessed quote and stable operation recovery.",
+  "content": ".bt-page",
+  "read": "cleaning.v1",
+  "proof": "owed"
+}

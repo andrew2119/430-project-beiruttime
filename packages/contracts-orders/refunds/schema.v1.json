@@ -1,0 +1,573 @@
+{
+  "$defs": {
+    "Authority": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": {
+          "format": "uuid",
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "organization_id": {
+          "format": "uuid",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "subject_id": {
+          "format": "uuid",
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "watch_id": {
+          "format": "uuid",
+          "title": "Watch Id",
+          "type": "string"
+        },
+        "can_refund": {
+          "title": "Can Refund",
+          "type": "boolean"
+        },
+        "current_assignment": {
+          "title": "Current Assignment",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "actor_id",
+        "organization_id",
+        "subject_id",
+        "watch_id",
+        "can_refund",
+        "current_assignment"
+      ],
+      "title": "Authority",
+      "type": "object"
+    },
+    "Command": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "refunds.v1",
+          "default": "refunds.v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "subject_id": {
+          "format": "uuid",
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "watch_id": {
+          "format": "uuid",
+          "title": "Watch Id",
+          "type": "string"
+        },
+        "actor_id": {
+          "format": "uuid",
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "organization_id": {
+          "format": "uuid",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "source_revision": {
+          "minimum": 1,
+          "title": "Source Revision",
+          "type": "integer"
+        },
+        "quote_id": {
+          "format": "uuid",
+          "title": "Quote Id",
+          "type": "string"
+        },
+        "quote_revision": {
+          "minimum": 1,
+          "title": "Quote Revision",
+          "type": "integer"
+        },
+        "policy_revision": {
+          "minimum": 1,
+          "title": "Policy Revision",
+          "type": "integer"
+        },
+        "basis_id": {
+          "format": "uuid",
+          "title": "Basis Id",
+          "type": "string"
+        },
+        "amount_minor": {
+          "exclusiveMinimum": 0,
+          "maximum": 9000000000000000,
+          "title": "Amount Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "const": "USD",
+          "default": "USD",
+          "title": "Currency",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation_id",
+        "subject_id",
+        "watch_id",
+        "actor_id",
+        "organization_id",
+        "expected_revision",
+        "source_revision",
+        "quote_id",
+        "quote_revision",
+        "policy_revision",
+        "basis_id",
+        "amount_minor"
+      ],
+      "title": "Command",
+      "type": "object"
+    },
+    "Facts": {
+      "additionalProperties": false,
+      "description": "Read inside the Orders journal fence, never from a view or cache.",
+      "properties": {
+        "subject_id": {
+          "format": "uuid",
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "watch_id": {
+          "format": "uuid",
+          "title": "Watch Id",
+          "type": "string"
+        },
+        "organization_id": {
+          "format": "uuid",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "buyer_id": {
+          "format": "uuid",
+          "title": "Buyer Id",
+          "type": "string"
+        },
+        "quote_id": {
+          "format": "uuid",
+          "title": "Quote Id",
+          "type": "string"
+        },
+        "quote_revision": {
+          "minimum": 1,
+          "title": "Quote Revision",
+          "type": "integer"
+        },
+        "policy_revision": {
+          "minimum": 1,
+          "title": "Policy Revision",
+          "type": "integer"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "source_revision": {
+          "minimum": 1,
+          "title": "Source Revision",
+          "type": "integer"
+        },
+        "basis_id": {
+          "format": "uuid",
+          "title": "Basis Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "watch",
+            "job"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "basis": {
+          "enum": [
+            "failed_authentication",
+            "cancellation",
+            "dispute",
+            "partial_work"
+          ],
+          "title": "Basis",
+          "type": "string"
+        },
+        "basis_approved": {
+          "title": "Basis Approved",
+          "type": "boolean"
+        },
+        "payment_state": {
+          "enum": [
+            "paid_held",
+            "pending",
+            "unpaid",
+            "released"
+          ],
+          "title": "Payment State",
+          "type": "string"
+        },
+        "basis_valid_until": {
+          "format": "date-time",
+          "title": "Basis Valid Until",
+          "type": "string"
+        },
+        "paid_principal_minor": {
+          "maximum": 9000000000000000,
+          "minimum": 0,
+          "title": "Paid Principal Minor",
+          "type": "integer"
+        },
+        "retained_principal_minor": {
+          "maximum": 9000000000000000,
+          "minimum": 0,
+          "title": "Retained Principal Minor",
+          "type": "integer"
+        },
+        "approved_minor": {
+          "maximum": 9000000000000000,
+          "minimum": 0,
+          "title": "Approved Minor",
+          "type": "integer"
+        },
+        "confirmed_minor": {
+          "maximum": 9000000000000000,
+          "minimum": 0,
+          "title": "Confirmed Minor",
+          "type": "integer"
+        },
+        "unresolved_minor": {
+          "maximum": 9000000000000000,
+          "minimum": 0,
+          "title": "Unresolved Minor",
+          "type": "integer"
+        },
+        "business_fee_minor": {
+          "maximum": 9000000000000000,
+          "minimum": 0,
+          "title": "Business Fee Minor",
+          "type": "integer"
+        },
+        "custody_transferred": {
+          "title": "Custody Transferred",
+          "type": "boolean"
+        },
+        "controlled_return_received": {
+          "title": "Controlled Return Received",
+          "type": "boolean"
+        },
+        "recorded_failure_exception": {
+          "title": "Recorded Failure Exception",
+          "type": "boolean"
+        },
+        "private_sale": {
+          "title": "Private Sale",
+          "type": "boolean"
+        },
+        "failed_inspection": {
+          "title": "Failed Inspection",
+          "type": "boolean"
+        },
+        "lines": {
+          "items": {
+            "$ref": "#/$defs/Line"
+          },
+          "maxItems": 200,
+          "title": "Lines",
+          "type": "array"
+        }
+      },
+      "required": [
+        "subject_id",
+        "watch_id",
+        "organization_id",
+        "buyer_id",
+        "quote_id",
+        "quote_revision",
+        "policy_revision",
+        "revision",
+        "source_revision",
+        "basis_id",
+        "kind",
+        "basis",
+        "basis_approved",
+        "payment_state",
+        "basis_valid_until",
+        "paid_principal_minor",
+        "retained_principal_minor",
+        "approved_minor",
+        "confirmed_minor",
+        "unresolved_minor",
+        "business_fee_minor",
+        "custody_transferred",
+        "controlled_return_received",
+        "recorded_failure_exception",
+        "private_sale",
+        "failed_inspection",
+        "lines"
+      ],
+      "title": "Facts",
+      "type": "object"
+    },
+    "Line": {
+      "additionalProperties": false,
+      "properties": {
+        "line_id": {
+          "format": "uuid",
+          "title": "Line Id",
+          "type": "string"
+        },
+        "amount_minor": {
+          "maximum": 9000000000000000,
+          "minimum": 0,
+          "title": "Amount Minor",
+          "type": "integer"
+        },
+        "kind": {
+          "enum": [
+            "labor",
+            "part",
+            "assessment",
+            "transport"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "accepted": {
+          "title": "Accepted",
+          "type": "boolean"
+        },
+        "performed_or_consumed": {
+          "title": "Performed Or Consumed",
+          "type": "boolean"
+        },
+        "unused_returnable": {
+          "title": "Unused Returnable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "line_id",
+        "amount_minor",
+        "kind",
+        "accepted",
+        "performed_or_consumed",
+        "unused_returnable"
+      ],
+      "title": "Line",
+      "type": "object"
+    },
+    "Operation": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "refunds.v1",
+          "default": "refunds.v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "subject_id": {
+          "format": "uuid",
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "watch_id": {
+          "format": "uuid",
+          "title": "Watch Id",
+          "type": "string"
+        },
+        "actor_id": {
+          "format": "uuid",
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "organization_id": {
+          "format": "uuid",
+          "title": "Organization Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "minimum": 1,
+          "title": "Expected Revision",
+          "type": "integer"
+        },
+        "state": {
+          "enum": [
+            "pending",
+            "confirmed",
+            "declined"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "pending_reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "reconciliation",
+                "processing"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pending Reason"
+        },
+        "next_actor": {
+          "anyOf": [
+            {
+              "const": "payout_operator",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Actor"
+        },
+        "next_review_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Next Review At"
+        },
+        "amount_minor": {
+          "exclusiveMinimum": 0,
+          "maximum": 9000000000000000,
+          "title": "Amount Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "const": "USD",
+          "default": "USD",
+          "title": "Currency",
+          "type": "string"
+        },
+        "simulated": {
+          "const": true,
+          "default": true,
+          "title": "Simulated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "operation_id",
+        "subject_id",
+        "watch_id",
+        "actor_id",
+        "organization_id",
+        "expected_revision",
+        "state",
+        "revision",
+        "pending_reason",
+        "next_actor",
+        "next_review_at",
+        "amount_minor"
+      ],
+      "title": "Operation",
+      "type": "object"
+    },
+    "Plan": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "$ref": "#/$defs/Command"
+        },
+        "buyer_id": {
+          "format": "uuid",
+          "title": "Buyer Id",
+          "type": "string"
+        },
+        "cap_minor": {
+          "maximum": 9000000000000000,
+          "minimum": 0,
+          "title": "Cap Minor",
+          "type": "integer"
+        },
+        "business_fee_receivable_minor": {
+          "maximum": 9000000000000000,
+          "minimum": 0,
+          "title": "Business Fee Receivable Minor",
+          "type": "integer"
+        },
+        "fee_collection_key": {
+          "maxLength": 100,
+          "title": "Fee Collection Key",
+          "type": "string"
+        },
+        "recorded_at": {
+          "format": "date-time",
+          "title": "Recorded At",
+          "type": "string"
+        },
+        "next_review_at": {
+          "format": "date-time",
+          "title": "Next Review At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "buyer_id",
+        "cap_minor",
+        "business_fee_receivable_minor",
+        "fee_collection_key",
+        "recorded_at",
+        "next_review_at"
+      ],
+      "title": "Plan",
+      "type": "object"
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/Command"
+    },
+    {
+      "$ref": "#/$defs/Operation"
+    },
+    {
+      "$ref": "#/$defs/Facts"
+    },
+    {
+      "$ref": "#/$defs/Authority"
+    },
+    {
+      "$ref": "#/$defs/Plan"
+    }
+  ]
+}

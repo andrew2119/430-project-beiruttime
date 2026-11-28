@@ -1,0 +1,3 @@
+ALTER TABLE notices ADD COLUMN read_at TEXT;
+ALTER TABLE notices ADD COLUMN cleared_at TEXT;
+ALTER TABLE notices ADD COLUMN notice_revision INTEGER NOT NULL DEFAULT 1;

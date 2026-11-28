@@ -1,0 +1,68 @@
+{
+  "synthetic": true,
+  "query": {
+    "schema_version": "audit-references.v1",
+    "operation_id": "10000000-0000-4000-8000-000000000001",
+    "organization_id": "20000000-0000-4000-8000-000000000001",
+    "after": "2026-11-01T00:00:00Z",
+    "before": "2026-11-02T00:00:00Z",
+    "offset": 0,
+    "limit": 20
+  },
+  "success": {
+    "schema_version": "audit-references.v1",
+    "operation_id": "10000000-0000-4000-8000-000000000001",
+    "organization_id": "20000000-0000-4000-8000-000000000001",
+    "reader_id": "70000000-0000-4000-8000-000000000001",
+    "query": {
+      "schema_version": "audit-references.v1",
+      "operation_id": "10000000-0000-4000-8000-000000000001",
+      "organization_id": "20000000-0000-4000-8000-000000000001",
+      "after": "2026-11-01T00:00:00Z",
+      "before": "2026-11-02T00:00:00Z",
+      "offset": 0,
+      "limit": 20
+    },
+    "revision": 3,
+    "items": [
+      {
+        "operation_id": "30000000-0000-4000-8000-000000000001",
+        "subject_id": "40000000-0000-4000-8000-000000000001",
+        "watch_id": null,
+        "actor_id": "50000000-0000-4000-8000-000000000001",
+        "organization_id": "20000000-0000-4000-8000-000000000001",
+        "expected_revision": 1,
+        "state": "accepted",
+        "revision": 2,
+        "occurred_at": "2026-11-01T00:00:00Z",
+        "reason_code": "review_recorded",
+        "reason_reference": "60000000-0000-4000-8000-000000000001",
+        "pending_reason": null,
+        "next_actor": null,
+        "next_review_at": null
+      }
+    ],
+    "total": 1,
+    "next_offset": null
+  },
+  "denied": {
+    "source": "trust",
+    "state": "denied",
+    "page": null
+  },
+  "stale": {
+    "source": "orders",
+    "state": "stale",
+    "page": null
+  },
+  "lost_response": {
+    "source": "service-operations",
+    "state": "unavailable",
+    "page": null
+  },
+  "pending": {
+    "source": "orders",
+    "state": "pending",
+    "page": null
+  }
+}

@@ -1,0 +1,10 @@
+.l20-help-search,
+.l20-help-articles {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+.l20-help-copy {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}

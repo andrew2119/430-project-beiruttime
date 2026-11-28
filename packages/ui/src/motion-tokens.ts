@@ -1,42 +1,33 @@
-const ANIMATION_PACING_TOKENS = new Set([
-  "--ds-motion-fast",
-  "--ds-motion-popover",
-  "--ds-motion-overlay",
-  "--ds-motion-theme",
-  "--ds-motion-expressive",
-  "--ds-motion-press",
-  "--ds-motion-shimmer",
-  "--ds-motion-image-reveal",
+const legacyPacing = new Set([
+  '--ds-motion-fast', '--ds-motion-popover', '--ds-motion-overlay',
+  '--ds-motion-theme', '--ds-motion-expressive', '--ds-motion-press',
+  '--ds-motion-shimmer', '--ds-motion-image-reveal',
+]);
+const pacing = new Set([
+  '--bt-motion-press', '--bt-motion-fast', '--bt-motion-popover',
+  '--bt-motion-menu', '--bt-motion-overlay', '--bt-motion-exit',
+  '--bt-motion-image', '--bt-motion-gentle', '--bt-motion-theme',
+  '--bt-motion-icon', '--bt-motion-pulse',
 ]);
 
-function parseMotionToken(name: string): number | undefined {
-  const raw = getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
-  const match = /^(-?\d*\.?\d+)(ms|s)$/.exec(raw);
+/** Read at the action, never cache a theme/preference-dependent CSS value. */
+export function readMotionToken(name: string, element?: Element): number | undefined {
+  if (typeof window === 'undefined' || typeof document === 'undefined' || typeof getComputedStyle !== 'function') return undefined;
+  const reduced = prefersReducedMotion();
+  const token = reduced && pacing.has(name) ? '--bt-motion-none' : reduced && legacyPacing.has(name) ? '--ds-motion-reduced' : name;
+  const raw = getComputedStyle(element ?? document.documentElement).getPropertyValue(token).trim();
+  const match = /^(\+?\d*\.?\d+)(ms|s)$/i.exec(raw);
   if (!match) return undefined;
-  const value = Number(match[1]);
-  if (!Number.isFinite(value)) return undefined;
-  return match[2] === "s" ? value * 1000 : value;
+  const value = Number(match[1]) * (match[2].toLowerCase() === 's' ? 1000 : 1);
+  return Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 
-export function readMotionToken(name: string): number | undefined {
-  if (typeof window === "undefined") return undefined;
-  const reduced =
-    ANIMATION_PACING_TOKENS.has(name) &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  return parseMotionToken(reduced ? "--ds-motion-reduced" : name);
+/** A discrete input boundary, not a per-frame style driver. */
+export function markMotionInput(target: HTMLElement, input: 'pointer' | 'keyboard'): void {
+  target.dataset.btMotionInput = input;
 }
 
-/** The user's reduced-motion preference, read at call time (never during a
- *  server render). Shared by the list-motion primitive and the segmented
- *  thumb so JS-driven motion honours the same media query the global CSS
- *  baseline in styles/motion.css does. */
+/** Preference is queried when needed, including during an interrupted release. */
 export function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
