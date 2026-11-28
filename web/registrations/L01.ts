@@ -6,7 +6,7 @@ import consentEn from '../features/consent/en.json';
 import consentAr from '../features/consent/ar.json';
 export default {
   lane:'L01', namespace:'identity',
-  routes:[{path:'/account',roles:['public'],area:'account'},{path:'/seller/verification',roles:['buyer','private_seller'],area:'seller'},{path:'/consent',roles:['buyer'],area:'account'}],
+  routes:[{path:'/account',roles:['public'],area:'account'},{path:'/seller/verification',roles:['buyer','private_seller'],area:'seller'},{path:'/consent',roles:['buyer'],area:'account'},{path:'/sample-tabs',roles:['public'],area:'account'}],
   navigation:[
     {id:'account',href:'/account',label:{en:'Account',ar:'حسابي'},order:70,area:'account',roles:['public'],bottom:true},
     {id:'private-verification',href:'/seller/verification',label:{en:'Private selling',ar:'البيع الفردي'},order:72,area:'seller',roles:['buyer','private_seller']},
@@ -15,6 +15,8 @@ export default {
   dictionaries:{en:{...en,...Object.fromEntries(Object.entries(consentEn).map(([key,value])=>['consent_'+key,value]))},ar:{...ar,...Object.fromEntries(Object.entries(consentAr).map(([key,value])=>['consent_'+key,value]))}},
   gateway:[
     ...['register','login','refresh','logout','recovery','reset'].map(action=>({service:'identity' as const,path:`/v1/accounts/${action}`,methods:['POST' as const],roles:['public' as const],forwardCookies:['bt_refresh']})),
+    // Switch-gated sample-account entry for one sample tab; Identity answers 404 while it is off.
+    {service:'identity',path:'/v1/demo-entry/sessions',methods:['POST'],roles:['public'],forwardCookies:['bt_refresh'],maxBodyBytes:1024},
     {service:'identity',path:'/v1/accounts/me',methods:['GET'],roles:['buyer']},
     {service:'identity',path:'/v1/accounts/password',methods:['POST'],roles:['buyer']},
     {service:'identity',path:'/v1/accounts/reauthenticate',methods:['POST'],roles:['buyer']},

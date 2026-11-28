@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "about": "The demo sample accounts a sample tab may hold, copied from the demo seed's accounts.json without the seed's operator account, which no link opens. Every entry is an account the deploy-applied demo seed creates, named by its set, its role (buyer, seller, staff or rival), its fixed seed id (uuid5 of the seed's public demo key) and its made-up @example.test address. Never a password, key or token.",
+  "accounts": [
+    {
+      "set": "demo",
+      "role": "buyer",
+      "email": "buyer.demo@example.test",
+      "account_id": "f45cd555-8b5c-5a27-905c-1fd480191ca6"
+    },
+    {
+      "set": "demo",
+      "role": "seller",
+      "email": "seller.demo@example.test",
+      "account_id": "b8151b1f-a571-55cf-9b20-0d266c309882"
+    },
+    {
+      "set": "demo",
+      "role": "rival",
+      "email": "rival.demo@example.test",
+      "account_id": "3d387941-eb86-5b5a-b38f-cfabec73de8b"
+    },
+    {
+      "set": "demo",
+      "role": "staff",
+      "email": "staff.demo@example.test",
+      "account_id": "27fe364e-a31a-5e87-bd1b-5849dd4a217c"
+    },
+    {
+      "set": "click-test",
+      "role": "buyer",
+      "email": "buyer.click-test@example.test",
+      "account_id": "5068845e-5c35-53e6-9566-86d5879e69b0"
+    },
+    {
+      "set": "click-test",
+      "role": "seller",
+      "email": "seller.click-test@example.test",
+      "account_id": "9489caa0-ab50-5674-bd38-dd896d3d5f72"
+    },
+    {
+      "set": "click-test",
+      "role": "rival",
+      "email": "rival.click-test@example.test",
+      "account_id": "a6c02e3d-e284-5a6d-a44e-1a5ec9a1b303"
+    },
+    {
+      "set": "click-test",
+      "role": "staff",
+      "email": "staff.click-test@example.test",
+      "account_id": "2b35cdec-1c4c-5196-a772-b7db3c3e7400"
+    }
+  ]
+}

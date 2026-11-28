@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
 const harness = vi.hoisted(()=>({slots:[] as unknown[],cursor:0,invoke:vi.fn(),revoke:vi.fn(),locale:'en' as 'en'|'ar',session:null as null|{account:{id:string};access_fingerprint:string},refresh:vi.fn(),state:'signed-out'}));
-vi.mock('react',async()=>({...(await vi.importActual('react')),useEffect:()=>{},
+vi.mock('react',async()=>({...(await vi.importActual('react')),useEffect:()=>{},useSyncExternalStore:(_subscribe:unknown,_snapshot:unknown,server:()=>unknown)=>server(),
   useState:(initial:unknown)=>{const index=harness.cursor++;if(!(index in harness.slots)) harness.slots[index]=initial;return [harness.slots[index],(value:unknown)=>{harness.slots[index]=value;}];},
   useRef:(initial:unknown)=>{const index=harness.cursor++;if(!(index in harness.slots))harness.slots[index]={current:initial};return harness.slots[index];}}));
 vi.mock('next/navigation',()=>({useRouter:()=>({push:vi.fn()})}));
