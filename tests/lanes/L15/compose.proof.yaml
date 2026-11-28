@@ -1,0 +1,181 @@
+x-auth: &auth
+  BT_AUTH_PUBLIC_KEY: ${L15_PUBLIC_KEY}
+  BT_SERVICE_AUTH_PUBLIC_KEY: ${L15_PUBLIC_KEY}
+  BT_ALLOWED_WEB_ORIGINS: http://127.0.0.1:3315
+  BT_PUBLIC_WEB_ORIGINS: http://127.0.0.1:3315
+  BT_ENVIRONMENT: demo
+x-identity-source: &identity-source
+  - ../../../services/identity/runtime/service_app:/app/service_app:ro
+  - ../../../services/identity/modules:/app/modules:ro
+  - ../../../packages/runtime/src/bt_runtime:/opt/venv/lib/python3.11/site-packages/bt_runtime:ro
+  - ../../../packages/contracts-identity/accounts:/opt/domain-contracts/bt_contracts/identity/accounts:ro
+  - ../../../packages/contracts-identity/businesses:/opt/domain-contracts/bt_contracts/identity/businesses:ro
+  - ./bootstrap_identity.py:/proof/bootstrap_identity.py:ro
+  - ./.artifacts/actors.key:/proof/actors.key:ro
+x-catalog-source: &catalog-source
+  - ../../../services/catalog/runtime/service_app:/app/service_app:ro
+  - ../../../services/catalog/modules:/app/modules:ro
+  - ../../../packages/runtime/src/bt_runtime:/opt/venv/lib/python3.11/site-packages/bt_runtime:ro
+  - ../../../packages/contracts-catalog/configuration:/opt/domain-contracts/bt_contracts/catalog/configuration:ro
+  - ../../../packages/contracts-catalog/request-drafts:/opt/domain-contracts/bt_contracts/catalog/request_drafts:ro
+  - ../../../packages/contracts-catalog/brand-decisions:/opt/domain-contracts/bt_contracts/catalog/brand_decisions:ro
+x-pricing-source: &pricing-source
+  - ../../../services/pricing/runtime/service_app:/app/service_app:ro
+  - ../../../services/pricing/modules:/app/modules:ro
+  - ../../../packages/runtime/src/bt_runtime:/opt/venv/lib/python3.11/site-packages/bt_runtime:ro
+  - ../../../packages/contracts-pricing/quotes:/opt/domain-contracts/bt_contracts/pricing/quotes:ro
+  - ../../../packages/contracts-pricing/offers:/opt/domain-contracts/bt_contracts/pricing/offers:ro
+  - ../../../packages/contracts-pricing/brand-quotes:/opt/domain-contracts/bt_contracts/pricing/brand_quotes:ro
+  - ../../../packages/contracts-pricing/repair-quotes:/opt/domain-contracts/bt_contracts/pricing/repair_quotes:ro
+x-orders-source: &orders-source
+  - ../../../services/orders/runtime/service_app:/app/service_app:ro
+  - ../../../services/orders/modules:/app/modules:ro
+  - ../../../packages/runtime/src/bt_runtime:/opt/venv/lib/python3.11/site-packages/bt_runtime:ro
+  - ../../../packages/contracts-orders/allocation:/opt/domain-contracts/bt_contracts/orders/allocation:ro
+  - ../../../packages/contracts-orders/journal:/opt/domain-contracts/bt_contracts/orders/journal:ro
+  - ../../../packages/contracts-orders/payments:/opt/domain-contracts/bt_contracts/orders/payments:ro
+x-auction-source: &auction-source
+  - ../../../services/auction/runtime/service_app:/app/service_app:ro
+  - ../../../services/auction/modules:/app/modules:ro
+  - ../../../packages/runtime/src/bt_runtime:/opt/venv/lib/python3.11/site-packages/bt_runtime:ro
+  - ../../../packages/contracts-auction/core:/opt/domain-contracts/bt_contracts/auction/core:ro
+x-service-source: &service-source
+  - ../../../services/service-operations/runtime/service_app:/app/service_app:ro
+  - ../../../services/service-operations/modules:/app/modules:ro
+  - ../../../packages/runtime/src/bt_runtime:/opt/venv/lib/python3.11/site-packages/bt_runtime:ro
+  - ../../../packages/contracts-service/directory:/opt/domain-contracts/bt_contracts/service/directory:ro
+  - ../../../packages/contracts-service/intake:/opt/domain-contracts/bt_contracts/service/intake:ro
+services:
+  identity:
+    image: beirut-time/identity:local
+    environment:
+      <<: *auth
+      BT_SERVICE_NAME: identity
+      BT_DATABASE_URL: ${L15_IDENTITY_RUNTIME}
+      BT_AUTH_PRIVATE_KEY: ${L15_PRIVATE_KEY}
+      BT_LOCAL_HTTP: "1"
+      BT_WEB_ORIGIN: http://127.0.0.1:3315
+    volumes: *identity-source
+    ports: ["127.0.0.1:8315:8000"]
+    mem_limit: 256m
+  catalog:
+    image: beirut-time/catalog:l15-proof
+    volumes: *catalog-source
+    environment:
+      <<: *auth
+      BT_SERVICE_NAME: catalog
+      BT_DATABASE_URL: ${L15_CATALOG_RUNTIME}
+      BT_SERVICE_AUTH_PRIVATE_KEY: ${L15_PRIVATE_KEY}
+      BT_REQUEST_BODY_LIMIT: "8500000"
+      IDENTITY_URL: http://identity:8000
+      IDENTITY_API_URL: http://identity:8000
+      BT_IDENTITY_URL: http://identity:8000
+      SERVICE_OPERATIONS_API_URL: http://service-operations:8000
+      BT_SERVICE_OPERATIONS_URL: http://service-operations:8000
+      BT_CATALOG_URL: http://catalog:8000
+      BT_PRICING_URL: http://pricing:8000
+      BT_ORDERS_URL: http://orders:8000
+      BT_AUCTION_URL: http://auction:8000
+    ports: ["127.0.0.1:8415:8000"]
+    mem_limit: 384m
+  service-operations:
+    image: beirut-time/service-operations:local
+    volumes: *service-source
+    environment:
+      <<: *auth
+      BT_SERVICE_NAME: service-operations
+      BT_DATABASE_URL: ${L15_SERVICE_OPERATIONS_RUNTIME}
+      IDENTITY_API_URL: http://identity:8000
+      BT_IDENTITY_URL: http://identity:8000
+    ports: ["127.0.0.1:8515:8000"]
+    mem_limit: 256m
+  pricing:
+    image: ${L15_PRICING_IMAGE:-beirut-time/pricing:local}
+    command: ["python", "-m", "uvicorn", "service_app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+    volumes: *pricing-source
+    environment:
+      <<: *auth
+      BT_SERVICE_NAME: pricing
+      BT_DATABASE_URL: ${L15_PRICING_RUNTIME:-}
+      BT_SERVICE_AUTH_PRIVATE_KEY: ${L15_PRIVATE_KEY}
+      BT_IDENTITY_URL: http://identity:8000
+      BT_CATALOG_URL: http://catalog:8000
+    ports: ["127.0.0.1:8615:8000"]
+    mem_limit: 256m
+  orders:
+    image: beirut-time/orders:local
+    volumes: *orders-source
+    environment:
+      <<: *auth
+      BT_SERVICE_NAME: orders
+      BT_DATABASE_URL: ${L15_ORDERS_RUNTIME:-}
+      BT_SERVICE_AUTH_PRIVATE_KEY: ${L15_PRIVATE_KEY}
+      BT_IDENTITY_URL: http://identity:8000
+      BT_CATALOG_URL: http://catalog:8000
+      BT_PRICING_URL: http://pricing:8000
+      BT_AUCTION_URL: http://auction:8000
+      BT_SIMULATED_PAYMENT_SECRET: ${L15_SIMULATED_PAYMENT_SECRET:-}
+    ports: ["127.0.0.1:8715:8000"]
+    mem_limit: 256m
+  auction:
+    image: beirut-time/auction:local
+    volumes: *auction-source
+    environment:
+      <<: *auth
+      BT_SERVICE_NAME: auction
+      BT_DATABASE_URL: ${L15_AUCTION_RUNTIME:-}
+      BT_SERVICE_AUTH_PRIVATE_KEY: ${L15_PRIVATE_KEY}
+      BT_IDENTITY_URL: http://identity:8000
+      BT_CATALOG_URL: http://catalog:8000
+      BT_PRICING_URL: http://pricing:8000
+      BT_ORDERS_URL: http://orders:8000
+    ports: ["127.0.0.1:8815:8000"]
+    mem_limit: 256m
+  pricing-migrate:
+    image: ${L15_PRICING_IMAGE:-beirut-time/pricing:local}
+    volumes: *pricing-source
+    environment:
+      BT_SERVICE_NAME: pricing
+      BT_DATABASE_URL: ${L15_PRICING_OWNER:-}
+    command: ["python", "-m", "service_app.migrate"]
+    profiles: ["migrate"]
+  orders-migrate:
+    image: beirut-time/orders:local
+    volumes: *orders-source
+    environment:
+      BT_SERVICE_NAME: orders
+      BT_DATABASE_URL: ${L15_ORDERS_OWNER:-}
+    command: ["python", "-m", "service_app.migrate"]
+    profiles: ["migrate"]
+  auction-migrate:
+    image: beirut-time/auction:local
+    volumes: *auction-source
+    environment:
+      BT_SERVICE_NAME: auction
+      BT_DATABASE_URL: ${L15_AUCTION_OWNER:-}
+    command: ["python", "-m", "service_app.migrate"]
+    profiles: ["migrate"]
+  identity-migrate:
+    image: beirut-time/identity:local
+    volumes: *identity-source
+    environment:
+      BT_SERVICE_NAME: identity
+      BT_DATABASE_URL: ${L15_IDENTITY_OWNER}
+    command: ["python", "-m", "service_app.migrate"]
+    profiles: ["migrate"]
+  catalog-migrate:
+    image: beirut-time/catalog:l15-proof
+    volumes: *catalog-source
+    environment:
+      BT_SERVICE_NAME: catalog
+      BT_DATABASE_URL: ${L15_CATALOG_OWNER}
+    command: ["python", "-m", "service_app.migrate"]
+    profiles: ["migrate"]
+  service-operations-migrate:
+    image: beirut-time/service-operations:local
+    volumes: *service-source
+    environment:
+      BT_SERVICE_NAME: service-operations
+      BT_DATABASE_URL: ${L15_SERVICE_OPERATIONS_OWNER}
+    command: ["python", "-m", "service_app.migrate"]
+    profiles: ["migrate"]

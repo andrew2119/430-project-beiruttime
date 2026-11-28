@@ -1,6 +1,7 @@
 /* Seller compositions of shared listing rows, forms and dashboard cards.
    Surfaces, controls, ink, radii, elevation and motion belong to the shared kit. */
 .le-page { container-type:inline-size; min-inline-size:0; }
+.le-history{display:grid;gap:var(--ds-gap-row);margin-block-start:var(--ds-gap-content);min-inline-size:0;overflow-wrap:anywhere}.le-history ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--ds-gap-block)}.le-history li{display:grid;gap:var(--ds-gap-group);padding-block:var(--ds-space-3);border-block-start:1px solid var(--border)}.le-history p{margin:0}
 .le-page > .hx-wrap { margin-block-end:var(--ds-space-4); }
 .le-inline { display:flex; flex-wrap:wrap; align-items:center; gap:var(--ds-space-2); }
 .le-directional { inline-size:1rem; block-size:1rem; }
