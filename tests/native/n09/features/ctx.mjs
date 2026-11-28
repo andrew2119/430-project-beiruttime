@@ -180,6 +180,123 @@ function clickReported(message, head, args) {
   } catch {return false;}
 }
 const rounded = value => JSON.parse(JSON.stringify(value,(name,item)=>typeof item==='number' ? Math.round(item*100)/100 : item));
+
+// A session that ends without its client asking sends the client a capture, which the client prints to the job log:
+// why it ended, the browser's last console lines and the session's last events. It sends no selector or field value:
+// commands go by name, places keep only route words, and console and error text has links, emails, ids, paths, long
+// tokens and long numbers masked and is cut short. A session that closes on request prints nothing. Output only: every
+// capture step swallows its own errors, so it can lose a line but never change a command, a reply or a close.
+const CAPTURE = 'Session capture', CAPTURE_LIMITS = {events:24, console:8, text:160, line:300, lines:40, blocks:3};
+const CAPTURE_COMMANDS = ['goto','click','fill','select','press','text','exists','waitFor','url','reload','screenshot','evaluate','detach','close'];
+const CAPTURE_ERRORS = ['Navigation failed','Navigation timed out','Page must use configured origin','Browser closed','Browser command timed out',
+  'Browser command failed','Page evaluation failed','Element timed out','Unsupported key','Unknown page command'];
+const CAPTURE_LEVELS = ['log','debug','info','error','warning','dir','table','trace','assert','count','timeEnd'];
+function redactText(value, limit=CAPTURE_LIMITS.text) {
+  const text = String(value)
+    .replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g,' ')
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\/\S*/gi,'<link>')
+    .replace(/\S+@\S+/g,'<email>')
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,'<id>')
+    .replace(/(?:^|(?<=[\s'"(=:,]))(?:\.{0,2}\/|~\/)[^\s'"()<>,]*/g,'<path>')
+    .replace(/[A-Za-z0-9_+\/=.-]{24,}/g,'<token>')
+    .replace(/\d{5,}/g,'<number>')
+    .replace(/\s+/g,' ').trim();
+  return text.length>limit ? `${text.slice(0,limit-3)}...` : text;
+}
+// A place as route words only: the first two path segments when they are lowercase words, every other segment masked,
+// and never a query, a fragment or another origin's path.
+function placeOf(value, origin) {
+  try {
+    const url = new URL(String(value), origin);
+    if (url.protocol==='about:') return url.href==='about:blank' ? 'about:blank' : 'an about page';
+    if (url.origin!==origin) return 'another origin';
+    const parts = url.pathname.split('/').filter(Boolean).map((part,index)=>index<2 && /^[a-z][a-z-]{0,30}$/.test(part) ? part : '<x>');
+    return `/${parts.slice(0,6).join('/')}${parts.length>6 ? '/...' : ''}${url.search || url.hash ? ' (with query or fragment)' : ''}`;
+  } catch {return 'unreadable';}
+}
+const exitFacts = (code,signal) => `code ${Number.isInteger(code) ? code : 'none'}, signal ${typeof signal==='string' && /^SIG[A-Z0-9]{1,12}$/.test(signal) ? signal : 'none'}`;
+const commandOf = (method,args) => method==='click' && Array.isArray(args) && CLICK_PROBE.test(args[0]) ? 'click on the About probe'
+  : CAPTURE_COMMANDS.includes(method) ? method : 'unknown command';
+// An error as its type, code, system call, browser command, redacted message and its first four code places (file name and line only).
+function errorFacts(error) {
+  try {return errorText(error);} catch {return 'unreadable error';}
+}
+function errorText(error) {
+  const name = typeof error?.name==='string' && /^[A-Za-z]{1,40}$/.test(error.name) ? error.name : 'non-error value';
+  const code = typeof error?.code==='string' && /^(?:E[A-Z]{2,20}|ERR_[A-Z_]{1,60})$/.test(error.code) ? ` ${error.code}` : '';
+  const call = typeof error?.syscall==='string' && /^[a-z_]{1,20}$/.test(error.syscall) ? ` in ${error.syscall}` : '';
+  const method = typeof error?.method==='string' && /^[A-Z][A-Za-z]*\.[a-z][A-Za-z]*$/.test(error.method) ? ` for ${error.method}` : '';
+  const frames = String(error?.stack ?? '').split('\n').slice(1).flatMap(line=>{
+    const match = /^\s*at (?:(.+?) \()?(?:.*[/\\])?([^/\\()\s]+?):(\d+):\d+\)?$/.exec(line);
+    return match ? [`${match[1] && /^[\w.$<> ]{1,60}$/.test(match[1]) ? match[1] : 'anonymous'} ${match[2]}:${match[3]}`] : [];
+  }).slice(0,4);
+  return `${name}${code}${call}${method}: ${redactText(error?.message ?? error)}${frames.length ? `; at ${frames.join(' < ')}` : ''}`;
+}
+const outcomeOf = error => `failed: ${CAPTURE_ERRORS.includes(error?.message) ? `${error.message}${
+  typeof error?.method==='string' && /^[A-Z][A-Za-z]*\.[a-z][A-Za-z]*$/.test(error.method) ? ` in ${error.method}` : ''}`
+  : typeof error?.message==='string' && error.message.startsWith(`${CLICK_MISS}: `) ? 'click miss' : `other error, ${errorFacts(error)}`}`;
+const captureShape = lines => Array.isArray(lines) && lines.length<=CAPTURE_LIMITS.lines && lines.every(line=>typeof line==='string'
+  && line.length<=CAPTURE_LIMITS.line && line.startsWith(`${CAPTURE}: `) && !/[\u0000-\u001f\u007f]/.test(line));
+const captureLines = lines => captureShape(lines) ? lines : [`${CAPTURE}: the session sent a capture this end cannot read`];
+// Before the session is ready no client is connected yet, so `send` also hands the capture to the process that started it.
+function sessionCapture(origin, send) {
+  const started = Date.now(), events = [], consoled = [], clients = new Set(), flight = new Map();
+  let blocks = 0, next = 0;
+  const at = () => `+${Date.now()-started}ms`;
+  const keep = (list,size,text) => {list.push(`${at()} ${text}`);if (list.length>size) list.shift();};
+  const quietly = work => (...args) => {try {return work(...args);} catch {return undefined;}};
+  const end = quietly(reason=>{
+    if (blocks>=CAPTURE_LIMITS.blocks) return;
+    blocks++;
+    const lines = [`${reason} (${at()}); in flight: ${[...flight.values()].map(item=>item.name).join(', ') || 'none'}`,
+      ...consoled.map(text=>`console ${text}`), ...events.map(text=>`event ${text}`)]
+      .slice(0,CAPTURE_LIMITS.lines).map(text=>`${CAPTURE}: ${text}`.replace(/[\u0000-\u001f\u007f]/g,' ').slice(0,CAPTURE_LIMITS.line));
+    const data = JSON.stringify({capture:lines})+'\n';
+    for (const connection of clients) {try {if (!connection.destroyed) connection.write(data);} catch {}}
+    if (send) try {send(lines);} catch {}
+  });
+  return {
+    end,
+    attach:quietly(connection=>{clients.add(connection);connection.once('close',()=>clients.delete(connection));}),
+    event:quietly(text=>keep(events,CAPTURE_LIMITS.events,text)),
+    begin:quietly((method,args)=>{
+      const id = ++next, name = method==='goto' && Array.isArray(args) ? `goto ${placeOf(args[0],origin)}` : commandOf(method,args);
+      flight.set(id,{name,started:Date.now()});keep(events,CAPTURE_LIMITS.events,`${name} started`);
+      return id;
+    }),
+    finish:quietly((id,error)=>{
+      const item = flight.get(id);if (!item) return;
+      flight.delete(id);keep(events,CAPTURE_LIMITS.events,`${item.name} ${error===undefined ? 'ok' : outcomeOf(error)} after ${Date.now()-item.started}ms`);
+    }),
+    // Browser events for the page's own session or the browser itself, never another target's.
+    cdp:quietly((message,sessionId)=>{
+      if (message.sessionId!==undefined && message.sessionId!==sessionId) return;
+      const params = message.params ?? {}, event = text => keep(events,CAPTURE_LIMITS.events,text);
+      if (message.method==='Runtime.consoleAPICalled') {
+        const parts = (Array.isArray(params.args) ? params.args : []).slice(0,6).map(arg=>String(arg?.type==='string' ? arg.value
+          : ['number','boolean','bigint'].includes(arg?.type) ? String(arg.value ?? arg.unserializableValue ?? '')
+            : arg?.subtype==='error' ? String(arg.description ?? '').split('\n')[0] : `<${redactText(arg?.subtype ?? arg?.type ?? 'value',20)}>`).slice(0,400));
+        keep(consoled,CAPTURE_LIMITS.console,`${CAPTURE_LEVELS.includes(params.type) ? params.type : 'other'}: ${redactText(parts.join(' '))}`);
+      } else if (message.method==='Runtime.exceptionThrown') {
+        const details = params.exceptionDetails ?? {};
+        keep(consoled,CAPTURE_LIMITS.console,`uncaught: ${redactText(String(details.exception?.description ?? details.text ?? '').slice(0,400).split('\n')[0])}`);
+      } else if (message.method==='Page.frameNavigated') {if (!params.frame?.parentId) event(`page navigated to ${placeOf(params.frame?.url,origin)}`);}
+      else if (message.method==='Page.domContentEventFired') event('page content loaded');
+      else if (message.method==='Page.loadEventFired') event('page load event');
+      else if (message.method==='Runtime.executionContextsCleared') event('page scripts cleared');
+      else if (message.method==='Page.javascriptDialogOpening') event(`page dialog opened (${['alert','confirm','prompt','beforeunload'].includes(params.type) ? params.type : 'other'})`);
+      else if (message.method==='Network.loadingFailed') {
+        if (params.type==='Document') event(`page document load failed: ${/^net::[A-Z_]{1,60}$/.test(params.errorText) ? params.errorText : 'other error'}${params.canceled ? ' (canceled)' : ''}`);
+      } else if (message.method==='Inspector.detached') {
+        const reason = redactText(params.reason ?? 'no reason',60);event(`page connection detached: ${reason}`);end(`the page connection detached: ${reason}`);
+      } else if (message.method==='Inspector.targetCrashed') {event('page crashed');end('the page crashed');}
+      else if (message.method==='Target.targetCrashed') {
+        const facts = `${redactText(params.status ?? 'no status',40)}, code ${Number.isInteger(params.errorCode) ? params.errorCode : 'none'}`;
+        event(`page crashed (${facts})`);end(`the page crashed (${facts})`);
+      } else if (message.method==='Target.detachedFromTarget' && params.sessionId===sessionId) {event('page session detached');end('the page session detached');}
+    }),
+  };
+}
 /** Presses and releases the left button on the target's center with real pointer input. For the About probe with its nonce it then returns the click's evidence line, or fails with it when the linked press hit outside the target. */
 export async function clickTarget(evaluate, call, selector, nonce) {
   if (!clickProbe(selector,nonce)) {
@@ -203,7 +320,7 @@ export async function clickTarget(evaluate, call, selector, nonce) {
   return line;
 }
 
-async function localBrowser({browserPath, origin, cell, signal}) {
+async function localBrowser({browserPath, origin, cell, signal}, capture=sessionCapture(origin)) {
   if (!browserPath || !isAbsolute(browserPath) || signal?.aborted) throw new Error('Installed browser required');
   await access(browserPath,constants.X_OK);
   if(!(await stat(browserPath)).isFile())throw new Error('Installed browser required');
@@ -215,12 +332,19 @@ async function localBrowser({browserPath, origin, cell, signal}) {
   const rejectPending = () => { for (const item of pending.values()) item.reject(Object.assign(new Error('Browser closed'),{method:item.method})); pending.clear(); };
   const exited = new Promise(done => {child.once('exit', done); child.once('error', done);});
   child.once('error', rejectPending); child.once('exit', rejectPending);
+  // After the pending commands are failed, so a capture names what was in flight when the browser went.
+  child.once('error', error => capture.event(`browser process error: ${errorFacts(error)}`));
+  child.once('exit', (code,signal) => {
+    capture.event(`browser exited (${exitFacts(code,signal)})`);
+    if (!closed) capture.end(`the browser exited by itself (${exitFacts(code,signal)})`);
+  });
   child.stdio[4].on('data', chunk => {
     buffer += chunk.toString(); let end;
     while ((end = buffer.indexOf('\0')) >= 0) {
       const message = JSON.parse(buffer.slice(0,end)); buffer = buffer.slice(end+1);
       const item = pending.get(message.id);
       if (item) {pending.delete(message.id); message.error ? item.reject(Object.assign(new Error('Browser command failed'),{method:item.method})) : item.resolve(message.result);}
+      else if (typeof message?.method === 'string') capture.cdp(message, sessionId);
     }
   });
   async function call(method, params = {}, target = sessionId) {
@@ -347,18 +471,31 @@ export function context({page,origin,cell,revision}) {
 
 // The client passes a page error on only when it is listed, or when it is a click miss line for the pending About probe;
 // that probe's evidence line goes to the report, so the hosted output shows it whether the click passes or fails.
-export async function connectSession(socket, {signal,connect=createConnection,report=line=>console.log(line)}={}) {
+// A session capture is printed through `note`, and so is a close with calls still pending: what was pending and how it ended.
+export async function connectSession(socket, {signal,connect=createConnection,report=line=>console.log(line),note=line=>console.log(line)}={}) {
   if(typeof socket!=='string' || !isAbsolute(socket))throw new Error('Prepared session unavailable');
   const connection=connect(socket);
   await new Promise((done,reject)=>{connection.once('connect',done);connection.once('error',reject);});
-  const pending=new Map();let next=0,buffer='',detached=false;
-  const fail=()=>{for(const item of pending.values())item.reject(new Error('Prepared session closed'));pending.clear();};
+  const pending=new Map();let next=0,buffer='',detached=false,captures=0,ended=false;
+  const print=line=>{try{note(line);}catch{}};
+  const fail=cause=>{
+    if(pending.size && !ended) {
+      ended=true;
+      const how=cause instanceof Error ? `failed (${typeof cause.code==='string' && /^E[A-Z]{2,20}$/.test(cause.code) ? cause.code : 'no code'})` : cause===true ? 'closed after an error' : 'closed';
+      print(`${CAPTURE}: the session connection ${how} with ${pending.size} call(s) pending: ${[...pending.values()].slice(0,6).map(item=>commandOf(item.method,item.args)).join(', ')}`);
+    }
+    for(const item of pending.values())item.reject(new Error('Prepared session closed'));pending.clear();
+  };
   connection.on('error',fail);connection.on('close',fail);
   connection.on('data',chunk=>{
     buffer+=chunk;
     let end;
     while((end=buffer.indexOf('\n'))>=0) {
       const message=JSON.parse(buffer.slice(0,end));buffer=buffer.slice(end+1);
+      if(message?.capture!==undefined) {
+        if(++captures<=CAPTURE_LIMITS.blocks)for(const line of captureLines(message.capture))print(line);
+        continue;
+      }
       const item=pending.get(message.id);if(!item)continue;pending.delete(message.id);
       message.error?item.reject(new Error(typeof message.error==='string' && (['Navigation failed','Navigation timed out','Page must use configured origin','Browser closed','Browser command timed out','Session cleanup failed'].includes(message.error) || item.method==='click' && clickReported(message.error,CLICK_MISS,item.args)) ? message.error : 'Prepared page command failed')):item.resolve(message.value);
     }
@@ -385,19 +522,32 @@ export async function browser(config) {
   const directory=await mkdtemp(join(tmpdir(),'bt-session-'));
   const socket=join(directory,'page.sock');
   const child=fork(fileURLToPath(import.meta.url),['--session'],{stdio:['ignore','ignore','ignore','ipc'],detached:true});
+  // The session process's own output is not kept, so how it ended is printed here when it was not asked to end.
+  let state='starting';
+  child.once('exit',(code,signal)=>{
+    if(state==='starting' || state==='ready' && (code!==0 || signal))console.log(`${CAPTURE}: the session process ended ${state==='starting' ? 'before it was ready' : 'with a failure code or a signal'} (${exitFacts(code,signal)})`);
+  });
   try {
+    let captures=0;
     await new Promise((done,reject)=>{
       const timer=setTimeout(()=>reject(new Error('Prepared session timed out')),15000);
-      child.once('message',message=>{clearTimeout(timer);message.ready?done():reject(new Error(typeof message.reason==='string' ? `Prepared session unavailable: ${message.reason.slice(0,160)}` : 'Prepared session unavailable'));});
+      // A capture sent before the session is ready is printed and is never taken as the ready answer.
+      const answer=message=>{
+        if(message?.capture!==undefined){if(++captures<=CAPTURE_LIMITS.blocks)for(const line of captureLines(message.capture))console.log(line);return;}
+        child.off('message',answer);
+        clearTimeout(timer);message.ready?done():reject(new Error(typeof message.reason==='string' ? `Prepared session unavailable: ${message.reason.slice(0,160)}` : 'Prepared session unavailable'));
+      };
+      child.on('message',answer);
       child.once('error',error=>{clearTimeout(timer);reject(error);});
       child.once('exit',()=>{clearTimeout(timer);reject(new Error('Prepared session closed'));});
       child.send({config:{browserPath:config.browserPath,origin:config.origin,cell:config.cell},socket,directory});
     });
+    state='ready';
     child.disconnect();child.unref();
     return await connectSession(socket,{signal:config.signal});
-  }catch(error){child.kill();await rm(directory,{recursive:true,force:true});throw error;}
+  }catch(error){state='failed';child.kill();await rm(directory,{recursive:true,force:true});throw error;}
 }
-export async function serveSession({config,socket,directory}, launch=localBrowser,{listen=createServer,secure=chmod}={}) {
+export async function serveSession({config,socket,directory}, launch=localBrowser,{listen=createServer,secure=chmod,capture=sessionCapture(config?.origin)}={}) {
   let session,server,timer,stopping;
   // Every caller shares one stop, and the session folder goes even when closing the browser fails.
   const stop=()=>stopping??=(async()=>{
@@ -405,11 +555,12 @@ export async function serveSession({config,socket,directory}, launch=localBrowse
     try{await session?.close();}finally{await rm(directory,REMOVE);}
   })();
   const stopQuietly=()=>{stop().catch(()=>{});};
-  process.once('SIGTERM',stopQuietly);
+  process.once('SIGTERM',()=>{capture.end('the session got SIGTERM');stopQuietly();});
   try {
-    session=await launch(config);
+    session=await launch(config,capture);
     server=listen(connection=>{
       let buffer='',detached=false,queue=Promise.resolve();
+      capture.attach(connection);
       connection.on('error',()=>{});
       connection.on('close',()=>{if(!detached)stopQuietly();});
       connection.on('data',chunk=>{
@@ -417,11 +568,12 @@ export async function serveSession({config,socket,directory}, launch=localBrowse
         while((end=buffer.indexOf('\n'))>=0) {
           const line=buffer.slice(0,end);buffer=buffer.slice(end+1);
           queue=queue.then(async()=>{
-            let message;
+            let message,step;
             try {
               message=JSON.parse(line);const {method,args}=message;let value;
+              step=capture.begin(method,args);
               if(method==='detach')detached=true;
-              else if(method==='close'){await stop();connection.end(JSON.stringify({id:message.id})+'\n');return;}
+              else if(method==='close'){await stop();capture.finish(step);connection.end(JSON.stringify({id:message.id})+'\n');return;}
               else if(method==='screenshot')value=await session.screenshot(...args);
               else if(method==='evaluate')value=await session.page.evaluate(Function('return ('+args[0]+')')(),...args.slice(1));
               else if(['goto','click','fill','select','press','text','exists','waitFor','url','reload'].includes(method)) {
@@ -430,17 +582,23 @@ export async function serveSession({config,socket,directory}, launch=localBrowse
                 if(method==='click' && !clickReported(value,CLICK_EVIDENCE,args))value=undefined;
               }
               else throw new Error('Unknown page command');
+              capture.finish(step);
               connection.write(JSON.stringify({id:message.id,value})+'\n');
-            }catch(error){connection.write(JSON.stringify({id:message?.id,error:['Navigation failed','Navigation timed out','Page must use configured origin','Browser closed','Browser command timed out'].includes(error.message) || message?.method==='click' && clickReported(error.message,CLICK_MISS,message.args) ? error.message : message?.method==='close' ? 'Session cleanup failed' : true})+'\n');}
+            }catch(error){capture.finish(step,error);connection.write(JSON.stringify({id:message?.id,error:['Navigation failed','Navigation timed out','Page must use configured origin','Browser closed','Browser command timed out'].includes(error.message) || message?.method==='click' && clickReported(error.message,CLICK_MISS,message.args) ? error.message : message?.method==='close' ? 'Session cleanup failed' : true})+'\n');}
           });
         }
       });
     });
     await new Promise((done,reject)=>{server.once('error',reject);server.listen(socket,done);});
     await secure(socket,0o600);
-    timer=setTimeout(stopQuietly,30*60*1000);
+    timer=setTimeout(()=>{capture.end('the session reached its 30 minute limit');stopQuietly();},30*60*1000);
     process.send?.({ready:true});
     return {close:stop};
   }catch(error){process.send?.({ready:false,reason:launchReason(error)});await stop().catch(()=>{});if(!process.send)throw error;}
 }
-if(process.argv[2]==='--session' && process.send)process.once('message',message=>{void serveSession(message);});
+// The monitor only reads an uncaught error or unhandled rejection; the process still ends as it would without it.
+if(process.argv[2]==='--session' && process.send)process.once('message',message=>{
+  const capture=sessionCapture(message?.config?.origin,lines=>{if(process.connected)process.send({capture:lines},()=>{});});
+  process.on('uncaughtExceptionMonitor',(error,origin)=>{try{capture.end(`the session process hit ${origin==='unhandledRejection' ? 'an unhandled rejection' : 'an uncaught error'}: ${errorFacts(error)}`);}catch{}});
+  void serveSession(message,undefined,{capture});
+});
