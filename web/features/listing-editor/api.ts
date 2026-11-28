@@ -153,9 +153,9 @@ export function listingApiFor(
         body: JSON.stringify({
           subject_id: row.id,
           subject_revision: row.revision,
-          purpose: "business_quote",
+          purpose: "purchase",
           source: "sample",
-          schedule_id: "sample-v1",
+          schedule_id: "usd-v2",
           price_minor: row.facts.price_minor,
           currency: row.facts.currency,
         }),

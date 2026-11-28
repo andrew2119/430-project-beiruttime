@@ -1,10 +1,11 @@
 import json
 import os
 from uuid import UUID, uuid4, uuid5, NAMESPACE_URL
-from fastapi import APIRouter, Request, Query
+from fastapi import APIRouter, HTTPException, Request, Query
 from bt_contracts.catalog.listings.v1 import CreateDraft, SaveDraft, Publish, WatchFacts, incomplete
 from bt_contracts_core.errors import AccessDenied, PublicError
 from bt_runtime.app.db import unit_of_work
+from service_app.catalog_dependencies import log_publication_failure, publication_step
 from .dependencies import principal, seller_scope, assert_owner, upstream, service_request
 from .repository import dto, unpack, command_key, revision, check_revision, replay, remember, emit
 from .quotes import publication_quote
@@ -143,6 +144,7 @@ async def save(listing_id: UUID, body: SaveDraft, request: Request):
 
 
 async def settle_publication_review(request, row, operation, person):
+    publication_step(request, "registration_abort", "orders")
     binding = {"operation_id": str(operation["id"]), "listing_id": str(row["id"]),
                "actor_id": str(operation["actor_id"]),
                "organization_id": str(row["organization_id"]) if row["organization_id"] else None,
@@ -154,6 +156,7 @@ async def settle_publication_review(request, row, operation, person):
     )
     if not isinstance(value, dict) or any(value.get(key) != item for key, item in binding.items()) or value.get("status") != "aborted":
         raise PublicError("registration_pending", "Retry the original publication to settle registration.", status=503)
+    publication_step(request, "settle_abort")
     async with unit_of_work(request.app.state.pool, lock_key=f"listing:{row['id']}") as tx:
         current = await tx.fetchrow("SELECT * FROM catalog_listings WHERE id=$1 FOR UPDATE", row["id"])
         assert_owner(current, person)
@@ -165,11 +168,13 @@ async def settle_publication_review(request, row, operation, person):
 
 
 async def publication_review(request, row, operation, person):
+    publication_step(request, "eligibility", "identity")
     try:
         await check_publication(request, row, str(operation["id"]), person.actor.subject_id)
     except PublicError as error:
         if error.code != "publication_review_denied":
             raise
+        publication_step(request, "record_review_denial")
         async with unit_of_work(request.app.state.pool, lock_key=f"listing:{row['id']}") as tx:
             current = await tx.fetchrow("SELECT * FROM catalog_listings WHERE id=$1 FOR UPDATE", row["id"])
             if current["status"] != "publication_pending" or current["revision"] != operation["base_revision"]:
@@ -180,8 +185,27 @@ async def publication_review(request, row, operation, person):
 
 @router.post("/v1/seller/listings/{listing_id}/publish")
 async def publish(listing_id: UUID, body: Publish, request: Request):
+    publication_step(request, "authorize", "identity")
+    try:
+        return await publish_listing(listing_id, body, request)
+    except PublicError as error:
+        log_publication_failure(request, error.status, error.code)
+        raise
+    except HTTPException as error:
+        log_publication_failure(request, error.status_code)
+        raise
+    except AccessDenied:
+        # The runtime turns scope and ownership denials into 403, not outages.
+        raise
+    except Exception:
+        log_publication_failure(request, 500)
+        raise
+
+
+async def publish_listing(listing_id: UUID, body: Publish, request: Request):
     person = await principal(request)
     seller_scope(person, "identity.listings.publish")
+    publication_step(request, "preview")
     expected = revision(request)
     key = command_key(request)
     scope = f"publish:{listing_id}:{person.actor.subject_id}"
@@ -204,7 +228,9 @@ async def publish(listing_id: UUID, body: Publish, request: Request):
                 status=422,
                 details={"fields": missing},
             )
+        publication_step(request, "read_quote", "pricing")
         quote = await upstream(request, "pricing", "GET", f"/v1/quotes/{body.fee_quote_id}")
+    publication_step(request, "read_publication")
     async with request.app.state.pool.acquire() as tx:
         retained = await tx.fetchrow("SELECT * FROM catalog_publications WHERE listing_id=$1", listing_id)
     if retained and retained["review_denied"]:
@@ -214,9 +240,11 @@ async def publish(listing_id: UUID, body: Publish, request: Request):
         if retained:
             await publication_review(request, preview, retained, person)
         else:
+            publication_step(request, "eligibility", "identity")
             await check_publication(request, preview, str(publication_id), person.actor.subject_id)
     # Freeze first, release SQL locks before remote work. Retrying resumes the SAME
     # Orders registration identity; ambiguous upstream results can never free a fence.
+    publication_step(request, "prepare")
     async with unit_of_work(request.app.state.pool, lock_key=f"listing:{listing_id}") as tx:
         row = await tx.fetchrow("SELECT * FROM catalog_listings WHERE id=$1 FOR UPDATE", listing_id)
         assert_owner(row, person)
@@ -276,6 +304,7 @@ async def publish(listing_id: UUID, body: Publish, request: Request):
     facts = unpack(row["facts"])
     sale_mode = {"fixed_price": "fixed", "auction": "auction", "offer": "seller_base"}[facts["sale_mode"]]
     await publication_review(request, row, operation, person)
+    publication_step(request, "register_watch", "orders")
     registered = await service_request(
         request,
         "orders",
@@ -315,8 +344,10 @@ async def publish(listing_id: UUID, body: Publish, request: Request):
     registration = {name: registration[name] for name in ("watch_id", "listing_id", "sale_mode", "revision")}
     await publication_review(request, row, operation, person)
     # Refresh authorization after the network gap, before making a public projection.
+    publication_step(request, "reauthorize", "identity")
     person = await principal(request)
     seller_scope(person, "identity.listings.publish")
+    publication_step(request, "commit")
     async with unit_of_work(request.app.state.pool, lock_key=f"listing:{listing_id}") as tx:
         current = await tx.fetchrow("SELECT * FROM catalog_listings WHERE id=$1 FOR UPDATE", listing_id)
         assert_owner(current, person)

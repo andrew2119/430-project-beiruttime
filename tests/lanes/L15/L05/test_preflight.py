@@ -56,7 +56,7 @@ async def test_initial_review_failure_never_freezes_source(monkeypatch, module, 
     monkeypatch.setattr(module, "unit_of_work", unexpected_write)
     if module is routes:
         monkeypatch.setattr(module, "upstream", quote)
-        body = Publish(fee_quote_id=UUID("00000000-0000-4000-8000-000000000005"), rules_version="sample-v1")
+        body = Publish(fee_quote_id=UUID("00000000-0000-4000-8000-000000000005"), rules_version="usd-v2")
         action = routes.publish(listing, body, request)
     else:
         body = revisions.Revise(facts={**facts, "reference": "Changed identity"}, reason="Correct reference")

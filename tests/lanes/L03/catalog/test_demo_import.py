@@ -1,11 +1,10 @@
 import hashlib
 import json
-from pathlib import Path
 from uuid import uuid4
 import httpx
 import pytest
 from bt_runtime.modules import discover
-from .test_listing_lifecycle import image, headers, draft, quote_snapshot
+from .test_listing_lifecycle import image, headers, draft, quote_snapshot, catalog_modules
 
 pytestmark = pytest.mark.asyncio
 
@@ -66,8 +65,8 @@ async def test_demo_import_uses_publication_twice_without_duplicate_stock(api, t
         if request.url.host == "pricing-demo":
             body = json.loads(request.content)
             assert "organization_id" not in request.url.params
-            assert body["purpose"] == "business_quote" and body["source"] == "sample"
-            assert body["schedule_id"] == "sample-v1"
+            assert body["purpose"] == "purchase" and body["source"] == "sample"
+            assert body["schedule_id"] == "usd-v2"
             token = request.headers["Authorization"][7:]
             value = quote_snapshot(
                 api, {"id": body["subject_id"], "revision": body["subject_revision"]}, token, uuid4()
@@ -81,7 +80,7 @@ async def test_demo_import_uses_publication_twice_without_duplicate_stock(api, t
         return original_client(**kwargs)
 
     monkeypatch.setattr(httpx, "AsyncClient", client_factory)
-    seed = next(m for m in discover(Path("/app/modules")) if m.id == "L03.listings").load("fixtures.py:seed")
+    seed = next(m for m in discover(catalog_modules()) if m.id == "L03.listings").load("fixtures.py:seed")
     first = await seed(None)
     second = await seed(None)
     assert first == second and first["count"] == 6
@@ -101,7 +100,7 @@ async def test_demo_import_uses_publication_twice_without_duplicate_stock(api, t
 
 
 async def test_demo_quote_receipts_are_stable_but_do_not_pin_expired_or_stale_terms():
-    seed = next(m for m in discover(Path("/app/modules")) if m.id == "L03.listings").load("fixtures.py:seed")
+    seed = next(m for m in discover(catalog_modules()) if m.id == "L03.listings").load("fixtures.py:seed")
     operation = seed.__globals__["quote_operation"]
     key = operation("DEMO-WATCH-01", 2, 6000)
     assert 8 <= len(key) <= 128 and all(c.isalnum() or c in "-_" for c in key)
@@ -111,7 +110,7 @@ async def test_demo_quote_receipts_are_stable_but_do_not_pin_expired_or_stale_te
 
 
 async def test_demo_guard_missing_license_and_real_draft_preserved(api, tmp_path, monkeypatch):
-    seed = next(m for m in discover(Path("/app/modules")) if m.id == "L03.listings").load("fixtures.py:seed")
+    seed = next(m for m in discover(catalog_modules()) if m.id == "L03.listings").load("fixtures.py:seed")
     monkeypatch.setenv("BT_ENVIRONMENT", "production")
     with pytest.raises(RuntimeError, match="guard"):
         await seed(None)

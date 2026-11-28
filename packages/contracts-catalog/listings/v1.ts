@@ -56,13 +56,13 @@ export type Page = {
 };
 export type FeeQuote = {
   price_minor?: number;
-  currency?: "USD" | "LBP";
+  currency?: "USD";
   id: string;
   owner_id: string;
   subject_id: string;
   subject_revision: number;
-  schedule_id: "sample-v1";
-  purpose: "business_quote";
+  schedule_id: "usd-v2";
+  purpose: "purchase";
   source: "sample";
   sample: true;
   seller_commission_minor: number;
