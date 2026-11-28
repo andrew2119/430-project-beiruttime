@@ -200,17 +200,17 @@ class NativeWalkthroughTests(unittest.TestCase):
         process.assert_called_once()
         retry.assert_not_called()
 
-    def test_proposed_competition_contract_not_provider_compatibility(self):
-        # Local expectations only; current provider equal-ceiling revision is deferred.
+    def test_competition_rejects_wrong_leader_and_public_ceiling_raise(self):
+        # Mocked answers; test_bid_phase_follows_the_registered_proxy_rule checks the real rule.
         self.walk.state['auctions'] = {'DEMO-WATCH-01': {'auction_id': 'lot'}}
-        prices = [10000, 11000, 12000, 16000, 20000, 20000]
-        leaders = ['buyer-a', 'buyer-b', 'buyer-a', 'buyer-a', 'buyer-b', 'buyer-b']
+        prices = [10000, 11000, 12000, 16000, 20000, 21000, 21000]
+        leaders = ['buyer-a', 'buyer-b', 'buyer-a', 'buyer-a', 'buyer-a', 'buyer-b', 'buyer-b']
         for wrong_leader, extra_bid in ((False, False), (True, False), (False, True)):
             index = -1
             def call(service, method, route, actor=None, body=None):
                 nonlocal index
                 if route.endswith('/history'):
-                    return {'items': [{'amount_minor': 20000}] if extra_bid and index == 5 else [],
+                    return {'items': [{'amount_minor': 21000}] if extra_bid and index == 6 else [],
                             'has_more': False}
                 if method == 'POST':
                     index += 1
@@ -232,6 +232,66 @@ class NativeWalkthroughTests(unittest.TestCase):
                         self.walk.bids()
                 else:
                     self.walk.bids()
+
+    def test_bid_phase_follows_the_registered_proxy_rule(self):
+        # Prices and leaders come from the auction's own registered auction.proxy.v1 hook,
+        # so the walkthrough's expectations cannot drift from the rule the service runs.
+        folder = module.ROOT / 'services/auction/modules/proxy'
+        source, name = json.loads((folder / 'module.json').read_text())['hooks']['auction.proxy.v1'].split(':')
+        spec = importlib.util.spec_from_file_location('registered_auction_proxy', folder / source)
+        proxy = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(proxy)
+        calculate = getattr(proxy, name)
+        opening, bands = 10000, [{'from_minor': 0, 'step_minor': 1000}]
+        lot = {'current_minor': 0, 'leader_id': None, 'accepted_sequence': 0, 'revision': 1}
+        maxima, public, bidders, posts = {}, [], set(), []
+        self.walk.state['auctions'] = {'DEMO-WATCH-01': {'auction_id': 'lot'}}
+
+        def call(service, method, route, actor=None, body=None):
+            self.assertEqual(service, 'auction')
+            if method == 'POST':
+                kind = {'/v1/auctions/lot/bids': 'manual', '/v1/auctions/lot/maximum': 'maximum'}[route]
+                self.assertEqual(body['expected_revision'], lot['revision'])
+                # The same state the engine hands the hook (services/auction/runtime/service_app/engine.py).
+                state = {'current_minor': max(lot['current_minor'], opening), 'opening_minor': opening,
+                         'leader_id': lot['leader_id'], 'sequence': lot['accepted_sequence'],
+                         'increment_bands': bands, 'maxima': [dict(entry) for entry in maxima.values()]}
+                incoming = {'kind': kind, 'bidder_id': actor, 'amount_minor': body['amount_minor'],
+                            'sequence': lot['accepted_sequence'] + 1}
+                posts.append(incoming)
+                try:
+                    result = calculate(json.loads(json.dumps(state)), dict(incoming))
+                except ValueError as error:
+                    return {'status': 'rejected', 'code': str(error)}
+                sequence = lot['accepted_sequence']
+                for bid in result['bids']:
+                    sequence += 1
+                    public.append({'sequence': sequence, 'amount_minor': bid['amount_minor'],
+                                   'automatic': bid['automatic']})
+                if sequence == lot['accepted_sequence']:
+                    sequence += 1
+                maxima.update((entry['bidder_id'], dict(entry)) for entry in result['maxima'])
+                lot.update(current_minor=result['current_minor'], leader_id=result['leader_id'],
+                           accepted_sequence=sequence, revision=lot['revision'] + 1)
+                bidders.add(actor)
+                return {'status': 'succeeded'}
+            if route == '/v1/auctions/lot/history':
+                return {'items': [dict(item) for item in public], 'has_more': False}
+            if route == '/v1/my-bids':
+                # The status rule of services/auction/modules/bid-admission/routes.py.
+                status = 'leading' if lot['leader_id'] == actor else 'outbid'
+                return {'items': [{'auction_id': 'lot', 'my_status': status}] if actor in bidders else []}
+            self.assertEqual((method, route), ('GET', '/v1/auctions/lot'))
+            return {'revision': lot['revision'], 'current_minor': lot['current_minor']}
+
+        with patch.object(self.walk, 'login'), patch.object(self.walk, 'wait_for_live'), \
+                patch.object(self.walk, 'quote', return_value={'id': 'quote'}), \
+                patch.object(self.walk, 'call', side_effect=call):
+            self.walk.bids()
+        proof = self.walk.state['bid_proof']
+        self.assertEqual(len(proof['results']), len(posts))
+        self.assertEqual(proof['results'][-1]['current_minor'], lot['current_minor'])
+        self.assertEqual(proof['history']['items'], public)
 
     def test_main_closes_client_on_timeout_and_evidence_write_failure(self):
         for write_failure in (False, True):
@@ -489,8 +549,8 @@ class NativeWalkthroughTests(unittest.TestCase):
 
     def test_bid_phase_recovers_lost_second_response(self):
         self.walk.state['auctions'] = {'DEMO-WATCH-01': {'auction_id': 'lot'}}
-        prices = [10000, 11000, 12000, 16000, 20000, 20000]
-        leaders = ['buyer-a', 'buyer-b', 'buyer-a', 'buyer-a', 'buyer-b', 'buyer-b']
+        prices = [10000, 11000, 12000, 16000, 20000, 21000, 21000]
+        leaders = ['buyer-a', 'buyer-b', 'buyer-a', 'buyer-a', 'buyer-a', 'buyer-b', 'buyer-b']
         committed = {}
         index = -1
         lost = False
@@ -537,10 +597,10 @@ class NativeWalkthroughTests(unittest.TestCase):
                 patch.object(resumed, 'wait_for_live'), \
                 patch.object(resumed, 'quote', return_value={'id': 'new-quote'}):
             resumed.run_phase('bids')
-        self.assertEqual(len(committed), 6)
+        self.assertEqual(len(committed), 7)
         self.assertEqual(committed[uncertain[0]], uncertain[1])
         self.assertIn('bids', resumed.state['completed_phases'])
-        self.assertEqual(index, 5)
+        self.assertEqual(index, 6)
 
     def test_all_rechecks_completed_onboarding_before_pending_phase(self):
         self.walk.state.update({
