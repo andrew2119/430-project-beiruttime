@@ -13,7 +13,8 @@ from bt_contracts_core.errors import PublicError
 from bt_runtime.app.db import unit_of_work
 from bt_runtime.app.auth import require_principal
 from .security import (audit, check_password, cookie, digest, event, hash_password, limit, live_actor,
-    DUMMY_PASSWORD_HASH, new_session, password_matches, password_work, private_key, projection, require_origin, session_response)
+    DUMMY_PASSWORD_HASH, new_session, password_matches, password_work, private_key, projection, require_origin,
+    seed_only, session_response)
 
 from .recovery import recovery_payload, recovery_details
 
@@ -124,10 +125,12 @@ async def login(body: Credentials, request: Request, response: Response):
     await admission(request, 'login-email:' + body.email)
     async with unit_of_work(request.app.state.pool, lock_key='account-login:' + body.email) as tx:
         account = await tx.fetchrow('SELECT * FROM identity_accounts WHERE email=$1 FOR UPDATE', body.email)
-        # Same KDF path for unknown accounts, without creating an account.
-        encoded = account['password_hash'] if account else DUMMY_PASSWORD_HASH
+        # Same KDF path for unknown accounts, without creating an account. A seed-only sample account has
+        # no password: it takes the same path and the same refusal as an unknown one.
+        seeded = bool(account) and await seed_only(tx, account['id'])
+        encoded = account['password_hash'] if account and not seeded else DUMMY_PASSWORD_HASH
         valid = await password_work(password_matches, body.password, encoded)
-        if not account or not valid or account['status'] != 'active':
+        if not account or seeded or not valid or account['status'] != 'active':
             result, refresh = None, None
             await audit(tx, request, None, None, 'account.login', 'denied')
         else:
@@ -214,7 +217,8 @@ async def reauthenticate(body: Reauthenticate,request: Request):
     await admission(request,'reauth-subject:'+require_principal(request).subject,10)
     async with unit_of_work(request.app.state.pool) as tx:
         account, session = await live_actor(tx,request,lock=True)
-        if not await password_work(password_matches,body.password,account['password_hash']):
+        if await seed_only(tx,account['id']) or not await password_work(
+                password_matches,body.password,account['password_hash']):
             raise PublicError('invalid_credentials','Confirm your current password.',status=401)
         proof = secrets.token_urlsafe(48)
         binding_hash = digest(body.binding)
@@ -256,7 +260,8 @@ async def change_password(body: PasswordChange, request: Request):
         if await mutation_replay(tx, key, signature):
             return {'sign_in_required': True}
         account, _ = await live_actor(tx, request, lock=True)
-        if not await password_work(password_matches, body.current_password, account['password_hash']):
+        if await seed_only(tx, account['id']) or not await password_work(
+                password_matches, body.current_password, account['password_hash']):
             raise PublicError('invalid_credentials', 'Check your current password.', status=401)
         await tx.execute('UPDATE identity_accounts SET password_hash=$2,access_revision=access_revision+1 WHERE id=$1', account['id'], encoded)
         await tx.execute('UPDATE identity_sessions SET revoked_at=now() WHERE subject_id=$1', account['id'])
@@ -290,7 +295,8 @@ async def recover(body: Recovery, request: Request):
         except PublicError:
             suppressed = True
         account = await tx.fetchrow('SELECT * FROM identity_accounts WHERE email=$1 FOR UPDATE', body.email.lower().strip())
-        if not suppressed and account and account['status'] == 'active':
+        # A seed-only sample account gets no reset link: the same acknowledgement, and nothing is issued.
+        if not suppressed and account and account['status'] == 'active' and not await seed_only(tx, account['id']):
             raw = secrets.token_urlsafe(48)
             await tx.execute('UPDATE identity_password_resets SET consumed_at=now() WHERE subject_id=$1 AND consumed_at IS NULL', account['id'])
             await tx.execute("INSERT INTO identity_password_resets(hash,subject_id,expires_at) VALUES($1,$2,now()+interval '20 minutes')", digest(raw), account['id'])
@@ -354,6 +360,8 @@ async def reset(body: Reset | PasswordReceipt, request: Request):
         if not token:
             raise PublicError('invalid_reset', 'Request a new recovery link.', status=400)
         await tx.fetchrow('SELECT id FROM identity_accounts WHERE id=$1 FOR UPDATE', token['subject_id'])
+        if await seed_only(tx, token['subject_id']):
+            raise PublicError('invalid_reset', 'Request a new recovery link.', status=400)
         accepted = await tx.fetchval('''UPDATE identity_password_resets SET consumed_at=now()
             WHERE hash=$1 AND consumed_at IS NULL AND expires_at>now() RETURNING subject_id''', digest(body.token))
         if not accepted:

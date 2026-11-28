@@ -1,1 +1,1 @@
-{"version":1,"id":"L02.businesses","dependencies":["fastapi","asyncpg","httpx"],"routes":["routes.py:router"],"migrations":["migrations/L02_0001_businesses.sql"],"fixtures":{"demo":"fixtures.py:seed"}}
+{"version":1,"id":"L02.businesses","dependencies":["fastapi","asyncpg","httpx"],"routes":["routes.py:router"],"migrations":["migrations/L02_0001_businesses.sql"],"fixtures":{"demo":"fixtures.py:seed","deploy-seed":"deploy_seed.py:apply"}}

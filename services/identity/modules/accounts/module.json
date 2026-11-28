@@ -14,10 +14,11 @@
   "migrations": [
     "migrations/L01_0001_accounts.sql",
     "migrations/L01_0002_reauthentication.sql",
-    "migrations/L01_0003_operator_bootstrap.sql"
+    "migrations/L01_0003_operator_bootstrap.sql",
+    "migrations/L01_0004_demo_seed.sql"
   ],
   "workers": [
     "workers.py:run"
   ],
-  "fixtures": {"demo":"fixtures.py:seed"}
+  "fixtures": {"demo":"fixtures.py:seed","deploy-seed":"deploy_seed.py:apply"}
 }
